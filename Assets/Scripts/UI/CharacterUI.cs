@@ -52,12 +52,7 @@ namespace DiceOrbit.UI
         private void Update()
         {
             UpdateUI();
-            
-            // Canvas가 항상 카메라를 향하도록
-            if (worldCanvas != null && mainCamera != null)
-            {
-                worldCanvas.transform.rotation = Quaternion.LookRotation(worldCanvas.transform.position - mainCamera.transform.position);
-            }
+            // Canvas 회전은 부모 Character의 Billboard가 처리함
         }
         
         /// <summary>
@@ -82,7 +77,7 @@ namespace DiceOrbit.UI
             if (rectTransform != null)
             {
                 rectTransform.sizeDelta = new Vector2(2, 0.5f);
-                rectTransform.localScale = Vector3.one * 0.01f; // 작은 크기로
+                rectTransform.localScale = Vector3.one * 0.07f; // 작은 크기로
             }
         }
         

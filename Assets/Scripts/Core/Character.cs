@@ -27,6 +27,9 @@ namespace DiceOrbit.Core
         private Color originalColor;
         private Camera mainCamera;
         
+        // 타일 위 캐릭터 위치 offset
+        private static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
+        
         // Properties
         public CharacterStats Stats => stats;
         public TileData CurrentTile => currentTile;
@@ -53,6 +56,21 @@ namespace DiceOrbit.Core
             }
             
             mainCamera = Camera.main;
+            
+            // 기본 스킬 추가 (Inspector에서 설정 안 했으면)
+            if (skills.Count == 0)
+            {
+                var defaultSkill = new SkillData
+                {
+                    SkillName = "Basic Attack",
+                    Description = "단일 적 공격",
+                    TargetType = SkillTargetType.SingleEnemy,
+                    DamageMultiplier = 1,
+                    MinDiceValue = 1
+                };
+                skills.Add(defaultSkill);
+                Debug.Log($"{stats.CharacterName}: Added default skill - Basic Attack");
+            }
         }
         
         private void LateUpdate()
@@ -80,7 +98,7 @@ namespace DiceOrbit.Core
             if (currentTile != null)
             {
                 Debug.Log($"Using manually assigned tile: {currentTile.TileIndex}");
-                transform.position = currentTile.Position + Vector3.up * 0.5f;
+                transform.position = currentTile.Position + TILE_OFFSET;
                 yield break;
             }
             
@@ -95,7 +113,7 @@ namespace DiceOrbit.Core
                 if (currentTile != null)
                 {
                     Debug.Log($"{stats.CharacterName} assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
-                    transform.position = currentTile.Position + Vector3.up * 0.5f;
+                    transform.position = currentTile.Position + TILE_OFFSET;
                 }
                 else
                 {
@@ -170,7 +188,7 @@ namespace DiceOrbit.Core
             foreach (var tile in path)
             {
                 Vector3 startPos = transform.position;
-                Vector3 endPos = tile.Position + Vector3.up * 0.5f;
+                Vector3 endPos = tile.Position + TILE_OFFSET;
                 float elapsed = 0f;
                 
                 while (elapsed < stepDuration)
@@ -202,7 +220,7 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
-        /// 스킬 사용
+        /// 스킬 사용 (타겟 선택 시작)
         /// </summary>
         public void UseSkill(int diceValue)
         {
@@ -214,10 +232,33 @@ namespace DiceOrbit.Core
             
             // 기본 스킬 사용 (첫 번째)
             var skill = skills[0];
-            int damage = skill.CalcuateDamage(stats.Attack, diceValue);
             
-            Debug.Log($"{stats.CharacterName} uses {skill.SkillName} with power {diceValue}! Damage: {damage}");
-            // Phase 4에서 실제 데미지 적용
+            if (!skill.CanUse(diceValue))
+            {
+                Debug.LogWarning($"{stats.CharacterName}: Cannot use {skill.SkillName} with dice value {diceValue}");
+                return;
+            }
+            
+            Debug.Log($"{stats.CharacterName} preparing {skill.SkillName} with dice {diceValue}!");
+            
+            // CombatManager 확인
+            var combatManager = CombatManager.Instance;
+            if (combatManager == null || !combatManager.InCombat)
+            {
+                Debug.LogWarning("Not in combat or CombatManager not found!");
+                return;
+            }
+            
+            // 타겟 선택 모드 시작
+            var targetSelector = SkillTargetSelector.Instance;
+            if (targetSelector != null)
+            {
+                targetSelector.StartTargetSelection(this, skill, diceValue);
+            }
+            else
+            {
+                Debug.LogError("SkillTargetSelector not found! Add to scene.");
+            }
         }
         
         /// <summary>
@@ -234,7 +275,7 @@ namespace DiceOrbit.Core
                 if (currentTile != null)
                 {
                     Debug.Log($"Assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
-                    transform.position = currentTile.Position + Vector3.up * 0.5f;
+                    transform.position = currentTile.Position + TILE_OFFSET;
                 }
             }
         }

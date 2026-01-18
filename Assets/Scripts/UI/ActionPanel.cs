@@ -145,11 +145,20 @@ namespace DiceOrbit.UI
                 {
                     Debug.Log($"Move action assigned: {currentDice.Value} steps");
                     
-                    // 즉시 실행!
-                    var testChar = currentTarget as TestCharacter;
-                    if (testChar != null)
+                    // Character 클래스 확인
+                    var character = currentTarget as Character;
+                    if (character != null)
                     {
-                        testChar.Move(currentDice.Value);
+                        character.Move(currentDice.Value);
+                    }
+                    else
+                    {
+                        // 레거시 TestCharacter 지원
+                        var testChar = currentTarget as TestCharacter;
+                        if (testChar != null)
+                        {
+                            testChar.Move(currentDice.Value);
+                        }
                     }
                     
                     // UI 업데이트
@@ -184,11 +193,20 @@ namespace DiceOrbit.UI
                 {
                     Debug.Log($"Skill action assigned with power: {currentDice.Value}");
                     
-                    // 즉시 실행!
-                    var testChar = currentTarget as TestCharacter;
-                    if (testChar != null)
+                    // Character 클래스 확인
+                    var character = currentTarget as Character;
+                    if (character != null)
                     {
-                        testChar.UseSkill(currentDice.Value);
+                        character.UseSkill(currentDice.Value);
+                    }
+                    else
+                    {
+                        // 레거시 TestCharacter 지원
+                        var testChar = currentTarget as TestCharacter;
+                        if (testChar != null)
+                        {
+                            testChar.UseSkill(currentDice.Value);
+                        }
                     }
                     
                     // UI 업데이트

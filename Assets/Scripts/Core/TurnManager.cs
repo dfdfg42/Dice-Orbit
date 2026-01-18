@@ -1,216 +1,164 @@
 using UnityEngine;
-using DiceOrbit.Data;
+using UnityEngine.UI;
+using TMPro;
 
 namespace DiceOrbit.Core
 {
     /// <summary>
-    /// 턴 관리 시스템
+    /// 턴 관리자
     /// </summary>
     public class TurnManager : MonoBehaviour
     {
-        [Header("References")]
-        [SerializeField] private DiceManager diceManager;
+        public static TurnManager Instance { get; private set; }
         
-        [Header("Turn Settings")]
-        [SerializeField] private int currentTurn = 0;
+        [Header("UI References")]
+        [SerializeField] private Button rollDiceButton;
+        [SerializeField] private Button endTurnButton;
+        [SerializeField] private TextMeshProUGUI turnCountText;
         
-        // 턴 페이즈
-        public enum TurnPhase
-        {
-            Idle,           // 대기
-            Roll,           // 주사위 굴리기
-            PlayerAction,   // 플레이어 행동 선택
-            Execution,      // 액션 실행
-            MonsterTurn     // 몬스터 턴
-        }
-        
-        private TurnPhase currentPhase = TurnPhase.Idle;
-        
-        // Events
-        public System.Action<int> OnTurnStart;
-        public System.Action<int> OnTurnEnd;
-        public System.Action<TurnPhase> OnPhaseChanged;
+        [Header("State")]
+        [SerializeField] private int turnCount = 0;
+        private bool playerTurnActive = true;
         
         // Properties
-        public int CurrentTurn => currentTurn;
-        public TurnPhase CurrentPhase => currentPhase;
-        
-        private static TurnManager instance;
-        public static TurnManager Instance => instance;
+        public int TurnCount => turnCount;
+        public bool PlayerTurnActive => playerTurnActive;
         
         private void Awake()
         {
-            if (instance == null)
+            // 싱글톤
+            if (Instance == null)
             {
-                instance = this;
+                Instance = this;
             }
             else
             {
                 Destroy(gameObject);
+                return;
+            }
+            
+            // 버튼 이벤트 연결
+            if (rollDiceButton != null)
+            {
+                rollDiceButton.onClick.AddListener(OnRollDiceClicked);
+            }
+            
+            if (endTurnButton != null)
+            {
+                endTurnButton.onClick.AddListener(OnEndTurnClicked);
+                endTurnButton.interactable = false; // 처음엔 비활성
             }
         }
         
         private void Start()
         {
-            // DiceManager 자동 찾기
-            if (diceManager == null)
-            {
-                diceManager = FindObjectOfType<DiceManager>();
-            }
-            
-            // 이벤트 구독
-            if (diceManager != null)
-            {
-                diceManager.OnAllDiceUsed += OnAllDiceUsedHandler;
-            }
+            UpdateUI();
+            StartPlayerTurn();
         }
         
         /// <summary>
-        /// 턴 시작
+        /// 플레이어 턴 시작
         /// </summary>
-        public void StartTurn()
+        public void StartPlayerTurn()
         {
-            currentTurn++;
-            Debug.Log($"===== Turn {currentTurn} Start =====");
+            playerTurnActive = true;
+            turnCount++;
             
-            // 페이즈를 Roll로 변경
-            ChangePhase(TurnPhase.Roll);
+            Debug.Log($"=== Turn {turnCount} - Player Turn ===");
             
-            // 주사위 굴리기
+            // 자동으로 주사위 굴리기
+            var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
                 diceManager.RollDice();
+                Debug.Log("Dice automatically rolled!");
             }
             
-            // 플레이어 행동 페이즈로 전환
-            ChangePhase(TurnPhase.PlayerAction);
+            // End Turn 버튼 활성화
+            if (endTurnButton != null)
+            {
+                endTurnButton.interactable = true;
+            }
             
-            // 이벤트 발생
-            OnTurnStart?.Invoke(currentTurn);
+            UpdateUI();
         }
         
         /// <summary>
-        /// 턴 종료
+        /// Roll Dice 버튼 클릭
         /// </summary>
-        public void EndTurn()
+        private void OnRollDiceClicked()
         {
-            Debug.Log($"===== Turn {currentTurn} End =====");
-            
-            // 페이즈를 Execution으로 변경
-            ChangePhase(TurnPhase.Execution);
-            
-            // TODO: Phase 3에서 캐릭터 행동 실행
-            ExecutePlayerActions();
-            
-            // 몬스터 턴
-            ChangePhase(TurnPhase.MonsterTurn);
-            ExecuteMonsterActions();
-            
-            // 주사위 초기화
+            var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
-                diceManager.ResetDice();
-            }
-            
-            // 이벤트 발생
-            OnTurnEnd?.Invoke(currentTurn);
-            
-            // Idle 상태로 복귀
-            ChangePhase(TurnPhase.Idle);
-        }
-        
-        /// <summary>
-        /// 페이즈 변경
-        /// </summary>
-        private void ChangePhase(TurnPhase newPhase)
-        {
-            if (currentPhase != newPhase)
-            {
-                currentPhase = newPhase;
-                Debug.Log($"Phase changed to: {newPhase}");
-                OnPhaseChanged?.Invoke(newPhase);
-            }
-        }
-        
-        /// <summary>
-        /// 플레이어 행동 실행
-        /// </summary>
-        private void ExecutePlayerActions()
-        {
-            Debug.Log("Executing player actions...");
-            
-            if (diceManager == null) return;
-            
-            // 할당된 주사위들 처리
-            foreach (var dice in diceManager.CurrentDice)
-            {
-                if (dice.IsUsed)
+                diceManager.RollDice();
+                
+                // 주사위 굴린 후 Roll Dice 비활성화
+                if (rollDiceButton != null)
                 {
-                    Debug.Log($"Execute: Dice {dice.ID} -> Action {dice.AssignedAction}, Value {dice.Value}");
-                    
-                    // TestCharacter 실행
-                    var testChar = dice.AssignedCharacter as TestCharacter;
-                    if (testChar != null)
-                    {
-                        if (dice.AssignedAction == Data.ActionType.Move)
-                        {
-                            testChar.Move(dice.Value);
-                        }
-                        else if (dice.AssignedAction == Data.ActionType.Skill)
-                        {
-                            testChar.UseSkill(dice.Value);
-                        }
-                    }
+                    rollDiceButton.interactable = false;
+                }
+                
+                // End Turn 버튼 활성화
+                if (endTurnButton != null)
+                {
+                    endTurnButton.interactable = true;
                 }
             }
         }
         
         /// <summary>
-        /// 몬스터 행동 실행
+        /// 턴 종료 버튼 클릭
         /// </summary>
-        private void ExecuteMonsterActions()
+        private void OnEndTurnClicked()
         {
-            Debug.Log("Executing monster actions...");
-            // TODO: Phase 4에서 몬스터 AI 구현
+            EndPlayerTurn();
         }
         
         /// <summary>
-        /// 모든 주사위가 사용되었을 때 핸들러
+        /// 플레이어 턴 종료
         /// </summary>
-        private void OnAllDiceUsedHandler()
+        public void EndPlayerTurn()
         {
-            Debug.Log("All dice used! Ready to end turn.");
-            // 자동으로 턴 종료하거나, UI 버튼 활성화 등
-        }
-        
-        /// <summary>
-        /// 수동으로 턴 시작 버튼용
-        /// </summary>
-        public void OnStartTurnButtonClicked()
-        {
-            if (currentPhase == TurnPhase.Idle)
+            if (!playerTurnActive) return;
+            
+            playerTurnActive = false;
+            
+            Debug.Log("=== Player Turn End ===");
+            
+            // End Turn 버튼 비활성화
+            if (endTurnButton != null)
             {
-                StartTurn();
+                endTurnButton.interactable = false;
             }
+            
+            // 몬스터 턴 실행
+            ExecuteMonsterTurn();
         }
         
         /// <summary>
-        /// 수동으로 턴 종료 버튼용
+        /// 몬스터 턴 실행
         /// </summary>
-        public void OnEndTurnButtonClicked()
+        private void ExecuteMonsterTurn()
         {
-            if (currentPhase == TurnPhase.PlayerAction)
+            var combatManager = CombatManager.Instance;
+            if (combatManager != null && combatManager.InCombat)
             {
-                EndTurn();
+                combatManager.ExecuteMonsterTurn();
             }
+            
+            // 다음 플레이어 턴 시작
+            Invoke(nameof(StartPlayerTurn), 1f); // 1초 후
         }
         
-        private void OnDestroy()
+        /// <summary>
+        /// UI 업데이트
+        /// </summary>
+        private void UpdateUI()
         {
-            // 이벤트 구독 해제
-            if (diceManager != null)
+            if (turnCountText != null)
             {
-                diceManager.OnAllDiceUsed -= OnAllDiceUsedHandler;
+                turnCountText.text = $"Turn: {turnCount}";
             }
         }
     }

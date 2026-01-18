@@ -106,10 +106,11 @@ namespace DiceOrbit.UI
         /// </summary>
         private void OnRollButtonClicked()
         {
-            var turnManager = Core.TurnManager.Instance;
-            if (turnManager != null)
+            // DiceManager가 직접 주사위 굴림 처리
+            var diceManager = Core.DiceManager.Instance;
+            if (diceManager != null)
             {
-                turnManager.OnStartTurnButtonClicked();
+                diceManager.RollDice();
             }
         }
         

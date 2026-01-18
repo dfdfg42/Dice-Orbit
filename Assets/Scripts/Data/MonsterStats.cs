@@ -3,24 +3,24 @@ using UnityEngine;
 namespace DiceOrbit.Data
 {
     /// <summary>
-    /// 캐릭터 스탯 데이터
+    /// 몬스터 스탯 데이터
     /// </summary>
     [System.Serializable]
-    public class CharacterStats
+    public class MonsterStats
     {
         [Header("Basic Info")]
-        public string CharacterName = "Hero";
+        public string MonsterName = "Slime";
         public int Level = 1;
         
         [Header("Combat Stats")]
-        public int MaxHP = 30;
-        public int CurrentHP = 30;
-        public int Attack = 5;
-        public int Defense = 0;
+        public int MaxHP = 50;
+        public int CurrentHP = 50;
+        public int Attack = 8;
+        public int Defense = 2;
         
         [Header("Visual")]
-        public Sprite CharacterSprite;
-        public Color SpriteColor = Color.white;
+        public Sprite MonsterSprite;
+        public Color SpriteColor = Color.red;
         
         /// <summary>
         /// HP 증가
@@ -38,21 +38,7 @@ namespace DiceOrbit.Data
             int actualDamage = Mathf.Max(1, damage - Defense); // 최소 1 데미지
             CurrentHP = Mathf.Max(0, CurrentHP - actualDamage);
             
-            Debug.Log($"{CharacterName} took {actualDamage} damage! (HP: {CurrentHP}/{MaxHP})");
-        }
-        
-        /// <summary>
-        /// 레벨업
-        /// </summary>
-        public void LevelUp()
-        {
-            Level++;
-            MaxHP += 5;
-            CurrentHP = MaxHP; // 풀 회복
-            Attack += 2;
-            Defense += 1;
-            
-            Debug.Log($"{CharacterName} leveled up to {Level}! HP: {MaxHP}, ATK: {Attack}, DEF: {Defense}");
+            Debug.Log($"{MonsterName} took {actualDamage} damage! (HP: {CurrentHP}/{MaxHP})");
         }
         
         /// <summary>
