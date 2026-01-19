@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: Rogue
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.CharacterPreset
   CharacterName: Hero
-  Portrait: {fileID: 0}
+  Portrait: {fileID: 21300000, guid: 3d0488b11770aa447bb3c67375380c69, type: 3}
   Description: 
   MaxHP: 30
   Attack: 5
   Defense: 0
-  CharacterSprite: {fileID: 0}
-  SpriteColor: {r: 1, g: 1, b: 1, a: 1}
+  CharacterSprite: {fileID: 21300000, guid: 3d0488b11770aa447bb3c67375380c69, type: 3}
+  SpriteColor: {r: 0.8396226, g: 0.30495724, b: 0.30495724, a: 1}
   ActiveSkills: []
   PassiveSkills: []
