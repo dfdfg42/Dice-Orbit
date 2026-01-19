@@ -66,12 +66,11 @@ namespace DiceOrbit.Core
             
             Debug.Log($"=== Turn {turnCount} - Player Turn ===");
             
-            // 자동으로 주사위 굴리기
+            // 주사위 자동 굴리기
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
                 diceManager.RollDice();
-                Debug.Log("Dice automatically rolled!");
             }
             
             // End Turn 버튼 활성화
@@ -80,7 +79,39 @@ namespace DiceOrbit.Core
                 endTurnButton.interactable = true;
             }
             
+            // 몬스터 공격 의도 미리보기 표시
+            ShowMonsterIntents();
+            
             UpdateUI();
+        }
+        
+        /// <summary>
+        /// 몬스터들의 공격 의도 미리보기 표시
+        /// </summary>
+        private void ShowMonsterIntents()
+        {
+            var monsters = FindObjectsOfType<Monster>();
+            foreach (var monster in monsters)
+            {
+                if (monster.IsAlive)
+                {
+                    monster.ShowAttackPreview();
+                }
+            }
+            Debug.Log("[TurnManager] Showing monster attack previews");
+        }
+        
+        /// <summary>
+        /// 몬스터들의 공격 의도 미리보기 숨기기
+        /// </summary>
+        private void HideMonsterIntents()
+        {
+            var monsters = FindObjectsOfType<Monster>();
+            foreach (var monster in monsters)
+            {
+                monster.HideAttackPreview();
+            }
+            Debug.Log("[TurnManager] Hiding monster attack previews");
         }
         
         /// <summary>
@@ -131,6 +162,9 @@ namespace DiceOrbit.Core
             {
                 endTurnButton.interactable = false;
             }
+            
+            // 공격 의도 미리보기 숨기기 (몬스터 턴 시작 전)
+            HideMonsterIntents();
             
             // 몬스터 턴 실행
             ExecuteMonsterTurn();
