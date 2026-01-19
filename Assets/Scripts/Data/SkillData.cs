@@ -1,17 +1,27 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace DiceOrbit.Data
 {
+    /// <summary>
+    /// 스킬 타입
+    /// </summary>
+    public enum SkillType
+    {
+        Active,     // 사용 스킬
+        Passive     // 패시브 (자동 적용)
+    }
+    
     /// <summary>
     /// 스킬 타겟 타입
     /// </summary>
     public enum SkillTargetType
     {
-        SingleEnemy,    // 단일 적
-        AllEnemies,     // 모든 적
-        Self,           // 자신
-        Ally,           // 아군 1명
-        AllAllies       // 모든 아군
+        SingleEnemy,
+        AllEnemies,
+        Self,
+        Ally,
+        AllAllies
     }
     
     /// <summary>
@@ -22,37 +32,34 @@ namespace DiceOrbit.Data
     {
         [Header("Basic Info")]
         public string SkillName = "Basic Attack";
-        public string Description = "Attack the enemy";
-        
-        [Header("Targeting")]
+        public SkillType Type = SkillType.Active;
         public SkillTargetType TargetType = SkillTargetType.SingleEnemy;
         
-        [Header("Stats")]
-        public int DamageMultiplier = 1; // 공격력 배수 (1 = 100%)
-        public int MinDiceValue = 1; // 최소 주사위 값 요구량
+        [Header("Effects")]
+        public List<EffectData> Effects = new List<EffectData>();
         
-        [Header("Special Effects")]
-        public bool IgnoreDefense = false;  // 방어 무시
-        public int BonusDamage = 0;         // 추가 고정 데미지
+        [Header("Requirements")]
+        public DiceRequirement Requirement = new DiceRequirement();
         
-        [Header("Visual")]
-        public Sprite SkillIcon;
-        public Color SkillColor = Color.red;
-        
-        /// <summary>
-        /// 주사위 값으로 데미지 계산
-        /// </summary>
-        public int CalculateDamage(int baseAttack, int diceValue)
-        {
-            return (baseAttack * DamageMultiplier) + diceValue + BonusDamage;
-        }
+        [Header("Legacy (deprecated)")]
+        public int DamageMultiplier = 1;
+        public int BonusDamage = 0;
+        public bool IgnoreDefense = false;
         
         /// <summary>
-        /// 사용 가능 여부
+        /// 주사위 값으로 스킬 사용 가능한지 확인
         /// </summary>
         public bool CanUse(int diceValue)
         {
-            return diceValue >= MinDiceValue;
+            return Requirement.CanUse(diceValue);
+        }
+        
+        /// <summary>
+        /// 레거시 데미지 계산 (하위 호환)
+        /// </summary>
+        public int CalculateDamage(int baseAttack, int diceValue)
+        {
+            return baseAttack * DamageMultiplier + diceValue + BonusDamage;
         }
     }
 }

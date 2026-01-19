@@ -14,9 +14,6 @@ namespace DiceOrbit.Core
         [Header("Stats")]
         [SerializeField] private CharacterStats stats = new CharacterStats();
         
-        [Header("Skills")]
-        [SerializeField] private List<SkillData> skills = new List<SkillData>();
-        
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
@@ -34,6 +31,30 @@ namespace DiceOrbit.Core
         public CharacterStats Stats => stats;
         public TileData CurrentTile => currentTile;
         public bool IsAlive => stats.IsAlive;
+        
+        /// <summary>
+        /// Stats 초기화 (캐릭터 선택 후)
+        /// </summary>
+        public void InitializeStats(CharacterStats newStats)
+        {
+            stats = newStats;
+            
+            // 스프라이트 업데이트
+            if (spriteRenderer != null)
+            {
+                if (stats.CharacterSprite != null)
+                {
+                    spriteRenderer.sprite = stats.CharacterSprite;
+                }
+                spriteRenderer.color = stats.SpriteColor;
+                originalColor = spriteRenderer.color;
+            }
+            
+            // 스킬 재초기화
+            InitializeSkills();
+            
+            Debug.Log($"Character initialized: {stats.CharacterName} (HP: {stats.MaxHP}, ATK: {stats.Attack})");
+        }
         
         private void Awake()
         {
@@ -57,19 +78,45 @@ namespace DiceOrbit.Core
             
             mainCamera = Camera.main;
             
-            // 기본 스킬 추가 (Inspector에서 설정 안 했으면)
-            if (skills.Count == 0)
+            // 스킬 초기화
+            InitializeSkills();
+        }
+        
+        /// <summary>
+        /// 스킬 초기화
+        /// </summary>
+        private void InitializeSkills()
+        {
+            // Active 스킬이 없으면 기본 스킬 추가
+            if (stats.ActiveSkills.Count == 0)
             {
                 var defaultSkill = new SkillData
                 {
                     SkillName = "Basic Attack",
-                    Description = "단일 적 공격",
+                    Type = SkillType.Active,
                     TargetType = SkillTargetType.SingleEnemy,
-                    DamageMultiplier = 1,
-                    MinDiceValue = 1
+                    DamageMultiplier = 1
                 };
-                skills.Add(defaultSkill);
-                Debug.Log($"{stats.CharacterName}: Added default skill - Basic Attack");
+                stats.ActiveSkills.Add(defaultSkill);
+                Debug.Log($"{stats.CharacterName}: Added default Basic Attack skill");
+            }
+            
+            // Passive 스킬 자동 적용
+            ApplyPassiveSkills();
+        }
+        
+        /// <summary>
+        /// 패시브 스킬 자동 적용
+        /// </summary>
+        private void ApplyPassiveSkills()
+        {
+            foreach (var passive in stats.PassiveSkills)
+            {
+                if (passive.Effects.Count > 0)
+                {
+                    Systems.EffectManager.ApplyEffects(passive.Effects, this);
+                    Debug.Log($"{stats.CharacterName}: Applied passive skill '{passive.SkillName}'");
+                }
             }
         }
         
@@ -220,22 +267,35 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
-        /// 스킬 사용 (타겟 선택 시작)
+        /// 스킬 사용 (타겟 선택 시작) - 첫 번째 Active 스킬 사용
         /// </summary>
         public void UseSkill(int diceValue)
         {
-            if (skills.Count == 0)
+            UseSkillByIndex(0, diceValue);
+        }
+        
+        /// <summary>
+        /// 특정 인덱스의 스킬 사용
+        /// /// </summary>
+        public void UseSkillByIndex(int skillIndex, int diceValue)
+        {
+            if (stats.ActiveSkills.Count == 0)
             {
-                Debug.LogWarning($"{stats.CharacterName}: No skills available!");
+                Debug.LogWarning($"{stats.CharacterName}: No active skills available!");
                 return;
             }
             
-            // 기본 스킬 사용 (첫 번째)
-            var skill = skills[0];
+            if (skillIndex < 0 || skillIndex >= stats.ActiveSkills.Count)
+            {
+                Debug.LogWarning($"{stats.CharacterName}: Invalid skill index {skillIndex}!");
+                return;
+            }
+            
+            var skill = stats.ActiveSkills[skillIndex];
             
             if (!skill.CanUse(diceValue))
             {
-                Debug.LogWarning($"{stats.CharacterName}: Cannot use {skill.SkillName} with dice value {diceValue}");
+                Debug.LogWarning($"{stats.CharacterName}: Cannot use {skill.SkillName} with dice value {diceValue}. {skill.Requirement.GetDescription()}");
                 return;
             }
             
@@ -249,6 +309,41 @@ namespace DiceOrbit.Core
                 return;
             }
             
+            // Effect 기반 스킬이면 Effect 시스템 사용
+            if (skill.Effects.Count > 0)
+            {
+                ExecuteEffectBasedSkill(skill, diceValue);
+            }
+            else
+            {
+                // 레거시 스킬 (하위 호환)
+                ExecuteLegacySkill(skill, diceValue);
+            }
+        }
+        
+        /// <summary>
+        /// Effect 기반 스킬 실행
+        /// </summary>
+        private void ExecuteEffectBasedSkill(SkillData skill, int diceValue)
+        {
+            // 타겟 선택 모드 시작
+            var targetSelector = SkillTargetSelector.Instance;
+            if (targetSelector != null)
+            {
+                // 임시: 스킬과 주사위 값 저장
+                targetSelector.StartTargetSelection(this, skill, diceValue);
+            }
+            else
+            {
+                Debug.LogError("SkillTargetSelector not found! Add to scene.");
+            }
+        }
+        
+        /// <summary>
+        /// 레거시 스킬 실행 (하위 호환)
+        /// </summary>
+        private void ExecuteLegacySkill(SkillData skill, int diceValue)
+        {
             // 타겟 선택 모드 시작
             var targetSelector = SkillTargetSelector.Instance;
             if (targetSelector != null)

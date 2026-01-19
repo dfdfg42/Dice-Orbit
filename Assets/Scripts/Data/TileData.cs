@@ -22,6 +22,9 @@ namespace DiceOrbit.Data
         [SerializeField] private int tileIndex;
         [SerializeField] private TileType tileType = TileType.Normal;
         
+        [Header("Effects")]
+        [SerializeField] private TileEffect[] effects = new TileEffect[0];
+        
         [Header("Connections")]
         [SerializeField] private TileData nextTile;
         [SerializeField] private TileData previousTile;
@@ -35,6 +38,7 @@ namespace DiceOrbit.Data
         public TileData NextTile => nextTile;
         public TileData PreviousTile => previousTile;
         public Vector3 Position => transform.position;
+        public TileEffect[] Effects => effects;
         
         /// <summary>
         /// 타일 초기화
@@ -79,6 +83,53 @@ namespace DiceOrbit.Data
             if (tileVisual != null)
             {
                 tileVisual.SetHighlight(false, Color.white);
+            }
+        }
+        
+        /// <summary>
+        /// 타일 효과를 캐릭터에게 적용
+        /// </summary>
+        public void ApplyEffects(Core.Character character)
+        {
+            if (effects == null || effects.Length == 0) return;
+            
+            foreach (var effect in effects)
+            {
+                ApplyEffect(effect, character);
+            }
+        }
+        
+        /// <summary>
+        /// 개별 효과 적용
+        /// </summary>
+        private void ApplyEffect(TileEffect effect, Core.Character character)
+        {
+            switch (effect.Type)
+            {
+                case TileEffectType.Heal:
+                    character.Stats.Heal(effect.Value);
+                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} healed {effect.Value} HP!");
+                    break;
+                    
+                case TileEffectType.Damage:
+                    character.Stats.TakeDamage(effect.Value);
+                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} took {effect.Value} damage from trap!");
+                    break;
+                    
+                case TileEffectType.BuffAttack:
+                    character.Stats.Attack += effect.Value;
+                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} gained +{effect.Value} ATK!");
+                    break;
+                    
+                case TileEffectType.BuffDefense:
+                    character.Stats.Defense += effect.Value;
+                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} gained +{effect.Value} DEF!");
+                    break;
+                    
+                case TileEffectType.LevelUp:
+                    character.Stats.LevelUp();
+                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} leveled up!");
+                    break;
             }
         }
     }

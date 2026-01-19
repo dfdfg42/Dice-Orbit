@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace DiceOrbit.Data
 {
@@ -17,6 +18,10 @@ namespace DiceOrbit.Data
         public int CurrentHP = 30;
         public int Attack = 5;
         public int Defense = 0;
+        
+        [Header("Skills")]
+        public List<SkillData> ActiveSkills = new List<SkillData>();
+        public List<SkillData> PassiveSkills = new List<SkillData>();
         
         [Header("Visual")]
         public Sprite CharacterSprite;
