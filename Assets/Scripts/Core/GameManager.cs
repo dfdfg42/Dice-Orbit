@@ -51,13 +51,13 @@ namespace DiceOrbit.Core
             // OrbitManager 자동 찾기
             if (orbitManager == null)
             {
-                orbitManager = FindObjectOfType<OrbitManager>();
+                orbitManager = Object.FindAnyObjectByType<OrbitManager>();
             }
             
             // CenterZone 자동 찾기
             if (centerZone == null)
             {
-                centerZone = FindObjectOfType<CenterZone>();
+                centerZone = Object.FindAnyObjectByType<CenterZone>();
             }
             
             if (orbitManager != null)

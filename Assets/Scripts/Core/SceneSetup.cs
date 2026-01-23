@@ -79,7 +79,7 @@ namespace DiceOrbit.Core
             }
             
             // 5. Directional Light 확인
-            Light dirLight = FindObjectOfType<Light>();
+            Light dirLight = Object.FindAnyObjectByType<Light>();
             if (dirLight == null)
             {
                 GameObject lightObj = new GameObject("Directional Light");

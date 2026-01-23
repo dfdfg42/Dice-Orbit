@@ -50,7 +50,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private void AutoDetectCharacters()
         {
-            var characters = FindObjectsOfType<Character>();
+            var characters = Object.FindObjectsByType<Character>(FindObjectsSortMode.None);
             
             foreach (var character in characters)
             {
