@@ -31,7 +31,10 @@ namespace DiceOrbit.Data
         
         [Header("Visual")]
         [SerializeField] private TileVisual tileVisual;
-        
+
+        //[Header("Attributes")]
+        //[SerializeField] private 
+
         // Properties
         public int TileIndex => tileIndex;
         public TileType Type => tileType;
