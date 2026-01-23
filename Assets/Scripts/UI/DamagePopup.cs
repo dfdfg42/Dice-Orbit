@@ -14,7 +14,7 @@ namespace DiceOrbit.UI
         
         [Header("Animation")]
         [SerializeField] private float moveSpeed = 2f;
-        [SerializeField] private float fadeSpeed = 1f;
+        //[SerializeField] private float fadeSpeed = 1f; //fadespeed 옵션을 현재 사용하고 있지 않아 주석 처리했습니다.
         [SerializeField] private float lifetime = 1.5f;
         
         [Header("Colors")]

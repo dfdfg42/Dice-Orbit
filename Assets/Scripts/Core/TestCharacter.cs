@@ -69,7 +69,7 @@ namespace DiceOrbit.Core
             }
             
             // OrbitManager에서 시작 타일 가져오기
-            var orbitManager = FindObjectOfType<OrbitManager>();
+            var orbitManager = Object.FindAnyObjectByType<OrbitManager>();
             if (orbitManager != null)
             {
                 Debug.Log($"OrbitManager found! Tile count: {orbitManager.TileCount}");
@@ -191,7 +191,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private void FindStartTile()
         {
-            var orbitManager = FindObjectOfType<OrbitManager>();
+            var orbitManager = Object.FindAnyObjectByType<OrbitManager>();
             if (orbitManager != null)
             {
                 Debug.Log($"OrbitManager found! Tile count: {orbitManager.TileCount}");
@@ -264,7 +264,7 @@ namespace DiceOrbit.Core
             Debug.Log($"{characterName} OnSelected called!");
             
             // ActionPanel 표시 - 주사위 드롭 대기 상태 (비활성화된 것도 찾기)
-            var actionPanel = FindObjectOfType<UI.ActionPanel>(true);  // true = 비활성화된 것도 찾기
+            var actionPanel = Object.FindFirstObjectByType<UI.ActionPanel>(FindObjectsInactive.Include);  // true = 비활성화된 것도 찾기
             
             if (actionPanel != null)
             {

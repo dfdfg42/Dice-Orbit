@@ -90,7 +90,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private void ShowMonsterIntents()
         {
-            var monsters = FindObjectsOfType<Monster>();
+            var monsters = Object.FindObjectsByType<Monster>(FindObjectsSortMode.None);
             foreach (var monster in monsters)
             {
                 if (monster.IsAlive)
@@ -106,7 +106,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private void HideMonsterIntents()
         {
-            var monsters = FindObjectsOfType<Monster>();
+            var monsters = Object.FindObjectsByType<Monster>(FindObjectsSortMode.None);
             foreach (var monster in monsters)
             {
                 monster.HideAttackPreview();

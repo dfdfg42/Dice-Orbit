@@ -162,7 +162,7 @@ namespace DiceOrbit.UI
                     }
                     
                     // UI 업데이트
-                    var diceUI = FindObjectOfType<DiceUI>();
+                    var diceUI = Object.FindAnyObjectByType<DiceUI>();
                     if (diceUI != null)
                     {
                         diceUI.MarkDiceAsUsed(currentDice);
@@ -210,7 +210,7 @@ namespace DiceOrbit.UI
                     }
                     
                     // UI 업데이트
-                    var diceUI = FindObjectOfType<DiceUI>();
+                    var diceUI = FindFirstObjectByType<DiceUI>();
                     if (diceUI != null)
                     {
                         diceUI.MarkDiceAsUsed(currentDice);
@@ -245,7 +245,7 @@ namespace DiceOrbit.UI
             if (currentDice == null) return;
             
             // 모든 DiceElement 찾기
-            var diceElements = FindObjectsOfType<DiceElement>();
+            var diceElements = Object.FindObjectsByType<DiceElement>(FindObjectsSortMode.None);
             foreach (var element in diceElements)
             {
                 if (element.Data == currentDice)

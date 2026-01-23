@@ -91,7 +91,7 @@ namespace DiceOrbit.Core
         {
             if (currentIntent == null) return;
             
-            var indicator = FindObjectOfType<UI.AttackIndicator>();
+            var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
             if (indicator == null)
             {
                 Debug.LogWarning("AttackIndicator not found in scene!");
@@ -197,7 +197,7 @@ namespace DiceOrbit.Core
         /// </summary>
         public void HideAttackPreview()
         {
-            var indicator = FindObjectOfType<UI.AttackIndicator>();
+            var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
             if (indicator != null)
             {
                 indicator.Hide();

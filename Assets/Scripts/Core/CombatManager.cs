@@ -49,8 +49,9 @@ namespace DiceOrbit.Core
         /// </summary>
         private void AutoDetectMonsters()
         {
-            var monsters = FindObjectsOfType<Monster>();
-            
+            var monsters = Object.FindObjectsByType<Monster>(FindObjectsSortMode.None);
+
+
             foreach (var monster in monsters)
             {
                 if (!activeMonsters.Contains(monster))
