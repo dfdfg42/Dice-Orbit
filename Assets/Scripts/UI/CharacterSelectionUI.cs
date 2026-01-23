@@ -139,7 +139,7 @@ namespace DiceOrbit.UI
             Debug.Log($"[CreatePlayer] Creating character: {preset.CharacterName}");
             
             // OrbitManager 찾기
-            var orbitManager = FindObjectOfType<Core.OrbitManager>();
+            var orbitManager = Object.FindAnyObjectByType<Core.OrbitManager>();
             if (orbitManager == null)
             {
                 Debug.LogError("[CreatePlayer] OrbitManager not found! Cannot spawn character.");
