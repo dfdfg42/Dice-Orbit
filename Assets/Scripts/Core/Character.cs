@@ -257,6 +257,15 @@ namespace DiceOrbit.Core
             if (finalTile.Type == TileType.LevelUp)
             {
                 stats.LevelUp();
+                // Trigger UI
+                if(GameFlowManager.Instance != null)
+                {
+                    GameFlowManager.Instance.TriggerLevelUp(stats);
+                }
+                else
+                {
+                    Debug.LogWarning("GameFlowManager instance not found, LevelUp UI will not show.");
+                }
             }
         }
         

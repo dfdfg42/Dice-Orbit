@@ -233,5 +233,13 @@ namespace DiceOrbit.Core
         {
             ChangeState(GameState.Combat);
         }
+
+        /// <summary>
+        /// 레벨업(스킬 선택) 완료
+        /// </summary>
+        public void OnLevelUpComplete()
+        {
+            ChangeState(GameState.Combat);
+        }
     }
 }
