@@ -178,12 +178,6 @@ namespace DiceOrbit.Core
             {
                 spriteRenderer.color = originalColor;
             }
-            
-            // 레벨업 타일이면 레벨업
-            if (finalTile.Type == TileType.LevelUp)
-            {
-                Debug.Log($"{characterName} LEVEL UP!");
-            }
         }
         
         /// <summary>
@@ -232,11 +226,6 @@ namespace DiceOrbit.Core
                 spriteRenderer.color = originalColor;
             }
             
-            // 레벨업 타일이면 레벨업
-            if (tile.Type == TileType.LevelUp)
-            {
-                Debug.Log($"{characterName} LEVEL UP!");
-            }
         }
         
         /// <summary>
