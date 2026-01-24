@@ -204,21 +204,6 @@ namespace DiceOrbit.Core
             {
                 spriteRenderer.color = originalColor;
             }
-            
-            // 레벨업 타일이면 레벨업
-            if (finalTile.Type == TileType.LevelUp)
-            {
-                stats.LevelUp();
-                // Trigger UI
-                if(GameFlowManager.Instance != null)
-                {
-                    GameFlowManager.Instance.TriggerLevelUp(stats);
-                }
-                else
-                {
-                    Debug.LogWarning("GameFlowManager instance not found, LevelUp UI will not show.");
-                }
-            }
         }
         
         /// <summary>
