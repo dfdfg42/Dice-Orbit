@@ -1,8 +1,9 @@
-using UnityEngine;
-using System.Collections.Generic;
 using DiceOrbit.Data;
-using DiceOrbit.Visuals;
 using DiceOrbit.Data.Tile;
+using DiceOrbit.Visuals;
+using System.Collections.Generic;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
+using UnityEngine;
 
 namespace DiceOrbit.Core
 {
@@ -178,6 +179,37 @@ namespace DiceOrbit.Core
             }
         }
         
+        public void Move(Character character, int steps)
+        {
+            var currentTile = character.CurrentTile;
+            // 타일 경로 계산
+            var tilePath = new List<TileData>();
+            TileData currentStep = currentTile;
+
+            for (int i = 0; i < steps; i++)
+            {
+                if (currentStep.NextTile == null)
+                {
+                    Debug.LogError($"NextTile is null at step {i}! Tiles may not be connected properly.");
+                    break;
+                }
+                currentStep = currentStep.NextTile;
+                tilePath.Add(currentStep);
+            }
+
+            if (tilePath.Count > 0)
+            {
+                // 마지막 타일로 currentTile 업데이트
+                currentTile = tilePath[tilePath.Count - 1];
+
+                // 타일을 하나씩 이동
+                StartCoroutine(character.MoveStepByStep(tilePath));
+            }
+            else
+            {
+                Debug.LogWarning("No valid path found");
+            }
+        }
         /// <summary>
         /// 궤도 초기화
         /// </summary>

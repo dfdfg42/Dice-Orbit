@@ -173,62 +173,11 @@ namespace DiceOrbit.Core
             }
         }
         
-        /// <summary>
-        /// 주사위로 이동
-        /// </summary>
-        public void Move(int steps)
-        {
-            Debug.Log($"{stats.CharacterName} Move called with {steps} steps. Current tile: {(currentTile != null ? currentTile.TileIndex.ToString() : "NULL")}");
-            
-            // 타일이 없으면 다시 찾기 시도
-            if (currentTile == null)
-            {
-                Debug.LogWarning($"{stats.CharacterName}: No current tile! Attempting to find tile...");
-                FindStartTile();
-            }
-            
-            // 여전히 없으면 에러
-            if (currentTile == null)
-            {
-                Debug.LogError($"{stats.CharacterName}: Still no current tile after retry! Cannot move.");
-                return;
-            }
-            
-            Debug.Log($"{stats.CharacterName} moving {steps} steps from tile {currentTile.TileIndex}");
-            
-            // 타일 경로 계산
-            var tilePath = new List<TileData>();
-            TileData currentStep = currentTile;
-            
-            for (int i = 0; i < steps; i++)
-            {
-                if (currentStep.NextTile == null)
-                {
-                    Debug.LogError($"NextTile is null at step {i}! Tiles may not be connected properly.");
-                    break;
-                }
-                currentStep = currentStep.NextTile;
-                tilePath.Add(currentStep);
-            }
-            
-            if (tilePath.Count > 0)
-            {
-                // 마지막 타일로 currentTile 업데이트
-                currentTile = tilePath[tilePath.Count - 1];
-                
-                // 타일을 하나씩 이동
-                StartCoroutine(MoveStepByStep(tilePath));
-            }
-            else
-            {
-                Debug.LogWarning($"{stats.CharacterName}: No valid path found");
-            }
-        }
-        
+
         /// <summary>
         /// 타일을 하나씩 거쳐서 이동
         /// </summary>
-        private System.Collections.IEnumerator MoveStepByStep(List<TileData> path)
+        public System.Collections.IEnumerator MoveStepByStep(List<TileData> path)
         {
             float stepDuration = 0.2f;
             
@@ -247,12 +196,15 @@ namespace DiceOrbit.Core
                 }
                 
                 transform.position = endPos;
+                currentTile = tile;
+                tile.OnTraverse(this);
             }
             
             // 최종 도착
             var finalTile = path[path.Count - 1];
             Debug.Log($"{stats.CharacterName} arrived at tile {finalTile.TileIndex}");
-            
+            finalTile.OnArrive(this);
+
             // 색상 복원
             if (spriteRenderer != null)
             {
