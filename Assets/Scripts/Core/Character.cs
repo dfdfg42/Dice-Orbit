@@ -87,18 +87,11 @@ namespace DiceOrbit.Core
         /// </summary>
         private void InitializeSkills()
         {
-            // Active 스킬이 없으면 기본 스킬 추가
-            if (stats.ActiveSkills.Count == 0)
+            // Preset에서 초기 스킬을 가져오지 못한 경우 (예: 구 버전 데이터)
+            // 우선은 비어있으면 경고만. 실제로 DraftSystem으로 채워질 것임.
+            if (stats.RuntimeActiveSkills.Count == 0)
             {
-                var defaultSkill = new SkillData
-                {
-                    SkillName = "Basic Attack",
-                    Type = SkillType.Active,
-                    TargetType = SkillTargetType.SingleEnemy,
-                    DamageMultiplier = 1
-                };
-                stats.ActiveSkills.Add(defaultSkill);
-                Debug.Log($"{stats.CharacterName}: Added default Basic Attack skill");
+               Debug.LogWarning("No active skills initialized.");
             }
             
             // Passive 스킬 자동 적용
@@ -110,12 +103,13 @@ namespace DiceOrbit.Core
         /// </summary>
         private void ApplyPassiveSkills()
         {
-            foreach (var passive in stats.PassiveSkills)
+            foreach (var runtimePassive in stats.RuntimePassiveSkills)
             {
-                if (passive.Effects.Count > 0)
+                var passiveData = runtimePassive.ToSkillData();
+                if (passiveData != null && passiveData.Effects.Count > 0)
                 {
-                    Systems.EffectManager.ApplyEffects(passive.Effects, this);
-                    Debug.Log($"{stats.CharacterName}: Applied passive skill '{passive.SkillName}'");
+                    Systems.EffectManager.ApplyEffects(passiveData.Effects, this);
+                    Debug.Log($"{stats.CharacterName}: Applied passive skill '{passiveData.SkillName}'");
                 }
             }
         }
@@ -279,27 +273,30 @@ namespace DiceOrbit.Core
         /// /// </summary>
         public void UseSkillByIndex(int skillIndex, int diceValue)
         {
-            if (stats.ActiveSkills.Count == 0)
+            if (stats.RuntimeActiveSkills.Count == 0)
             {
                 Debug.LogWarning($"{stats.CharacterName}: No active skills available!");
                 return;
             }
             
-            if (skillIndex < 0 || skillIndex >= stats.ActiveSkills.Count)
+            if (skillIndex < 0 || skillIndex >= stats.RuntimeActiveSkills.Count)
             {
                 Debug.LogWarning($"{stats.CharacterName}: Invalid skill index {skillIndex}!");
                 return;
             }
             
-            var skill = stats.ActiveSkills[skillIndex];
+            var runtimeSkill = stats.RuntimeActiveSkills[skillIndex];
+            var skillData = runtimeSkill.ToSkillData();
+
+            if (skillData == null) return;
             
-            if (!skill.CanUse(diceValue))
+            if (!skillData.CanUse(diceValue))
             {
-                Debug.LogWarning($"{stats.CharacterName}: Cannot use {skill.SkillName} with dice value {diceValue}. {skill.Requirement.GetDescription()}");
+                Debug.LogWarning($"{stats.CharacterName}: Cannot use {skillData.SkillName} with dice value {diceValue}. {skillData.Requirement.GetDescription()}");
                 return;
             }
             
-            Debug.Log($"{stats.CharacterName} preparing {skill.SkillName} with dice {diceValue}!");
+            Debug.Log($"{stats.CharacterName} preparing {skillData.SkillName} with dice {diceValue}!");
             
             // CombatManager 확인
             var combatManager = CombatManager.Instance;
@@ -310,14 +307,14 @@ namespace DiceOrbit.Core
             }
             
             // Effect 기반 스킬이면 Effect 시스템 사용
-            if (skill.Effects.Count > 0)
+            if (skillData.Effects.Count > 0)
             {
-                ExecuteEffectBasedSkill(skill, diceValue);
+                ExecuteEffectBasedSkill(skillData, diceValue);
             }
             else
             {
                 // 레거시 스킬 (하위 호환)
-                ExecuteLegacySkill(skill, diceValue);
+                ExecuteLegacySkill(skillData, diceValue);
             }
         }
         
