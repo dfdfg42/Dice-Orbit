@@ -20,8 +20,16 @@ namespace DiceOrbit.Data
         public int Defense = 0;
         
         [Header("Skills")]
-        public List<SkillData> ActiveSkills = new List<SkillData>();
-        public List<SkillData> PassiveSkills = new List<SkillData>();
+        [Header("Skills")]
+        // Legacy: public List<SkillData> ActiveSkills = new List<SkillData>();
+        // Legacy: public List<SkillData> PassiveSkills = new List<SkillData>();
+        
+        // New System
+        public List<Skills.RuntimeSkill> RuntimeActiveSkills = new List<Skills.RuntimeSkill>();
+        public List<Skills.RuntimeSkill> RuntimePassiveSkills = new List<Skills.RuntimeSkill>();
+        
+        // Reference to the source preset for Draft Pool
+        public Core.CharacterPreset SourcePreset;
         
         [Header("Visual")]
         public Sprite CharacterSprite;

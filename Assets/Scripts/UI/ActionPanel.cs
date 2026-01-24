@@ -17,7 +17,11 @@ namespace DiceOrbit.UI
         [SerializeField] private Button skillButton;
         [SerializeField] private Button cancelButton;
         [SerializeField] private TextMeshProUGUI infoText;
-        
+        [Header("Skill Selection")]
+        [SerializeField] private GameObject skillSelectPanel;
+        [SerializeField] private Transform skillButtonContainer;
+        [SerializeField] private GameObject skillSelectButtonPrefab; // Prefab with Button & Text components
+
         // Current state
         private DiceData currentDice;
         private object currentTarget;
@@ -43,6 +47,7 @@ namespace DiceOrbit.UI
             
             // 초기에는 숨김
             HidePanel();
+            if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
         }
         
         /// <summary>
@@ -123,6 +128,9 @@ namespace DiceOrbit.UI
                 Debug.Log("ActionPanel hidden");
             }
             
+            if (skillSelectPanel != null)
+                skillSelectPanel.SetActive(false);
+            
             currentDice = null;
             currentTarget = null;
             waitingForDice = false;
@@ -177,12 +185,68 @@ namespace DiceOrbit.UI
         }
         
         /// <summary>
-        /// 스킬 버튼 클릭
+        /// 스킬 버튼 클릭 -> 스킬 선택창 표시
         /// </summary>
         private void OnSkillClicked()
         {
             if (currentDice == null) return;
             
+            var character = currentTarget as Character;
+            if (character != null)
+            {
+                PopulateSkillList(character);
+                if (skillSelectPanel != null) skillSelectPanel.SetActive(true);
+            }
+            else
+            {
+                // Fallback for TestCharacter (legacy, has no runtime skills)
+                // Just execute default
+                 Debug.LogWarning("ActionPanel: Target is not Character, executing default.");
+                 ExecuteSkill(0); // Assuming legacy handling inside
+            }
+        }
+
+        private void PopulateSkillList(Character character)
+        {
+            if (skillButtonContainer == null || skillSelectButtonPrefab == null) return;
+
+            // Clear old
+            foreach (Transform child in skillButtonContainer) Destroy(child.gameObject);
+
+            var skills = character.Stats.RuntimeActiveSkills;
+            for (int i = 0; i < skills.Count; i++)
+            {
+                int index = i;
+                var skill = skills[i];
+                var go = Instantiate(skillSelectButtonPrefab, skillButtonContainer);
+                
+                // Setup Text
+                var txt = go.GetComponentInChildren<TextMeshProUGUI>();
+                if (txt != null) txt.text = $"{skill.BaseSkill.SkillName} (Lv.{skill.CurrentLevel})";
+                
+                // Add icon if possible
+                var img = go.GetComponentsInChildren<Image>();
+                // Assume second image is icon if button has background
+                if(img.Length > 1 && skill.BaseSkill.Icon != null) img[1].sprite = skill.BaseSkill.Icon;
+
+                // Setup Button
+                var btn = go.GetComponent<Button>();
+                if (btn != null)
+                {
+                    btn.onClick.AddListener(() => OnSpecificSkillClicked(index));
+                }
+            }
+            
+            // Add Cancel Button inside panel? Or user clicks elsewhere.
+        }
+
+        private void OnSpecificSkillClicked(int index)
+        {
+            ExecuteSkill(index);
+        }
+
+        private void ExecuteSkill(int index)
+        {
             // DiceManager에 할당
             var diceManager = Core.DiceManager.Instance;
             if (diceManager != null)
@@ -197,7 +261,7 @@ namespace DiceOrbit.UI
                     var character = currentTarget as Character;
                     if (character != null)
                     {
-                        character.UseSkill(currentDice.Value);
+                        character.UseSkillByIndex(index, currentDice.Value);
                     }
                     else
                     {
@@ -257,3 +321,4 @@ namespace DiceOrbit.UI
         }
     }
 }
+
