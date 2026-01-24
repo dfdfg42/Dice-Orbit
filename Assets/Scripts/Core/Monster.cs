@@ -13,8 +13,9 @@ namespace DiceOrbit.Core
         [Header("Stats")]
         [SerializeField] private MonsterStats stats;
         
-        [Header("Attack Patterns")]
-        [SerializeField] private List<AttackIntent> attackPatterns = new List<AttackIntent>();
+        [Header("AI Pattern")]
+        [SerializeField] private Data.MonsterAI.MonsterPattern aiPattern;
+        
         // 현재 의도
         private AttackIntent currentIntent;
         
@@ -45,11 +46,10 @@ namespace DiceOrbit.Core
             
             mainCamera = Camera.main;
             
-            // 기본 공격 패턴 설정 (Inspector에서 설정 안 했으면)
-            if (attackPatterns.Count == 0)
+            // 패턴 초기화
+            if (aiPattern != null)
             {
-                attackPatterns.Add(new AttackIntent(IntentType.Attack, stats.Attack, "Basic Attack"));
-                attackPatterns.Add(new AttackIntent(IntentType.Attack, stats.Attack + 3, "Heavy Attack"));
+                aiPattern.Initialize(this);
             }
         }
         
@@ -73,14 +73,29 @@ namespace DiceOrbit.Core
         /// </summary>
         public void SelectNextIntent()
         {
-            if (attackPatterns.Count > 0)
+            if (aiPattern != null)
             {
-                // 랜덤으로 패턴 선택
-                currentIntent = attackPatterns[Random.Range(0, attackPatterns.Count)];
-                Debug.Log($"{stats.MonsterName} next intent: {currentIntent}");
+                // AI 패턴에서 다음 스킬 가져오기
+                var nextSkill = aiPattern.GetNextSkill(this);
                 
-                // 공격 미리보기 표시
-                ShowAttackPreview();
+                if (nextSkill != null)
+                {
+                    // 스킬을 AttackIntent로 변환
+                    currentIntent = nextSkill.CreateIntent(stats);
+                    Debug.Log($"{stats.MonsterName} next intent: {currentIntent}");
+                    
+                    // 공격 미리보기 표시
+                    ShowAttackPreview();
+                }
+                else
+                {
+                    Debug.LogWarning($"{stats.MonsterName} has no skill to execute!");
+                    currentIntent = null;
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"{stats.MonsterName}: No AI Pattern assigned!");
             }
         }
         
@@ -101,14 +116,34 @@ namespace DiceOrbit.Core
             switch (currentIntent.Type)
             {
                 case IntentType.Attack:
-                    // 타겟팅 공격 - 랜덤 캐릭터에게 빨간 줄
-                    ShowTargetedAttackPreview(indicator);
+                    // 타겟팅 타입에 따른 처리
+                    ShowAttackPreviewByTargetType(indicator);
                     break;
                     
                 case IntentType.Multi:
-                    // 범위 공격 - 모든 캐릭터 타일 빨간색
-                    ShowAreaAttackPreview(indicator);
+                    // 레거시: 전부 공격
+                    ShowAreaAttackPreview(indicator, true);
                     break;
+            }
+        }
+
+        /// <summary>
+        /// 타겟 타입별 공격 미리보기
+        /// </summary>
+        private void ShowAttackPreviewByTargetType(UI.AttackIndicator indicator)
+        {
+            if (currentIntent.TargetType == TargetType.Single)
+            {
+                ShowTargetedAttackPreview(indicator);
+            }
+            else if (currentIntent.TargetType == TargetType.All)
+            {
+                ShowAreaAttackPreview(indicator, true);
+            }
+            else if (currentIntent.TargetType == TargetType.Area)
+            {
+                // 특정 타겟을 중심으로 범위 공격
+                ShowTargetedAreaAttackPreview(indicator);
             }
         }
         
@@ -129,6 +164,46 @@ namespace DiceOrbit.Core
             // Transform 전달 (실시간 업데이트용)
             indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
             Debug.Log($"[Monster] Targeting {targetedCharacter.Stats.CharacterName} for attack");
+        }
+
+        /// <summary>
+        /// 타겟 중심 범위 공격 미리보기
+        /// </summary>
+        private void ShowTargetedAreaAttackPreview(UI.AttackIndicator indicator)
+        {
+            // 1. 타겟 선정
+            var partyManager = PartyManager.Instance;
+            if (partyManager == null) return;
+            
+            var aliveCharacters = partyManager.GetAliveCharacters();
+            if (aliveCharacters.Count == 0) return;
+            
+            targetedCharacter = aliveCharacters[Random.Range(0, aliveCharacters.Count)];
+            
+            // 2. 타일 범위 계산 (반경 N칸)
+            if (targetedCharacter.CurrentTile == null) return;
+
+            var tiles = new HashSet<TileData>();
+            tiles.Add(targetedCharacter.CurrentTile); // 중심
+            
+            // 좌우 확장
+            int radius = currentIntent.AreaRadius;
+            TileData left = targetedCharacter.CurrentTile.PreviousTile;
+            TileData right = targetedCharacter.CurrentTile.NextTile;
+            
+            for (int i = 0; i < radius; i++)
+            {
+                if(left != null) { tiles.Add(left); left = left.PreviousTile; }
+                if(right != null) { tiles.Add(right); right = right.NextTile; }
+            }
+            
+            // Array 변환
+            targetedTiles = new TileData[tiles.Count];
+            tiles.CopyTo(targetedTiles);
+
+            // 3. 표시
+            indicator.ShowAreaAttack(targetedTiles);
+            Debug.Log($"[Monster] Targeting {targetedCharacter.Stats.CharacterName} + Area(R{radius})");
         }
         
         /// <summary>
@@ -166,30 +241,33 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
-        /// 범위 공격 미리보기
+        /// 범위 공격 미리보기 (전체 혹은 지정된 타일)
         /// </summary>
-        private void ShowAreaAttackPreview(UI.AttackIndicator indicator)
+        private void ShowAreaAttackPreview(UI.AttackIndicator indicator, bool selectAll = false)
         {
             var partyManager = PartyManager.Instance;
             if (partyManager == null) return;
             
-            var aliveCharacters = partyManager.GetAliveCharacters();
-            if (aliveCharacters.Count == 0) return;
-            
-            // 모든 캐릭터의 타일 수집 및 저장
-            var tiles = new System.Collections.Generic.List<Data.TileData>();
-            foreach (var character in aliveCharacters)
+            if (selectAll)
             {
-                if (character.CurrentTile != null)
+                // 모든 캐릭터의 타일 수집
+                var aliveCharacters = partyManager.GetAliveCharacters();
+                var tiles = new System.Collections.Generic.List<Data.TileData>();
+                foreach (var character in aliveCharacters)
                 {
-                    tiles.Add(character.CurrentTile);
+                    if (character.CurrentTile != null)
+                    {
+                        tiles.Add(character.CurrentTile);
+                    }
                 }
+                targetedTiles = tiles.ToArray();
             }
             
-            targetedTiles = tiles.ToArray();
-            indicator.ShowAreaAttack(targetedTiles);
-            
-            Debug.Log($"[Monster] Targeting {targetedTiles.Length} tiles for area attack");
+            if (targetedTiles != null)
+            {
+                indicator.ShowAreaAttack(targetedTiles);
+                Debug.Log($"[Monster] Targeting {targetedTiles.Length} tiles for area attack");
+            }
         }
         
         /// <summary>
@@ -216,8 +294,11 @@ namespace DiceOrbit.Core
             switch (currentIntent.Type)
             {
                 case IntentType.Attack:
-                case IntentType.Multi:
                     AttackParty();
+                    break;
+                case IntentType.Multi:
+                    // Legacy support
+                    PerformAreaAttack();
                     break;
                     
                 case IntentType.Defend:
@@ -236,28 +317,27 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
-        /// 파티 공격
+        /// 파티 공격 분기
         /// </summary>
         private void AttackParty()
         {
             Debug.Log($"{stats.MonsterName} executing attack!");
             
-            if (currentIntent.Type == IntentType.Attack)
+            if (currentIntent.TargetType == TargetType.Single)
             {
-                // 단일 타겟팅 공격 - 저장된 타겟 사용
                 PerformSingleAttack();
             }
-            else if (currentIntent.Type == IntentType.Multi)
+            else
             {
-                // 범위 공격 - 모든 캐릭터
-                PerformMultiAttack();
+                // Area or All
+                PerformAreaAttack();
             }
         }
         
         /// <summary>
-        /// 범위 공격 실행 (모든 캐릭터)
+        /// 범위 공격 실행 (저장된 타일 위의 모든 적)
         /// </summary>
-        private void PerformMultiAttack()
+        private void PerformAreaAttack()
         {
             var partyManager = PartyManager.Instance;
             if (partyManager == null) return;

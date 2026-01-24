@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using DiceOrbit.Data;
+using DiceOrbit.Data.Skills;
 
 namespace DiceOrbit.Core
 {
@@ -28,6 +29,13 @@ namespace DiceOrbit.Core
         [Header("Starting Skills")]
         public List<SkillData> ActiveSkills = new List<SkillData>();
         public List<SkillData> PassiveSkills = new List<SkillData>();
+
+        [Header("Starting Skills (New System)")]
+        public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
+
+        [Header("Skill Pool")]
+        [Tooltip("The pool of skills this character can learn from leveling up.")]
+        public List<CharacterSkill> AvailableSkills = new List<CharacterSkill>();
         
         /// <summary>
         /// CharacterStats 생성
@@ -46,9 +54,18 @@ namespace DiceOrbit.Core
                 SpriteColor = this.SpriteColor
             };
             
-            // 스킬 복사
-            stats.ActiveSkills = new List<SkillData>(ActiveSkills);
-            stats.PassiveSkills = new List<SkillData>(PassiveSkills);
+            // 스킬 복사 (New System)
+            foreach(var skill in StartingSkills)
+            {
+                if(skill == null) continue;
+                if(skill.Type == CharacterSkillType.Active)
+                    stats.RuntimeActiveSkills.Add(new RuntimeSkill(skill));
+                else
+                    stats.RuntimePassiveSkills.Add(new RuntimeSkill(skill));
+            }
+            
+            // Set Source Preset reference
+            stats.SourcePreset = this;
             
             return stats;
         }

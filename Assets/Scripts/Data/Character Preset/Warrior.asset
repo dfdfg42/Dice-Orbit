@@ -13,12 +13,18 @@ MonoBehaviour:
   m_Name: Warrior
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.CharacterPreset
   CharacterName: Hero
-  Portrait: {fileID: 21300000, guid: 3d0488b11770aa447bb3c67375380c69, type: 3}
-  Description: warrior
+  Portrait: {fileID: 21300000, guid: 2d14e68520dfb6c4f93de95d4d19a895, type: 3}
+  Description: WARRIOR
   MaxHP: 30
   Attack: 5
   Defense: 0
-  CharacterSprite: {fileID: 21300000, guid: 3d0488b11770aa447bb3c67375380c69, type: 3}
+  CharacterSprite: {fileID: 21300000, guid: 2d14e68520dfb6c4f93de95d4d19a895, type: 3}
   SpriteColor: {r: 0.8679245, g: 0.6895507, b: 0.3725525, a: 1}
   ActiveSkills: []
   PassiveSkills: []
+  StartingSkills:
+  - {fileID: 11400000, guid: 057f7da87dbe12d4ea89b19bad5ca9a7, type: 2}
+  AvailableSkills:
+  - {fileID: 11400000, guid: fd7866342c653484db1aa060897db161, type: 2}
+  - {fileID: 11400000, guid: 3bc636534b0eb494889c5c52f28e4891, type: 2}
+  - {fileID: 11400000, guid: f08c8eb144f360841b945af1cc21de3a, type: 2}
