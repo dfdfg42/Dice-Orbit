@@ -12,4 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d510a8f2bc990f4b83a8c75d7a0ed46, type: 3}
   m_Name: Weighted Random Pattern
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.WeightedRandomPattern
-  skills: []
+  skills:
+  - Skill: {fileID: 11400000, guid: 880afa3c81d017948a443959c1e4c779, type: 2}
+    Weight: 1
+  - Skill: {fileID: 11400000, guid: 8f2eaced5710e924bb07b5510487f26f, type: 2}
+    Weight: 17
+  - Skill: {fileID: 11400000, guid: 4ff5e6a43586c3a4eb7507abcc901ab6, type: 2}
+    Weight: 0
