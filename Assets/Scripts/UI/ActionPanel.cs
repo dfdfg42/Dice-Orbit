@@ -26,7 +26,7 @@ namespace DiceOrbit.UI
         private DiceData currentDice;
         private object currentTarget;
         private bool waitingForDice = false; // 주사위 대기 상태
-        
+        OrbitManager orbitManager;
         private void Awake()
         {
             // 버튼 이벤트 연결
@@ -49,7 +49,11 @@ namespace DiceOrbit.UI
             HidePanel();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
         }
-        
+
+        private void Start()
+        {
+            orbitManager = FindAnyObjectByType<OrbitManager>();
+        }
         /// <summary>
         /// 패널 표시 (캐릭터 선택됨, 주사위 대기 중)
         /// </summary>
@@ -157,7 +161,7 @@ namespace DiceOrbit.UI
                     var character = currentTarget as Character;
                     if (character != null)
                     {
-                        character.Move(currentDice.Value);
+                        orbitManager.Move(character, currentDice.Value);
                     }
                     else
                     {
