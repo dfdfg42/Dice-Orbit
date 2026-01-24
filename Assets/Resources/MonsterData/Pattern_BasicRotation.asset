@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e7e267214987fe47ac2b8f7272e4e36, type: 3}
+  m_Name: Pattern_BasicRotation
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.SequentialPattern
+  skills:
+  - {fileID: 11400000, guid: 880afa3c81d017948a443959c1e4c779, type: 2}
+  - {fileID: 11400000, guid: 880afa3c81d017948a443959c1e4c779, type: 2}
+  - {fileID: 11400000, guid: 8f2eaced5710e924bb07b5510487f26f, type: 2}
+  - {fileID: 11400000, guid: 4ff5e6a43586c3a4eb7507abcc901ab6, type: 2}
