@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 466f85b8c91d21a48a505813b96bdd09, type: 3}
+  m_Name: StrongBash
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Skills.CharacterSkill
+  SkillName: Strong Bash
+  Description: A heavy strike that deals massive damage.
+  Icon: {fileID: 0}
+  Type: 0
+  TargetType: 0
+  Levels:
+  - Level: 1
+    Description: Hit with 150% Attack Power
+    Damage: 0
+    DamageMultiplier: 1
+    BonusDamage: 5
+    IgnoreDefense: 0
+    Cooldown: 0
+    Requirement:
+      MinDiceCount: 1
+      MinDiceValue: 1
+      Pattern: 0
+    Effects: []
+  - Level: 2
+    Description: Hit with 200% Attack Power
+    Damage: 0
+    DamageMultiplier: 2
+    BonusDamage: 5
+    IgnoreDefense: 0
+    Cooldown: 0
+    Requirement:
+      MinDiceCount: 1
+      MinDiceValue: 1
+      Pattern: 0
+    Effects: []

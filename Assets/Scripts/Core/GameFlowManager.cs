@@ -16,6 +16,7 @@ namespace DiceOrbit.Core
         [SerializeField] private GameObject characterSelectionUI;
         [SerializeField] private GameObject combatUI;
         [SerializeField] private GameObject shopUI;
+        [SerializeField] private UI.LevelUpUI levelUpUI; // Reference to the script, not just GameObject
         
         // Properties
         public GameState CurrentState => currentState;
@@ -62,6 +63,14 @@ namespace DiceOrbit.Core
             OnStateChanged?.Invoke(newState);
         }
         
+        // Temporary holding for LevelUp triggering
+        private Data.CharacterStats pendingLevelUpCharacter;
+        public void TriggerLevelUp(Data.CharacterStats character)
+        {
+            pendingLevelUpCharacter = character;
+            ChangeState(GameState.LevelUp);
+        }
+
         /// <summary>
         /// 상태 진입
         /// </summary>
@@ -81,6 +90,11 @@ namespace DiceOrbit.Core
                     ShowShop();
                     break;
                     
+                case GameState.LevelUp:
+                    if(levelUpUI != null && pendingLevelUpCharacter != null)
+                        levelUpUI.Show(pendingLevelUpCharacter);
+                    break;
+
                 case GameState.Victory:
                     ShowVictory();
                     break;
@@ -107,6 +121,11 @@ namespace DiceOrbit.Core
                     
                 case GameState.Shop:
                     HideShop();
+                    break;
+
+                case GameState.LevelUp:
+                    // LevelUpUI usually closes itself via button, but we ensure it's hidden or handled
+                     if(levelUpUI != null) levelUpUI.gameObject.SetActive(false);
                     break;
             }
         }
@@ -211,6 +230,14 @@ namespace DiceOrbit.Core
         /// 상점 종료
         /// </summary>
         public void OnShopExit()
+        {
+            ChangeState(GameState.Combat);
+        }
+
+        /// <summary>
+        /// 레벨업(스킬 선택) 완료
+        /// </summary>
+        public void OnLevelUpComplete()
         {
             ChangeState(GameState.Combat);
         }
