@@ -93,8 +93,11 @@ namespace DiceOrbit.UI
             panel.SetActive(false);
             Time.timeScale = 1;
             
-            // Resume Game Flow if needed
-            // Core.GameFlowManager.Instance.ResumeTurn(); // Depends on game flow
+            // Resume Game Flow
+            if(Core.GameFlowManager.Instance != null)
+            {
+                Core.GameFlowManager.Instance.OnLevelUpComplete();
+            }
         }
     }
 }
