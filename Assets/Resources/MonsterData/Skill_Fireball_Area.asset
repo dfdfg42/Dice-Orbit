@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 526be945845f08a4889762a97caeec5d, type: 3}
   m_Name: Skill_Fireball_Area
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.MonsterSkill
-  SkillName: 
+  SkillName: Fireball
   Type: 0
-  Description: 
-  TargetType: 0
-  AreaRadius: 0
-  BaseDamage: 0
-  DamageMultiplier: 1
+  Description: Explodes affecting adjacent tiles.
+  TargetType: 1
+  AreaRadius: 3
+  BaseDamage: 8
+  DamageMultiplier: 0.8
   HitCount: 1

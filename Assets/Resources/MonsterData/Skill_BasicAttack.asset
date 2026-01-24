@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 526be945845f08a4889762a97caeec5d, type: 3}
   m_Name: Skill_BasicAttack
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.MonsterSkill
-  SkillName: 
+  SkillName: Basic Attack
   Type: 0
-  Description: 
+  Description: A simple scratch.
   TargetType: 0
   AreaRadius: 0
-  BaseDamage: 0
+  BaseDamage: 5
   DamageMultiplier: 1
   HitCount: 1
