@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using DiceOrbit.Data;
 using DiceOrbit.Visuals;
+using DiceOrbit.Data.Tile;
 
 namespace DiceOrbit.Core
 {
@@ -106,6 +107,12 @@ namespace DiceOrbit.Core
             if (tileData == null)
             {
                 tileData = tileObj.AddComponent<TileData>();
+                if (type == TileType.LevelUp)
+                {
+                    TileAttribute levelUpAttr = tileObj.AddComponent<TileAttribute>();
+                    levelUpAttr.AddTraverse(new DiceOrbit.Data.Tile.LevelUpTraverse());
+                    tileData.AddAttribute(levelUpAttr);
+                }
             }
             
             // TileVisual 컴포넌트 추가 또는 가져오기

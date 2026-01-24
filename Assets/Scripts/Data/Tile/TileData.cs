@@ -1,5 +1,7 @@
 using UnityEngine;
 using DiceOrbit.Visuals;
+using DiceOrbit.Data.Tile;
+using System.Collections.Generic;
 
 namespace DiceOrbit.Data
 {
@@ -20,11 +22,10 @@ namespace DiceOrbit.Data
     {
         [Header("Tile Properties")]
         [SerializeField] private int tileIndex;
-        [SerializeField] private TileType tileType = TileType.Normal;
-        
-        [Header("Effects")]
-        [SerializeField] private TileEffect[] effects = new TileEffect[0];
-        
+
+        [Header("Attribute")]
+        [SerializeField] private List<TileAttribute> attributes = new();
+
         [Header("Connections")]
         [SerializeField] private TileData nextTile;
         [SerializeField] private TileData previousTile;
@@ -37,19 +38,16 @@ namespace DiceOrbit.Data
 
         // Properties
         public int TileIndex => tileIndex;
-        public TileType Type => tileType;
         public TileData NextTile => nextTile;
         public TileData PreviousTile => previousTile;
         public Vector3 Position => transform.position;
-        public TileEffect[] Effects => effects;
-        
+
         /// <summary>
         /// 타일 초기화
         /// </summary>
         public void Initialize(int index, TileType type, TileVisual visual = null)
         {
             tileIndex = index;
-            tileType = type;
             tileVisual = visual;
             
             if (tileVisual != null)
@@ -88,52 +86,58 @@ namespace DiceOrbit.Data
                 tileVisual.SetHighlight(false, Color.white);
             }
         }
-        
-        /// <summary>
-        /// 타일 효과를 캐릭터에게 적용
-        /// </summary>
-        public void ApplyEffects(Core.Character character)
+
+        public void AddAttribute(TileAttribute attribue)
         {
-            if (effects == null || effects.Length == 0) return;
+            attributes.Add(attribue);
+        }
+        
+        //래거시 코드
+        ///// <summary>
+        ///// 타일 효과를 캐릭터에게 적용
+        ///// </summary>
+        //public void ApplyEffects(Core.Character character)
+        //{
+        //    if (effects == null || effects.Length == 0) return;
             
-            foreach (var effect in effects)
-            {
-                ApplyEffect(effect, character);
-            }
-        }
+        //    foreach (var effect in effects)
+        //    {
+        //        ApplyEffect(effect, character);
+        //    }
+        //}
         
-        /// <summary>
-        /// 개별 효과 적용
-        /// </summary>
-        private void ApplyEffect(TileEffect effect, Core.Character character)
-        {
-            switch (effect.Type)
-            {
-                case TileEffectType.Heal:
-                    character.Stats.Heal(effect.Value);
-                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} healed {effect.Value} HP!");
-                    break;
+        ///// <summary>
+        ///// 개별 효과 적용
+        ///// </summary>
+        //private void ApplyEffect(TileEffect effect, Core.Character character)
+        //{
+        //    switch (effect.Type)
+        //    {
+        //        case TileEffectType.Heal:
+        //            character.Stats.Heal(effect.Value);
+        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} healed {effect.Value} HP!");
+        //            break;
                     
-                case TileEffectType.Damage:
-                    character.Stats.TakeDamage(effect.Value);
-                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} took {effect.Value} damage from trap!");
-                    break;
+        //        case TileEffectType.Damage:
+        //            character.Stats.TakeDamage(effect.Value);
+        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} took {effect.Value} damage from trap!");
+        //            break;
                     
-                case TileEffectType.BuffAttack:
-                    character.Stats.Attack += effect.Value;
-                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} gained +{effect.Value} ATK!");
-                    break;
+        //        case TileEffectType.BuffAttack:
+        //            character.Stats.Attack += effect.Value;
+        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} gained +{effect.Value} ATK!");
+        //            break;
                     
-                case TileEffectType.BuffDefense:
-                    character.Stats.Defense += effect.Value;
-                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} gained +{effect.Value} DEF!");
-                    break;
+        //        case TileEffectType.BuffDefense:
+        //            character.Stats.Defense += effect.Value;
+        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} gained +{effect.Value} DEF!");
+        //            break;
                     
-                case TileEffectType.LevelUp:
-                    character.Stats.LevelUp();
-                    Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} leveled up!");
-                    break;
-            }
-        }
+        //        case TileEffectType.LevelUp:
+        //            character.Stats.LevelUp();
+        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} leveled up!");
+        //            break;
+        //    }
+        //}
     }
 }

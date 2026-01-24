@@ -259,11 +259,7 @@ namespace DiceOrbit.Core
                 spriteRenderer.color = originalColor;
             }
             
-            // 레벨업 타일이면 레벨업
-            if (finalTile.Type == TileType.LevelUp)
-            {
-                stats.LevelUp();
-            }
+   
         }
         
         /// <summary>
