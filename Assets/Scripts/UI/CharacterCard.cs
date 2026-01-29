@@ -16,8 +16,8 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI statsText;
         [SerializeField] private Button selectButton;
         
-        private Core.CharacterPreset character;
-        private System.Action<Core.CharacterPreset> onSelected;
+        private Data.CharacterPreset character;
+        private System.Action<Data.CharacterPreset> onSelected;
         
         private void Awake()
         {
@@ -30,7 +30,7 @@ namespace DiceOrbit.UI
         /// <summary>
         /// 카드 설정
         /// </summary>
-        public void Setup(Core.CharacterPreset preset, System.Action<Core.CharacterPreset> callback)
+        public void Setup(Data.CharacterPreset preset, System.Action<Data.CharacterPreset> callback)
         {
             character = preset;
             onSelected = callback;

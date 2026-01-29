@@ -99,5 +99,36 @@ namespace DiceOrbit.Core
         {
             return centerZone;
         }
+
+        /* -------------------------------------------------------------------------- */
+        /*                               Economy System                               */
+        /* -------------------------------------------------------------------------- */
+        
+        [Header("Economy")]
+        [SerializeField] private int currentGold = 100; // Starting Gold
+        
+        public int CurrentGold => currentGold;
+        public System.Action<int> OnGoldChanged;
+        
+        public void AddGold(int amount)
+        {
+            currentGold += amount;
+            Debug.Log($"[Economy] Added {amount} Gold. Total: {currentGold}");
+            OnGoldChanged?.Invoke(currentGold);
+        }
+        
+        public bool SpendGold(int amount)
+        {
+            if (currentGold >= amount)
+            {
+                currentGold -= amount;
+                Debug.Log($"[Economy] Spent {amount} Gold. Remaining: {currentGold}");
+                OnGoldChanged?.Invoke(currentGold);
+                return true;
+            }
+            
+            Debug.Log($"[Economy] Not enough Gold! (Required: {amount}, Has: {currentGold})");
+            return false;
+        }
     }
 }

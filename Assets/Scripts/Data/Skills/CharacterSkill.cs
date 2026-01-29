@@ -25,7 +25,11 @@ namespace DiceOrbit.Data.Skills
         public int Cooldown;
         
         public DiceRequirement Requirement;
+
         public List<EffectData> Effects;
+        
+        [Header("Modular Actions (New System)")]
+        public List<Modules.SkillActionModule> ActionModules = new List<Modules.SkillActionModule>();
     }
 
     [CreateAssetMenu(fileName = "New Character Skill", menuName = "Dice Orbit/Skills/Character Skill")]
@@ -55,5 +59,23 @@ namespace DiceOrbit.Data.Skills
         }
 
         public int MaxLevel => Levels.Count;
+        
+        /// <summary>
+        /// 모듈 실행
+        /// </summary>
+        public void ExecuteModules(int level, Core.Character source, object target, int diceValue)
+        {
+            var levelData = GetLevelData(level);
+            if(levelData == null || levelData.ActionModules == null) return;
+            
+            foreach(var module in levelData.ActionModules)
+            {
+                if(module != null)
+                {
+                    module.Execute(source, target, diceValue);
+                    Debug.Log($"Executed Module: {module.name}");
+                }
+            }
+        }
     }
 }

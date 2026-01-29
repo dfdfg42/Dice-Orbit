@@ -46,8 +46,11 @@ namespace DiceOrbit.Data
         public int BonusDamage = 0;
         public bool IgnoreDefense = false;
         
+        [Header("Modular System")]
+        public List<Skills.Modules.SkillActionModule> ActionModules = new List<Skills.Modules.SkillActionModule>();
+        
         /// <summary>
-        /// 주사위 값으로 스킬 사용 가능한지 확인
+        /// 주사위 요구사항 충족 여부
         /// </summary>
         public bool CanUse(int diceValue)
         {

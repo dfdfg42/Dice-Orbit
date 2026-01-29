@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Skills;
 
-namespace DiceOrbit.Core
+namespace DiceOrbit.Data
 {
     /// <summary>
     /// 캐릭터 프리셋 (선택 가능한 캐릭터)
@@ -26,16 +26,12 @@ namespace DiceOrbit.Core
         public Sprite CharacterSprite;
         public Color SpriteColor = Color.white;
         
-        [Header("Starting Skills")]
-        public List<SkillData> ActiveSkills = new List<SkillData>();
-        public List<SkillData> PassiveSkills = new List<SkillData>();
+        [Header("Fixed Loadout (Refactor 2.0)")]
+        public CharacterSkill BasicAttack; // Universal Basic Attack (Dice x 1.0)
+        public CharacterSkill ActiveSkill; // Unique Active
+        public Data.Passives.PassiveAbility PassiveSkill; // Unique Passive
 
-        [Header("Starting Skills (New System)")]
-        public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
-
-        [Header("Skill Pool")]
-        [Tooltip("The pool of skills this character can learn from leveling up.")]
-        public List<CharacterSkill> AvailableSkills = new List<CharacterSkill>();
+        // Deprecated Lists removed
         
         /// <summary>
         /// CharacterStats 생성
@@ -54,17 +50,28 @@ namespace DiceOrbit.Core
                 SpriteColor = this.SpriteColor
             };
             
-            // 스킬 복사 (New System)
-            foreach(var skill in StartingSkills)
-            {
-                if(skill == null) continue;
-                if(skill.Type == CharacterSkillType.Active)
-                    stats.RuntimeActiveSkills.Add(new RuntimeSkill(skill));
-                else
-                    stats.RuntimePassiveSkills.Add(new RuntimeSkill(skill));
-            }
+            // Fixed Loadout Initialization
+            if(BasicAttack != null) stats.RuntimeActiveSkills.Add(new RuntimeSkill(BasicAttack));
+            if(ActiveSkill != null) stats.RuntimeActiveSkills.Add(new RuntimeSkill(ActiveSkill));
             
-            // Set Source Preset reference
+            // Passive Handling (Need Runtime wrapper for PassiveAbility? 
+            // Current system: 'RuntimePassiveSkills' stores 'RuntimeSkill' which wraps 'CharacterSkill'.
+            // But 'PassiveAbility' is a DIFFERENT system (MonoBehaviour-like hooks).
+            // We need to register PassiveAbility to PassiveManager, NOT RuntimePassiveSkills list (which was for draftable attributes).
+            // Actually, in Phase 1 I made PassiveManager trigger PassiveAbility.
+            // So we just need to pass the PassiveAbility to the Character instance later.
+            // CharacterStats doesn't hold 'PassiveAbility' instances directly for logic, 
+            // but for UI/Persistence it might be good.
+            // Let's store it in a new list or use the existing NativePassives concept logic.
+            // Wait, I removed NativePassives list above.
+            // I should add a 'AvailablePassives' or similar list to Stats to hold the data reference.
+            // CharacterStats has 'RuntimePassiveSkills' (list of RuntimeSkill).
+            // But 'PassiveSkill' field here is 'PassiveAbility' class.
+            // I will add a 'FixedPassive' field to CharacterStats to hold this reference.
+            // Or just rely on Character.Initialize adding it to PassiveManager.
+            // Let's add 'StartingPassive' to CharacterStats to carry it over.
+            if(PassiveSkill != null) stats.StartingPassive = PassiveSkill;
+            
             stats.SourcePreset = this;
             
             return stats;

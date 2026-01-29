@@ -224,6 +224,24 @@ namespace DiceOrbit.Core
         /// </summary>
         private void ExecuteSkillOnTarget(GameObject target)
         {
+            // Modular System Execution
+            if (currentSkill.ActionModules != null && currentSkill.ActionModules.Count > 0)
+            {
+                Debug.Log($"Executing Modular Skill: {currentSkill.SkillName}");
+                bool moduleExecuted = false;
+                
+                foreach (var module in currentSkill.ActionModules)
+                {
+                    if (module != null)
+                    {
+                        module.Execute(sourceCharacter, target, diceValue);
+                        moduleExecuted = true;
+                    }
+                }
+                
+                if (moduleExecuted) return; // 모듈이 실행되었으면 레거시 로직 건너뜀
+            }
+
             var combatManager = CombatManager.Instance;
             if (combatManager == null) return;
             

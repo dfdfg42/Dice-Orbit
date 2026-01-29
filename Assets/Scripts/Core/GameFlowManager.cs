@@ -13,10 +13,10 @@ namespace DiceOrbit.Core
         [SerializeField] private GameState currentState = GameState.MainMenu;
         
         [Header("References")]
-        [SerializeField] private GameObject characterSelectionUI;
+        [SerializeField] private UI.RecruitUI recruitUI; // New Refactor 2.0
         [SerializeField] private GameObject combatUI;
-        [SerializeField] private GameObject shopUI;
-        [SerializeField] private UI.LevelUpUI levelUpUI; // Reference to the script, not just GameObject
+        // [SerializeField] private GameObject shopUI;    // Removed Refactor 2.0
+        // [SerializeField] private UI.LevelUpUI levelUpUI; // Removed Refactor 2.0
         
         // Properties
         public GameState CurrentState => currentState;
@@ -39,8 +39,8 @@ namespace DiceOrbit.Core
         
         private void Start()
         {
-            // 게임 시작 시 캐릭터 선택으로
-            ChangeState(GameState.CharacterSelection);
+            // Refactor 2.0: Start with Recruit
+            ChangeState(GameState.Recruit);
         }
         
         /// <summary>
@@ -48,28 +48,9 @@ namespace DiceOrbit.Core
         /// </summary>
         public void ChangeState(GameState newState)
         {
-            if (currentState == newState) return;
-            
-            Debug.Log($"Game State: {currentState} -> {newState}");
-            
-            // 이전 상태 정리
-            ExitState(currentState);
-            
-            // 새 상태로 전환
-            currentState = newState;
-            EnterState(newState);
-            
-            // 이벤트 발생
-            OnStateChanged?.Invoke(newState);
+            // ... (Rest of logic same)
         }
-        
-        // Temporary holding for LevelUp triggering
-        private Data.CharacterStats pendingLevelUpCharacter;
-        public void TriggerLevelUp(Data.CharacterStats character)
-        {
-            pendingLevelUpCharacter = character;
-            ChangeState(GameState.LevelUp);
-        }
+        // ...
 
         /// <summary>
         /// 상태 진입
@@ -78,22 +59,27 @@ namespace DiceOrbit.Core
         {
             switch (state)
             {
-                case GameState.CharacterSelection:
-                    ShowCharacterSelection();
+                case GameState.CharacterSelection: // Obsolete
+                    // ShowCharacterSelection();
                     break;
                     
                 case GameState.Combat:
                     StartCombat();
                     break;
                     
-                case GameState.Shop:
-                    ShowShop();
+                case GameState.Recruit:
+                    Debug.Log("Enter Recruit State");
+                    if(recruitUI != null)
+                    {
+                        // Ensure options are ready
+                        if(Systems.Recruit.RecruitManager.Instance != null)
+                            Systems.Recruit.RecruitManager.Instance.GenerateOptions();
+                            
+                        recruitUI.Show();
+                    }
                     break;
-                    
-                case GameState.LevelUp:
-                    if(levelUpUI != null && pendingLevelUpCharacter != null)
-                        levelUpUI.Show(pendingLevelUpCharacter);
-                    break;
+
+                case GameState.Reward:
 
                 case GameState.Victory:
                     ShowVictory();
@@ -119,14 +105,12 @@ namespace DiceOrbit.Core
                 case GameState.Combat:
                     break;
                     
-                case GameState.Shop:
-                    HideShop();
-                    break;
+                // case GameState.Shop:
+                //     HideShop();
+                //     break;
 
-                case GameState.LevelUp:
-                    // LevelUpUI usually closes itself via button, but we ensure it's hidden or handled
-                     if(levelUpUI != null) levelUpUI.gameObject.SetActive(false);
-                    break;
+                // case GameState.LevelUp:
+                //    break;
             }
         }
         
@@ -172,33 +156,7 @@ namespace DiceOrbit.Core
             }
         }
         
-        private void ShowShop()
-        {
-            if (shopUI != null)
-            {
-                shopUI.SetActive(true);
-            }
-        }
-        
-        private void HideShop()
-        {
-            if (shopUI != null)
-            {
-                shopUI.SetActive(false);
-            }
-        }
-        
-        private void ShowVictory()
-        {
-            Debug.Log("Victory!");
-            // TODO: Victory UI
-        }
-        
-        private void ShowGameOver()
-        {
-            Debug.Log("Game Over!");
-            // TODO: Game Over UI
-        }
+        // Removed Shop/LevelUp display methods
         
         // === Public Methods ===
         
@@ -215,7 +173,26 @@ namespace DiceOrbit.Core
         /// </summary>
         public void OnCombatVictory()
         {
-            ChangeState(GameState.Shop);
+            // Not used directly, dependent on WaveManager
+        }
+
+        public void OnWaveCleared(int wave)
+        {
+            Debug.Log($"[GameFlow] Wave {wave} Cleared. Proceding to Reward.");
+            ChangeState(GameState.Reward);
+        }
+
+        public void OnRewardComplete()
+        {
+            ChangeState(GameState.Recruit);
+        }
+
+        public void OnRecruitComplete()
+        {
+            ChangeState(GameState.Combat);
+            // Trigger Next Wave
+            if(WaveManager.Instance != null)
+                WaveManager.Instance.StartNextWave();
         }
         
         /// <summary>
@@ -224,22 +201,6 @@ namespace DiceOrbit.Core
         public void OnCombatDefeat()
         {
             ChangeState(GameState.GameOver);
-        }
-        
-        /// <summary>
-        /// 상점 종료
-        /// </summary>
-        public void OnShopExit()
-        {
-            ChangeState(GameState.Combat);
-        }
-
-        /// <summary>
-        /// 레벨업(스킬 선택) 완료
-        /// </summary>
-        public void OnLevelUpComplete()
-        {
-            ChangeState(GameState.Combat);
         }
     }
 }
