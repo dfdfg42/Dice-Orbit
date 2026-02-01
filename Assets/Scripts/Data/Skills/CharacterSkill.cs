@@ -19,6 +19,7 @@ namespace DiceOrbit.Data.Skills
         [Header("Legacy / Mapping")]
         public int Damage; // Used as Base Damage
         public int DamageMultiplier = 1;
+        public float DiceMultiplier = 1f;
         public int BonusDamage = 0;
         public bool IgnoreDefense = false;
         

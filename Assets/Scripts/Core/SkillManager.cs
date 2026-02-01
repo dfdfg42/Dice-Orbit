@@ -118,8 +118,8 @@ namespace DiceOrbit.Core
             int baseDamage = skill.CalculateDamage(source.Stats.Attack, diceValue);
             int finalDamage = baseDamage;
             
-            var monsterTarget = target as Monster;
-            var characterTarget = target as Character; // 아군 타겟
+            var monsterTarget = ResolveMonsterTarget(target);
+            var characterTarget = ResolveCharacterTarget(target); // 아군 타겟
             
             // 3. 패시브: 공격 전 (OnBeforeAttack)
             if (monsterTarget != null && source.Passives != null)
@@ -177,8 +177,8 @@ namespace DiceOrbit.Core
             // SkillData에 Effects 리스트가 있다고 가정 (기존 코드 참조)
             if (skill.Effects == null || skill.Effects.Count == 0) return;
             
-            var monsterTarget = target as Monster;
-            var characterTarget = target as Character;
+            var monsterTarget = ResolveMonsterTarget(target);
+            var characterTarget = ResolveCharacterTarget(target);
             
             foreach (var effectData in skill.Effects)
             {
@@ -200,6 +200,22 @@ namespace DiceOrbit.Core
         {
              if (target is MonoBehaviour mb) return mb.gameObject;
              return null;
+        }
+
+        private Monster ResolveMonsterTarget(object target)
+        {
+            if (target is Monster monster) return monster;
+            if (target is GameObject go) return go.GetComponentInParent<Monster>();
+            if (target is MonoBehaviour mb) return mb.GetComponentInParent<Monster>();
+            return null;
+        }
+
+        private Character ResolveCharacterTarget(object target)
+        {
+            if (target is Character character) return character;
+            if (target is GameObject go) return go.GetComponentInParent<Character>();
+            if (target is MonoBehaviour mb) return mb.GetComponentInParent<Character>();
+            return null;
         }
     }
 }

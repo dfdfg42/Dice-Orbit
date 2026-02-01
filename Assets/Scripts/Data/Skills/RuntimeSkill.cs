@@ -47,6 +47,7 @@ namespace DiceOrbit.Data.Skills
                 Effects = levelData.Effects ?? new System.Collections.Generic.List<EffectData>(),
                 Requirement = levelData.Requirement ?? new DiceRequirement(),
                 DamageMultiplier = levelData.DamageMultiplier,
+                DiceMultiplier = levelData.DiceMultiplier,
                 BonusDamage = levelData.BonusDamage,
                 IgnoreDefense = levelData.IgnoreDefense,
                 ActionModules = levelData.ActionModules ?? new System.Collections.Generic.List<Modules.SkillActionModule>()

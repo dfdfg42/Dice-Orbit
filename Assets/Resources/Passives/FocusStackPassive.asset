@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c9e5d4f1a2b3c4d5e6f7a8b9c0d1e2f, type: 3}
+  m_Name: FocusStackPassive
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Passives.FocusStackPassive
+  PassiveName: "정신 집중"
+  Description: "턴 시작 시 집중 스택 +1. 액티브 사용 시 스택당 5% 추가 데미지 후 소모"
+  Icon: {fileID: 0}

@@ -44,6 +44,7 @@ namespace DiceOrbit.Data
         
         [Header("Legacy (deprecated)")]
         public int DamageMultiplier = 1;
+    public float DiceMultiplier = 1f;
         public int BonusDamage = 0;
         public bool IgnoreDefense = false;
         
@@ -63,13 +64,17 @@ namespace DiceOrbit.Data
         /// </summary>
         public int CalculateDamage(int baseAttack, int diceValue)
         {
+            float effectiveDiceMultiplier = DiceMultiplier <= 0f ? 1f : DiceMultiplier;
+            int diceDamage = Mathf.RoundToInt(diceValue * effectiveDiceMultiplier);
+            int baseDamage = baseAttack * DamageMultiplier;
+
             if (!string.IsNullOrWhiteSpace(SkillName) &&
                 SkillName.Trim().Equals("Basic Attack", StringComparison.OrdinalIgnoreCase))
             {
-                return (diceValue * DamageMultiplier) + BonusDamage;
+                baseDamage = 0;
             }
 
-            return baseAttack * DamageMultiplier + diceValue + BonusDamage;
+            return baseDamage + diceDamage + BonusDamage;
         }
     }
 }

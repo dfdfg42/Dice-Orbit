@@ -65,6 +65,19 @@ namespace DiceOrbit.Core
             turnCount++;
             
             Debug.Log($"=== Turn {turnCount} - Player Turn ===");
+
+            // 캐릭터 턴 시작 처리 (패시브/상태효과)
+            var partyManager = PartyManager.Instance;
+            if (partyManager != null)
+            {
+                foreach (var character in partyManager.Party)
+                {
+                    if (character != null && character.IsAlive)
+                    {
+                        character.OnStartTurn();
+                    }
+                }
+            }
             
             // 주사위 자동 굴리기
             var diceManager = DiceManager.Instance;

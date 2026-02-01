@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d0e6f5a1b2c3d4e5f6a7b8c9d0e1f2a, type: 3}
+  m_Name: StancePassive
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Passives.StancePassive
+  PassiveName: "자세 가다듬기"
+  Description: "한턴에 3칸 이하 이동 시 다음 공격 피해 10% 증가"
+  Icon: {fileID: 0}

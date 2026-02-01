@@ -152,14 +152,15 @@ namespace DiceOrbit.UI
              
              var startTile = orbitManager.GetTile(0);
              var characterObj = new GameObject($"Player_{preset.CharacterName}");
-             characterObj.transform.localScale = new Vector3(0.4f, 0.4f, 1f);
+             characterObj.transform.localScale = new Vector3(0.15f, 0.15f, 1f);
              
              var sr = characterObj.AddComponent<SpriteRenderer>();
              if(preset.CharacterSprite != null) sr.sprite = preset.CharacterSprite;
              sr.color = preset.SpriteColor;
              
              var character = characterObj.AddComponent<Core.Character>();
-             characterObj.AddComponent<BoxCollider>().size = new Vector3(1,1,0.1f);
+             var collider = characterObj.AddComponent<BoxCollider>();
+             FitColliderToSprite(collider, sr, characterObj.transform);
              
              var stats = preset.CreateStats();
              character.InitializeStats(stats);
@@ -177,6 +178,21 @@ namespace DiceOrbit.UI
                  var ui = uiObj.GetComponent<CharacterUI>();
                  if(ui != null) ui.SetCharacter(character);
              }
+        }
+
+        private void FitColliderToSprite(BoxCollider collider, SpriteRenderer renderer, Transform target)
+        {
+            if (collider == null || renderer == null || renderer.sprite == null || target == null) return;
+
+            var bounds = renderer.bounds;
+            var localSize = new Vector3(
+                bounds.size.x / target.localScale.x,
+                bounds.size.y / target.localScale.y,
+                0.1f
+            );
+
+            collider.size = localSize;
+            collider.center = new Vector3(0f, localSize.y * 0.5f, 0f);
         }
     }
 }

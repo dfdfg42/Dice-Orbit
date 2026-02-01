@@ -257,7 +257,7 @@ namespace DiceOrbit.Core
         {
             if (Application.isPlaying && tilesParent != null)
             {
-                GenerateOrbit();
+                // GenerateOrbit(); // Causing SendMessage warnings in Editor
             }
         }
     }

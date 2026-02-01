@@ -82,18 +82,6 @@ namespace DiceOrbit.Core
                             
                         recruitUI.Show();
                     }
-                    else
-                    {
-                        var legacySelection = Object.FindFirstObjectByType<UI.CharacterSelectionUI>(FindObjectsInactive.Include);
-                        if (legacySelection != null)
-                        {
-                            legacySelection.Show();
-                        }
-                        else
-                        {
-                            Debug.LogWarning("[GameFlow] RecruitUI not found in scene.");
-                        }
-                    }
                     break;
 
                 case GameState.Reward:
