@@ -48,9 +48,14 @@ namespace DiceOrbit.Core
         /// </summary>
         public void ChangeState(GameState newState)
         {
-            // ... (Rest of logic same)
+            if (currentState == newState) return;
+
+            ExitState(currentState);
+            currentState = newState;
+            EnterState(currentState);
+            OnStateChanged?.Invoke(currentState);
         }
-        // ...
+
 
         /// <summary>
         /// 상태 진입
@@ -77,6 +82,18 @@ namespace DiceOrbit.Core
                             
                         recruitUI.Show();
                     }
+                    else
+                    {
+                        var legacySelection = Object.FindFirstObjectByType<UI.CharacterSelectionUI>(FindObjectsInactive.Include);
+                        if (legacySelection != null)
+                        {
+                            legacySelection.Show();
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[GameFlow] RecruitUI not found in scene.");
+                        }
+                    }
                     break;
 
                 case GameState.Reward:
@@ -99,7 +116,7 @@ namespace DiceOrbit.Core
             switch (state)
             {
                 case GameState.CharacterSelection:
-                    HideCharacterSelection();
+                    // HideCharacterSelection(); // Obsolete
                     break;
                     
                 case GameState.Combat:
@@ -116,6 +133,7 @@ namespace DiceOrbit.Core
         
         // === State Methods ===
         
+        /* Obsolete
         private void ShowCharacterSelection()
         {
             if (characterSelectionUI != null)
@@ -131,6 +149,7 @@ namespace DiceOrbit.Core
                 characterSelectionUI.SetActive(false);
             }
         }
+        */
         
         private void StartCombat()
         {
@@ -201,6 +220,18 @@ namespace DiceOrbit.Core
         public void OnCombatDefeat()
         {
             ChangeState(GameState.GameOver);
+        }
+
+        private void ShowVictory()
+        {
+            Debug.Log("[GameFlow] Victory Screen Shown");
+            // TODO: Implement UI
+        }
+
+        private void ShowGameOver()
+        {
+            Debug.Log("[GameFlow] Game Over Screen Shown");
+            // TODO: Implement UI
         }
     }
 }

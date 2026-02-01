@@ -41,7 +41,7 @@ namespace DiceOrbit.Core
         private void Start()
         {
             // Scene의 몬스터 자동 감지
-            AutoDetectMonsters();
+            // AutoDetectMonsters(); // Refactor 2.0: Let GameFlowManager handle start
         }
         
         /// <summary>

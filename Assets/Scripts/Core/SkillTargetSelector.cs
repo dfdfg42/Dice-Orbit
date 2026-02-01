@@ -185,7 +185,16 @@ namespace DiceOrbit.Core
                 
                 if (IsValidTarget(targetObj))
                 {
-                    ExecuteSkillOnTarget(targetObj);
+                    // Delegate execution to SkillManager
+                    if (SkillManager.Instance != null)
+                    {
+                        SkillManager.Instance.OnTargetSelected(sourceCharacter, targetObj, currentSkill, diceValue);
+                    }
+                    else
+                    {
+                        Debug.LogError("SkillManager not found!");
+                    }
+                    
                     EndTargetSelection();
                 }
                 else
@@ -222,62 +231,8 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 타겟에 스킬 실행
         /// </summary>
-        private void ExecuteSkillOnTarget(GameObject target)
-        {
-            // Modular System Execution
-            if (currentSkill.ActionModules != null && currentSkill.ActionModules.Count > 0)
-            {
-                Debug.Log($"Executing Modular Skill: {currentSkill.SkillName}");
-                bool moduleExecuted = false;
-                
-                foreach (var module in currentSkill.ActionModules)
-                {
-                    if (module != null)
-                    {
-                        module.Execute(sourceCharacter, target, diceValue);
-                        moduleExecuted = true;
-                    }
-                }
-                
-                if (moduleExecuted) return; // 모듈이 실행되었으면 레거시 로직 건너뜀
-            }
+        // Internal execution logic removed. Delegated to SkillManager.
 
-            var combatManager = CombatManager.Instance;
-            if (combatManager == null) return;
-            
-            int damage = currentSkill.CalculateDamage(sourceCharacter.Stats.Attack, diceValue);
-            
-            switch (currentSkill.TargetType)
-            {
-                case SkillTargetType.SingleEnemy:
-                    var monster = target.GetComponent<Monster>();
-                    if (monster != null)
-                    {
-                        combatManager.AttackMonster(monster, damage, currentSkill.IgnoreDefense);
-                        Debug.Log($"{sourceCharacter.Stats.CharacterName} attacks {monster.Stats.MonsterName} for {damage} damage!");
-                    }
-                    break;
-                    
-                case SkillTargetType.AllEnemies:
-                    combatManager.AttackAllMonsters(damage, currentSkill.IgnoreDefense);
-                    Debug.Log($"{sourceCharacter.Stats.CharacterName} attacks all enemies for {damage} damage!");
-                    break;
-                    
-                case SkillTargetType.Self:
-                    sourceCharacter.Stats.Heal(damage);
-                    Debug.Log($"{sourceCharacter.Stats.CharacterName} heals for {damage} HP!");
-                    break;
-                    
-                case SkillTargetType.Ally:
-                    var ally = target.GetComponent<Character>();
-                    if (ally != null)
-                    {
-                        ally.Stats.Heal(damage);
-                        Debug.Log($"{sourceCharacter.Stats.CharacterName} heals {ally.Stats.CharacterName} for {damage} HP!");
-                    }
-                    break;
-            }
-        }
         
         /// <summary>
         /// 타겟 선택 취소

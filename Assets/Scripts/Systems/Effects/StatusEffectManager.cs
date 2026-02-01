@@ -119,7 +119,6 @@ namespace DiceOrbit.Systems.Effects
             {
                 case StatusEffectType.Poison:
                 case StatusEffectType.Burn:
-                case StatusEffectType.Focus: // 마법사 집중 스택
                     return true;
                 default:
                     return false; // 나머지는 기본적으로 비중첩 (갱신)

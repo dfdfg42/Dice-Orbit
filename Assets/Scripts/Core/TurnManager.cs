@@ -53,7 +53,7 @@ namespace DiceOrbit.Core
         private void Start()
         {
             UpdateUI();
-            StartPlayerTurn();
+            // StartPlayerTurn(); // Refactor 2.0: Moved to GameFlowManager call
         }
         
         /// <summary>

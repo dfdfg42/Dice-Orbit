@@ -31,8 +31,9 @@ namespace DiceOrbit.Data
         public CharacterSkill ActiveSkill; // Unique Active
         public Data.Passives.PassiveAbility PassiveSkill; // Unique Passive
 
-        // Deprecated Lists removed
-        
+        [Header("Legacy Lists (Deprecated)")]
+        public List<CharacterSkill> NativePassives = new List<CharacterSkill>(); 
+
         /// <summary>
         /// CharacterStats 생성
         /// </summary>

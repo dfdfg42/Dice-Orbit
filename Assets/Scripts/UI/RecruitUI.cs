@@ -147,7 +147,7 @@ namespace DiceOrbit.UI
             // Ideally should be helper: CharacterSpawner.Spawn(preset);
             
             // Reuse logic from previous file...
-             var orbitManager = FindObjectOfType<Core.OrbitManager>(); // FindAnyObjectByType used in Unity 2023+
+             var orbitManager = Object.FindFirstObjectByType<Core.OrbitManager>();
              if(orbitManager == null) return;
              
              var startTile = orbitManager.GetTile(0);

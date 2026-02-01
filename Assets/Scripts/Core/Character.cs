@@ -65,6 +65,7 @@ namespace DiceOrbit.Core
             if (Passives == null) Passives = gameObject.GetComponent<Systems.Passives.PassiveManager>() ?? gameObject.AddComponent<Systems.Passives.PassiveManager>();
             Passives.Initialize(this);
 
+            /* Legacy Passive Loading (Deprecated)
             // Preset에서 Innate Passive 로드
             if (stats.SourcePreset != null)
             {
@@ -73,6 +74,7 @@ namespace DiceOrbit.Core
                     Passives.AddPassive(passive);
                 }
             }
+            */
             
             Debug.Log($"Character initialized: {stats.CharacterName} (HP: {stats.MaxHP}, ATK: {stats.Attack})");
         }
@@ -312,95 +314,11 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 스킬 사용 (타겟 선택 시작) - 첫 번째 Active 스킬 사용
         /// </summary>
-        public void UseSkill(int diceValue)
-        {
-            UseSkillByIndex(0, diceValue);
-        }
-        
-        /// <summary>
-        /// 특정 인덱스의 스킬 사용
-        /// /// </summary>
-        public void UseSkillByIndex(int skillIndex, int diceValue)
-        {
-            if (stats.RuntimeActiveSkills.Count == 0)
-            {
-                Debug.LogWarning($"{stats.CharacterName}: No active skills available!");
-                return;
-            }
-            
-            if (skillIndex < 0 || skillIndex >= stats.RuntimeActiveSkills.Count)
-            {
-                Debug.LogWarning($"{stats.CharacterName}: Invalid skill index {skillIndex}!");
-                return;
-            }
-            
-            var runtimeSkill = stats.RuntimeActiveSkills[skillIndex];
-            var skillData = runtimeSkill.ToSkillData();
+// Skill use logic moved to SkillManager
 
-            if (skillData == null) return;
             
-            if (!skillData.CanUse(diceValue))
-            {
-                Debug.LogWarning($"{stats.CharacterName}: Cannot use {skillData.SkillName} with dice value {diceValue}. {skillData.Requirement.GetDescription()}");
-                return;
-            }
-            
-            Debug.Log($"{stats.CharacterName} preparing {skillData.SkillName} with dice {diceValue}!");
-            
-            // CombatManager 확인
-            var combatManager = CombatManager.Instance;
-            if (combatManager == null || !combatManager.InCombat)
-            {
-                Debug.LogWarning("Not in combat or CombatManager not found!");
-                return;
-            }
-            
-            // Effect 기반 스킬이면 Effect 시스템 사용
-            if (skillData.Effects.Count > 0)
-            {
-                ExecuteEffectBasedSkill(skillData, diceValue);
-            }
-            else
-            {
-                // 레거시 스킬 (하위 호환)
-                ExecuteLegacySkill(skillData, diceValue);
-            }
-        }
-        
-        /// <summary>
-        /// Effect 기반 스킬 실행
-        /// </summary>
-        private void ExecuteEffectBasedSkill(SkillData skill, int diceValue)
-        {
-            // 타겟 선택 모드 시작
-            var targetSelector = SkillTargetSelector.Instance;
-            if (targetSelector != null)
-            {
-                // 임시: 스킬과 주사위 값 저장
-                targetSelector.StartTargetSelection(this, skill, diceValue);
-            }
-            else
-            {
-                Debug.LogError("SkillTargetSelector not found! Add to scene.");
-            }
-        }
-        
-        /// <summary>
-        /// 레거시 스킬 실행 (하위 호환)
-        /// </summary>
-        private void ExecuteLegacySkill(SkillData skill, int diceValue)
-        {
-            // 타겟 선택 모드 시작
-            var targetSelector = SkillTargetSelector.Instance;
-            if (targetSelector != null)
-            {
-                targetSelector.StartTargetSelection(this, skill, diceValue);
-            }
-            else
-            {
-                Debug.LogError("SkillTargetSelector not found! Add to scene.");
-            }
-        }
+// Skill execution logic moved to SkillManager
+
         
         /// <summary>
         /// 시작 타일 찾기 (재시도용)

@@ -265,7 +265,8 @@ namespace DiceOrbit.UI
                     var character = currentTarget as Character;
                     if (character != null)
                     {
-                        character.UseSkillByIndex(index, currentDice.Value);
+                        // Direct call removed. Using SkillManager.
+                        SkillManager.Instance.PrepareSkill(character, index, currentDice.Value);
                     }
                     else
                     {

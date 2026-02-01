@@ -72,8 +72,14 @@ namespace DiceOrbit.Data.Skills
             {
                 if(module != null)
                 {
-                    module.Execute(source, target, diceValue);
-                    Debug.Log($"Executed Module: {module.name}");
+                    GameObject targetObj = target as GameObject;
+                    if (target is MonoBehaviour mb) targetObj = mb.gameObject;
+                    
+                    if (targetObj != null)
+                    {
+                        module.Execute(source, targetObj, diceValue);
+                        Debug.Log($"Executed Module: {module.name}");
+                    }
                 }
             }
         }

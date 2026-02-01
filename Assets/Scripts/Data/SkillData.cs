@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 
 namespace DiceOrbit.Data
@@ -62,6 +63,12 @@ namespace DiceOrbit.Data
         /// </summary>
         public int CalculateDamage(int baseAttack, int diceValue)
         {
+            if (!string.IsNullOrWhiteSpace(SkillName) &&
+                SkillName.Trim().Equals("Basic Attack", StringComparison.OrdinalIgnoreCase))
+            {
+                return (diceValue * DamageMultiplier) + BonusDamage;
+            }
+
             return baseAttack * DamageMultiplier + diceValue + BonusDamage;
         }
     }
