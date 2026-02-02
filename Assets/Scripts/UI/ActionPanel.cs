@@ -226,12 +226,13 @@ namespace DiceOrbit.UI
                 
                 // Setup Text
                 var txt = go.GetComponentInChildren<TextMeshProUGUI>();
-                if (txt != null) txt.text = $"{skill.BaseSkill.SkillName} (Lv.{skill.CurrentLevel})";
+                var skillName = skill.BaseSkill != null ? skill.BaseSkill.SkillName : "Unknown Skill";
+                if (txt != null) txt.text = $"{skillName} (Lv.{skill.CurrentLevel})";
                 
                 // Add icon if possible
                 var img = go.GetComponentsInChildren<Image>();
                 // Assume second image is icon if button has background
-                if(img.Length > 1 && skill.BaseSkill.Icon != null) img[1].sprite = skill.BaseSkill.Icon;
+                if(img.Length > 1 && skill.BaseSkill != null && skill.BaseSkill.Icon != null) img[1].sprite = skill.BaseSkill.Icon;
 
                 // Setup Button
                 var btn = go.GetComponent<Button>();
@@ -251,42 +252,58 @@ namespace DiceOrbit.UI
 
         private void ExecuteSkill(int index)
         {
+            if (currentDice == null || currentTarget == null)
+            {
+                Debug.LogWarning("[ActionPanel] ExecuteSkill called without dice or target.");
+                return;
+            }
+
             // DiceManager에 할당
             var diceManager = Core.DiceManager.Instance;
-            if (diceManager != null)
+            if (diceManager == null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentTarget, ActionType.Skill);
+                Debug.LogWarning("[ActionPanel] DiceManager not found.");
+                return;
+            }
+
+            bool success = diceManager.AssignDice(currentDice, currentTarget, ActionType.Skill);
+            if (success)
+            {
+                Debug.Log($"Skill action assigned with power: {currentDice.Value}");
                 
-                if (success)
+                // Character 클래스 확인
+                var character = currentTarget as Character;
+                if (character != null)
                 {
-                    Debug.Log($"Skill action assigned with power: {currentDice.Value}");
-                    
-                    // Character 클래스 확인
-                    var character = currentTarget as Character;
-                    if (character != null)
+                    // Direct call removed. Using SkillManager.
+                    if (SkillManager.Instance != null)
                     {
-                        character.UseSkillByIndex(index, currentDice.Value);
+                        SkillManager.Instance.PrepareSkill(character, index, currentDice.Value);
                     }
                     else
                     {
-                        // 레거시 TestCharacter 지원
-                        var testChar = currentTarget as TestCharacter;
-                        if (testChar != null)
-                        {
-                            testChar.UseSkill(currentDice.Value);
-                        }
+                        Debug.LogWarning("[ActionPanel] SkillManager.Instance is null.");
                     }
-                    
-                    // UI 업데이트
-                    var diceUI = FindFirstObjectByType<DiceUI>();
-                    if (diceUI != null)
-                    {
-                        diceUI.MarkDiceAsUsed(currentDice);
-                    }
-                    
-                    // 드래그한 DiceElement를 원위치로
-                    ReturnDiceElement();
                 }
+                else
+                {
+                    // 레거시 TestCharacter 지원
+                    var testChar = currentTarget as TestCharacter;
+                    if (testChar != null)
+                    {
+                        testChar.UseSkill(currentDice.Value);
+                    }
+                }
+                
+                // UI 업데이트
+                var diceUI = FindFirstObjectByType<DiceUI>();
+                if (diceUI != null)
+                {
+                    diceUI.MarkDiceAsUsed(currentDice);
+                }
+                
+                // 드래그한 DiceElement를 원위치로
+                ReturnDiceElement();
             }
             
             HidePanel();

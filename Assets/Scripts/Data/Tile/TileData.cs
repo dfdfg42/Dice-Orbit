@@ -22,6 +22,7 @@ namespace DiceOrbit.Data
     {
         [Header("Tile Properties")]
         [SerializeField] private int tileIndex;
+        [SerializeField] private TileType type; // Added Type field
 
         [Header("Attribute")]
         [SerializeField] private List<TileAttribute> attributes = new();
@@ -38,6 +39,7 @@ namespace DiceOrbit.Data
 
         // Properties
         public int TileIndex => tileIndex;
+        public TileType Type => type; // Exposed Property
         public TileData NextTile => nextTile;
         public TileData PreviousTile => previousTile;
         public Vector3 Position => transform.position;
@@ -48,6 +50,7 @@ namespace DiceOrbit.Data
         public void Initialize(int index, TileType type, TileVisual visual = null)
         {
             tileIndex = index;
+            this.type = type; // Store type
             tileVisual = visual;
             
             if (tileVisual != null)

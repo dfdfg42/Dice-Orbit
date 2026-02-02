@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 466f85b8c91d21a48a505813b96bdd09, type: 3}
+  m_Name: EnergyBall
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Skills.CharacterSkill
+  SkillName: "에너지 볼"
+  Description: "주사위 눈금 4 이상일 때 1.2배 피해"
+  Icon: {fileID: 0}
+  Type: 0
+  TargetType: 0
+  Levels:
+  - Level: 1
+    Description: "주사위 4+ x 1.2 피해"
+    Damage: 0
+    DamageMultiplier: 0
+    DiceMultiplier: 1.2
+    BonusDamage: 0
+    IgnoreDefense: 0
+    Cooldown: 0
+    Requirement:
+      MinDiceCount: 1
+      MinDiceValue: 4
+      MaxDiceValue: 0
+      ExactDiceValue: 
+      Pattern: 0
+    Effects: []

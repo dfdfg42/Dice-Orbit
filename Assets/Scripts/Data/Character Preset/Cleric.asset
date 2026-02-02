@@ -12,13 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c15595559fc69394782045259f55f893, type: 3}
   m_Name: Cleric
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.CharacterPreset
-  CharacterName: Hero
+  CharacterName: "무사"
   Portrait: {fileID: 21300000, guid: 8de1bdc43d96b5f428f2cc50abbb05ff, type: 3}
-  Description: CLERIC
-  MaxHP: 30
+  Description: "SAMURAI"
+  MaxHP: 60
   Attack: 5
   Defense: 0
   CharacterSprite: {fileID: 21300000, guid: 8de1bdc43d96b5f428f2cc50abbb05ff, type: 3}
   SpriteColor: {r: 0.58937645, g: 0.8867924, b: 0.5479708, a: 1}
+  BasicAttack: {fileID: 11400000, guid: 057f7da87dbe12d4ea89b19bad5ca9a7, type: 2}
+  ActiveSkill: {fileID: 11400000, guid: c2d3e4f5061728394a5b6c7d8e9f0a1b, type: 2}
+  PassiveSkill: {fileID: 11400000, guid: 8d4e5f60718293a4b5c6d7e8f9a0b1c2, type: 2}
+  NativePassives: []
   ActiveSkills: []
   PassiveSkills: []

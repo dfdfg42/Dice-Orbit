@@ -185,7 +185,16 @@ namespace DiceOrbit.Core
                 
                 if (IsValidTarget(targetObj))
                 {
-                    ExecuteSkillOnTarget(targetObj);
+                    // Delegate execution to SkillManager
+                    if (SkillManager.Instance != null)
+                    {
+                        SkillManager.Instance.OnTargetSelected(sourceCharacter, ResolveTarget(targetObj), currentSkill, diceValue);
+                    }
+                    else
+                    {
+                        Debug.LogError("SkillManager not found!");
+                    }
+                    
                     EndTargetSelection();
                 }
                 else
@@ -204,62 +213,37 @@ namespace DiceOrbit.Core
             {
                 case SkillTargetType.SingleEnemy:
                 case SkillTargetType.AllEnemies:
-                    return target.GetComponent<Monster>() != null;
+                    return target.GetComponentInParent<Monster>() != null;
                     
                 case SkillTargetType.Self:
-                    return target.GetComponent<Character>() == sourceCharacter;
+                    return target.GetComponentInParent<Character>() == sourceCharacter;
                     
                 case SkillTargetType.Ally:
                 case SkillTargetType.AllAllies:
-                    var character = target.GetComponent<Character>();
+                    var character = target.GetComponentInParent<Character>();
                     return character != null && character != sourceCharacter;
                     
                 default:
                     return false;
             }
         }
+
+        private object ResolveTarget(GameObject target)
+        {
+            var monster = target.GetComponentInParent<Monster>();
+            if (monster != null) return monster;
+
+            var character = target.GetComponentInParent<Character>();
+            if (character != null) return character;
+
+            return target;
+        }
         
         /// <summary>
         /// 타겟에 스킬 실행
         /// </summary>
-        private void ExecuteSkillOnTarget(GameObject target)
-        {
-            var combatManager = CombatManager.Instance;
-            if (combatManager == null) return;
-            
-            int damage = currentSkill.CalculateDamage(sourceCharacter.Stats.Attack, diceValue);
-            
-            switch (currentSkill.TargetType)
-            {
-                case SkillTargetType.SingleEnemy:
-                    var monster = target.GetComponent<Monster>();
-                    if (monster != null)
-                    {
-                        combatManager.AttackMonster(monster, damage, currentSkill.IgnoreDefense);
-                        Debug.Log($"{sourceCharacter.Stats.CharacterName} attacks {monster.Stats.MonsterName} for {damage} damage!");
-                    }
-                    break;
-                    
-                case SkillTargetType.AllEnemies:
-                    combatManager.AttackAllMonsters(damage, currentSkill.IgnoreDefense);
-                    Debug.Log($"{sourceCharacter.Stats.CharacterName} attacks all enemies for {damage} damage!");
-                    break;
-                    
-                case SkillTargetType.Self:
-                    sourceCharacter.Stats.Heal(damage);
-                    Debug.Log($"{sourceCharacter.Stats.CharacterName} heals for {damage} HP!");
-                    break;
-                    
-                case SkillTargetType.Ally:
-                    var ally = target.GetComponent<Character>();
-                    if (ally != null)
-                    {
-                        ally.Stats.Heal(damage);
-                        Debug.Log($"{sourceCharacter.Stats.CharacterName} heals {ally.Stats.CharacterName} for {damage} HP!");
-                    }
-                    break;
-            }
-        }
+        // Internal execution logic removed. Delegated to SkillManager.
+
         
         /// <summary>
         /// 타겟 선택 취소

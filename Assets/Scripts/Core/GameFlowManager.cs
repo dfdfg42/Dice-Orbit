@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace DiceOrbit.Core
 {
@@ -13,10 +14,17 @@ namespace DiceOrbit.Core
         [SerializeField] private GameState currentState = GameState.MainMenu;
         
         [Header("References")]
-        [SerializeField] private GameObject characterSelectionUI;
+        [SerializeField] private UI.MainMenuUI mainMenuUI;
+        [SerializeField] private UI.RecruitUI recruitUI; // New Refactor 2.0
+        [SerializeField] private UI.RewardUI rewardUI;
         [SerializeField] private GameObject combatUI;
-        [SerializeField] private GameObject shopUI;
-        [SerializeField] private UI.LevelUpUI levelUpUI; // Reference to the script, not just GameObject
+        [Header("Scene")]
+        [SerializeField] private string gameplaySceneName = "";
+
+        private bool pendingStartGame = false;
+        private int lastWaveCleared = 0;
+        // [SerializeField] private GameObject shopUI;    // Removed Refactor 2.0
+        // [SerializeField] private UI.LevelUpUI levelUpUI; // Removed Refactor 2.0
         
         // Properties
         public GameState CurrentState => currentState;
@@ -30,17 +38,32 @@ namespace DiceOrbit.Core
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                Debug.Log($"[GameFlow] Awake - Instance set, DontDestroyOnLoad, scene={SceneManager.GetActiveScene().name}");
             }
             else
             {
+                Debug.LogWarning("[GameFlow] Duplicate instance detected, destroying new instance");
                 Destroy(gameObject);
             }
         }
         
         private void Start()
         {
-            // 게임 시작 시 캐릭터 선택으로
-            ChangeState(GameState.CharacterSelection);
+            Debug.Log($"[GameFlow] Start - gameplaySceneName='{gameplaySceneName}', scene={SceneManager.GetActiveScene().name}");
+            CacheSceneReferences();
+            ChangeState(GameState.MainMenu);
+        }
+
+        private void OnEnable()
+        {
+            Debug.Log("[GameFlow] OnEnable - subscribing to sceneLoaded");
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            Debug.Log("[GameFlow] OnDisable - unsubscribing from sceneLoaded");
+            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
         
         /// <summary>
@@ -49,27 +72,14 @@ namespace DiceOrbit.Core
         public void ChangeState(GameState newState)
         {
             if (currentState == newState) return;
-            
-            Debug.Log($"Game State: {currentState} -> {newState}");
-            
-            // 이전 상태 정리
+
+            Debug.Log($"[GameFlow] ChangeState: {currentState} -> {newState}");
             ExitState(currentState);
-            
-            // 새 상태로 전환
             currentState = newState;
-            EnterState(newState);
-            
-            // 이벤트 발생
-            OnStateChanged?.Invoke(newState);
+            EnterState(currentState);
+            OnStateChanged?.Invoke(currentState);
         }
-        
-        // Temporary holding for LevelUp triggering
-        private Data.CharacterStats pendingLevelUpCharacter;
-        public void TriggerLevelUp(Data.CharacterStats character)
-        {
-            pendingLevelUpCharacter = character;
-            ChangeState(GameState.LevelUp);
-        }
+
 
         /// <summary>
         /// 상태 진입
@@ -78,21 +88,37 @@ namespace DiceOrbit.Core
         {
             switch (state)
             {
-                case GameState.CharacterSelection:
-                    ShowCharacterSelection();
+                case GameState.CharacterSelection: // Obsolete
+                    // ShowCharacterSelection();
+                    break;
+
+                case GameState.MainMenu:
+                    if (mainMenuUI != null) mainMenuUI.Show();
+                    if (combatUI != null) combatUI.SetActive(false);
+                    if (recruitUI != null) recruitUI.Hide();
+                    if (rewardUI != null) rewardUI.Hide();
                     break;
                     
                 case GameState.Combat:
                     StartCombat();
                     break;
                     
-                case GameState.Shop:
-                    ShowShop();
+                case GameState.Recruit:
+                    Debug.Log("Enter Recruit State");
+                    if(recruitUI != null)
+                    {
+                        // Ensure options are ready
+                        if(Systems.Recruit.RecruitManager.Instance != null)
+                            Systems.Recruit.RecruitManager.Instance.GenerateOptions();
+                            
+                        recruitUI.Show();
+                    }
                     break;
-                    
-                case GameState.LevelUp:
-                    if(levelUpUI != null && pendingLevelUpCharacter != null)
-                        levelUpUI.Show(pendingLevelUpCharacter);
+
+                case GameState.Reward:
+                    if (recruitUI != null) recruitUI.Hide();
+                    if (combatUI != null) combatUI.SetActive(false);
+                    if (rewardUI != null) rewardUI.Show();
                     break;
 
                 case GameState.Victory:
@@ -112,26 +138,29 @@ namespace DiceOrbit.Core
         {
             switch (state)
             {
+                case GameState.MainMenu:
+                    if (mainMenuUI != null) mainMenuUI.Hide();
+                    break;
                 case GameState.CharacterSelection:
-                    HideCharacterSelection();
+                    // HideCharacterSelection(); // Obsolete
                     break;
                     
                 case GameState.Combat:
+                    if (combatUI != null) combatUI.SetActive(false);
                     break;
                     
-                case GameState.Shop:
-                    HideShop();
-                    break;
+                // case GameState.Shop:
+                //     HideShop();
+                //     break;
 
-                case GameState.LevelUp:
-                    // LevelUpUI usually closes itself via button, but we ensure it's hidden or handled
-                     if(levelUpUI != null) levelUpUI.gameObject.SetActive(false);
-                    break;
+                // case GameState.LevelUp:
+                //    break;
             }
         }
         
         // === State Methods ===
         
+        /* Obsolete
         private void ShowCharacterSelection()
         {
             if (characterSelectionUI != null)
@@ -147,6 +176,7 @@ namespace DiceOrbit.Core
                 characterSelectionUI.SetActive(false);
             }
         }
+        */
         
         private void StartCombat()
         {
@@ -156,49 +186,20 @@ namespace DiceOrbit.Core
             {
                 combatUI.SetActive(true);
             }
-            
-            // CombatManager 시작
-            var combatManager = CombatManager.Instance;
-            if (combatManager != null)
+
+            // Ensure first wave spawns if none started yet
+            if (WaveManager.Instance != null && WaveManager.Instance.CurrentWave == 0)
             {
-                combatManager.StartCombat();
+                Debug.Log("[GameFlow] Starting first wave...");
+                WaveManager.Instance.StartFirstWave();
             }
-            
-            // TurnManager 플레이어 턴 시작
-            var turnManager = TurnManager.Instance;
-            if (turnManager != null)
+            else if (WaveManager.Instance == null)
             {
-                turnManager.StartPlayerTurn();
+                Debug.LogWarning("[GameFlow] WaveManager not found in scene. Monsters will not spawn.");
             }
         }
         
-        private void ShowShop()
-        {
-            if (shopUI != null)
-            {
-                shopUI.SetActive(true);
-            }
-        }
-        
-        private void HideShop()
-        {
-            if (shopUI != null)
-            {
-                shopUI.SetActive(false);
-            }
-        }
-        
-        private void ShowVictory()
-        {
-            Debug.Log("Victory!");
-            // TODO: Victory UI
-        }
-        
-        private void ShowGameOver()
-        {
-            Debug.Log("Game Over!");
-            // TODO: Game Over UI
-        }
+        // Removed Shop/LevelUp display methods
         
         // === Public Methods ===
         
@@ -215,7 +216,44 @@ namespace DiceOrbit.Core
         /// </summary>
         public void OnCombatVictory()
         {
-            ChangeState(GameState.Shop);
+            // Not used directly, dependent on WaveManager
+        }
+
+        public void OnWaveCleared(int wave)
+        {
+            Debug.Log($"[GameFlow] Wave {wave} Cleared. Proceeding to Recruit.");
+            lastWaveCleared = wave;
+            ChangeState(GameState.Recruit);
+        }
+
+        private void OnWaveStarted(int wave)
+        {
+            Debug.Log($"[GameFlow] Wave {wave} Started. Combat Beginning.");
+            if (CombatManager.Instance != null)
+            {
+                CombatManager.Instance.StartCombat();
+            }
+        }
+
+        public void OnRewardComplete()
+        {
+            if (WaveManager.Instance != null && lastWaveCleared >= WaveManager.Instance.MaxWave)
+            {
+                ChangeState(GameState.Victory);
+                return;
+            }
+
+            ChangeState(GameState.Combat);
+            if (WaveManager.Instance != null)
+            {
+                WaveManager.Instance.StartNextWave();
+            }
+        }
+
+        public void OnRecruitComplete()
+        {
+            // After the initial recruit, go straight to combat
+            ChangeState(GameState.Combat);
         }
         
         /// <summary>
@@ -225,21 +263,103 @@ namespace DiceOrbit.Core
         {
             ChangeState(GameState.GameOver);
         }
-        
-        /// <summary>
-        /// 상점 종료
-        /// </summary>
-        public void OnShopExit()
-        {
-            ChangeState(GameState.Combat);
-        }
 
         /// <summary>
-        /// 레벨업(스킬 선택) 완료
+        /// 메인메뉴에서 게임 시작
         /// </summary>
-        public void OnLevelUpComplete()
+        public void StartGame()
         {
-            ChangeState(GameState.Combat);
+            Debug.Log("[GameFlow] StartGame called");
+            if (!string.IsNullOrWhiteSpace(gameplaySceneName))
+            {
+                var activeScene = SceneManager.GetActiveScene();
+                if (activeScene.name != gameplaySceneName)
+                {
+                    Debug.Log($"[GameFlow] Loading gameplay scene: {gameplaySceneName} (current: {activeScene.name})");
+                    pendingStartGame = true;
+                    SceneManager.LoadScene(gameplaySceneName);
+                    return;
+                }
+            }
+
+            StartGameFlow();
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            Debug.Log($"[GameFlow] Scene loaded: {scene.name}, pendingStartGame={pendingStartGame}");
+            CacheSceneReferences();
+            if (pendingStartGame && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
+            {
+                pendingStartGame = false;
+                StartGameFlow();
+            }
+            else if (currentState == GameState.MainMenu &&
+                     !string.IsNullOrWhiteSpace(gameplaySceneName) &&
+                     scene.name == gameplaySceneName)
+            {
+                // Safety: ensure gameplay scene starts in recruit flow even if pendingStartGame isn't set
+                Debug.Log("[GameFlow] Entering StartGameFlow via safety path");
+                StartGameFlow();
+            }
+            
+            // Subscribe to WaveManager events
+            if (WaveManager.Instance != null)
+            {
+                WaveManager.Instance.OnWaveStart -= OnWaveStarted;
+                WaveManager.Instance.OnWaveStart += OnWaveStarted;
+                
+                WaveManager.Instance.OnWaveClear -= OnWaveCleared;
+                WaveManager.Instance.OnWaveClear += OnWaveCleared;
+            }
+        }
+
+        private void StartGameFlow()
+        {
+            // Start with recruit selection (first character pick)
+            Debug.Log("[GameFlow] StartGameFlow -> Recruit");
+            ChangeState(GameState.Recruit);
+        }
+
+        private void CacheSceneReferences()
+        {
+            if (mainMenuUI == null)
+            {
+                mainMenuUI = Object.FindFirstObjectByType<UI.MainMenuUI>(FindObjectsInactive.Include);
+            }
+
+            if (recruitUI == null)
+            {
+                recruitUI = Object.FindFirstObjectByType<UI.RecruitUI>(FindObjectsInactive.Include);
+            }
+
+            if (rewardUI == null)
+            {
+                rewardUI = Object.FindFirstObjectByType<UI.RewardUI>(FindObjectsInactive.Include);
+            }
+
+            if (combatUI == null)
+            {
+                var combatCanvas = GameObject.Find("CombatUI");
+                if (combatCanvas != null)
+                {
+                    combatUI = combatCanvas;
+                }
+            }
+
+            Debug.Log($"[GameFlow] CacheSceneReferences - mainMenuUI={(mainMenuUI != null)}, recruitUI={(recruitUI != null)}, rewardUI={(rewardUI != null)}, combatUI={(combatUI != null)}");
+        }
+
+        private void ShowVictory()
+        {
+            Debug.Log("[GameFlow] Victory Screen Shown");
+            // TODO: Implement UI
+        }
+
+        private void ShowGameOver()
+        {
+            Debug.Log("[GameFlow] Game Over Screen Shown");
+            // TODO: Implement UI
         }
     }
 }

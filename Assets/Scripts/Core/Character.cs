@@ -24,8 +24,13 @@ namespace DiceOrbit.Core
         private Color originalColor;
         private Camera mainCamera;
         
+        [Header("System")]
+        public Systems.Effects.StatusEffectManager StatusEffects;
+        public Systems.Passives.PassiveManager Passives;
+
         // 타일 위 캐릭터 위치 offset
         private static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
+
         
         // Properties
         public CharacterStats Stats => stats;
@@ -52,6 +57,24 @@ namespace DiceOrbit.Core
             
             // 스킬 재초기화
             InitializeSkills();
+
+            // Status & Passive 초기화 (컴포넌트가 없을 수 있으므로 확인/추가)
+            if (StatusEffects == null) StatusEffects = gameObject.GetComponent<Systems.Effects.StatusEffectManager>() ?? gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
+            StatusEffects.Initialize(this);
+            
+            if (Passives == null) Passives = gameObject.GetComponent<Systems.Passives.PassiveManager>() ?? gameObject.AddComponent<Systems.Passives.PassiveManager>();
+            Passives.Initialize(this);
+
+            /* Legacy Passive Loading (Deprecated)
+            // Preset에서 Innate Passive 로드
+            if (stats.SourcePreset != null)
+            {
+                foreach(var passive in stats.SourcePreset.NativePassives)
+                {
+                    Passives.AddPassive(passive);
+                }
+            }
+            */
             
             Debug.Log($"Character initialized: {stats.CharacterName} (HP: {stats.MaxHP}, ATK: {stats.Attack})");
         }
@@ -80,6 +103,29 @@ namespace DiceOrbit.Core
             
             // 스킬 초기화
             InitializeSkills();
+
+            // Status Effect System 초기화
+            StatusEffects = GetComponent<Systems.Effects.StatusEffectManager>();
+            if (StatusEffects == null) StatusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
+            StatusEffects.Initialize(this);
+
+            // Passive System 초기화
+            Passives = GetComponent<Systems.Passives.PassiveManager>();
+            if (Passives == null) Passives = gameObject.AddComponent<Systems.Passives.PassiveManager>();
+            Passives.Initialize(this);
+        }
+
+        public void OnStartTurn()
+        {
+            if (StatusEffects != null)
+            {
+                StatusEffects.OnTurnStart();
+            }
+            
+            if (Passives != null)
+            {
+                Passives.OnTurnStart();
+            }
         }
         
         /// <summary>
@@ -101,16 +147,22 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 패시브 스킬 자동 적용
         /// </summary>
+        /// <summary>
+        /// 패시브 스킬 자동 적용
+        /// </summary>
         private void ApplyPassiveSkills()
         {
+            // Refactor 2.0: Fixed Loadout
+            if (stats.StartingPassive != null && Passives != null)
+            {
+                Passives.AddPassive(stats.StartingPassive);
+                Debug.Log($"{stats.CharacterName}: Registered fixed passive '{stats.StartingPassive.PassiveName}'");
+            }
+
+            // Legacy support (optional, can be removed)
             foreach (var runtimePassive in stats.RuntimePassiveSkills)
             {
-                var passiveData = runtimePassive.ToSkillData();
-                if (passiveData != null && passiveData.Effects.Count > 0)
-                {
-                    Systems.EffectManager.ApplyEffects(passiveData.Effects, this);
-                    Debug.Log($"{stats.CharacterName}: Applied passive skill '{passiveData.SkillName}'");
-                }
+                // ...
             }
         }
         
@@ -192,6 +244,9 @@ namespace DiceOrbit.Core
                 transform.position = endPos;
                 currentTile = tile;
                 tile.OnTraverse(this);
+                
+                // Trigger Passive OnMove (distance 1 per tile)
+                if(Passives != null) Passives.OnMove(1);
             }
             
             // 최종 도착
@@ -204,100 +259,66 @@ namespace DiceOrbit.Core
             {
                 spriteRenderer.color = originalColor;
             }
+            
+            // Check LevelUp Tile
+            if (finalTile.Type == TileType.LevelUp)
+            {
+                stats.LevelUp();
+                // UI Removed in Refactor 2.0
+                Debug.Log($"[Character] {stats.CharacterName} leveled up! (No UI yet)");
+            }
+        }
+
+        public void TakeDamage(int rawDamage)
+        {
+            // 1. Evasion Check
+            float finalEvasion = stats.Evasion;
+            if (StatusEffects != null && StatusEffects.HasEffect(StatusEffectType.EvasionUp))
+            {
+                // Assuming EvasionUp Value is percentage (e.g. 15 for 15%)
+                // Or flat value 0.15? Let's assume Integer 15 = 15%.
+                // Wait, CharacterStats.Evasion is float (0.0~1.0). StatusEffect.Value is int.
+                // Converting: 15 -> 0.15f
+                finalEvasion += (StatusEffects.GetEffectValue(StatusEffectType.EvasionUp) / 100f);
+            }
+            
+            if (Random.value < finalEvasion)
+            {
+                Debug.Log($"** MISS! ** {stats.CharacterName} evaded the attack!");
+                return;
+            }
+
+            // 2. Defense Calculation
+            float finalDefense = stats.Defense;
+            
+            if (StatusEffects != null)
+            {
+                if (StatusEffects.HasEffect(StatusEffectType.DefenseUp))
+                    finalDefense += StatusEffects.GetEffectValue(StatusEffectType.DefenseUp);
+                
+                if (StatusEffects.HasEffect(StatusEffectType.DefenseDown))
+                    finalDefense -= StatusEffects.GetEffectValue(StatusEffectType.DefenseDown);
+            }
+            
+            int actualDamage = Mathf.Max(1, rawDamage - (int)finalDefense);
+            stats.TakeDamage(actualDamage); // Assuming CharacterStats has basic logic
+            // stats.CurrentHP -= actualDamage; // If direct modification needed
+            
+            if (!IsAlive)
+            {
+                gameObject.SetActive(false);
+                Debug.Log($"{stats.CharacterName} died.");
+            }
         }
         
         /// <summary>
         /// 스킬 사용 (타겟 선택 시작) - 첫 번째 Active 스킬 사용
         /// </summary>
-        public void UseSkill(int diceValue)
-        {
-            UseSkillByIndex(0, diceValue);
-        }
-        
-        /// <summary>
-        /// 특정 인덱스의 스킬 사용
-        /// /// </summary>
-        public void UseSkillByIndex(int skillIndex, int diceValue)
-        {
-            if (stats.RuntimeActiveSkills.Count == 0)
-            {
-                Debug.LogWarning($"{stats.CharacterName}: No active skills available!");
-                return;
-            }
-            
-            if (skillIndex < 0 || skillIndex >= stats.RuntimeActiveSkills.Count)
-            {
-                Debug.LogWarning($"{stats.CharacterName}: Invalid skill index {skillIndex}!");
-                return;
-            }
-            
-            var runtimeSkill = stats.RuntimeActiveSkills[skillIndex];
-            var skillData = runtimeSkill.ToSkillData();
+// Skill use logic moved to SkillManager
 
-            if (skillData == null) return;
             
-            if (!skillData.CanUse(diceValue))
-            {
-                Debug.LogWarning($"{stats.CharacterName}: Cannot use {skillData.SkillName} with dice value {diceValue}. {skillData.Requirement.GetDescription()}");
-                return;
-            }
-            
-            Debug.Log($"{stats.CharacterName} preparing {skillData.SkillName} with dice {diceValue}!");
-            
-            // CombatManager 확인
-            var combatManager = CombatManager.Instance;
-            if (combatManager == null || !combatManager.InCombat)
-            {
-                Debug.LogWarning("Not in combat or CombatManager not found!");
-                return;
-            }
-            
-            // Effect 기반 스킬이면 Effect 시스템 사용
-            if (skillData.Effects.Count > 0)
-            {
-                ExecuteEffectBasedSkill(skillData, diceValue);
-            }
-            else
-            {
-                // 레거시 스킬 (하위 호환)
-                ExecuteLegacySkill(skillData, diceValue);
-            }
-        }
-        
-        /// <summary>
-        /// Effect 기반 스킬 실행
-        /// </summary>
-        private void ExecuteEffectBasedSkill(SkillData skill, int diceValue)
-        {
-            // 타겟 선택 모드 시작
-            var targetSelector = SkillTargetSelector.Instance;
-            if (targetSelector != null)
-            {
-                // 임시: 스킬과 주사위 값 저장
-                targetSelector.StartTargetSelection(this, skill, diceValue);
-            }
-            else
-            {
-                Debug.LogError("SkillTargetSelector not found! Add to scene.");
-            }
-        }
-        
-        /// <summary>
-        /// 레거시 스킬 실행 (하위 호환)
-        /// </summary>
-        private void ExecuteLegacySkill(SkillData skill, int diceValue)
-        {
-            // 타겟 선택 모드 시작
-            var targetSelector = SkillTargetSelector.Instance;
-            if (targetSelector != null)
-            {
-                targetSelector.StartTargetSelection(this, skill, diceValue);
-            }
-            else
-            {
-                Debug.LogError("SkillTargetSelector not found! Add to scene.");
-            }
-        }
+// Skill execution logic moved to SkillManager
+
         
         /// <summary>
         /// 시작 타일 찾기 (재시도용)

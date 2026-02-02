@@ -20,6 +20,7 @@ namespace DiceOrbit.Data
     {
         public int MinDiceCount = 1;        // 필요한 최소 주사위 개수 (나중에 구현)
         public int MinDiceValue = 1;        // 최소 주사위 값
+        public int MaxDiceValue = 0;        // 최대 주사위 값 (0이면 제한 없음)
         public int? ExactDiceValue = null;  // 정확한 값 요구 (예: 6만)
         public DicePattern Pattern = DicePattern.None; // 패턴
         
@@ -36,6 +37,12 @@ namespace DiceOrbit.Data
             
             // 최소 값 체크
             if (diceValue < MinDiceValue)
+            {
+                return false;
+            }
+
+            // 최대 값 체크
+            if (MaxDiceValue > 0 && diceValue > MaxDiceValue)
             {
                 return false;
             }
@@ -68,6 +75,11 @@ namespace DiceOrbit.Data
             }
             
             string desc = $"Min value: {MinDiceValue}";
+
+            if (MaxDiceValue > 0)
+            {
+                desc += $", Max value: {MaxDiceValue}";
+            }
             
             if (Pattern != DicePattern.None)
             {

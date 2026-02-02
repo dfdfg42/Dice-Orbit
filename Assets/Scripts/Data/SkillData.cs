@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 
 namespace DiceOrbit.Data
@@ -43,11 +44,15 @@ namespace DiceOrbit.Data
         
         [Header("Legacy (deprecated)")]
         public int DamageMultiplier = 1;
+    public float DiceMultiplier = 1f;
         public int BonusDamage = 0;
         public bool IgnoreDefense = false;
         
+        [Header("Modular System")]
+        public List<Skills.Modules.SkillActionModule> ActionModules = new List<Skills.Modules.SkillActionModule>();
+        
         /// <summary>
-        /// 주사위 값으로 스킬 사용 가능한지 확인
+        /// 주사위 요구사항 충족 여부
         /// </summary>
         public bool CanUse(int diceValue)
         {
@@ -59,7 +64,17 @@ namespace DiceOrbit.Data
         /// </summary>
         public int CalculateDamage(int baseAttack, int diceValue)
         {
-            return baseAttack * DamageMultiplier + diceValue + BonusDamage;
+            float effectiveDiceMultiplier = DiceMultiplier <= 0f ? 1f : DiceMultiplier;
+            int diceDamage = Mathf.RoundToInt(diceValue * effectiveDiceMultiplier);
+            int baseDamage = baseAttack * DamageMultiplier;
+
+            if (!string.IsNullOrWhiteSpace(SkillName) &&
+                SkillName.Trim().Equals("Basic Attack", StringComparison.OrdinalIgnoreCase))
+            {
+                baseDamage = 0;
+            }
+
+            return baseDamage + diceDamage + BonusDamage;
         }
     }
 }

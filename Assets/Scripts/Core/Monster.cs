@@ -1,6 +1,7 @@
 using UnityEngine;
 using DiceOrbit.Data;
 using System.Collections.Generic;
+using DiceOrbit.Data.Monsters;
 
 namespace DiceOrbit.Core
 {
@@ -38,11 +39,7 @@ namespace DiceOrbit.Core
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
             
-            if (spriteRenderer != null && stats.MonsterSprite != null)
-            {
-                spriteRenderer.sprite = stats.MonsterSprite;
-                spriteRenderer.color = stats.SpriteColor;
-            }
+            ApplyVisuals();
             
             mainCamera = Camera.main;
             
@@ -50,6 +47,33 @@ namespace DiceOrbit.Core
             if (aiPattern != null)
             {
                 aiPattern.Initialize(this);
+            }
+        }
+
+        /// <summary>
+        /// 프리셋 기반 초기화 (Wave 스폰용)
+        /// </summary>
+        public void InitializeFromPreset(MonsterPreset preset)
+        {
+            if (preset == null) return;
+
+            stats = preset.CreateStats();
+            aiPattern = preset.AIPattern;
+
+            ApplyVisuals();
+
+            if (aiPattern != null)
+            {
+                aiPattern.Initialize(this);
+            }
+        }
+
+        private void ApplyVisuals()
+        {
+            if (spriteRenderer != null && stats != null && stats.MonsterSprite != null)
+            {
+                spriteRenderer.sprite = stats.MonsterSprite;
+                spriteRenderer.color = stats.SpriteColor;
             }
         }
         
@@ -232,7 +256,7 @@ namespace DiceOrbit.Core
             
             // 공격 실행
             int damage = currentIntent.Damage;
-            target.Stats.TakeDamage(damage);
+            target.TakeDamage(damage);
             
             Debug.Log($"{stats.MonsterName} attacks {target.Stats.CharacterName} for {damage} damage!");
             
@@ -341,6 +365,18 @@ namespace DiceOrbit.Core
         {
             var partyManager = PartyManager.Instance;
             if (partyManager == null) return;
+
+            if (currentIntent != null && currentIntent.TargetType == TargetType.All)
+            {
+                var allCharacters = partyManager.GetAliveCharacters();
+                foreach (var character in allCharacters)
+                {
+                    int damage = currentIntent.Damage;
+                    character.TakeDamage(damage);
+                    Debug.Log($"{stats.MonsterName} hits {character.Stats.CharacterName} for {damage} damage!");
+                }
+                return;
+            }
             
             // 저장된 타일이 없으면 현재 모든 캐릭터 공격 (fallback)
             if (targetedTiles == null || targetedTiles.Length == 0)
@@ -350,28 +386,54 @@ namespace DiceOrbit.Core
                 foreach (var character in allCharacters)
                 {
                     int damage = currentIntent.Damage;
-                    character.Stats.TakeDamage(damage);
+                    character.TakeDamage(damage);
                     Debug.Log($"{stats.MonsterName} hits {character.Stats.CharacterName} for {damage} damage!");
                 }
                 return;
             }
             
-            // 저장된 타일에 있는 캐릭터만 공격
+            // 저장된 타일에 있는 캐릭터만 공격 (타일 인덱스/위치 기반으로 견고하게 매칭)
             var aliveCharacters = partyManager.GetAliveCharacters();
             int hitCount = 0;
-            
+
+            var targetedIndexSet = new System.Collections.Generic.HashSet<int>();
             foreach (var tile in targetedTiles)
             {
-                // 이 타일에 있는 캐릭터 찾기
-                foreach (var character in aliveCharacters)
+                if (tile != null)
                 {
-                    if (character.CurrentTile == tile)
+                    targetedIndexSet.Add(tile.TileIndex);
+                }
+            }
+
+            foreach (var character in aliveCharacters)
+            {
+                if (character == null) continue;
+
+                bool hit = false;
+                if (character.CurrentTile != null)
+                {
+                    hit = targetedIndexSet.Contains(character.CurrentTile.TileIndex);
+                }
+                else
+                {
+                    // CurrentTile이 없는 경우 위치 기반으로 근접 매칭
+                    foreach (var tile in targetedTiles)
                     {
-                        int damage = currentIntent.Damage;
-                        character.Stats.TakeDamage(damage);
-                        Debug.Log($"{stats.MonsterName} hits {character.Stats.CharacterName} on tile {tile.TileIndex} for {damage} damage!");
-                        hitCount++;
+                        if (tile == null) continue;
+                        if (Vector3.Distance(character.transform.position, tile.Position) < 0.6f)
+                        {
+                            hit = true;
+                            break;
+                        }
                     }
+                }
+
+                if (hit)
+                {
+                    int damage = currentIntent.Damage;
+                    character.TakeDamage(damage);
+                    Debug.Log($"{stats.MonsterName} hits {character.Stats.CharacterName} for {damage} damage (area)!");
+                    hitCount++;
                 }
             }
             
