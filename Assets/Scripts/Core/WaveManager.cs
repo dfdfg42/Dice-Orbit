@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using DiceOrbit.Data.Waves;
+using DiceOrbit.Data.Monsters;
 
 namespace DiceOrbit.Core
 {
@@ -11,11 +13,17 @@ namespace DiceOrbit.Core
         public static WaveManager Instance { get; private set; }
 
         [Header("Settings")]
-        public int MaxWave = 8;
+        public int MaxWave = 4;
+        [SerializeField] private WaveDatabase waveDatabase;
+        [SerializeField] private Transform spawnRoot;
+        [SerializeField] private float fallbackSpawnRadius = 2.5f;
+        [SerializeField] private GameObject monsterPrefab;
         
         [Header("Runtime")]
-        public int CurrentWave { get; private set; } = 1;
+        public int CurrentWave { get; private set; } = 0;
         public bool IsWaveActive { get; private set; } = false;
+
+        private readonly List<Monster> spawnedMonsters = new List<Monster>();
 
         public event System.Action<int> OnWaveStart;
         public event System.Action<int> OnWaveClear;
@@ -42,7 +50,6 @@ namespace DiceOrbit.Core
             else
             {
                 Debug.Log("[WaveManager] Game Completed!");
-                GameFlowManager.Instance.OnCombatVictory(); // Trigger Victory State?
             }
         }
 
@@ -50,8 +57,9 @@ namespace DiceOrbit.Core
         {
             IsWaveActive = true;
             Debug.Log($"[WaveManager] Wave {wave} Started!");
-            
-            // Spawn Monsters (Logic placeholder)
+            ResolveMaxWave();
+
+            // Spawn Monsters
             SpawnMonsters(wave);
 
             OnWaveStart?.Invoke(wave);
@@ -59,13 +67,56 @@ namespace DiceOrbit.Core
 
         private void SpawnMonsters(int wave)
         {
-            // Refactor 2.0: Spawning Logic
             Debug.Log($"[WaveManager] Spawning monsters for Wave {wave}...");
-            // TODO: Implement Monster Spawning based on Wave Difficulty
-            // For now, assume monsters are placed or CombatManager handles it.
-            
-            // Temporary Logic for Prototype:
-            // Just notify CombatManager or let CombatManager prompt start.
+
+            CleanupSpawnedMonsters();
+
+            var combatManager = CombatManager.Instance;
+            if (combatManager != null)
+            {
+                combatManager.ClearMonsters();
+            }
+
+            var waveDef = GetWaveDefinition(wave);
+            if (waveDef == null || waveDef.MonsterPresets == null || waveDef.MonsterPresets.Count == 0)
+            {
+                Debug.LogWarning("[WaveManager] No wave definition or monster presets found. Skipping spawn.");
+                return;
+            }
+
+            if (monsterPrefab == null)
+            {
+                Debug.LogWarning("[WaveManager] monsterPrefab is not assigned. Skipping spawn.");
+                return;
+            }
+
+            int spawnCount = Mathf.Max(1, waveDef.SpawnCount);
+            var spawnPoints = GetSpawnPoints();
+
+            for (int i = 0; i < spawnCount; i++)
+            {
+                MonsterPreset preset = waveDef.MonsterPresets[Random.Range(0, waveDef.MonsterPresets.Count)];
+                if (preset == null) continue;
+
+                Vector3 spawnPos = GetSpawnPosition(spawnPoints, i);
+                Quaternion rot = Quaternion.identity;
+
+                var go = Object.Instantiate(monsterPrefab, spawnPos, rot, spawnRoot);
+                var monster = go.GetComponent<Monster>() ?? go.GetComponentInChildren<Monster>();
+                if (monster != null)
+                {
+                    monster.InitializeFromPreset(preset);
+                    spawnedMonsters.Add(monster);
+                    if (combatManager != null)
+                    {
+                        combatManager.RegisterMonster(monster);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[WaveManager] Spawned object '{go.name}' has no Monster component.");
+                }
+            }
         }
 
         public void CheckWaveClear()
@@ -83,11 +134,64 @@ namespace DiceOrbit.Core
         {
             IsWaveActive = false;
             Debug.Log($"[WaveManager] Wave {CurrentWave} Cleared!");
+
+            // Prepare reward for this wave
+            if (RewardManager.Instance != null)
+            {
+                RewardManager.Instance.PrepareReward(GetWaveDefinition(CurrentWave));
+            }
             
             OnWaveClear?.Invoke(CurrentWave);
-            
-            // Trigger Post-Wave Flow (Reward -> Recruit -> Next)
-            GameFlowManager.Instance.OnWaveCleared(CurrentWave);
+        }
+
+        private void ResolveMaxWave()
+        {
+            if (waveDatabase != null && waveDatabase.Waves != null && waveDatabase.Waves.Count > 0)
+            {
+                MaxWave = waveDatabase.Waves.Count;
+            }
+        }
+
+        public WaveDefinition GetWaveDefinition(int wave)
+        {
+            if (waveDatabase == null || waveDatabase.Waves == null || waveDatabase.Waves.Count == 0)
+            {
+                return null;
+            }
+
+            int index = Mathf.Clamp(wave - 1, 0, waveDatabase.Waves.Count - 1);
+            return waveDatabase.Waves[index];
+        }
+
+        private List<WaveSpawnPoint> GetSpawnPoints()
+        {
+            var points = new List<WaveSpawnPoint>(Object.FindObjectsByType<WaveSpawnPoint>(FindObjectsSortMode.None));
+            return points;
+        }
+
+        private Vector3 GetSpawnPosition(List<WaveSpawnPoint> points, int index)
+        {
+            if (points != null && points.Count > 0)
+            {
+                var point = points[Random.Range(0, points.Count)];
+                return point.transform.position;
+            }
+
+            // fallback: center random
+            Vector2 circle = Random.insideUnitCircle * fallbackSpawnRadius;
+            return new Vector3(circle.x, 0f, circle.y);
+        }
+
+        private void CleanupSpawnedMonsters()
+        {
+            foreach (var monster in spawnedMonsters)
+            {
+                if (monster != null)
+                {
+                    Destroy(monster.gameObject);
+                }
+            }
+            spawnedMonsters.Clear();
         }
     }
 }

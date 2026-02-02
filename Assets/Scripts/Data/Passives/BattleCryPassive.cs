@@ -10,7 +10,7 @@ namespace DiceOrbit.Data.Passives
 
         private int GetTurnCount()
         {
-            return Core.TurnManager.Instance != null ? Core.TurnManager.Instance.TurnCount : 0;
+            return Core.CombatManager.Instance != null ? Core.CombatManager.Instance.TurnCount : 0;
         }
 
         public override void OnBeforeAttack(Core.Character owner, Core.Monster target, ref int damage)

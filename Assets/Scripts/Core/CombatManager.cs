@@ -1,11 +1,14 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.UI;
+using TMPro;
 
 namespace DiceOrbit.Core
 {
     /// <summary>
     /// 전투 관리자 (싱글톤)
+    /// 전투 실행, 턴 관리, UI 제어 통합
     /// </summary>
     public class CombatManager : MonoBehaviour
     {
@@ -15,15 +18,27 @@ namespace DiceOrbit.Core
         [SerializeField] private bool inCombat = false;
         [SerializeField] private List<Monster> activeMonsters = new List<Monster>();
         
+        [Header("Turn Management")]
+        [SerializeField] private int turnCount = 0;
+        private bool playerTurnActive = false;
+
+        [Header("UI References")]
+        [SerializeField] private Button rollDiceButton;
+        [SerializeField] private Button endTurnButton;
+        [SerializeField] private TextMeshProUGUI turnCountText;
+
         // Events
         public System.Action OnCombatStart;
         public System.Action OnCombatEnd;
         public System.Action<Monster> OnMonsterDeath;
+        public event System.Action OnMonsterTurnStart; // Legacy event support or internal use
         
         // Properties
         public bool InCombat => inCombat;
         public List<Monster> ActiveMonsters => activeMonsters;
-        
+        public int TurnCount => turnCount;
+        public bool PlayerTurnActive => playerTurnActive;
+
         private void Awake()
         {
             // 싱글톤 패턴
@@ -35,13 +50,32 @@ namespace DiceOrbit.Core
             {
                 Debug.LogWarning("Multiple CombatManagers detected! Destroying duplicate.");
                 Destroy(gameObject);
+                return;
+            }
+
+            // 버튼 이벤트 연결
+            if (rollDiceButton != null)
+            {
+                rollDiceButton.onClick.AddListener(OnRollDiceClicked);
+            }
+            
+            if (endTurnButton != null)
+            {
+                endTurnButton.onClick.AddListener(OnEndTurnClicked);
+                endTurnButton.interactable = false; // 처음엔 비활성
             }
         }
         
         private void Start()
         {
-            // Scene의 몬스터 자동 감지
-            // AutoDetectMonsters(); // Refactor 2.0: Let GameFlowManager handle start
+            UpdateUI();
+        }
+        
+        private void OnDestroy()
+        {
+            // Cleanup listeners if needed
+            if (rollDiceButton != null) rollDiceButton.onClick.RemoveListener(OnRollDiceClicked);
+            if (endTurnButton != null) endTurnButton.onClick.RemoveListener(OnEndTurnClicked);
         }
         
         /// <summary>
@@ -50,7 +84,6 @@ namespace DiceOrbit.Core
         private void AutoDetectMonsters()
         {
             var monsters = Object.FindObjectsByType<Monster>(FindObjectsSortMode.None);
-
 
             foreach (var monster in monsters)
             {
@@ -74,9 +107,14 @@ namespace DiceOrbit.Core
             if (inCombat) return;
             
             inCombat = true;
+            turnCount = 0;
             Debug.Log($"Combat started! {activeMonsters.Count} monster(s)");
             
             OnCombatStart?.Invoke();
+            
+            // Start the turn loop directly
+            // 0.5초 딜레이 후 시작 (연출을 위해)
+            Invoke(nameof(StartPlayerTurn), 0.5f);
         }
         
         /// <summary>
@@ -87,6 +125,7 @@ namespace DiceOrbit.Core
             if (!inCombat) return;
             
             inCombat = false;
+            HideMonsterIntents(); // Clean up visuals
             
             if (victory)
             {
@@ -98,6 +137,221 @@ namespace DiceOrbit.Core
             }
             
             OnCombatEnd?.Invoke();
+
+            // Wave 진행 처리
+            if (victory)
+            {
+                if (WaveManager.Instance != null)
+                {
+                    WaveManager.Instance.CheckWaveClear();
+                }
+            }
+            else
+            {
+                if (GameFlowManager.Instance != null)
+                {
+                    GameFlowManager.Instance.OnCombatDefeat();
+                }
+            }
+        }
+
+        // ===========================================
+        // Turn Management Logic (Merged from TurnManager)
+        // ===========================================
+
+        /// <summary>
+        /// 플레이어 턴 시작
+        /// </summary>
+        public void StartPlayerTurn()
+        {
+            if (!inCombat) return;
+
+            playerTurnActive = true;
+            turnCount++;
+            
+            Debug.Log($"=== Turn {turnCount} - Player Turn ===");
+
+            // 캐릭터 턴 시작 처리 (패시브/상태효과)
+            var partyManager = PartyManager.Instance;
+            if (partyManager != null)
+            {
+                foreach (var character in partyManager.Party)
+                {
+                    if (character != null && character.IsAlive)
+                    {
+                        character.OnStartTurn();
+                    }
+                }
+            }
+            
+            // 주사위 자동 굴리기
+            var diceManager = DiceManager.Instance;
+            if (diceManager != null)
+            {
+                diceManager.RollDice();
+            }
+            
+            // UI Update
+            if (rollDiceButton != null) rollDiceButton.interactable = false; // Auto rolled
+            if (endTurnButton != null) endTurnButton.interactable = true;
+            
+            // 몬스터 공격 의도 미리보기 표시
+            ShowMonsterIntents();
+            
+            UpdateUI();
+        }
+
+        /// <summary>
+        /// 플레이어 턴 종료
+        /// </summary>
+        public void EndPlayerTurn()
+        {
+            if (!playerTurnActive) return;
+            
+            playerTurnActive = false;
+            
+            Debug.Log("=== Player Turn End ===");
+            
+            // UI Lock
+            if (endTurnButton != null) endTurnButton.interactable = false;
+            
+            // 공격 의도 미리보기 숨기기 (몬스터 턴 시작 전)
+            HideMonsterIntents();
+            
+            // 몬스터 턴 실행
+            ExecuteMonsterTurn();
+        }
+
+        /// <summary>
+        /// Roll Dice 버튼 클릭
+        /// </summary>
+        private void OnRollDiceClicked()
+        {
+            var diceManager = DiceManager.Instance;
+            if (diceManager != null)
+            {
+                diceManager.RollDice();
+                
+                if (rollDiceButton != null) rollDiceButton.interactable = false;
+                if (endTurnButton != null) endTurnButton.interactable = true;
+            }
+        }
+        
+        /// <summary>
+        /// 턴 종료 버튼 클릭
+        /// </summary>
+        private void OnEndTurnClicked()
+        {
+            EndPlayerTurn();
+        }
+
+        private void UpdateUI()
+        {
+            if (turnCountText != null)
+            {
+                turnCountText.text = $"Turn: {turnCount}";
+            }
+        }
+
+        // ===========================================
+        // Monster Logic
+        // ===========================================
+
+        /// <summary>
+        /// 몬스터 턴 실행
+        /// </summary>
+        public void ExecuteMonsterTurn()
+        {
+            if (!inCombat) return;
+            
+            Debug.Log("=== Monster Turn Start ===");
+            OnMonsterTurnStart?.Invoke();
+            
+            // 실제 행동
+            foreach (var monster in activeMonsters)
+            {
+                if (monster != null && monster.IsAlive)
+                {
+                    monster.ExecuteIntent();
+                }
+            }
+            
+            // 파티 전멸 체크
+            var partyManager = PartyManager.Instance;
+            if (partyManager != null && partyManager.IsPartyWiped())
+            {
+                EndCombat(false);
+                return;
+            }
+
+            // End Monster Turn after delay
+            StartCoroutine(EndMonsterTurnRoutine());
+        }
+
+        private System.Collections.IEnumerator EndMonsterTurnRoutine()
+        {
+            yield return new WaitForSeconds(1.0f); // Default monster turn duration
+            
+            Debug.Log("=== Monster Turn End ===");
+            
+            if (inCombat)
+            {
+                StartPlayerTurn(); // Loop back to player
+            }
+        }
+
+        /// <summary>
+        /// 몬스터들의 공격 의도 미리보기 표시
+        /// </summary>
+        private void ShowMonsterIntents()
+        {
+            foreach (var monster in activeMonsters)
+            {
+                if (monster != null && monster.IsAlive)
+                {
+                    monster.ShowAttackPreview();
+                }
+            }
+            Debug.Log("[CombatManager] Showing monster attack previews");
+        }
+        
+        /// <summary>
+        /// 몬스터들의 공격 의도 미리보기 숨기기
+        /// </summary>
+        private void HideMonsterIntents()
+        {
+            foreach (var monster in activeMonsters)
+            {
+                if (monster != null)
+                {
+                    monster.HideAttackPreview();
+                }
+            }
+            Debug.Log("[CombatManager] Hiding monster attack previews");
+        }
+
+        // ===========================================
+        // Management Methods
+        // ===========================================
+
+        /// <summary>
+        /// 몬스터 등록 (Wave 스폰 시 사용)
+        /// </summary>
+        public void RegisterMonster(Monster monster)
+        {
+            if (monster == null) return;
+            if (!activeMonsters.Contains(monster))
+            {
+                activeMonsters.Add(monster);
+            }
+        }
+
+        /// <summary>
+        /// 현재 몬스터 목록 초기화
+        /// </summary>
+        public void ClearMonsters()
+        {
+            activeMonsters.Clear();
         }
         
         /// <summary>
@@ -112,31 +366,6 @@ namespace DiceOrbit.Core
             if (activeMonsters.All(m => !m.IsAlive))
             {
                 EndCombat(true);
-            }
-        }
-        
-        /// <summary>
-        /// 몬스터 턴 실행
-        /// </summary>
-        public void ExecuteMonsterTurn()
-        {
-            if (!inCombat) return;
-            
-            Debug.Log("=== Monster Turn ===");
-            
-            foreach (var monster in activeMonsters)
-            {
-                if (monster.IsAlive)
-                {
-                    monster.ExecuteIntent();
-                }
-            }
-            
-            // 파티 전멸 체크
-            var partyManager = PartyManager.Instance;
-            if (partyManager != null && partyManager.IsPartyWiped())
-            {
-                EndCombat(false);
             }
         }
         

@@ -1,6 +1,7 @@
 using UnityEngine;
 using DiceOrbit.Data;
 using System.Collections.Generic;
+using DiceOrbit.Data.Monsters;
 
 namespace DiceOrbit.Core
 {
@@ -38,11 +39,7 @@ namespace DiceOrbit.Core
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
             
-            if (spriteRenderer != null && stats.MonsterSprite != null)
-            {
-                spriteRenderer.sprite = stats.MonsterSprite;
-                spriteRenderer.color = stats.SpriteColor;
-            }
+            ApplyVisuals();
             
             mainCamera = Camera.main;
             
@@ -50,6 +47,33 @@ namespace DiceOrbit.Core
             if (aiPattern != null)
             {
                 aiPattern.Initialize(this);
+            }
+        }
+
+        /// <summary>
+        /// 프리셋 기반 초기화 (Wave 스폰용)
+        /// </summary>
+        public void InitializeFromPreset(MonsterPreset preset)
+        {
+            if (preset == null) return;
+
+            stats = preset.CreateStats();
+            aiPattern = preset.AIPattern;
+
+            ApplyVisuals();
+
+            if (aiPattern != null)
+            {
+                aiPattern.Initialize(this);
+            }
+        }
+
+        private void ApplyVisuals()
+        {
+            if (spriteRenderer != null && stats != null && stats.MonsterSprite != null)
+            {
+                spriteRenderer.sprite = stats.MonsterSprite;
+                spriteRenderer.color = stats.SpriteColor;
             }
         }
         
