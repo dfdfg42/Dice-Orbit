@@ -38,25 +38,31 @@ namespace DiceOrbit.Core
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                Debug.Log($"[GameFlow] Awake - Instance set, DontDestroyOnLoad, scene={SceneManager.GetActiveScene().name}");
             }
             else
             {
+                Debug.LogWarning("[GameFlow] Duplicate instance detected, destroying new instance");
                 Destroy(gameObject);
             }
         }
         
         private void Start()
         {
+            Debug.Log($"[GameFlow] Start - gameplaySceneName='{gameplaySceneName}', scene={SceneManager.GetActiveScene().name}");
+            CacheSceneReferences();
             ChangeState(GameState.MainMenu);
         }
 
         private void OnEnable()
         {
+            Debug.Log("[GameFlow] OnEnable - subscribing to sceneLoaded");
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnDisable()
         {
+            Debug.Log("[GameFlow] OnDisable - unsubscribing from sceneLoaded");
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
         
@@ -67,6 +73,7 @@ namespace DiceOrbit.Core
         {
             if (currentState == newState) return;
 
+            Debug.Log($"[GameFlow] ChangeState: {currentState} -> {newState}");
             ExitState(currentState);
             currentState = newState;
             EnterState(currentState);
@@ -179,6 +186,17 @@ namespace DiceOrbit.Core
             {
                 combatUI.SetActive(true);
             }
+
+            // Ensure first wave spawns if none started yet
+            if (WaveManager.Instance != null && WaveManager.Instance.CurrentWave == 0)
+            {
+                Debug.Log("[GameFlow] Starting first wave...");
+                WaveManager.Instance.StartFirstWave();
+            }
+            else if (WaveManager.Instance == null)
+            {
+                Debug.LogWarning("[GameFlow] WaveManager not found in scene. Monsters will not spawn.");
+            }
         }
         
         // Removed Shop/LevelUp display methods
@@ -234,7 +252,8 @@ namespace DiceOrbit.Core
 
         public void OnRecruitComplete()
         {
-            ChangeState(GameState.Reward);
+            // After the initial recruit, go straight to combat
+            ChangeState(GameState.Combat);
         }
         
         /// <summary>
@@ -250,11 +269,13 @@ namespace DiceOrbit.Core
         /// </summary>
         public void StartGame()
         {
+            Debug.Log("[GameFlow] StartGame called");
             if (!string.IsNullOrWhiteSpace(gameplaySceneName))
             {
                 var activeScene = SceneManager.GetActiveScene();
                 if (activeScene.name != gameplaySceneName)
                 {
+                    Debug.Log($"[GameFlow] Loading gameplay scene: {gameplaySceneName} (current: {activeScene.name})");
                     pendingStartGame = true;
                     SceneManager.LoadScene(gameplaySceneName);
                     return;
@@ -266,9 +287,19 @@ namespace DiceOrbit.Core
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            Debug.Log($"[GameFlow] Scene loaded: {scene.name}, pendingStartGame={pendingStartGame}");
+            CacheSceneReferences();
             if (pendingStartGame && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
             {
                 pendingStartGame = false;
+                StartGameFlow();
+            }
+            else if (currentState == GameState.MainMenu &&
+                     !string.IsNullOrWhiteSpace(gameplaySceneName) &&
+                     scene.name == gameplaySceneName)
+            {
+                // Safety: ensure gameplay scene starts in recruit flow even if pendingStartGame isn't set
+                Debug.Log("[GameFlow] Entering StartGameFlow via safety path");
                 StartGameFlow();
             }
             
@@ -285,11 +316,38 @@ namespace DiceOrbit.Core
 
         private void StartGameFlow()
         {
-            ChangeState(GameState.Combat);
-            if (WaveManager.Instance != null)
+            // Start with recruit selection (first character pick)
+            Debug.Log("[GameFlow] StartGameFlow -> Recruit");
+            ChangeState(GameState.Recruit);
+        }
+
+        private void CacheSceneReferences()
+        {
+            if (mainMenuUI == null)
             {
-                WaveManager.Instance.StartFirstWave();
+                mainMenuUI = Object.FindFirstObjectByType<UI.MainMenuUI>(FindObjectsInactive.Include);
             }
+
+            if (recruitUI == null)
+            {
+                recruitUI = Object.FindFirstObjectByType<UI.RecruitUI>(FindObjectsInactive.Include);
+            }
+
+            if (rewardUI == null)
+            {
+                rewardUI = Object.FindFirstObjectByType<UI.RewardUI>(FindObjectsInactive.Include);
+            }
+
+            if (combatUI == null)
+            {
+                var combatCanvas = GameObject.Find("CombatUI");
+                if (combatCanvas != null)
+                {
+                    combatUI = combatCanvas;
+                }
+            }
+
+            Debug.Log($"[GameFlow] CacheSceneReferences - mainMenuUI={(mainMenuUI != null)}, recruitUI={(recruitUI != null)}, rewardUI={(rewardUI != null)}, combatUI={(combatUI != null)}");
         }
 
         private void ShowVictory()

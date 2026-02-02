@@ -34,9 +34,14 @@ namespace DiceOrbit.UI
 
         private void OnStartClicked()
         {
+            Debug.Log("[MainMenuUI] Start button clicked");
             if (Core.GameFlowManager.Instance != null)
             {
                 Core.GameFlowManager.Instance.StartGame();
+            }
+            else
+            {
+                Debug.LogWarning("[MainMenuUI] GameFlowManager.Instance is NULL");
             }
         }
 
