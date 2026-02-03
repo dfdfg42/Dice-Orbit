@@ -46,10 +46,11 @@ namespace DiceOrbit.Data.Skills
                 TargetType = BaseSkill.TargetType,
                 Effects = levelData.Effects ?? new System.Collections.Generic.List<EffectData>(),
                 Requirement = levelData.Requirement ?? new DiceRequirement(),
+                ActionModules = levelData.ActionModules ?? new System.Collections.Generic.List<Skills.Modules.SkillActionModule>(),
+                
                 DamageMultiplier = levelData.DamageMultiplier,
                 BonusDamage = levelData.BonusDamage,
                 IgnoreDefense = levelData.IgnoreDefense
-                // Note: 'Damage' (Base) logic might need custom handling but SkillData usually uses Multiplier + Bonus
             };
         }
     }

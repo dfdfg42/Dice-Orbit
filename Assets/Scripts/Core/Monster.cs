@@ -230,14 +230,12 @@ namespace DiceOrbit.Core
                 Debug.LogWarning($"[Monster] Original target unavailable, selecting new target: {target.Stats.CharacterName}");
             }
             
-            // 공격 실행
-            int damage = currentIntent.Damage;
-            target.Stats.TakeDamage(damage);
-            
-            Debug.Log($"{stats.MonsterName} attacks {target.Stats.CharacterName} for {damage} damage!");
-            
-            // 타겟 초기화
-            targetedCharacter = null;
+                // 공격 실행 (Pipeline 위임)
+                int damage = currentIntent.Damage;
+                var action = new Pipeline.CombatAction($"{stats.MonsterName} Attack", Pipeline.ActionType.Attack, damage);
+                action.AddTag("MonsterAttack");
+                var context = new Pipeline.CombatContext(this, target, action);
+                Pipeline.CombatPipeline.Instance.Process(context);
         }
         
         /// <summary>
@@ -350,7 +348,10 @@ namespace DiceOrbit.Core
                 foreach (var character in allCharacters)
                 {
                     int damage = currentIntent.Damage;
-                    character.Stats.TakeDamage(damage);
+                    var action = new Pipeline.CombatAction($"{stats.MonsterName} Area", Pipeline.ActionType.Attack, damage);
+                    action.AddTag("MonsterAttack");
+                    var context = new Pipeline.CombatContext(this, character, action);
+                    Pipeline.CombatPipeline.Instance.Process(context);
                     Debug.Log($"{stats.MonsterName} hits {character.Stats.CharacterName} for {damage} damage!");
                 }
                 return;
@@ -368,7 +369,10 @@ namespace DiceOrbit.Core
                     if (character.CurrentTile == tile)
                     {
                         int damage = currentIntent.Damage;
-                        character.Stats.TakeDamage(damage);
+                        var action = new Pipeline.CombatAction($"{stats.MonsterName} Area", Pipeline.ActionType.Attack, damage);
+                        action.AddTag("MonsterAttack");
+                        var context = new Pipeline.CombatContext(this, character, action);
+                        Pipeline.CombatPipeline.Instance.Process(context);
                         Debug.Log($"{stats.MonsterName} hits {character.Stats.CharacterName} on tile {tile.TileIndex} for {damage} damage!");
                         hitCount++;
                     }

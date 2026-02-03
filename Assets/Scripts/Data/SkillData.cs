@@ -41,6 +41,9 @@ namespace DiceOrbit.Data
         [Header("Requirements")]
         public DiceRequirement Requirement = new DiceRequirement();
         
+        [Header("Modules")]
+        public List<Skills.Modules.SkillActionModule> ActionModules = new List<Skills.Modules.SkillActionModule>();
+        
         [Header("Legacy (deprecated)")]
         public int DamageMultiplier = 1;
         public int BonusDamage = 0;

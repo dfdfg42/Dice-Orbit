@@ -26,6 +26,7 @@ namespace DiceOrbit.Data.Skills
         
         public DiceRequirement Requirement;
         public List<EffectData> Effects;
+        public List<Modules.SkillActionModule> ActionModules;
     }
 
     [CreateAssetMenu(fileName = "New Character Skill", menuName = "Dice Orbit/Skills/Character Skill")]

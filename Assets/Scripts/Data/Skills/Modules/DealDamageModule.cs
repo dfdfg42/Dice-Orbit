@@ -38,7 +38,7 @@ namespace DiceOrbit.Data.Skills.Modules
 
             if (target != null)
             {
-                var action = new CombatAction("Module Damage", ActionType.Attack, finalBaseDamage);
+                var action = new CombatAction("Module Damage", Core.Pipeline.ActionType.Attack, finalBaseDamage);
                 action.IgnoreDefense = IgnoreDefense;
                 action.AddTag("Module");
                 

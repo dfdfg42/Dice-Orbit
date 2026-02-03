@@ -1,141 +1,153 @@
-# 스킬 시스템 구조도 (Skill System Structure)
+# 전투 및 스킬 시스템 구조도 (Combat & Skill Service Architecture)
 
-이 문서는 **Dice Orbit**의 캐릭터 스킬 시스템 구조와 실행 흐름을 상세히 설명합니다.
+이 문서는 **Action Pipeline** 패턴이 적용된 Dice Orbit의 전투 시스템을 설명합니다. 스킬, 패시브, 상태이상(Effect)이 하나의 파이프라인으로 통합되어 처리됩니다.
 
-## 1. 클래스 구조도 (Class Architecture)
+## 1. 시스템 아키텍처 (System Architecture)
+
+전투 시스템은 **요청(Action Generation)**, **처리(Pipeline Processing)**, **반응(Reactive System)**의 3단계로 구성됩니다.
 
 ```mermaid
 classDiagram
-    %% --- Core Managers ---
+    %% --- Core Pipeline ---
+    class CombatPipeline {
+        +static Instance
+        +Process(CombatContext)
+        -NotifyReactors(CombatContext, Trigger)
+        -ApplyAction(CombatContext)
+    }
+
+    class CombatContext {
+        +object SourceUnit
+        +object Target
+        +CombatAction Action
+        +float OutputValue
+        +bool IsCancelled
+        +SourceCharacter
+        +SourceMonster
+    }
+
+    class CombatAction {
+        +string Name
+        +ActionType Type
+        +int BaseValue
+        +List~string~ Tags
+    }
+
+    class ICombatReactor {
+        <<Interface>>
+        +OnReact(Trigger, Context)
+        +int Priority
+    }
+
+    %% --- Managers (Generators) ---
     class SkillManager {
-        +PrepareSkill(Character, int, int)
+        +PrepareSkill(...)
         +ExecuteSkill(...)
-        -bool ExecuteModules(...)
-        -void ApplyStatusEffects(...)
+        --
+        생성: CombatAction(Attack/Heal)
     }
 
-    class SkillTargetSelector {
-        +StartTargetSelection(...)
-        +SelectTarget(...)
+    class Monster {
+        +ExecuteIntent()
+        --
+        생성: CombatAction(Attack)
     }
 
-    class CombatManager {
-        +AttackMonster(...)
-        +AttackAllMonsters(...)
+    %% --- Reactive Systems (Listeners) ---
+    class PassiveManager {
+        +OnReact(...)
+        -List~PassiveAbility~ activePassives
     }
 
-    %% --- Data Layer (ScriptableObjects) ---
-    class CharacterSkill {
-        +string SkillName
-        +List~SkillLevelData~ Levels
+    class StatusEffectManager {
+        +OnReact(...)
+        -List~StatusEffect~ activeEffects
+    }
+    
+    class PassiveAbility {
+        +OnReact(...)
     }
 
-    class SkillLevelData {
-        +int Level
-        +DiceRequirement Requirement
-        +List~EffectData~ Effects
-        +List~SkillActionModule~ ActionModules
-    }
-
-    class SkillActionModule {
-        <<Abstract>>
-        +Execute(Character, GameObject, int)
-    }
-
-    class DealDamageModule {
-        +int DamageMultiplier
-        +float DiceMultiplier
-    }
-
-    class GenericEffectModule {
+    class StatusEffect {
+        +OnReact(...)
         +EffectType Type
     }
 
-    %% --- Runtime Logic ---
-    class RuntimeSkill {
-        +CharacterSkill BaseSkill
-        +int CurrentLevel
-        +SkillData ToSkillData()
-    }
-
-    class SkillData {
-        +SkillTargetType TargetType
-        +List~SkillActionModule~ ActionModules
-        +CalculateDamage(...)
-    }
-
     %% --- Relationships ---
-    SkillManager ..> SkillTargetSelector : Uses
-    SkillManager ..> CombatManager : Deals Damage (Legacy/Direct)
-    SkillManager ..> RuntimeSkill : Reads Data
+    CombatPipeline ..> CombatContext : Uses
+    CombatContext *-- CombatAction : Contains
     
-    RuntimeSkill --> CharacterSkill : Wrapper
-    CharacterSkill *-- SkillLevelData : Contains
-    SkillLevelData o-- SkillActionModule : Modular Actions
+    SkillManager ..> CombatPipeline : Sends Context
+    Monster ..> CombatPipeline : Sends Context
     
-    SkillActionModule <|-- DealDamageModule : Inherits
-    SkillActionModule <|-- GenericEffectModule : Inherits
+    CombatPipeline --> ICombatReactor : Notifies
     
-    SkillManager --> SkillActionModule : Executes
+    PassiveManager ..|> ICombatReactor : Implements
+    StatusEffectManager ..|> ICombatReactor : Implements
+    
+    PassiveManager o-- PassiveAbility : Manages
+    StatusEffectManager o-- StatusEffect : Manages
+    
+    PassiveAbility ..|> ICombatReactor : Logic Proxy
+    StatusEffect ..|> ICombatReactor : Logic Proxy
 ```
 
-## 2. 스킬 실행 흐름도 (Execution Flow)
+## 2. 전투 실행 흐름 (Execution Flow)
 
-스킬을 선택하고 실행될 때까지의 내부 처리 과정을 보여줍니다.
+모든 전투 행위(스킬, 몬스터 공격, 도트 데미지 등)는 `CombatPipeline`을 통과합니다.
+
+### 2.1 전체 파이프라인 순서
+1.  **Preparation**: 액션 생성 및 타겟 설정 (`CombatContext` 생성)
+2.  **Pre-Action**: 액션 시작 전 단계 (취소, 회피 판정 등)
+3.  **Calculation**: 수치 계산 단계 (데미지 공식, 버프/디버프 연산)
+4.  **Application**: 실제 적용 (HP 감소, 힐 적용)
+5.  **Reaction**: 적용 후 반응 (피격 시 효과, 흡혈, 처치 효과)
+
+### 2.2 상세 시퀀스 다이어그램
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant CM as CombatManager
-    participant SM as SkillManager
-    participant TS as SkillTargetSelector
-    participant Runtime as RuntimeSkill
-    participant Module as SkillActionModule
-    
-    User->>CM: [UI] 스킬 슬롯 클릭
-    CM->>SM: PrepareSkill(Source, Index, DiceValue)
-    
-    Note right of SM: 1. 검증 단계
-    SM->>Runtime: ToSkillData()
-    Runtime-->>SM: SkillData 생성
-    SM->>SM: Check Dice Requirement
-    
-    Note right of SM: 2. 타겟 선택 단계
-    SM->>TS: StartTargetSelection(SkillData)
-    TS->>User: 타겟 선택 UI 활성화
-    User->>TS: 타겟 클릭 (Monster/Tile)
-    TS->>SM: OnTargetSelected(Target)
-    
-    Note right of SM: 3. 실행 단계
-    SM->>SM: ExecuteSkill()
-    
-    alt Has Action Modules (신규 모듈 시스템)
-        loop Each Module
-            SM->>Module: Execute(Source, Target, Dice)
-            Module->>CM: AttackMonster / ApplyEffect
-        end
-    else Legacy Logic (기본 로직)
-        SM->>SM: Calculate Damage
-        SM->>CM: Apply Damage / Heal
-    end
-    
-    Note right of SM: 4. 후처리
-    SM->>SM: ApplyStatusEffects() (상태이상)
-    SM->>CM: Trigger Passives (OnAfterAttack)
+    participant Source as "Source (Unit)"
+    participant SM as Skill/Intent System
+    participant Pipe as CombatPipeline
+    participant Context as CombatContext
+    participant Reactors as Passives/Effects
+    participant Target as "Target (Unit)"
+
+    Note over Source, SM: 1. Action Generation
+    Source->>SM: Use Skill / Execute Intent
+    SM->>Context: Create Context(Source, Target, Action)
+    SM->>Pipe: Process(Context)
+
+    Note over Pipe, Reactors: 2. Pipeline Execution
+
+    %% Step 1: Pre-Action
+    Pipe->>Reactors: OnReact(OnPreAction)
+    Reactors-->>Context: Modify/Cancel?
+
+    %% Step 2: Calculation
+    Pipe->>Reactors: OnReact(OnCalculateOutput)
+    Reactors-->>Context: Add Damage / Reduce Damage
+    Note right of Pipe: Final Value = OutputValue
+
+    %% Step 3: Application
+    Pipe->>Target: Apply(OutputValue)
+    Target-->>Target: Reduce HP / Apply Effect
+
+    %% Step 4: Reaction
+    Pipe->>Reactors: OnReact(OnHit / OnPostAction)
+    Reactors-->>Source: Lifesteal / Stack Buff
+    Reactors-->>Target: Trigger OnHit Effects
 ```
 
-## 3. 주요 컴포넌트 설명 (Component Details)
+## 3. 데이터 구조 (Data Structure)
 
-### A. Core Components
-*   **SkillManager**: 스킬 시스템의 총괄 관리자입니다.
-    *   `PrepareSkill`: 주사위 조건 검사 및 타겟 선택 요청.
-    *   `ExecuteSkill`: 최종적으로 모듈을 실행하거나 직접 데미지를 입힙니다.
-*   **SkillTargetSelector**: 타겟팅(단일 적, 아군, 전체 등) 모드에 따라 마우스 입력을 처리합니다.
+*   **SkillData**: 런타임 스킬 정보. `ActionModules`를 포함하여 파이프라인을 타기 전 동작을 정의.
+*   **PassiveAbility (SO)**: 패시브 로직 정의. `ICombatReactor`처럼 동작하며 특정 트리거에 반응.
+*   **StatusEffect (Class)**: 런타임 버프/디버프. 자신이 부착된 유닛이 Source/Target이 될 때 `OnReact`를 통해 결과에 개입.
 
-### B. Data & State
-*   **CharacterSkill (SO)**: 변하지 않는 스킬의 정의(이름, 레벨별 데이터)입니다.
-*   **RuntimeSkill (C# Class)**: 인게임에서 레벨업 상태를 저장하고, 현재 레벨에 맞는 `SkillData`를 생성합니다.
-*   **SkillActionModule (SO)**: 스킬의 행동을 조립식으로 정의합니다. (예: "투사체 발사", "광역 폭발", "도트뎀 부여"를 모듈로 붙일 수 있음)
-
-### C. 확장성 (Extensibility)
-기존의 하드코딩된 로직(`ExecuteSkill` 내부의 switch문)보다 **Action Module**을 사용하는 것이 권장됩니다. 모듈을 사용하면 **CharacterSkill** 에셋에서 원하는 모듈을 리스트에 추가하는 것만으로 새로운 스킬 로직을 만들 수 있습니다.
+### 예시: 데미지 계산 공식
+`OutputValue` = (`BaseDamage` + `DiceBonus`)
+-> **Reactor 1 (Passive)**: `OnCalculateOutput` -> `OutputValue += 5` (공격력 증가)
+-> **Reactor 2 (Target Defense Effect)**: `OnCalculateOutput` -> `OutputValue -= 2` (방어력 증가)
+-> **Final Applied**: `Base + Dice + 5 - 2`

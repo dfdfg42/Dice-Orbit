@@ -48,7 +48,7 @@ namespace DiceOrbit.Systems.Effects
         public void OnReact(CombatTrigger trigger, CombatContext context)
         {
             // 턴 시작 시 지속시간 관리 (별도 로직 필요하지만 여기서 처리 가능)
-            if (trigger == CombatTrigger.OnTurnStart && context.Source == owner)
+            if (trigger == CombatTrigger.OnTurnStart && context.SourceUnit == owner)
             {
                 HandleTurnStart();
             }
@@ -70,7 +70,17 @@ namespace DiceOrbit.Systems.Effects
                 // 도트 데미지 처리 (간략화)
                 if (effect.Type == EffectType.Dot)
                 {
-                    owner.Stats.TakeDamage(effect.Value);
+                    if (CombatPipeline.Instance != null)
+                    {
+                        var action = new CombatAction("DoT", Core.Pipeline.ActionType.Attack, effect.Value);
+                        action.AddTag("Dot");
+                        var context = new CombatContext(owner, owner, action);
+                        CombatPipeline.Instance.Process(context);
+                    }
+                    else
+                    {
+                        owner.Stats.TakeDamage(effect.Value);
+                    }
                     Debug.Log($"[Status] Dot Damage: {effect.Value}");
                 }
 

@@ -185,7 +185,7 @@ namespace DiceOrbit.Core
                 
                 if (IsValidTarget(targetObj))
                 {
-                    ExecuteSkillOnTarget(targetObj);
+                    NotifyTargetSelected(targetObj);
                     EndTargetSelection();
                 }
                 else
@@ -220,45 +220,25 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
-        /// 타겟에 스킬 실행
+        /// 타겟 선택 완료 -> SkillManager로 위임
         /// </summary>
-        private void ExecuteSkillOnTarget(GameObject target)
+        private void NotifyTargetSelected(GameObject target)
         {
-            var combatManager = CombatManager.Instance;
-            if (combatManager == null) return;
-            
-            int damage = currentSkill.CalculateDamage(sourceCharacter.Stats.Attack, diceValue);
-            
-            switch (currentSkill.TargetType)
-            {
-                case SkillTargetType.SingleEnemy:
-                    var monster = target.GetComponent<Monster>();
-                    if (monster != null)
-                    {
-                        combatManager.AttackMonster(monster, damage, currentSkill.IgnoreDefense);
-                        Debug.Log($"{sourceCharacter.Stats.CharacterName} attacks {monster.Stats.MonsterName} for {damage} damage!");
-                    }
-                    break;
-                    
-                case SkillTargetType.AllEnemies:
-                    combatManager.AttackAllMonsters(damage, currentSkill.IgnoreDefense);
-                    Debug.Log($"{sourceCharacter.Stats.CharacterName} attacks all enemies for {damage} damage!");
-                    break;
-                    
-                case SkillTargetType.Self:
-                    sourceCharacter.Stats.Heal(damage);
-                    Debug.Log($"{sourceCharacter.Stats.CharacterName} heals for {damage} HP!");
-                    break;
-                    
-                case SkillTargetType.Ally:
-                    var ally = target.GetComponent<Character>();
-                    if (ally != null)
-                    {
-                        ally.Stats.Heal(damage);
-                        Debug.Log($"{sourceCharacter.Stats.CharacterName} heals {ally.Stats.CharacterName} for {damage} HP!");
-                    }
-                    break;
-            }
+            if (SkillManager.Instance == null) return;
+
+            var resolved = ResolveTarget(target);
+            SkillManager.Instance.OnTargetSelected(sourceCharacter, resolved, currentSkill, diceValue);
+        }
+
+        private object ResolveTarget(GameObject target)
+        {
+            var monster = target.GetComponentInParent<Monster>();
+            if (monster != null) return monster;
+
+            var character = target.GetComponentInParent<Character>();
+            if (character != null) return character;
+
+            return target;
         }
         
         /// <summary>
