@@ -53,14 +53,14 @@ namespace DiceOrbit.Systems.Effects
             if (trigger == CombatTrigger.OnCalculateOutput)
             {
                 // 내가 타겟(방어자)이고, 방어 버프가 있다면
-                if (context.Target == context.Action && Type == EffectType.BuffDefense)
+                if (context.Target == Owner && Type == EffectType.BuffDefense)
                 {
                     // context.OutputValue -= Value; ???
                     // context.Action이 뭔지 확인 필요. AttackAction이어야 함.
                 }
                 
                 // 내가 공격자이고, 공격 버프가 있다면
-                if (context.Source == context.Action && Type == EffectType.BuffAttack) 
+                if (context.SourceUnit == Owner && Type == EffectType.BuffAttack) 
                 {
                     // 이 논리는 Context 구현에 따라 달라짐.
                     // 단순화: Context에는 Source와 Target이 명확함.
@@ -86,7 +86,7 @@ namespace DiceOrbit.Systems.Effects
              if (trigger == CombatTrigger.OnCalculateOutput && Type == EffectType.BuffAttack)
              {
                  // 내가 공격자일 때
-                 if (context.Source == Owner && context.Action.Type == ActionType.Attack)
+                 if (context.SourceUnit == Owner && context.Action.Type == Core.Pipeline.ActionType.Attack)
                  {
                      context.OutputValue += Value;
                      Debug.Log($"[Effect] {Type} applied: +{Value} damage");
@@ -96,8 +96,8 @@ namespace DiceOrbit.Systems.Effects
              // 방어력 증가 버프
              if (trigger == CombatTrigger.OnCalculateOutput && Type == EffectType.BuffDefense)
              {
-                 // 내가 타겟일 때
-                 if (context.Target == Owner && context.Action.Type == ActionType.Attack)
+                 // 내가 타겟일 때 (Target은 object이므로 비교 가능)
+                 if (context.Target == Owner && context.Action.Type == Core.Pipeline.ActionType.Attack)
                  {
                      context.OutputValue -= Value;
                      Debug.Log($"[Effect] {Type} applied: -{Value} damage received");

@@ -157,7 +157,19 @@ namespace DiceOrbit.Core
         {
             foreach (var character in party)
             {
-                character.Stats.Heal(amount);
+                if (character == null) continue;
+
+                if (Core.Pipeline.CombatPipeline.Instance != null)
+                {
+                    var action = new Core.Pipeline.CombatAction("Party Heal", Core.Pipeline.ActionType.Heal, amount);
+                    action.AddTag("Party");
+                    var context = new Core.Pipeline.CombatContext(null, character, action);
+                    Core.Pipeline.CombatPipeline.Instance.Process(context);
+                }
+                else
+                {
+                    character.Stats.Heal(amount);
+                }
             }
             
             Debug.Log($"Party healed for {amount} HP");

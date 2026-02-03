@@ -20,8 +20,11 @@ namespace DiceOrbit.Data.Passives
         
         private bool hasAttackedThisTurn = false;
 
+        private Core.Character owner;
+
         public override void Initialize(Core.Character owner)
         {
+            this.owner = owner;
             base.Initialize(owner);
             hasAttackedThisTurn = false;
         }
@@ -31,16 +34,9 @@ namespace DiceOrbit.Data.Passives
             // 1. 턴 시작 시 플래그 초기화
             if (trigger == CombatTrigger.OnTurnStart)
             {
-                // 내 턴이 시작될 때
-                if (context.Source == context.Target) // TurnOwner == MyOwner? (Context 정의 확인 필요)
+                // 내 턴이 시작될 때 (Source가 나 자신일 때)
+                if (context.SourceUnit == owner) 
                 {
-                    // ! Context의 Source/Target 의미가 트리거마다 다를 수 있음.
-                    // OnTurnStart: Source = TurnOwner
-                    // 일단 내 턴인지 확인하려면 context.Source == Owner 인지 봐야 함
-                    // (PassiveAbility.Initialize에서 Owner 저장한다고 가정)
-                    
-                    // 하지만 PassiveAbility는 SO라서 runtime owner 변수가 공유될 위험 있음.
-                    // *이번 구현에서는 SO를 Clone해서 쓴다고 가정하고 멤버변수 사용*
                     hasAttackedThisTurn = false;
                 }
             }
@@ -49,24 +45,20 @@ namespace DiceOrbit.Data.Passives
             if (trigger == CombatTrigger.OnCalculateOutput)
             {
                 // 내가 공격자이고, 공격 액션이며, 이번 턴 아직 공격 안했으면
-                if (context.SourceUnit == context.Source /* Owner check needed via specific way if context.Source is Character */ 
-                    && context.Action.Type == ActionType.Attack
+                if (context.SourceUnit == owner 
+                    && context.Action.Type == Core.Pipeline.ActionType.Attack
                     && !hasAttackedThisTurn)
                 {
                     context.OutputValue += BonusDamageManager;
                     Debug.Log($"[BattleCry] First attack bonus! +{BonusDamageManager}");
-                    
-                    // ! 주의: OnCalculateOutput은 여러 번 불릴 수 있음 (예측 등).
-                    // 실제 공격이 수행되었을 때(OnHit/PostAction) 플래그를 꺼야 함.
-                    // 여기서 끄면 안됨.
                 }
             }
             
             // 3. 공격 수행 후 플래그 변경
             if (trigger == CombatTrigger.OnPostAction)
             {
-                if (context.SourceUnit == context.Source // check owner
-                    && context.Action.Type == ActionType.Attack)
+                if (context.SourceUnit == owner
+                    && context.Action.Type == Core.Pipeline.ActionType.Attack)
                 {
                     hasAttackedThisTurn = true;
                 }

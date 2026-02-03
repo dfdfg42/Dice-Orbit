@@ -1,4 +1,5 @@
 using UnityEngine;
+using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Systems.Effects
 {
@@ -12,13 +13,33 @@ namespace DiceOrbit.Systems.Effects
         
         public void Apply(Core.Character target, int value)
         {
-            target.Stats.TakeDamage(value);
+            if (CombatPipeline.Instance != null)
+            {
+                var action = new CombatAction(EffectName, ActionType.Attack, value);
+                action.AddTag("Effect");
+                var context = new CombatContext(null, target, action);
+                CombatPipeline.Instance.Process(context);
+            }
+            else
+            {
+                target.Stats.TakeDamage(value);
+            }
             Debug.Log($"{EffectName}: {target.Stats.CharacterName} takes {value} damage");
         }
         
         public void Apply(Core.Monster target, int value)
         {
-            target.Stats.TakeDamage(value);
+            if (CombatPipeline.Instance != null)
+            {
+                var action = new CombatAction(EffectName, ActionType.Attack, value);
+                action.AddTag("Effect");
+                var context = new CombatContext(null, target, action);
+                CombatPipeline.Instance.Process(context);
+            }
+            else
+            {
+                target.Stats.TakeDamage(value);
+            }
             Debug.Log($"{EffectName}: {target.Stats.MonsterName} takes {value} damage");
         }
     }
@@ -33,13 +54,33 @@ namespace DiceOrbit.Systems.Effects
         
         public void Apply(Core.Character target, int value)
         {
-            target.Stats.Heal(value);
+            if (CombatPipeline.Instance != null)
+            {
+                var action = new CombatAction(EffectName, ActionType.Heal, value);
+                action.AddTag("Effect");
+                var context = new CombatContext(null, target, action);
+                CombatPipeline.Instance.Process(context);
+            }
+            else
+            {
+                target.Stats.Heal(value);
+            }
             Debug.Log($"{EffectName}: {target.Stats.CharacterName} heals {value} HP");
         }
         
         public void Apply(Core.Monster target, int value)
         {
-            target.Stats.Heal(value);
+            if (CombatPipeline.Instance != null)
+            {
+                var action = new CombatAction(EffectName, ActionType.Heal, value);
+                action.AddTag("Effect");
+                var context = new CombatContext(null, target, action);
+                CombatPipeline.Instance.Process(context);
+            }
+            else
+            {
+                target.Stats.Heal(value);
+            }
             Debug.Log($"{EffectName}: {target.Stats.MonsterName} heals {value} HP");
         }
     }

@@ -8,30 +8,20 @@ namespace DiceOrbit.Core.Pipeline
     /// </summary>
     public class CombatContext
     {
-        public Core.Character Source;   // 시전 주체 (Monster일수도 있음 -> Monster/Character Base 공통 부모가 없다면 object나 Interface 필요)
-        public object Target;           // 타겟 (Character or Monster)
+        public object SourceUnit; // (Character or Monster)
+        public object Target;     // (Character or Monster)
         
-        public CombatAction Action;     // 수행 중인 액션
-        public float OutputValue;       // 최종 결과값 (데미지/힐량) 변조 가능
+        // 편의 접근자
+        public Core.Character SourceCharacter => SourceUnit as Core.Character;
+        public Core.Monster SourceMonster => SourceUnit as Core.Monster;
+        public Core.Character TargetCharacter => Target as Core.Character;
+        public Core.Monster TargetMonster => Target as Core.Monster;
 
+        public CombatAction Action;     // 수행 중인 액션
+        public float OutputValue;       // 최종 결과값 (데미지/힐량)
         public bool IsCancelled;        // 액션 취소 여부
 
         // 생성자
-        public CombatContext(Core.Character source, object target, CombatAction action)
-        {
-            Source = source;
-            Target = target;
-            Action = action;
-            OutputValue = action.BaseValue;
-            IsCancelled = false;
-        }
-
-        // 몬스터 시전자를 위한 생성자 오버로딩 또는 공통 인터페이스 필요
-        // 현재는 편의상 Core.Character를 Source로 두었으나, Monster도 공격하므로 구체화 필요.
-        // 임시로 Source를 object로 두거나 IUnit 인터페이스를 도입하면 좋음.
-        // 여기서는 편의성을 위해 object로 일반화하거나 별도 필드 추가.
-        public object SourceUnit; // (Character or Monster)
-
         public CombatContext(object source, object target, CombatAction action)
         {
             SourceUnit = source;
