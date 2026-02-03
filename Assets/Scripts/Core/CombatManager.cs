@@ -372,23 +372,42 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 캐릭터가 몬스터 공격
         /// </summary>
+        /// <summary>
+        /// 캐릭터가 몬스터 공격 (Pipeline 사용)
+        /// </summary>
         public void AttackMonster(Monster target, int damage, bool ignoreDefense = false)
         {
             if (target == null || !target.IsAlive) return;
             
-            target.TakeDamage(damage, ignoreDefense);
+            // System/Direct Attack via Pipeline
+            var action = new Pipeline.CombatAction("Direct Attack", Pipeline.ActionType.Attack, damage);
+            var context = new Pipeline.CombatContext(null, target, action); // Source is null (System)
+            
+            if (Pipeline.CombatPipeline.Instance != null)
+            {
+                Pipeline.CombatPipeline.Instance.Process(context);
+            }
         }
         
         /// <summary>
-        /// 모든 몬스터 공격 (범위 공격)
+        /// 모든 몬스터 공격 (범위 공격, Pipeline 사용)
         /// </summary>
         public void AttackAllMonsters(int damage, bool ignoreDefense = false)
         {
-            foreach (var monster in activeMonsters)
+            // 리스트 복사하여 순회 중 변경 대비
+            var targets = new List<Monster>(activeMonsters);
+            
+            foreach (var monster in targets)
             {
                 if (monster.IsAlive)
                 {
-                    monster.TakeDamage(damage, ignoreDefense);
+                    var action = new Pipeline.CombatAction("Global Attack", Pipeline.ActionType.Attack, damage);
+                    var context = new Pipeline.CombatContext(null, monster, action);
+                    
+                    if (Pipeline.CombatPipeline.Instance != null)
+                    {
+                        Pipeline.CombatPipeline.Instance.Process(context);
+                    }
                 }
             }
         }
