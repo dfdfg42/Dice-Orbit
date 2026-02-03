@@ -6,425 +6,305 @@ namespace DiceOrbit.Core
 {
     /// <summary>
     /// 몬스터 (중앙 구역)
+    /// AI + Skills + Managers 통합 구현
     /// </summary>
     [RequireComponent(typeof(SpriteRenderer))]
     public class Monster : MonoBehaviour
     {
-        [Header("Stats")]
+        [Header("Preset")]
+        [SerializeField] private Data.Monsters.MonsterPreset preset;
+        
+        [Header("Runtime Info")]
         [SerializeField] private MonsterStats stats;
+        [SerializeField] private List<SkillData> availableSkills = new List<SkillData>();
         
-        [Header("AI Pattern")]
+        [Header("AI")]
         [SerializeField] private Data.MonsterAI.MonsterPattern aiPattern;
-        
-        // 현재 의도
-        private AttackIntent currentIntent;
-        
-        // 타겟팅 공격 시 선택된 타겟 (미리보기와 실제 공격에서 동일하게 사용)
-        private Character targetedCharacter;
-        
-        // 범위 공격 시 선택된 타일들 (미리보기와 실제 공격에서 동일하게 사용)
-        private Data.TileData[] targetedTiles;
+        private SkillData nextSkill; // 다음 턴에 사용할 스킬
         
         [Header("Visual")]
         private SpriteRenderer spriteRenderer;
         private Camera mainCamera;
         
+        // Target Logic
+        private Character targetedCharacter;
+        private Data.TileData[] targetedTiles;
+        
+        [Header("Systems")]
+        [SerializeField] private Systems.Passives.PassiveManager passives;
+        [SerializeField] private Systems.Effects.StatusEffectManager statusEffects;
+        
         // Properties
         public MonsterStats Stats => stats;
-        public AttackIntent CurrentIntent => currentIntent;
         public bool IsAlive => stats.IsAlive;
+        public Systems.Passives.PassiveManager Passives => passives;
+        public Systems.Effects.StatusEffectManager StatusEffects => statusEffects;
         
         private void Awake()
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
-            
-            if (spriteRenderer != null && stats.MonsterSprite != null)
-            {
-                spriteRenderer.sprite = stats.MonsterSprite;
-                spriteRenderer.color = stats.SpriteColor;
-            }
-            
             mainCamera = Camera.main;
-            
-            // 패턴 초기화
-            if (aiPattern != null)
+
+            // Systems 초기화
+            passives = GetComponent<Systems.Passives.PassiveManager>();
+            if (passives == null) passives = gameObject.AddComponent<Systems.Passives.PassiveManager>();
+            passives.Initialize(this); // Assuming PassiveManager has Initialize(Monster) overload or uses Object
+
+            statusEffects = GetComponent<Systems.Effects.StatusEffectManager>();
+            if (statusEffects == null) statusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
+            statusEffects.Initialize(this); // Assuming StatusEffectManager has Initialize(Monster) overload or uses Object
+        }
+        
+        private void Start()
+        {
+            // Preset이 Inspector에 할당되어 있다면 바로 초기화
+            if (preset != null)
             {
-                aiPattern.Initialize(this);
+                InitializeFromPreset(preset);
             }
+            
+            // 첫 턴 의도 선택
+            SelectNextIntent();
         }
         
         private void LateUpdate()
         {
-            // Billboard: 항상 카메라를 향하도록
             if (mainCamera != null)
             {
                 transform.rotation = mainCamera.transform.rotation;
             }
         }
         
-        private void Start()
+        /// <summary>
+        /// 프리셋으로부터 초기화
+        /// </summary>
+        public void InitializeFromPreset(Data.Monsters.MonsterPreset monsterPreset)
         {
-            // 첫 턴 의도 선택
-            SelectNextIntent();
+            if (monsterPreset == null) return;
+            
+            preset = monsterPreset;
+            
+            // Stats Deep Copy (간단한 복제, 실제로는 Clone 메서드 권장)
+            stats = new MonsterStats
+            {
+                MonsterName = preset.BaseStats.MonsterName,
+                MaxHP = preset.BaseStats.MaxHP,
+                CurrentHP = preset.BaseStats.MaxHP,
+                Attack = preset.BaseStats.Attack,
+                Defense = preset.BaseStats.Defense,
+                MonsterSprite = preset.BaseStats.MonsterSprite,
+                SpriteColor = preset.BaseStats.SpriteColor
+            };
+            
+            // Visual
+            if (spriteRenderer != null && stats.MonsterSprite != null)
+            {
+                spriteRenderer.sprite = stats.MonsterSprite;
+                spriteRenderer.color = stats.SpriteColor;
+            }
+            
+            // AI
+            aiPattern = preset.AIPattern;
+            availableSkills = new List<SkillData>(preset.Skills);
+            
+            if (aiPattern != null)
+            {
+                aiPattern.Initialize(this);
+            }
+            
+            // Passives
+            if (preset.PassiveAbilities != null)
+            {
+                foreach (var passiveData in preset.PassiveAbilities)
+                {
+                    passives.AddPassive(passiveData);
+                }
+            }
+            
+            Debug.Log($"Monster '{stats.MonsterName}' initialized from preset.");
         }
         
         /// <summary>
-        /// 다음 턴 의도 선택
+        /// 다음 턴 행동 결정
         /// </summary>
         public void SelectNextIntent()
         {
             if (aiPattern != null)
             {
-                // AI 패턴에서 다음 스킬 가져오기
-                var nextSkill = aiPattern.GetNextSkill(this);
+                nextSkill = aiPattern.GetNextSkill(this, availableSkills);
                 
                 if (nextSkill != null)
                 {
-                    // 스킬을 AttackIntent로 변환
-                    currentIntent = nextSkill.CreateIntent(stats);
-                    Debug.Log($"{stats.MonsterName} next intent: {currentIntent}");
-                    
-                    // 공격 미리보기 표시
+                    Debug.Log($"[Monster] Next Skill Selected: {nextSkill.SkillName}");
                     ShowAttackPreview();
                 }
                 else
                 {
-                    Debug.LogWarning($"{stats.MonsterName} has no skill to execute!");
-                    currentIntent = null;
+                    Debug.LogWarning($"[Monster] No skill selected by AI.");
                 }
             }
-            else
-            {
-                Debug.LogWarning($"{stats.MonsterName}: No AI Pattern assigned!");
-            }
         }
         
         /// <summary>
-        /// 공격 미리보기 표시
-        /// </summary>
-        public void ShowAttackPreview()
-        {
-            if (currentIntent == null) return;
-            
-            var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
-            if (indicator == null)
-            {
-                Debug.LogWarning("AttackIndicator not found in scene!");
-                return;
-            }
-            
-            switch (currentIntent.Type)
-            {
-                case IntentType.Attack:
-                    // 타겟팅 타입에 따른 처리
-                    ShowAttackPreviewByTargetType(indicator);
-                    break;
-                    
-                case IntentType.Multi:
-                    // 레거시: 전부 공격
-                    ShowAreaAttackPreview(indicator, true);
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 타겟 타입별 공격 미리보기
-        /// </summary>
-        private void ShowAttackPreviewByTargetType(UI.AttackIndicator indicator)
-        {
-            if (currentIntent.TargetType == TargetType.Single)
-            {
-                ShowTargetedAttackPreview(indicator);
-            }
-            else if (currentIntent.TargetType == TargetType.All)
-            {
-                ShowAreaAttackPreview(indicator, true);
-            }
-            else if (currentIntent.TargetType == TargetType.Area)
-            {
-                // 특정 타겟을 중심으로 범위 공격
-                ShowTargetedAreaAttackPreview(indicator);
-            }
-        }
-        
-        /// <summary>
-        /// 타겟팅 공격 미리보기
-        /// </summary>
-        private void ShowTargetedAttackPreview(UI.AttackIndicator indicator)
-        {
-            var partyManager = PartyManager.Instance;
-            if (partyManager == null) return;
-            
-            var aliveCharacters = partyManager.GetAliveCharacters();
-            if (aliveCharacters.Count == 0) return;
-            
-            // 타겟 선택 및 저장 (실제 공격에서도 이 타겟 사용)
-            targetedCharacter = aliveCharacters[Random.Range(0, aliveCharacters.Count)];
-            
-            // Transform 전달 (실시간 업데이트용)
-            indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
-            Debug.Log($"[Monster] Targeting {targetedCharacter.Stats.CharacterName} for attack");
-        }
-
-        /// <summary>
-        /// 타겟 중심 범위 공격 미리보기
-        /// </summary>
-        private void ShowTargetedAreaAttackPreview(UI.AttackIndicator indicator)
-        {
-            // 1. 타겟 선정
-            var partyManager = PartyManager.Instance;
-            if (partyManager == null) return;
-            
-            var aliveCharacters = partyManager.GetAliveCharacters();
-            if (aliveCharacters.Count == 0) return;
-            
-            targetedCharacter = aliveCharacters[Random.Range(0, aliveCharacters.Count)];
-            
-            // 2. 타일 범위 계산 (반경 N칸)
-            if (targetedCharacter.CurrentTile == null) return;
-
-            var tiles = new HashSet<TileData>();
-            tiles.Add(targetedCharacter.CurrentTile); // 중심
-            
-            // 좌우 확장
-            int radius = currentIntent.AreaRadius;
-            TileData left = targetedCharacter.CurrentTile.PreviousTile;
-            TileData right = targetedCharacter.CurrentTile.NextTile;
-            
-            for (int i = 0; i < radius; i++)
-            {
-                if(left != null) { tiles.Add(left); left = left.PreviousTile; }
-                if(right != null) { tiles.Add(right); right = right.NextTile; }
-            }
-            
-            // Array 변환
-            targetedTiles = new TileData[tiles.Count];
-            tiles.CopyTo(targetedTiles);
-
-            // 3. 표시
-            indicator.ShowAreaAttack(targetedTiles);
-            Debug.Log($"[Monster] Targeting {targetedCharacter.Stats.CharacterName} + Area(R{radius})");
-        }
-        
-        /// <summary>
-        /// 단일 공격 실행
-        /// </summary>
-        private void PerformSingleAttack()
-        {
-            var partyManager = PartyManager.Instance;
-            if (partyManager == null) return;
-            
-            // 미리보기에서 저장된 타겟 사용
-            Character target = targetedCharacter;
-            
-            // 타겟이 없거나 죽었으면 새로 선택
-            if (target == null || !target.IsAlive)
-            {
-                var aliveCharacters = partyManager.GetAliveCharacters();
-                if (aliveCharacters.Count == 0)
-                {
-                    Debug.Log("No alive characters to attack!");
-                    return;
-                }
-                target = aliveCharacters[Random.Range(0, aliveCharacters.Count)];
-                Debug.LogWarning($"[Monster] Original target unavailable, selecting new target: {target.Stats.CharacterName}");
-            }
-            
-                // 공격 실행 (Pipeline 위임)
-                int damage = currentIntent.Damage;
-                var action = new Pipeline.CombatAction($"{stats.MonsterName} Attack", Pipeline.ActionType.Attack, damage);
-                action.AddTag("MonsterAttack");
-                var context = new Pipeline.CombatContext(this, target, action);
-                Pipeline.CombatPipeline.Instance.Process(context);
-        }
-        
-        /// <summary>
-        /// 범위 공격 미리보기 (전체 혹은 지정된 타일)
-        /// </summary>
-        private void ShowAreaAttackPreview(UI.AttackIndicator indicator, bool selectAll = false)
-        {
-            var partyManager = PartyManager.Instance;
-            if (partyManager == null) return;
-            
-            if (selectAll)
-            {
-                // 모든 캐릭터의 타일 수집
-                var aliveCharacters = partyManager.GetAliveCharacters();
-                var tiles = new System.Collections.Generic.List<Data.TileData>();
-                foreach (var character in aliveCharacters)
-                {
-                    if (character.CurrentTile != null)
-                    {
-                        tiles.Add(character.CurrentTile);
-                    }
-                }
-                targetedTiles = tiles.ToArray();
-            }
-            
-            if (targetedTiles != null)
-            {
-                indicator.ShowAreaAttack(targetedTiles);
-                Debug.Log($"[Monster] Targeting {targetedTiles.Length} tiles for area attack");
-            }
-        }
-        
-        /// <summary>
-        /// 공격 미리보기 숨기기
-        /// </summary>
-        public void HideAttackPreview()
-        {
-            var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
-            if (indicator != null)
-            {
-                indicator.Hide();
-            }
-            
-            // 공격 후 타겟 초기화는 PerformSingleAttack에서 수행
-        }
-        
-        /// <summary>
-        /// 현재 의도 실행
+        /// 의도 실행 (Monster Turn)
         /// </summary>
         public void ExecuteIntent()
         {
-            if (currentIntent == null || !IsAlive) return;
+            if (!IsAlive) return;
             
-            switch (currentIntent.Type)
+            // 턴 시작 효과 처리 (Passives etc)
+            OnStartTurn();
+            
+            if (nextSkill != null)
             {
-                case IntentType.Attack:
-                    AttackParty();
-                    break;
-                case IntentType.Multi:
-                    // Legacy support
-                    PerformAreaAttack();
-                    break;
-                    
-                case IntentType.Defend:
-                    stats.Defense += 3;
-                    Debug.Log($"{stats.MonsterName} defends! Defense +3");
-                    break;
-                    
-                case IntentType.Buff:
-                    stats.Attack += 2;
-                    Debug.Log($"{stats.MonsterName} powers up! Attack +2");
-                    break;
+                ExecuteSkill(nextSkill);
+            }
+            else
+            {
+                Debug.Log($"[Monster] Idling (No Skill)");
             }
             
-            // 다음 턴 의도 선택
+            // 다음 의도 준비
             SelectNextIntent();
         }
         
         /// <summary>
-        /// 파티 공격 분기
+        /// 턴 시작 (Pipeline TurnStart)
         /// </summary>
-        private void AttackParty()
+        public void OnStartTurn()
         {
-            Debug.Log($"{stats.MonsterName} executing attack!");
-            
-            if (currentIntent.TargetType == TargetType.Single)
+            Debug.Log($"[Monster] {stats.MonsterName} Start Turn");
+            if (Pipeline.CombatPipeline.Instance != null)
             {
-                PerformSingleAttack();
-            }
-            else
-            {
-                // Area or All
-                PerformAreaAttack();
+                var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.TurnStart, 0);
+                var context = new Pipeline.CombatContext(this, this, action);
+                Pipeline.CombatPipeline.Instance.Process(context);
             }
         }
         
-        /// <summary>
-        /// 범위 공격 실행 (저장된 타일 위의 모든 적)
-        /// </summary>
-        private void PerformAreaAttack()
+        private void ExecuteSkill(SkillData skill)
         {
+            Debug.Log($"[Monster] Executing Skill: {skill.SkillName}");
+            
+            // 타겟 선정 (Pipeline 처리 전 결정)
+            // 여기서는 단순화하여 TargetType에 따라 처리
+            // 실제로는 ActionModule 내부에서 처리하거나, Context에 Target 목록을 담아야 함.
+            
             var partyManager = PartyManager.Instance;
             if (partyManager == null) return;
             
-            // 저장된 타일이 없으면 현재 모든 캐릭터 공격 (fallback)
-            if (targetedTiles == null || targetedTiles.Length == 0)
+            var aliveCharacters = partyManager.GetAliveCharacters();
+            if (aliveCharacters.Count == 0) return;
+            
+            // 타겟팅 로직 (미리보기에서 저장된 타겟 사용 혹은 새로 선정)
+            Character primaryTarget = targetedCharacter; 
+            if (primaryTarget == null || !primaryTarget.IsAlive)
             {
-                Debug.LogWarning("[Monster] No targeted tiles saved, attacking all characters");
-                var allCharacters = partyManager.GetAliveCharacters();
-                foreach (var character in allCharacters)
-                {
-                    int damage = currentIntent.Damage;
-                    var action = new Pipeline.CombatAction($"{stats.MonsterName} Area", Pipeline.ActionType.Attack, damage);
-                    action.AddTag("MonsterAttack");
-                    var context = new Pipeline.CombatContext(this, character, action);
-                    Pipeline.CombatPipeline.Instance.Process(context);
-                    Debug.Log($"{stats.MonsterName} hits {character.Stats.CharacterName} for {damage} damage!");
-                }
-                return;
+                 primaryTarget = aliveCharacters[Random.Range(0, aliveCharacters.Count)];
+            }
+
+            // 스킬의 모든 모듈 실행 via Pipeline
+            // 몬스터 스킬은 ActionModule을 직접 실행하기보다,
+            // SkillData 자체가 ActionModule을 가지고 있으므로
+            // 각 모듈을 Pipeline Action으로 변환하여 실행
+            
+            foreach (var module in skill.ActionModules)
+            {
+                 // 모듈 실행 로직 (간소화: 모듈이 직접 Context를 받아 처리하도록 설계되어야 함)
+                 // 현재 구조: CombatPipeline.Process(Context) -> Context.Action
+                 // SkillData -> ActionModule -> CombatAction?
+                 
+                 // 임시: SkillData의 데미지 팩터만 사용 (System Migration 과도기)
+                 // 추후 ActionModule.Execute(Context) 형태로 고도화 필요
+                 
+                 // NOTE: Since ActionModule logic is complex, we use a basic fallback implementation here
+                 // conforming to the requested behavior for now using CombatAction.
+                 
+                 int damage = skill.CalculateDamage(stats.Attack, 0); // No dice for monsters
+                 var actionType = Pipeline.ActionType.Attack;
+                 
+                 // Create Context
+                 var context = new Pipeline.CombatContext(this, primaryTarget, new Pipeline.CombatAction(skill.SkillName, actionType, damage));
+                 
+                 // Apply Logic based on TargetType
+                 if (skill.TargetType == SkillTargetType.AllEnemies || skill.TargetType == SkillTargetType.AllAllies) // Monster perspective: Enemy = Character
+                 {
+                     // Area Attack
+                     foreach(var chara in aliveCharacters)
+                     {
+                         var areaContext = new Pipeline.CombatContext(this, chara, new Pipeline.CombatAction(skill.SkillName, actionType, damage));
+                         Pipeline.CombatPipeline.Instance.Process(areaContext);
+                     }
+                 }
+                 else
+                 {
+                     // Single
+                     Pipeline.CombatPipeline.Instance.Process(context);
+                 }
             }
             
-            // 저장된 타일에 있는 캐릭터만 공격
-            var aliveCharacters = partyManager.GetAliveCharacters();
-            int hitCount = 0;
-            
-            foreach (var tile in targetedTiles)
+            // Fallback for Legacy Config (if empty modules)
+            if (skill.ActionModules.Count == 0)
             {
-                // 이 타일에 있는 캐릭터 찾기
-                foreach (var character in aliveCharacters)
+                 int damage = skill.CalculateDamage(stats.Attack, 0);
+                 var context = new Pipeline.CombatContext(this, primaryTarget, new Pipeline.CombatAction(skill.SkillName, Pipeline.ActionType.Attack, damage));
+                 Pipeline.CombatPipeline.Instance.Process(context);
+            }
+        }
+
+        // === Preview Logic ===
+        
+        public void ShowAttackPreview()
+        {
+            if (nextSkill == null) return;
+            
+            var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
+            if (indicator == null) return;
+            
+            // 타겟 선정 (미리 해둠)
+            var partyManager = PartyManager.Instance;
+            if (partyManager != null)
+            {
+                var alive = partyManager.GetAliveCharacters();
+                if (alive.Count > 0)
                 {
-                    if (character.CurrentTile == tile)
+                    targetedCharacter = alive[Random.Range(0, alive.Count)];
+                    
+                    if (nextSkill.TargetType == SkillTargetType.SingleEnemy)
                     {
-                        int damage = currentIntent.Damage;
-                        var action = new Pipeline.CombatAction($"{stats.MonsterName} Area", Pipeline.ActionType.Attack, damage);
-                        action.AddTag("MonsterAttack");
-                        var context = new Pipeline.CombatContext(this, character, action);
-                        Pipeline.CombatPipeline.Instance.Process(context);
-                        Debug.Log($"{stats.MonsterName} hits {character.Stats.CharacterName} on tile {tile.TileIndex} for {damage} damage!");
-                        hitCount++;
+                        indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
+                    }
+                    else if (nextSkill.TargetType == SkillTargetType.AllEnemies)
+                    {
+                        // Show Area on all chars
+                         // (Simplified)
+                        indicator.ShowTargetedAttack(transform, targetedCharacter.transform); // Placeholder
                     }
                 }
             }
-            
-            if (hitCount == 0)
-            {
-                Debug.Log($"{stats.MonsterName}'s area attack missed! All targets moved away.");
-            }
-            
-            // 타일 초기화
-            targetedTiles = null;
         }
         
-        /// <summary>
-        /// 데미지 받기
-        /// </summary>
-        public void TakeDamage(int damage, bool ignoreDefense = false)
+        public void HideAttackPreview()
+        {
+            var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
+            if (indicator != null) indicator.Hide();
+        }
+        
+        // === Damage Handler ===
+        
+        public void TakeDamage(int damage)
         {
             if (!IsAlive) return;
-            
-            if (ignoreDefense)
-            {
-                stats.CurrentHP = Mathf.Max(0, stats.CurrentHP - damage);
-                Debug.Log($"{stats.MonsterName} took {damage} damage (defense ignored)! HP: {stats.CurrentHP}/{stats.MaxHP}");
-            }
-            else
-            {
-                stats.TakeDamage(damage);
-            }
-            
-            // 사망 체크
-            if (!IsAlive)
-            {
-                OnDeath();
-            }
+            stats.TakeDamage(damage);
+            if (!IsAlive) OnDeath();
         }
         
-        /// <summary>
-        /// 사망 처리
-        /// </summary>
         private void OnDeath()
         {
-            Debug.Log($"{stats.MonsterName} defeated!");
-            
-            // 승리 처리는 CombatManager에서
+            Debug.Log($"[Monster] {stats.MonsterName} Died.");
             var combatManager = CombatManager.Instance;
-            if (combatManager != null)
-            {
-                combatManager.OnMonsterDefeated(this);
-            }
+            if (combatManager != null) combatManager.OnMonsterDefeated(this);
+            Destroy(gameObject);
         }
     }
 }

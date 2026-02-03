@@ -205,6 +205,23 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
+        /// 턴 시작 처리 (Pipeline)
+        /// </summary>
+        public void OnStartTurn()
+        {
+            Debug.Log($"[Character] {stats.CharacterName} Start Turn");
+            
+            // Pipeline을 통해 턴 시작 알림
+            var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.TurnStart, 0);
+            var context = new Pipeline.CombatContext(this, this, action); // Self-targeting for TurnStart
+            
+            if (Pipeline.CombatPipeline.Instance != null)
+            {
+                Pipeline.CombatPipeline.Instance.Process(context);
+            }
+        }
+
+        /// <summary>
         /// 스킬 사용 (타겟 선택 시작) - 첫 번째 Active 스킬 사용
         /// </summary>
         public void UseSkill(int diceValue)
