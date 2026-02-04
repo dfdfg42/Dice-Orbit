@@ -420,4 +420,5 @@ namespace DiceOrbit.Core
             return activeMonsters.Where(m => m.IsAlive).ToList();
         }
     }
+    //
 }
