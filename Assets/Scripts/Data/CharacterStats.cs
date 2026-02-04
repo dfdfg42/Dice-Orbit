@@ -7,7 +7,7 @@ namespace DiceOrbit.Data
     /// 캐릭터 스탯 데이터
     /// </summary>
     [System.Serializable]
-    public class CharacterStats : Stats
+    public class CharacterStats : UnitStats
     {
         [Header("Basic Info")]
         public string CharacterName = "Hero";
