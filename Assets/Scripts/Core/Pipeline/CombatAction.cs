@@ -7,7 +7,8 @@ namespace DiceOrbit.Core.Pipeline
     {
         Attack,
         Heal,
-        Utility // Buff, Debuff only, Move, etc.
+        Utility, // Buff, Debuff only, Move, etc.
+        TurnStart
     }
 
     /// <summary>

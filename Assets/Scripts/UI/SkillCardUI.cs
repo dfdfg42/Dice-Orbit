@@ -16,31 +16,28 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI levelText; // "New!" or "Lv.1 -> Lv.2"
         [SerializeField] private Button button;
 
-        private Core.SkillDraftManager.DraftOption myOption;
-        private Action<Core.SkillDraftManager.DraftOption> onClickCallback;
+        private CharacterSkill mySkill;
+        private Action<CharacterSkill> onClickCallback;
 
-        public void Setup(Core.SkillDraftManager.DraftOption option, Action<Core.SkillDraftManager.DraftOption> callback)
+        public void Setup(CharacterSkill skill, bool isNew, int currentLevel, Action<CharacterSkill> callback)
         {
-            myOption = option;
+            mySkill = skill;
             onClickCallback = callback;
-
-            var skill = option.Skill;
             
             // Visuals
             if (iconImage != null) iconImage.sprite = skill.Icon;
             if (nameText != null) nameText.text = skill.SkillName;
             
             // Description logic
-            // Ideally prompt description for *next* level if upgrading
             string desc = "";
-            if (option.IsNew)
+            if (isNew)
             {
                 var lvl1 = skill.GetLevelData(1);
                 desc = lvl1 != null ? lvl1.Description : "No Description";
             }
             else
             {
-                var nextLv = skill.GetLevelData(option.CurrentLevel + 1);
+                var nextLv = skill.GetLevelData(currentLevel + 1);
                 desc = nextLv != null ? nextLv.Description : "Max Level Reached!";
             }
             if (descText != null) descText.text = desc;
@@ -49,8 +46,8 @@ namespace DiceOrbit.UI
 
             if (levelText != null)
             {
-                if (option.IsNew) levelText.text = "<color=yellow>New!</color>";
-                else levelText.text = $"Lv.{option.CurrentLevel} -> Lv.{option.CurrentLevel + 1}";
+                if (isNew) levelText.text = "<color=yellow>New!</color>";
+                else levelText.text = $"Lv.{currentLevel} -> Lv.{currentLevel + 1}";
             }
 
             // Click
@@ -60,7 +57,7 @@ namespace DiceOrbit.UI
 
         private void OnClick()
         {
-            onClickCallback?.Invoke(myOption);
+            onClickCallback?.Invoke(mySkill);
         }
     }
 }
