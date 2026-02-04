@@ -21,6 +21,7 @@ namespace DiceOrbit.Core
         [Header("AI")]
         [SerializeField] private Data.MonsterAI.MonsterPattern aiPattern;
         private SkillData nextSkill; // 다음 턴에 사용할 스킬
+        public SkillData CurrentIntent => nextSkill;
         
         [Header("Visual")]
         private SpriteRenderer spriteRenderer;

@@ -19,19 +19,19 @@ namespace DiceOrbit.Data.MonsterAI
             if (CriticalPattern != null) CriticalPattern.Initialize(monster);
         }
 
-        public override MonsterSkill GetNextSkill(Monster monster)
+        public override SkillData GetNextSkill(Monster monster, System.Collections.Generic.List<SkillData> availableSkills)
         {
             if (monster.Stats.HPRatio <= ThresholdPercent)
             {
                 if (CriticalPattern != null)
                 {
-                    return CriticalPattern.GetNextSkill(monster);
+                    return CriticalPattern.GetNextSkill(monster, availableSkills);
                 }
             }
 
             if (NormalPattern != null)
             {
-                return NormalPattern.GetNextSkill(monster);
+                return NormalPattern.GetNextSkill(monster, availableSkills);
             }
 
             return null;

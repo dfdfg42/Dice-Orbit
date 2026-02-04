@@ -9,7 +9,11 @@ namespace DiceOrbit.Systems.Effects
 {
     public class StatusEffectManager : MonoBehaviour, ICombatReactor
     {
-        private Character owner;
+        private object owner;
+        private Character ownerCharacter => owner as Character;
+        private Monster ownerMonster => owner as Monster;
+        
+        // Restore activeEffects
         private Dictionary<EffectType, StatusEffect> activeEffects = new Dictionary<EffectType, StatusEffect>();
 
         public int Priority => 10;
@@ -19,21 +23,27 @@ namespace DiceOrbit.Systems.Effects
             owner = character;
         }
 
+        public void Initialize(Monster monster)
+        {
+            owner = monster;
+        }
+
         public void AddEffect(EffectType type, int value, int duration)
         {
             if (activeEffects.ContainsKey(type))
             {
                 var existing = activeEffects[type];
-                existing.AddStack(value); // or refresh logic
+                existing.AddStack(value); 
                 existing.RefreshDuration(duration);
             }
             else
             {
                 var newEffect = new StatusEffect(type, value, duration);
-                newEffect.SetOwner(owner);
+                // newEffect.SetOwner(owner); // Helper if needed
                 activeEffects.Add(type, newEffect);
             }
-            Debug.Log($"[Status] Added {type} to {owner.Stats.CharacterName}");
+            string name = ownerCharacter?.Stats.CharacterName ?? ownerMonster?.Stats.MonsterName ?? "Unknown";
+            Debug.Log($"[Status] Added {type} to {name}");
         }
 
         public void RemoveEffect(EffectType type)
@@ -79,7 +89,8 @@ namespace DiceOrbit.Systems.Effects
                     }
                     else
                     {
-                        owner.Stats.TakeDamage(effect.Value);
+                        if(ownerCharacter != null) ownerCharacter.Stats.TakeDamage(effect.Value);
+                        else if(ownerMonster != null) ownerMonster.Stats.TakeDamage(effect.Value);
                     }
                     Debug.Log($"[Status] Dot Damage: {effect.Value}");
                 }
