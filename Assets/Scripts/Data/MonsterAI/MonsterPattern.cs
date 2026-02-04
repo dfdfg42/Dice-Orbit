@@ -8,7 +8,7 @@ namespace DiceOrbit.Data.MonsterAI
     /// </summary>
     public abstract class MonsterPattern : ScriptableObject
     {
-        public abstract MonsterSkill GetNextSkill(Monster monster);
+        public abstract SkillData GetNextSkill(Monster monster, System.Collections.Generic.List<SkillData> availableSkills);
 
         /// <summary>
         /// Optional hook for initialization or resetting state when a battle starts or phase changes.

@@ -260,6 +260,15 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
+        /// 레벨업 트리거 (LevelUpAttribute Tile)
+        /// </summary>
+        public void TriggerLevelUp(Data.CharacterStats stats)
+        {
+            Debug.Log($"[GameFlow] TriggerLevelUp called for {stats.CharacterName} - State Change to LevelUp");
+            ChangeState(GameState.LevelUp);
+        }
+
+        /// <summary>
         /// 메인메뉴에서 게임 시작
         /// </summary>
         public void StartGame()

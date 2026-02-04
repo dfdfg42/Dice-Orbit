@@ -136,10 +136,13 @@ namespace DiceOrbit.Core
             Debug.Log($"[WaveManager] Wave {CurrentWave} Cleared!");
 
             // Prepare reward for this wave
+            // Prepare reward for this wave
+            /*
             if (RewardManager.Instance != null)
             {
                 RewardManager.Instance.PrepareReward(GetWaveDefinition(CurrentWave));
             }
+            */
             
             OnWaveClear?.Invoke(CurrentWave);
         }

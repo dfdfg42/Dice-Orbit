@@ -11,6 +11,8 @@ namespace DiceOrbit.Core
         Shop,               // 상점
         LevelUp,            // 스킬 선택 (레벨업)
         Victory,            // 승리
-        GameOver            // 패배
+        GameOver,           // 패배
+        Recruit,            // 모집
+        Reward              // 보상
     }
 }

@@ -25,21 +25,29 @@ namespace DiceOrbit.Data.MonsterAI
             }
         }
 
-        public override MonsterSkill GetNextSkill(Monster monster)
+        public override SkillData GetNextSkill(Monster monster, System.Collections.Generic.List<SkillData> availableSkills)
         {
-            if (skills.Count == 0) return null;
+            if (availableSkills == null || availableSkills.Count == 0) return null;
 
             int id = monster.GetInstanceID();
             if (!monsterIndices.ContainsKey(id))
             {
-                monsterIndices.Add(id, 0);
+                monsterIndices[id] = 0;
             }
 
             int index = monsterIndices[id];
-            MonsterSkill skill = skills[index];
+            
+            // Wrap index if it exceeds available skills count
+            if (index >= availableSkills.Count)
+            {
+                index = 0;
+                monsterIndices[id] = 0; 
+            }
+            
+            SkillData skill = availableSkills[index];
 
             // Advance index and loop
-            monsterIndices[id] = (index + 1) % skills.Count;
+            monsterIndices[id] = (index + 1) % availableSkills.Count;
 
             return skill;
         }
