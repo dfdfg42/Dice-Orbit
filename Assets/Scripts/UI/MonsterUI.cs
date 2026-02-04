@@ -120,37 +120,44 @@ namespace DiceOrbit.UI
         /// <summary>
         /// 공격 의도 UI 업데이트
         /// </summary>
+        /// <summary>
+        /// 공격 의도 UI 업데이트
+        /// </summary>
         private void UpdateIntent()
         {
             if (monster == null || monster.CurrentIntent == null) return;
             
-            var intent = monster.CurrentIntent;
+            SkillData intent = monster.CurrentIntent;
             
+            // 타입 추론 (SkillData에는 명시적인 IntentType이 없으므로 간이 로직)
+            // 기본은 Attack으로 가정
+            IntentType type = IntentType.Attack;
+            string valueText = "";
+            
+            // Simple mapping logic
+            if (intent.Type == SkillType.Passive) type = IntentType.Defend; // Just for visuals
+            else if (intent.TargetType == SkillTargetType.Self || intent.TargetType == SkillTargetType.Ally) type = IntentType.Buff;
+            
+            // 데미지 계산 (Display용 - 주사위 0 가정)
+            int damage = intent.CalculateDamage(monster.Stats.Attack, 0);
+            valueText = damage.ToString();
+            
+            if (intent.TargetType == SkillTargetType.AllEnemies)
+            {
+                type = IntentType.Multi; // Use Multi icon/color for Area
+            }
+
             // 의도 아이콘 색상
             if (intentIcon != null)
             {
-                intentIcon.color = GetIntentColor(intent.Type);
+                intentIcon.color = GetIntentColor(type);
             }
             
             // 의도 텍스트
             if (intentText != null)
             {
-                switch (intent.Type)
-                {
-                    case IntentType.Attack:
-                    case IntentType.Multi:
-                        intentText.text = intent.Damage.ToString();
-                        break;
-                    case IntentType.Defend:
-                        intentText.text = "DEF";
-                        break;
-                    case IntentType.Buff:
-                        intentText.text = "ATK";
-                        break;
-                    case IntentType.Special:
-                        intentText.text = "?";
-                        break;
-                }
+                 intentText.text = valueText;
+                 // Special overrides?
             }
         }
         
