@@ -3,7 +3,7 @@ using UnityEngine;
 namespace DiceOrbit.Data
 {
     [System.Serializable]
-    public class Stats
+    public class UnitStats
     {
         [Header("Combat Stats")]
         public int MaxHP = 50;

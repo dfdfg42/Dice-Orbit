@@ -6,7 +6,7 @@ namespace DiceOrbit.Data
     /// 몬스터 스탯 데이터
     /// </summary>
     [System.Serializable]
-    public class MonsterStats :Stats
+    public class MonsterStats : UnitStats
     {
         [Header("Basic Info")]
         public string MonsterName = "Slime";
