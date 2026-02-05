@@ -24,6 +24,9 @@ MonoBehaviour:
   PassiveSkills: []
   StartingSkills:
   - {fileID: 11400000, guid: 057f7da87dbe12d4ea89b19bad5ca9a7, type: 2}
+  - {fileID: 11400000, guid: a1b2c3d4e5f60718293a4b5c6d7e8f90, type: 2}
+  StartingPassives:
+  - {fileID: 11400000, guid: c1d2e3f405162738495a6b7c8d9e0f12, type: 2}
   AvailableSkills:
   - {fileID: 11400000, guid: fd7866342c653484db1aa060897db161, type: 2}
   - {fileID: 11400000, guid: 3bc636534b0eb494889c5c52f28e4891, type: 2}

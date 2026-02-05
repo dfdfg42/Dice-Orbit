@@ -24,6 +24,9 @@ namespace DiceOrbit.UI
         
         [Header("Settings")]
         [SerializeField] private int numberOfChoices = 4;
+    [SerializeField] private Vector3 characterScale = new Vector3(0.3f, 0.3f, 1f);
+    [SerializeField] private Vector2 colliderSizeMultiplier = new Vector2(1.6f, 1.6f);
+    [SerializeField] private float colliderDepth = 0.2f;
         
         private List<Core.CharacterPreset> currentChoices = new List<Core.CharacterPreset>();
         private Core.CharacterPreset selectedCharacter;
@@ -37,6 +40,32 @@ namespace DiceOrbit.UI
             }
             
             GenerateRandomChoices();
+        }
+
+        public void Show()
+        {
+            if (selectionCanvas != null)
+            {
+                selectionCanvas.gameObject.SetActive(true);
+            }
+            else
+            {
+                gameObject.SetActive(true);
+            }
+
+            GenerateRandomChoices();
+        }
+
+        public void Hide()
+        {
+            if (selectionCanvas != null)
+            {
+                selectionCanvas.gameObject.SetActive(false);
+            }
+            else
+            {
+                gameObject.SetActive(false);
+            }
         }
         
         /// <summary>
@@ -160,7 +189,7 @@ namespace DiceOrbit.UI
             
             // Character GameObject 생성
             var characterObj = new GameObject($"Player_{preset.CharacterName}");
-            characterObj.transform.localScale = new Vector3(0.4f, 0.4f, 1f);
+            characterObj.transform.localScale = characterScale;
             Debug.Log($"[CreatePlayer] GameObject created: {characterObj.name}");
             
             // SpriteRenderer 추가 (Character보다 먼저 추가)
@@ -191,7 +220,7 @@ namespace DiceOrbit.UI
             
             // Collider 추가 (클릭 감지용)
             var collider = characterObj.AddComponent<BoxCollider>();
-            collider.size = new Vector3(1, 1, 0.1f);
+            FitColliderToSprite(collider, spriteRenderer, characterObj.transform);
             
             // Stats 설정
             var stats = preset.CreateStats();
@@ -254,6 +283,27 @@ namespace DiceOrbit.UI
             {
                 Debug.LogWarning("[CreatePlayer] CharacterUI component not found on prefab!");
             }
+        }
+
+        private void FitColliderToSprite(BoxCollider collider, SpriteRenderer renderer, Transform target)
+        {
+            if (collider == null || renderer == null || renderer.sprite == null || target == null) return;
+
+            var bounds = renderer.bounds;
+            var localSize = new Vector3(
+                bounds.size.x / target.localScale.x,
+                bounds.size.y / target.localScale.y,
+                colliderDepth
+            );
+
+            localSize = new Vector3(
+                localSize.x * colliderSizeMultiplier.x,
+                localSize.y * colliderSizeMultiplier.y,
+                localSize.z
+            );
+
+            collider.size = localSize;
+            collider.center = new Vector3(0f, localSize.y * 0.5f, 0f);
         }
     }
 }

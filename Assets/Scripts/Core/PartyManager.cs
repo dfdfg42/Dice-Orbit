@@ -18,12 +18,16 @@ namespace DiceOrbit.Core
         
         [Header("Selection")]
         [SerializeField] private Character selectedCharacter;
+
+    [Header("Turn Flags")]
+    private bool teamFirstActionUsed = false;
         
         // Properties
         public List<Character> Party => party;
         public Character SelectedCharacter => selectedCharacter;
         public int PartySize => party.Count;
         public bool IsPartyFull => party.Count >= maxPartySize;
+    public bool TeamFirstActionUsed => teamFirstActionUsed;
         
         private void Awake()
         {
@@ -124,6 +128,18 @@ namespace DiceOrbit.Core
             
             selectedCharacter = character;
             Debug.Log($"Selected character: {character.Stats.CharacterName}");
+        }
+
+        public void ResetTeamFirstAction()
+        {
+            teamFirstActionUsed = false;
+        }
+
+        public bool TryConsumeTeamFirstAction()
+        {
+            if (teamFirstActionUsed) return false;
+            teamFirstActionUsed = true;
+            return true;
         }
         
         /// <summary>

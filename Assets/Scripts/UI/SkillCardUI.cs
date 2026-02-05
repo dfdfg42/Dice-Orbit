@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DiceOrbit.Data.Skills;
+using DiceOrbit.Data;
 using System;
 
 namespace DiceOrbit.UI
@@ -30,16 +31,25 @@ namespace DiceOrbit.UI
             
             // Description logic
             string desc = "";
+            DiceRequirement requirement = null;
             if (isNew)
             {
                 var lvl1 = skill.GetLevelData(1);
                 desc = lvl1 != null ? lvl1.Description : "No Description";
+                requirement = lvl1 != null ? lvl1.Requirement : null;
             }
             else
             {
                 var nextLv = skill.GetLevelData(currentLevel + 1);
                 desc = nextLv != null ? nextLv.Description : "Max Level Reached!";
+                requirement = nextLv != null ? nextLv.Requirement : null;
             }
+
+            if (requirement != null)
+            {
+                desc += $"\n<color=#9EE6FF>{requirement.GetDescription()}</color>";
+            }
+
             if (descText != null) descText.text = desc;
 
             if (typeText != null) typeText.text = skill.Type.ToString();

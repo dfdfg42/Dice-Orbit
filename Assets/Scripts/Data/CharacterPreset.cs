@@ -33,9 +33,10 @@ namespace DiceOrbit.Core
         [Header("Starting Skills (New System)")]
         public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
 
-        [Header("Skill Pool")]
-        [Tooltip("The pool of skills this character can learn from leveling up.")]
-        public List<CharacterSkill> AvailableSkills = new List<CharacterSkill>();
+    [Header("Starting Passives")]
+    public List<Data.Passives.PassiveAbility> StartingPassives = new List<Data.Passives.PassiveAbility>();
+
+
         
         /// <summary>
         /// CharacterStats 생성

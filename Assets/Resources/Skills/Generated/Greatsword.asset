@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 466f85b8c91d21a48a505813b96bdd09, type: 3}
-  m_Name: StrengthPassive
+  m_Name: Greatsword
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Skills.CharacterSkill
-  SkillName: Strength Training
-  Description: Permanently increases Attack.
+  SkillName: Greatsword
+  Description: Dice 4+ deals 120% damage.
   Icon: {fileID: 0}
-  Type: 1
-  TargetType: 2
+  Type: 0
+  TargetType: 0
   Levels:
   - Level: 1
-    Description: +2 Attack
+    Description: Dice >=4: 120% damage
     Damage: 0
     DamageMultiplier: 1
     BonusDamage: 0
@@ -27,10 +27,8 @@ MonoBehaviour:
     Cooldown: 0
     Requirement:
       MinDiceCount: 1
-      MinDiceValue: 1
-      Pattern: 0
-    Effects:
-    - Type: 2
-      Value: 2
-      Duration: 99
-      Description: +2 ATK for 99 turns
+      MinDiceValue: 4
+      Pattern: 3
+    Effects: []
+    ActionModules:
+    - {fileID: 11400000, guid: e1f2a30415263748596a7b8c9d0e1f24, type: 2}

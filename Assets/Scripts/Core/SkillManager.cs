@@ -107,22 +107,36 @@ namespace DiceOrbit.Core
 
             // 2. 기본 스킬 로직 -> Pipeline Action으로 변환
             int baseDamage = skill.CalculateDamage(source.Stats.Attack, diceValue);
+            Debug.Log($"[SkillManager] BaseDamage={baseDamage}, Dice={diceValue}, Skill={skill.SkillName}");
             
             // 타겟 해결
             var monsterTargets = new List<Monster>();
             var characterTargets = new List<Character>();
 
             ResolveTargets(target, skill.TargetType, monsterTargets, characterTargets);
+            Debug.Log($"[SkillManager] Targets -> Monsters:{monsterTargets.Count}, Characters:{characterTargets.Count}");
 
             // 3. 파이프라인 실행
+            var pipeline = Pipeline.CombatPipeline.Instance;
+            if (pipeline == null)
+            {
+                Debug.LogWarning("[SkillManager] CombatPipeline not found, using fallback damage.");
+            }
             foreach (var mTarget in monsterTargets)
             {
                 var action = new Pipeline.CombatAction(skill.SkillName, Pipeline.ActionType.Attack, baseDamage);
                 action.IgnoreDefense = skill.IgnoreDefense;
                 action.AddTag("Skill");
 
-                var context = new Pipeline.CombatContext(source, mTarget, action);
-                Pipeline.CombatPipeline.Instance.Process(context);
+                if (pipeline != null)
+                {
+                    var context = new Pipeline.CombatContext(source, mTarget, action);
+                    pipeline.Process(context);
+                }
+                else
+                {
+                    combatManager.AttackMonster(mTarget, baseDamage, skill.IgnoreDefense);
+                }
             }
 
             foreach (var cTarget in characterTargets)
@@ -135,8 +149,22 @@ namespace DiceOrbit.Core
                 var action = new Pipeline.CombatAction(skill.SkillName, actionType, baseDamage);
                 action.AddTag("Skill");
                 
-                var context = new Pipeline.CombatContext(source, cTarget, action);
-                Pipeline.CombatPipeline.Instance.Process(context);
+                if (pipeline != null)
+                {
+                    var context = new Pipeline.CombatContext(source, cTarget, action);
+                    pipeline.Process(context);
+                }
+                else
+                {
+                    if (actionType == Pipeline.ActionType.Heal)
+                    {
+                        cTarget.Stats.Heal(baseDamage);
+                    }
+                    else
+                    {
+                        cTarget.TakeDamage(baseDamage);
+                    }
+                }
             }
 
             // 4. 상태 이상 부여 (Status Effects)

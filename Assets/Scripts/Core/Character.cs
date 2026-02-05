@@ -58,6 +58,8 @@ namespace DiceOrbit.Core
             
             // 스킬 재초기화
             InitializeSkills();
+
+            ApplyStartingPassives();
             
             Debug.Log($"Character initialized: {stats.CharacterName} (HP: {stats.MaxHP}, ATK: {stats.Attack})");
         }
@@ -110,6 +112,19 @@ namespace DiceOrbit.Core
             
             // Note: 패시브는 PassiveManager가 ICombatReactor로 자동 처리하므로
             // 별도의 ApplyPassiveSkills() 호출이 필요 없습니다.
+        }
+
+        private void ApplyStartingPassives()
+        {
+            if (passives == null) return;
+
+            var preset = stats.SourcePreset;
+            if (preset == null || preset.StartingPassives == null) return;
+
+            foreach (var passive in preset.StartingPassives)
+            {
+                passives.AddPassive(passive);
+            }
         }
         
         private void LateUpdate()
@@ -196,6 +211,15 @@ namespace DiceOrbit.Core
             var finalTile = path[path.Count - 1];
             Debug.Log($"{stats.CharacterName} arrived at tile {finalTile.TileIndex}");
             finalTile.OnArrive(this);
+
+            // Notify pipeline about movement distance
+            if (Pipeline.CombatPipeline.Instance != null)
+            {
+                var moveAction = new Pipeline.CombatAction("Move", Pipeline.ActionType.Utility, path.Count);
+                moveAction.AddTag("Move");
+                var moveContext = new Pipeline.CombatContext(this, this, moveAction);
+                Pipeline.CombatPipeline.Instance.Process(moveContext);
+            }
 
             // 색상 복원
             if (spriteRenderer != null)

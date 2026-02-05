@@ -8,9 +8,10 @@ namespace DiceOrbit.Data.Skills.Modules
     public class DealDamageModule : SkillActionModule
     {
         [Header("Damage Settings")]
-        public int BaseDamage;
-        public float DiceMultiplier; // 주사위 값 계수
-        public bool IgnoreDefense;
+    public int BaseDamage;
+    public float AttackMultiplier = 1f;
+    public float DiceMultiplier = 1f; // 주사위 값 계수
+    public bool IgnoreDefense;
 
         public override void Execute(Character source, GameObject targetObj, int diceValue)
         {
@@ -29,7 +30,7 @@ namespace DiceOrbit.Data.Skills.Modules
             
             if (source.Stats != null)
             {
-                finalBaseDamage += source.Stats.Attack;
+                finalBaseDamage += Mathf.RoundToInt(source.Stats.Attack * AttackMultiplier);
             }
 
             object target = null;

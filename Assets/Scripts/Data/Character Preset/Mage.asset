@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c15595559fc69394782045259f55f893, type: 3}
   m_Name: Mage
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.CharacterPreset
-  CharacterName: Hero
+  CharacterName: Mage
   Portrait: {fileID: 21300000, guid: 293bddd5bb1369148a536dd0940ef6d2, type: 3}
   Description: MAGE
   MaxHP: 30
@@ -22,3 +22,5 @@ MonoBehaviour:
   SpriteColor: {r: 0.3066038, g: 0.5314737, b: 1, a: 1}
   ActiveSkills: []
   PassiveSkills: []
+  StartingSkills: []
+  StartingPassives: []

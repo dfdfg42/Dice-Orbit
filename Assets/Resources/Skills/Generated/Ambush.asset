@@ -10,35 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 466f85b8c91d21a48a505813b96bdd09, type: 3}
-  m_Name: StrongBash
+  m_Name: Ambush
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Skills.CharacterSkill
-  SkillName: Strong Bash
-  Description: A heavy strike that deals massive damage.
+  SkillName: Ambush
+  Description: Dice 2 or less deals double damage.
   Icon: {fileID: 0}
   Type: 0
   TargetType: 0
   Levels:
   - Level: 1
-    Description: Hit with 150% Attack Power
+    Description: Dice <=2: 200% damage
     Damage: 0
     DamageMultiplier: 1
-    BonusDamage: 5
+    BonusDamage: 0
     IgnoreDefense: 0
     Cooldown: 0
     Requirement:
       MinDiceCount: 1
       MinDiceValue: 1
+      MaxDiceValue: 2
       Pattern: 0
     Effects: []
-  - Level: 2
-    Description: Hit with 200% Attack Power
-    Damage: 0
-    DamageMultiplier: 2
-    BonusDamage: 5
-    IgnoreDefense: 0
-    Cooldown: 0
-    Requirement:
-      MinDiceCount: 1
-      MinDiceValue: 1
-      Pattern: 0
-    Effects: []
+    ActionModules:
+    - {fileID: 11400000, guid: f1a2b30415263748596a7b8c9d0e1f25, type: 2}
