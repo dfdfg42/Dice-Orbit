@@ -53,6 +53,9 @@ namespace DiceOrbit.Core
                 return;
             }
 
+            // 버튼 자동 연결 (Scene에 할당 안 된 경우 대비)
+            EnsureButtons();
+
             // 버튼 이벤트 연결
             if (rollDiceButton != null)
             {
@@ -68,6 +71,7 @@ namespace DiceOrbit.Core
         
         private void Start()
         {
+            EnsureButtons();
             UpdateUI();
         }
         
@@ -76,6 +80,49 @@ namespace DiceOrbit.Core
             // Cleanup listeners if needed
             if (rollDiceButton != null) rollDiceButton.onClick.RemoveListener(OnRollDiceClicked);
             if (endTurnButton != null) endTurnButton.onClick.RemoveListener(OnEndTurnClicked);
+        }
+
+        private void EnsureButtons()
+        {
+            if (rollDiceButton == null)
+            {
+                rollDiceButton = FindButtonByName("Roll Dice Button", "RollDiceButton", "Roll Dice");
+            }
+
+            if (endTurnButton == null)
+            {
+                endTurnButton = FindButtonByName("End Turn Button", "EndTurnButton", "End Turn");
+            }
+        }
+
+        private Button FindButtonByName(params string[] names)
+        {
+            foreach (var name in names)
+            {
+                var obj = GameObject.Find(name);
+                if (obj != null)
+                {
+                    var button = obj.GetComponent<Button>();
+                    if (button != null) return button;
+                }
+            }
+
+            var buttons = Object.FindObjectsByType<Button>(FindObjectsSortMode.None);
+            foreach (var button in buttons)
+            {
+                var text = button.GetComponentInChildren<TextMeshProUGUI>();
+                if (text == null) continue;
+
+                foreach (var name in names)
+                {
+                    if (!string.IsNullOrEmpty(text.text) && text.text.Contains(name))
+                    {
+                        return button;
+                    }
+                }
+            }
+
+            return null;
         }
         
         /// <summary>
