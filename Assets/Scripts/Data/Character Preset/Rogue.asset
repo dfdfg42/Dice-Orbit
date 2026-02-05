@@ -22,3 +22,8 @@ MonoBehaviour:
   SpriteColor: {r: 0.8396226, g: 0.30495724, b: 0.30495724, a: 1}
   ActiveSkills: []
   PassiveSkills: []
+  StartingSkills:
+  - {fileID: 11400000, guid: 057f7da87dbe12d4ea89b19bad5ca9a7, type: 2}
+  - {fileID: 11400000, guid: b1c2d3e4f5061728394a5b6c7d8e9f01, type: 2}
+  StartingPassives:
+  - {fileID: 11400000, guid: d1e2f30415263748596a7b8c9d0e1f23, type: 2}

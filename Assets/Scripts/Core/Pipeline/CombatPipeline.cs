@@ -94,6 +94,18 @@ namespace DiceOrbit.Core.Pipeline
                         list.Add(pmReactor);
                 }
 
+                // Include party passives so ally passives can react to actions
+                if (Core.PartyManager.Instance != null)
+                {
+                    foreach (var ally in Core.PartyManager.Instance.Party)
+                    {
+                        if (ally != null && ally.Passives is ICombatReactor allyReactor)
+                        {
+                            list.Add(allyReactor);
+                        }
+                    }
+                }
+
                 // Status Effects
                 if (character.StatusEffects != null)
                 {
@@ -116,7 +128,7 @@ namespace DiceOrbit.Core.Pipeline
             {
                 if (context.Target is Core.Monster monster)
                 {
-                    CombatManager.Instance.AttackMonster(monster, finalValue, context.Action.IgnoreDefense);
+                    monster.TakeDamage(finalValue);
                 }
                 else if (context.Target is Core.Character character)
                 {

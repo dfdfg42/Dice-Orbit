@@ -27,7 +27,6 @@ namespace DiceOrbit.Systems.Passives
             if (!activePassives.Contains(passive))
             {
                 activePassives.Add(passive);
-                activePassives.Add(passive);
                 if (owner is Character c) passive.Initialize(c);
                 // Trigger OnPassiveAdded reactor?
                 Debug.Log($"[PassiveManager] Added {passive.PassiveName}");

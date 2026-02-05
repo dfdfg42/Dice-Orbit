@@ -175,6 +175,7 @@ namespace DiceOrbit.Core
             var partyManager = PartyManager.Instance;
             if (partyManager != null)
             {
+                partyManager.ResetTeamFirstAction();
                 foreach (var character in partyManager.Party)
                 {
                     if (character != null && character.IsAlive)
@@ -378,11 +379,11 @@ namespace DiceOrbit.Core
         public void AttackMonster(Monster target, int damage, bool ignoreDefense = false)
         {
             if (target == null || !target.IsAlive) return;
-            
+
             // System/Direct Attack via Pipeline
             var action = new Pipeline.CombatAction("Direct Attack", Pipeline.ActionType.Attack, damage);
             var context = new Pipeline.CombatContext(null, target, action); // Source is null (System)
-            
+
             if (Pipeline.CombatPipeline.Instance != null)
             {
                 Pipeline.CombatPipeline.Instance.Process(context);
@@ -403,7 +404,7 @@ namespace DiceOrbit.Core
                 {
                     var action = new Pipeline.CombatAction("Global Attack", Pipeline.ActionType.Attack, damage);
                     var context = new Pipeline.CombatContext(null, monster, action);
-                    
+
                     if (Pipeline.CombatPipeline.Instance != null)
                     {
                         Pipeline.CombatPipeline.Instance.Process(context);

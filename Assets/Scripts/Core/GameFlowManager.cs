@@ -15,7 +15,7 @@ namespace DiceOrbit.Core
         
         [Header("References")]
         [SerializeField] private UI.MainMenuUI mainMenuUI;
-        [SerializeField] private UI.RecruitUI recruitUI;
+    [SerializeField] private UI.CharacterSelectionUI characterSelectionUI;
         [SerializeField] private UI.RewardUI rewardUI;
         [SerializeField] private GameObject combatUI;
         [Header("Scene")]
@@ -35,6 +35,10 @@ namespace DiceOrbit.Core
             if (Instance == null)
             {
                 Instance = this;
+                if (transform.parent != null)
+                {
+                    transform.SetParent(null);
+                }
                 DontDestroyOnLoad(gameObject);
                 Debug.Log($"[GameFlow] Awake - Instance set, DontDestroyOnLoad, scene={SceneManager.GetActiveScene().name}");
             }
@@ -89,7 +93,7 @@ namespace DiceOrbit.Core
                 case GameState.MainMenu:
                     if (mainMenuUI != null) mainMenuUI.Show();
                     if (combatUI != null) combatUI.SetActive(false);
-                    if (recruitUI != null) recruitUI.Hide();
+                    if (characterSelectionUI != null) characterSelectionUI.Hide();
                     if (rewardUI != null) rewardUI.Hide();
                     break;
                     
@@ -99,18 +103,14 @@ namespace DiceOrbit.Core
                     
                 case GameState.Recruit:
                     Debug.Log("Enter Recruit State");
-                    if(recruitUI != null)
+                    if (characterSelectionUI != null)
                     {
-                        // Ensure options are ready
-                        if(Systems.Recruit.RecruitManager.Instance != null)
-                            Systems.Recruit.RecruitManager.Instance.GenerateOptions();
-                            
-                        recruitUI.Show();
+                        characterSelectionUI.Show();
                     }
                     break;
 
                 case GameState.Reward:
-                    if (recruitUI != null) recruitUI.Hide();
+                    if (characterSelectionUI != null) characterSelectionUI.Hide();
                     if (combatUI != null) combatUI.SetActive(false);
                     if (rewardUI != null) rewardUI.Show();
                     break;
@@ -324,9 +324,9 @@ namespace DiceOrbit.Core
                 mainMenuUI = Object.FindFirstObjectByType<UI.MainMenuUI>(FindObjectsInactive.Include);
             }
 
-            if (recruitUI == null)
+            if (characterSelectionUI == null)
             {
-                recruitUI = Object.FindFirstObjectByType<UI.RecruitUI>(FindObjectsInactive.Include);
+                characterSelectionUI = Object.FindFirstObjectByType<UI.CharacterSelectionUI>(FindObjectsInactive.Include);
             }
 
             if (rewardUI == null)
@@ -343,7 +343,7 @@ namespace DiceOrbit.Core
                 }
             }
 
-            Debug.Log($"[GameFlow] CacheSceneReferences - mainMenuUI={(mainMenuUI != null)}, recruitUI={(recruitUI != null)}, rewardUI={(rewardUI != null)}, combatUI={(combatUI != null)}");
+            Debug.Log($"[GameFlow] CacheSceneReferences - mainMenuUI={(mainMenuUI != null)}, characterSelectionUI={(characterSelectionUI != null)}, rewardUI={(rewardUI != null)}, combatUI={(combatUI != null)}");
         }
 
         private void ShowVictory()
