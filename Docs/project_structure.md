@@ -40,25 +40,25 @@ Assets/Scripts/
 ```mermaid
 graph TD
     %% --- Layer Definitions ---
-    subgraph Presentation [프레젠테이션 (UI/View)]
+   subgraph Presentation["프레젠테이션 (UI/View)"]
         MainMenuUI
         CombatUI[Combat / Dice / Monster UI]
     end
 
-    subgraph Management [메인 매니지먼트 (Flow Control)]
+    subgraph Management ["메인 매니지먼트 (Flow Control)"]
         GFM[GameFlowManager]
         WM[WaveManager]
         CM[CombatManager]
         NoteCM[턴 관리 및 UI 제어]
     end
 
-    subgraph Pipeline [액션 파이프라인 (Core Logic)]
+    subgraph Pipeline ["액션 파이프라인 (Core Logic)"]
         ActionPipe[CombatPipeline]
         Context[CombatContext]
         Action[CombatAction]
     end
 
-    subgraph Reactors [반응형 시스템 (Logic & Data)]
+    subgraph Reactors ["반응형 시스템 (Logic & Data)"]
         SysPassive[PassiveManager]
         SysStatus[StatusEffectManager]
         SysSkill[SkillManager]
