@@ -46,6 +46,11 @@ namespace DiceOrbit.Data.Tile
             traverses.Add(traverse);
         }
 
+        public void RemoveTraverse(IOnTraverse traverse)
+        {
+            traverses.Remove(traverse);
+        }
+
         /// <summary>
         /// 런타임에 `IOnArrive` 액션을 추가합니다.
         /// </summary>
@@ -53,6 +58,13 @@ namespace DiceOrbit.Data.Tile
         {
             arrives.Add(arrive);
         }
+
+        public void RemoveArrive(IOnArrive arrive)
+        {
+            arrives.Remove(arrive);
+        }
+
+        public bool IsEmpty => traverses.Count == 0 && arrives.Count == 0;
     }
 }
 

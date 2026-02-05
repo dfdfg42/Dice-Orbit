@@ -17,6 +17,7 @@ namespace DiceOrbit.Core
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
+    private bool stopMovementRequested = false;
         
         [Header("Visual")]
         [SerializeField] private Color highlightColor = Color.yellow;
@@ -187,6 +188,8 @@ namespace DiceOrbit.Core
         public System.Collections.IEnumerator MoveStepByStep(List<TileData> path)
         {
             float stepDuration = 0.2f;
+            int stepsTraveled = 0;
+            TileData arrivalTile = null;
             
             foreach (var tile in path)
             {
@@ -205,17 +208,33 @@ namespace DiceOrbit.Core
                 transform.position = endPos;
                 currentTile = tile;
                 tile.OnTraverse(this);
+
+                stepsTraveled++;
+
+                if (stopMovementRequested)
+                {
+                    stopMovementRequested = false;
+                    arrivalTile = tile;
+                    break;
+                }
             }
             
             // 최종 도착
-            var finalTile = path[path.Count - 1];
-            Debug.Log($"{stats.CharacterName} arrived at tile {finalTile.TileIndex}");
-            finalTile.OnArrive(this);
+            if (arrivalTile == null && path.Count > 0)
+            {
+                arrivalTile = path[path.Count - 1];
+            }
+
+            if (arrivalTile != null)
+            {
+                Debug.Log($"{stats.CharacterName} arrived at tile {arrivalTile.TileIndex}");
+                arrivalTile.OnArrive(this);
+            }
 
             // Notify pipeline about movement distance
             if (Pipeline.CombatPipeline.Instance != null)
             {
-                var moveAction = new Pipeline.CombatAction("Move", Pipeline.ActionType.Utility, path.Count);
+                var moveAction = new Pipeline.CombatAction("Move", Pipeline.ActionType.Utility, stepsTraveled);
                 moveAction.AddTag("Move");
                 var moveContext = new Pipeline.CombatContext(this, this, moveAction);
                 Pipeline.CombatPipeline.Instance.Process(moveContext);
@@ -226,6 +245,14 @@ namespace DiceOrbit.Core
             {
                 spriteRenderer.color = originalColor;
             }
+        }
+
+        /// <summary>
+        /// 타일 이동 중지 요청 (트랩 등)
+        /// </summary>
+        public void RequestStopMovement()
+        {
+            stopMovementRequested = true;
         }
         
         /// <summary>

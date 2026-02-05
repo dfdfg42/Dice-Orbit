@@ -1,6 +1,7 @@
 using UnityEngine;
 using DiceOrbit.Data;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DiceOrbit.Core
 {
@@ -186,6 +187,30 @@ namespace DiceOrbit.Core
         private void ExecuteSkill(SkillData skill)
         {
             Debug.Log($"[Monster] Executing Skill: {skill.SkillName}");
+
+            // Monster-specific action modules (tile traps, custom patterns, etc.)
+            if (skill.ActionModules != null && skill.ActionModules.Count > 0)
+            {
+                bool handledByMonsterModule = false;
+                foreach (var module in skill.ActionModules)
+                {
+                    if (module is Data.Skills.Modules.IMonsterTileActionModule tileModule)
+                    {
+                        tileModule.Execute(this, 0, targetedTiles);
+                        handledByMonsterModule = true;
+                    }
+                    else if (module is Data.Skills.Modules.IMonsterActionModule monsterModule)
+                    {
+                        monsterModule.Execute(this, 0);
+                        handledByMonsterModule = true;
+                    }
+                }
+
+                if (handledByMonsterModule)
+                {
+                    return;
+                }
+            }
             
             // 타겟 선정 (Pipeline 처리 전 결정)
             // 여기서는 단순화하여 TargetType에 따라 처리
@@ -261,6 +286,9 @@ namespace DiceOrbit.Core
             
             var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
             if (indicator == null) return;
+
+            indicator.Hide();
+            targetedTiles = null;
             
             // 타겟 선정 (미리 해둠)
             var partyManager = PartyManager.Instance;
@@ -271,15 +299,44 @@ namespace DiceOrbit.Core
                 {
                     targetedCharacter = alive[Random.Range(0, alive.Count)];
                     
+                    // Tile-based previews (monster modules)
+                    if (nextSkill.ActionModules != null)
+                    {
+                        foreach (var module in nextSkill.ActionModules)
+                        {
+                            if (module is Data.Skills.Modules.IMonsterTileActionModule tileModule)
+                            {
+                                var tiles = tileModule.GetPreviewTiles(this);
+                                if (tiles != null && tiles.Length > 0)
+                                {
+                                    targetedTiles = tiles;
+                                    indicator.ShowAreaAttack(tiles);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
                     if (nextSkill.TargetType == SkillTargetType.SingleEnemy)
                     {
                         indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
                     }
                     else if (nextSkill.TargetType == SkillTargetType.AllEnemies)
                     {
-                        // Show Area on all chars
-                         // (Simplified)
-                        indicator.ShowTargetedAttack(transform, targetedCharacter.transform); // Placeholder
+                        var tiles = alive
+                            .Where(c => c != null && c.CurrentTile != null)
+                            .Select(c => c.CurrentTile)
+                            .Distinct()
+                            .ToArray();
+
+                        if (tiles.Length > 0)
+                        {
+                            indicator.ShowAreaAttack(tiles);
+                        }
+                        else
+                        {
+                            indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
+                        }
                     }
                 }
             }
