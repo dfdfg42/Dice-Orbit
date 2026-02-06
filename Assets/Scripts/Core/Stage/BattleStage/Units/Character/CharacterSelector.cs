@@ -47,18 +47,14 @@ namespace DiceOrbit.Core
                     
                     // Character 또는 TestCharacter 확인
                     var character = hit.collider.GetComponent<Character>();
-                    var testCharacter = hit.collider.GetComponent<TestCharacter>();
+                    //var testCharacter = hit.collider.GetComponent<TestCharacter>();
                     
                     if (character != null)
                     {
                         Debug.Log("[CharacterSelector] Character found! Selecting...");
                         character.OnSelected();
                     }
-                    else if (testCharacter != null)
-                    {
-                        Debug.Log("[CharacterSelector] TestCharacter found! Selecting...");
-                        testCharacter.OnSelected();
-                    }
+                    
                     else
                     {
                         var components = hit.collider.GetComponents<Component>();
