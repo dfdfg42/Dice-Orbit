@@ -3,11 +3,11 @@ using DiceOrbit.Data;
 
 namespace DiceOrbit.Core
 {
-    /// <summary>
-    /// 게임 유닛의 기본 클래스 (플레이어, 몬스터)
-    /// </summary>
-    [RequireComponent(typeof(SpriteRenderer))]
-    public abstract class Unit<TStats> : MonoBehaviour where TStats : UnitStats
+        /// <summary>
+        /// 게임 유닛의 기본 클래스 (플레이어, 몬스터)
+        /// </summary>
+        [RequireComponent(typeof(SpriteRenderer))]
+    public abstract class Unit : MonoBehaviour 
     {
         [Header("Visual")]
         [SerializeField] protected Color highlightColor = Color.yellow;
@@ -23,7 +23,7 @@ namespace DiceOrbit.Core
         protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
 
         // Abstract 프로퍼티 - 자식 클래스에서 반드시 구현
-        public abstract TStats Stats { get; }
+        public abstract UnitStats Stats { get; }
 
         public bool IsAlive => Stats.IsAlive;
         public Systems.Passives.PassiveManager Passives => passives;
@@ -117,5 +117,15 @@ namespace DiceOrbit.Core
             spriteRenderer.color = spriteColor;
             originalColor = spriteRenderer.color;
         }
+    }
+
+    [RequireComponent(typeof(SpriteRenderer))]
+    public abstract class Unit<TStats> : Unit where TStats : UnitStats
+    {
+        [SerializeField]
+        protected TStats stat;
+
+        // Unit 관점에서는 항상 UnitStats
+        public override UnitStats Stats => stat;
     }
 }
