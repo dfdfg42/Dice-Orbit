@@ -74,7 +74,7 @@ namespace DiceOrbit.Core
             }
         }
         
-        private void Awake()
+        protected override void Awake()
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
 
