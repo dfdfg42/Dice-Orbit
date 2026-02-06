@@ -9,7 +9,7 @@ namespace DiceOrbit.Systems.Effects
 {
     public class StatusEffectManager : MonoBehaviour, ICombatReactor
     {
-        private object owner;
+        private Unit owner;
         private Character ownerCharacter => owner as Character;
         private Monster ownerMonster => owner as Monster;
         
