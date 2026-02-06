@@ -19,6 +19,7 @@ namespace DiceOrbit.Core.Pipeline
 
         /// <summary>
         /// 액션 처리 메인 메서드
+        /// 각 단계를 별도 메서드로 분리함
         /// </summary>
         public void Process(CombatContext context)
         {
@@ -26,10 +27,26 @@ namespace DiceOrbit.Core.Pipeline
             if (context.IsCancelled) return;
 
             // 1. Pre-Action (준비 단계)
-            NotifyReactors(context, CombatTrigger.OnPreAction);
-            if (context.IsCancelled) return;
+            if (!HandlePreAction(context)) return;
 
             // 2. Calculate (수치 계산 단계)
+            HandleCalculate(context);
+
+            // 3. Apply (실제 적용 단계)
+            ApplyAction(context);
+
+            // 4. Post-Action / Reaction (반응 단계)
+            HandlePostAction(context);
+        }
+
+        private bool HandlePreAction(CombatContext context)
+        {
+            NotifyReactors(context, CombatTrigger.OnPreAction);
+            return !context.IsCancelled;
+        }
+
+        private void HandleCalculate(CombatContext context)
+        {
             NotifyReactors(context, CombatTrigger.OnCalculateOutput);
 
             // 억지로 음수가 되지 않도록 보정 (HEAL이면 그대로)
@@ -37,11 +54,10 @@ namespace DiceOrbit.Core.Pipeline
             {
                 if (context.OutputValue < 0) context.OutputValue = 0;
             }
+        }
 
-            // 3. Apply (실제 적용 단계)
-            ApplyAction(context);
-
-            // 4. Post-Action / Reaction (반응 단계)
+        private void HandlePostAction(CombatContext context)
+        {
             // 적중했다면 OnHit, 처치했다면 OnKill 등 세분화 가능
             NotifyReactors(context, CombatTrigger.OnHit); // 일단 OnHit으로 통일
             NotifyReactors(context, CombatTrigger.OnPostAction);
