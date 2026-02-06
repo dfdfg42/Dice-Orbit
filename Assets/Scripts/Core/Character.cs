@@ -6,38 +6,22 @@ namespace DiceOrbit.Core
 {
     /// <summary>
     /// 게임 캐릭터 (플레이어)
-    /// TestCharacter 기능 + 스탯 시스템 통합
     /// </summary>
-    [RequireComponent(typeof(SpriteRenderer))]
-    public class Character : MonoBehaviour
+    public class Character : Unit<CharacterStats>
     {
         [Header("Stats")]
         [SerializeField] private CharacterStats stats = new CharacterStats();
-        
+
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
-    private bool stopMovementRequested = false;
-        
-        [Header("Visual")]
-        [SerializeField] private Color highlightColor = Color.yellow;
-        private SpriteRenderer spriteRenderer;
-        private Color originalColor;
-        private Camera mainCamera;
+        private bool stopMovementRequested = false;
 
-        [Header("Systems")]
-        [SerializeField] private Systems.Passives.PassiveManager passives;
-        [SerializeField] private Systems.Effects.StatusEffectManager statusEffects;
-        
-        // 타일 위 캐릭터 위치 offset
-        private static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
-        
-        // Properties
-        public CharacterStats Stats => stats;
+        // Abstract 프로퍼티 구현
+        public override CharacterStats Stats => stats;
+
         public TileData CurrentTile => currentTile;
-        public bool IsAlive => stats.IsAlive;
-        public Systems.Passives.PassiveManager Passives => passives;
-        public Systems.Effects.StatusEffectManager StatusEffects => statusEffects;
+        public Core.CharacterPreset SourcePreset => stats.SourcePreset;
         
         /// <summary>
         /// Stats 초기화 (캐릭터 선택 후)
@@ -64,42 +48,7 @@ namespace DiceOrbit.Core
             
             Debug.Log($"Character initialized: {stats.CharacterName} (HP: {stats.MaxHP}, ATK: {stats.Attack})");
         }
-        
-        private void Awake()
-        {
-            spriteRenderer = GetComponent<SpriteRenderer>();
-            
-            if (spriteRenderer != null)
-            {
-                // 스탯에서 스프라이트 설정
-                if (stats.CharacterSprite != null)
-                {
-                    spriteRenderer.sprite = stats.CharacterSprite;
-                }
-                
-                spriteRenderer.color = stats.SpriteColor;
-                originalColor = spriteRenderer.color;
-            }
-            else
-            {
-                Debug.LogWarning("SpriteRenderer not found! Add SpriteRenderer component.");
-            }
-            
-            mainCamera = Camera.main;
-            
-            // 스킬 초기화
-            InitializeSkills();
 
-            // Systems 초기화
-            passives = GetComponent<Systems.Passives.PassiveManager>();
-            if (passives == null) passives = gameObject.AddComponent<Systems.Passives.PassiveManager>();
-            passives.Initialize(this);
-
-            statusEffects = GetComponent<Systems.Effects.StatusEffectManager>();
-            if (statusEffects == null) statusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
-            statusEffects.Initialize(this);
-        }
-        
         /// <summary>
         /// 스킬 초기화
         /// </summary>
@@ -110,9 +59,6 @@ namespace DiceOrbit.Core
             {
                Debug.LogWarning("No active skills initialized.");
             }
-            
-            // Note: 패시브는 PassiveManager가 ICombatReactor로 자동 처리하므로
-            // 별도의 ApplyPassiveSkills() 호출이 필요 없습니다.
         }
 
         private void ApplyStartingPassives()
@@ -128,13 +74,39 @@ namespace DiceOrbit.Core
             }
         }
         
-        private void LateUpdate()
+        private void Awake()
         {
-            // Billboard: 항상 카메라를 향하도록
-            if (mainCamera != null)
+            spriteRenderer = GetComponent<SpriteRenderer>();
+
+            if (spriteRenderer != null)
             {
-                transform.rotation = mainCamera.transform.rotation;
+                // 스탯에서 스프라이트 설정
+                if (stats.CharacterSprite != null)
+                {
+                    spriteRenderer.sprite = stats.CharacterSprite;
+                }
+
+                spriteRenderer.color = stats.SpriteColor;
+                originalColor = spriteRenderer.color;
             }
+            else
+            {
+                Debug.LogWarning("SpriteRenderer not found! Add SpriteRenderer component.");
+            }
+
+            mainCamera = Camera.main;
+
+            // 스킬 초기화
+            InitializeSkills();
+
+            // Systems 초기화
+            passives = GetComponent<Systems.Passives.PassiveManager>();
+            if (passives == null) passives = gameObject.AddComponent<Systems.Passives.PassiveManager>();
+            passives.Initialize(this);
+
+            statusEffects = GetComponent<Systems.Effects.StatusEffectManager>();
+            if (statusEffects == null) statusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
+            statusEffects.Initialize(this);
         }
         
         private void Start()
@@ -258,18 +230,10 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 턴 시작 처리 (Pipeline)
         /// </summary>
-        public void OnStartTurn()
+        public override void OnStartTurn()
         {
             Debug.Log($"[Character] {stats.CharacterName} Start Turn");
-            
-            // Pipeline을 통해 턴 시작 알림
-            var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.TurnStart, 0);
-            var context = new Pipeline.CombatContext(this, this, action); // Self-targeting for TurnStart
-            
-            if (Pipeline.CombatPipeline.Instance != null)
-            {
-                Pipeline.CombatPipeline.Instance.Process(context);
-            }
+            base.OnStartTurn();
         }
 
         /// <summary>
@@ -299,9 +263,9 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 데미지 처리 (파이프라인 외부 호출 대비)
         /// </summary>
-        public void TakeDamage(int damage)
+        public override void TakeDamage(int damage)
         {
-            stats.TakeDamage(damage);
+            base.TakeDamage(damage);
         }
         
         /// <summary>
@@ -342,28 +306,6 @@ namespace DiceOrbit.Core
             else
             {
                 Debug.LogError("ActionPanel NOT FOUND! Make sure ActionPanel component exists in scene.");
-            }
-        }
-        
-        /// <summary>
-        /// 마우스 호버 시 하이라이트
-        /// </summary>
-        private void OnMouseEnter()
-        {
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.color = highlightColor;
-            }
-        }
-        
-        /// <summary>
-        /// 마우스 나갈 때 원래 색상
-        /// </summary>
-        private void OnMouseExit()
-        {
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.color = originalColor;
             }
         }
     }
