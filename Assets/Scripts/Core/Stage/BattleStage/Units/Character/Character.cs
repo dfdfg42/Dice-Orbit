@@ -18,7 +18,7 @@ namespace DiceOrbit.Core
         private bool stopMovementRequested = false;
 
         // Abstract 프로퍼티 구현
-        public override CharacterStats Stats => stats;
+        public new CharacterStats Stats => stats;
 
         public TileData CurrentTile => currentTile;
         public Core.CharacterPreset SourcePreset => stats.SourcePreset;
