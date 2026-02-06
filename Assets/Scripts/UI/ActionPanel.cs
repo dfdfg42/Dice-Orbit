@@ -163,15 +163,6 @@ namespace DiceOrbit.UI
                     {
                         orbitManager.Move(character, currentDice.Value);
                     }
-                    else
-                    {
-                        // 레거시 TestCharacter 지원
-                        var testChar = currentTarget as TestCharacter;
-                        if (testChar != null)
-                        {
-                            testChar.Move(currentDice.Value);
-                        }
-                    }
                     
                     // UI 업데이트
                     var diceUI = Object.FindAnyObjectByType<DiceUI>();
@@ -266,15 +257,6 @@ namespace DiceOrbit.UI
                     if (character != null)
                     {
                         character.UseSkillByIndex(index, currentDice.Value);
-                    }
-                    else
-                    {
-                        // 레거시 TestCharacter 지원
-                        var testChar = currentTarget as TestCharacter;
-                        if (testChar != null)
-                        {
-                            testChar.UseSkill(currentDice.Value);
-                        }
                     }
                     
                     // UI 업데이트
