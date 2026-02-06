@@ -7,7 +7,7 @@ namespace DiceOrbit.Data.Skills.Modules
     [CreateAssetMenu(fileName = "Deal Damage Module", menuName = "Dice Orbit/Skills/Modules/Deal Damage")]
     public class DealDamageModule : SkillActionModule
     {
-        [Header("Damage Settings")]
+    [Header("Damage Settings")]
     public int BaseDamage;
     public float AttackMultiplier = 1f;
     public float DiceMultiplier = 1f; // 주사위 값 계수
@@ -33,7 +33,7 @@ namespace DiceOrbit.Data.Skills.Modules
                 finalBaseDamage += Mathf.RoundToInt(source.Stats.Attack * AttackMultiplier);
             }
 
-            object target = null;
+            Unit target = null;
             if (monster != null) target = monster;
             else if (character != null) target = character;
 
