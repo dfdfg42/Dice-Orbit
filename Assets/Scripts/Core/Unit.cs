@@ -1,0 +1,121 @@
+using UnityEngine;
+using DiceOrbit.Data;
+
+namespace DiceOrbit.Core
+{
+    /// <summary>
+    /// 게임 유닛의 기본 클래스 (플레이어, 몬스터)
+    /// </summary>
+    [RequireComponent(typeof(SpriteRenderer))]
+    public abstract class Unit<TStats> : MonoBehaviour where TStats : UnitStats
+    {
+        [Header("Visual")]
+        [SerializeField] protected Color highlightColor = Color.yellow;
+        protected SpriteRenderer spriteRenderer;
+        protected Color originalColor;
+        protected Camera mainCamera;
+
+        [Header("Systems")]
+        [SerializeField] protected Systems.Passives.PassiveManager passives;
+        [SerializeField] protected Systems.Effects.StatusEffectManager statusEffects;
+
+        // 타일 위 유닛 위치 offset
+        protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
+
+        // Abstract 프로퍼티 - 자식 클래스에서 반드시 구현
+        public abstract TStats Stats { get; }
+
+        public bool IsAlive => Stats.IsAlive;
+        public Systems.Passives.PassiveManager Passives => passives;
+        public Systems.Effects.StatusEffectManager StatusEffects => statusEffects;
+
+        protected virtual void Awake()
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null)
+            {
+                Debug.LogWarning("SpriteRenderer not found! Add SpriteRenderer component.");
+            }
+
+            mainCamera = Camera.main;
+        }
+
+        /// <summary>
+        /// 시스템 초기화 (자식 클래스에서 override)
+        /// </summary>
+        protected virtual void InitializeSystems()
+        {
+            // Systems 기본 초기화 - 자식에서 override
+        }
+
+        protected virtual void LateUpdate()
+        {
+            // Billboard: 항상 카메라를 향하도록
+            if (mainCamera != null)
+            {
+                transform.rotation = mainCamera.transform.rotation;
+            }
+        }
+
+        /// <summary>
+        /// 턴 시작 처리 (Pipeline)
+        /// </summary>
+        public virtual void OnStartTurn()
+        {
+            Debug.Log($"[Unit] Start Turn");
+
+            var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.TurnStart, 0);
+            var context = new Pipeline.CombatContext(this, this, action);
+
+            if (Pipeline.CombatPipeline.Instance != null)
+            {
+                Pipeline.CombatPipeline.Instance.Process(context);
+            }
+        }
+
+        /// <summary>
+        /// 데미지 처리
+        /// </summary>
+        public virtual void TakeDamage(int damage)
+        {
+            Stats.TakeDamage(damage);
+        }
+
+        /// <summary>
+        /// 마우스 호버 시 하이라이트
+        /// </summary>
+        protected virtual void OnMouseEnter()
+        {
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = highlightColor;
+            }
+        }
+
+        /// <summary>
+        /// 마우스 나갈 때 원래 색상
+        /// </summary>
+        protected virtual void OnMouseExit()
+        {
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = originalColor;
+            }
+        }
+
+        /// <summary>
+        /// 스프라이트와 색상 업데이트
+        /// </summary>
+        protected void UpdateVisuals(Sprite sprite, Color spriteColor)
+        {
+            if (spriteRenderer == null) return;
+
+            if (sprite != null)
+            {
+                spriteRenderer.sprite = sprite;
+            }
+            spriteRenderer.color = spriteColor;
+            originalColor = spriteRenderer.color;
+        }
+    }
+}

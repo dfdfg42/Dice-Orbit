@@ -9,52 +9,44 @@ namespace DiceOrbit.Core
     /// 몬스터 (중앙 구역)
     /// AI + Skills + Managers 통합 구현
     /// </summary>
-    [RequireComponent(typeof(SpriteRenderer))]
-    public class Monster : MonoBehaviour
+    public class Monster : Unit<MonsterStats>
     {
         [Header("Preset")]
         [SerializeField] private Data.Monsters.MonsterPreset preset;
-        
+
         [Header("Runtime Info")]
         [SerializeField] private MonsterStats stats;
         [SerializeField] private List<SkillData> availableSkills = new List<SkillData>();
-        
+
         [Header("AI")]
         [SerializeField] private Data.MonsterAI.MonsterPattern aiPattern;
         private SkillData nextSkill; // 다음 턴에 사용할 스킬
         public SkillData CurrentIntent => nextSkill;
-        
-        [Header("Visual")]
-        private SpriteRenderer spriteRenderer;
-        private Camera mainCamera;
-        
+
         // Target Logic
         private Character targetedCharacter;
         private Data.TileData[] targetedTiles;
+
+        // Abstract 프로퍼티 구현
+        public override MonsterStats Stats => stats;
         
-        [Header("Systems")]
-        [SerializeField] private Systems.Passives.PassiveManager passives;
-        [SerializeField] private Systems.Effects.StatusEffectManager statusEffects;
-        
-        // Properties
-        public MonsterStats Stats => stats;
-        public bool IsAlive => stats.IsAlive;
-        public Systems.Passives.PassiveManager Passives => passives;
-        public Systems.Effects.StatusEffectManager StatusEffects => statusEffects;
-        
-        private void Awake()
+        protected override void Awake()
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
-            mainCamera = Camera.main;
+            if (stats == null)
+            {
+                stats = new MonsterStats();
+            }
+
+            base.Awake();
 
             // Systems 초기화
             passives = GetComponent<Systems.Passives.PassiveManager>();
             if (passives == null) passives = gameObject.AddComponent<Systems.Passives.PassiveManager>();
-            passives.Initialize(this); // Assuming PassiveManager has Initialize(Monster) overload or uses Object
+            passives.Initialize(this);
 
             statusEffects = GetComponent<Systems.Effects.StatusEffectManager>();
             if (statusEffects == null) statusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
-            statusEffects.Initialize(this); // Assuming StatusEffectManager has Initialize(Monster) overload or uses Object
+            statusEffects.Initialize(this);
         }
         
         private void Start()
@@ -67,14 +59,6 @@ namespace DiceOrbit.Core
             
             // 첫 턴 의도 선택
             SelectNextIntent();
-        }
-        
-        private void LateUpdate()
-        {
-            if (mainCamera != null)
-            {
-                transform.rotation = mainCamera.transform.rotation;
-            }
         }
         
         /// <summary>
@@ -173,15 +157,13 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 턴 시작 (Pipeline TurnStart)
         /// </summary>
-        public void OnStartTurn()
+        /// <summary>
+        /// 턴 시작 (Pipeline TurnStart)
+        /// </summary>
+        public override void OnStartTurn()
         {
             Debug.Log($"[Monster] {stats.MonsterName} Start Turn");
-            if (Pipeline.CombatPipeline.Instance != null)
-            {
-                var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.TurnStart, 0);
-                var context = new Pipeline.CombatContext(this, this, action);
-                Pipeline.CombatPipeline.Instance.Process(context);
-            }
+            base.OnStartTurn();
         }
         
         private void ExecuteSkill(SkillData skill)
@@ -348,12 +330,13 @@ namespace DiceOrbit.Core
             if (indicator != null) indicator.Hide();
         }
         
-        // === Damage Handler ===
-        
-        public void TakeDamage(int damage)
+        /// <summary>
+        /// 데미지 처리
+        /// </summary>
+        public override void TakeDamage(int damage)
         {
             if (!IsAlive) return;
-            stats.TakeDamage(damage);
+            base.TakeDamage(damage);
             if (!IsAlive) OnDeath();
         }
         
