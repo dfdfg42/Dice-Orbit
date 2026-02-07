@@ -1,6 +1,7 @@
-using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
+using UnityEngine.TextCore.Text;
 
 namespace DiceOrbit.Core.Pipeline
 {
@@ -142,21 +143,11 @@ namespace DiceOrbit.Core.Pipeline
 
             if (context.Action.Type == ActionType.Attack)
             {
-                if (context.Target is Core.Monster monster)
-                {
-                    monster.TakeDamage(finalValue);
-                }
-                else if (context.Target is Core.Character character)
-                {
-                    character.TakeDamage(finalValue);
-                }
+                context.Target.TakeDamage(finalValue);
             }
             else if (context.Action.Type == ActionType.Heal)
             {
-                if (context.Target is Core.Character character)
-                {
-                    character.Stats.Heal(finalValue);
-                }
+                context.Target.Stats.Heal(finalValue);
             }
         }
     }

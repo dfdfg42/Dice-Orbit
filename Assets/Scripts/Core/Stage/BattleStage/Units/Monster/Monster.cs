@@ -28,7 +28,7 @@ namespace DiceOrbit.Core
         private Data.TileData[] targetedTiles;
 
         // Abstract 프로퍼티 구현
-        public override MonsterStats Stats => stats;
+        public new MonsterStats Stats => stats;
         
         protected override void Awake()
         {

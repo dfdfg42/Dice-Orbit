@@ -21,7 +21,7 @@ namespace DiceOrbit.Core
         protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
 
         // Abstract 프로퍼티 구현
-        public override CharacterStats Stats => stats;
+        public new CharacterStats Stats => stats;
 
         public TileData CurrentTile => currentTile;
         public Core.CharacterPreset SourcePreset => stats.SourcePreset;
@@ -77,7 +77,7 @@ namespace DiceOrbit.Core
             }
         }
         
-        private void Awake()
+        protected override void Awake()
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
 
