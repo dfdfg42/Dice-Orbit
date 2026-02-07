@@ -19,9 +19,6 @@ namespace DiceOrbit.Core
         [SerializeField] protected Systems.Passives.PassiveManager passives;
         [SerializeField] protected Systems.Effects.StatusEffectManager statusEffects;
 
-        // 타일 위 유닛 위치 offset
-        protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
-
         // Abstract 프로퍼티 - 자식 클래스에서 반드시 구현
         public abstract TStats Stats { get; }
 
