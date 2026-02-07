@@ -8,21 +8,15 @@ namespace DiceOrbit.Core.Pipeline
     /// </summary>
     public class CombatContext
     {
-        public object SourceUnit; // (Character or Monster)
-        public object Target;     // (Character or Monster)
-        
-        // 편의 접근자
-        public Core.Character SourceCharacter => SourceUnit as Core.Character;
-        public Core.Monster SourceMonster => SourceUnit as Core.Monster;
-        public Core.Character TargetCharacter => Target as Core.Character;
-        public Core.Monster TargetMonster => Target as Core.Monster;
+        public Unit SourceUnit; // (Character or Monster)
+        public Unit Target;     // (Character or Monster)
 
         public CombatAction Action;     // 수행 중인 액션
         public float OutputValue;       // 최종 결과값 (데미지/힐량)
         public bool IsCancelled;        // 액션 취소 여부
 
         // 생성자
-        public CombatContext(object source, object target, CombatAction action)
+        public CombatContext(Unit source, Unit target, CombatAction action)
         {
             SourceUnit = source;
             Target = target;
