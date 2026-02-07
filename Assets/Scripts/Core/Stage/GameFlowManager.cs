@@ -15,7 +15,7 @@ namespace DiceOrbit.Core
         
         [Header("References")]
         [SerializeField] private UI.MainMenuUI mainMenuUI;
-    [SerializeField] private UI.CharacterSelectionUI characterSelectionUI;
+        [SerializeField] private UI.CharacterSelectionUI characterSelectionUI;
         [SerializeField] private UI.RewardUI rewardUI;
         [SerializeField] private GameObject combatUI;
         [Header("Scene")]
