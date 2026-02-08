@@ -9,13 +9,16 @@ namespace DiceOrbit.Core
     /// </summary>
     public class Character : Unit<CharacterStats>
     {
+        // 타일 위 유닛 위치 offset
+        protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
+
         [Header("Stats")]
         [SerializeField] private CharacterStats stats = new CharacterStats();
 
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
-        private bool stopMovementRequested = false;
+        private bool stopMovementRequested = false;  
 
         // 타일 위 유닛 위치 offset
         protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);

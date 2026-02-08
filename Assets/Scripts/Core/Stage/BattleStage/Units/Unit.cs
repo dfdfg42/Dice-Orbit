@@ -3,10 +3,10 @@ using DiceOrbit.Data;
 
 namespace DiceOrbit.Core
 {
-        /// <summary>
-        /// 게임 유닛의 기본 클래스 (플레이어, 몬스터)
-        /// </summary>
-        [RequireComponent(typeof(SpriteRenderer))]
+    /// <summary>
+    /// 게임 유닛의 기본 클래스 (플레이어, 몬스터)
+    /// </summary>
+    [RequireComponent(typeof(SpriteRenderer))]
     public abstract class Unit : MonoBehaviour 
     {
         [Header("Visual")]
