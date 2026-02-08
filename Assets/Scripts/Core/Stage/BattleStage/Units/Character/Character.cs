@@ -20,9 +20,6 @@ namespace DiceOrbit.Core
         [SerializeField] private int startTileIndex = 0;
         private bool stopMovementRequested = false;  
 
-        // 타일 위 유닛 위치 offset
-        protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
-
         // Abstract 프로퍼티 구현
         public new CharacterStats Stats => stats;
 
