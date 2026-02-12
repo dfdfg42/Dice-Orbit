@@ -147,9 +147,6 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 턴 시작 (Pipeline TurnStart)
         /// </summary>
-        /// <summary>
-        /// 턴 시작 (Pipeline TurnStart)
-        /// </summary>
         public override void OnStartTurn()
         {
             Debug.Log($"[Monster] {stat?.MonsterName} Start Turn");
