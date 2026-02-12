@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DiceOrbit.Core;
 
-namespace DiceOrbit.Data.MonsterAI
+namespace DiceOrbit.Data.MonsterAI.Patterns
 {
     [System.Serializable]
     public class WeightedSkillIndex

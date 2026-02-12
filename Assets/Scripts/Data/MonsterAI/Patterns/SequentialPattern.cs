@@ -7,7 +7,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     /// 순차 패턴 (스킬 목록을 순서대로 사용)
     /// </summary>
     [CreateAssetMenu(fileName = "SequencePattern", menuName = "DiceOrbit/Monster/Pattern/Sequence")]
-    public class SequencePattern : MonsterAI
+    public class SequentialPattern : MonsterAI
     {
         // 몬스터마다 현재 인덱스를 저장해야 하므로, 
         // Runtime 상태는 Monster 클래스 내에 저장하거나 Dictionary로 관리해야 함.
