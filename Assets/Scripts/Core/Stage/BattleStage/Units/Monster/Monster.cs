@@ -19,7 +19,7 @@ namespace DiceOrbit.Core
         [SerializeField] private List<SkillData> availableSkills = new List<SkillData>();
 
         [Header("AI")]
-        [SerializeField] private Data.MonsterAI.MonsterPattern aiPattern;
+        [SerializeField] private Data.MonsterAI.MonsterAI aiPattern;
         private SkillData nextSkill; // 다음 턴에 사용할 스킬
         public SkillData CurrentIntent => nextSkill;
 
@@ -69,18 +69,9 @@ namespace DiceOrbit.Core
             if (monsterPreset == null) return;
             
             preset = monsterPreset;
-            
+
             // Stats Deep Copy (간단한 복제, 실제로는 Clone 메서드 권장)
-            stats = new MonsterStats
-            {
-                MonsterName = preset.BaseStats.MonsterName,
-                MaxHP = preset.BaseStats.MaxHP,
-                CurrentHP = preset.BaseStats.MaxHP,
-                Attack = preset.BaseStats.Attack,
-                Defense = preset.BaseStats.Defense,
-                MonsterSprite = preset.BaseStats.MonsterSprite,
-                SpriteColor = preset.BaseStats.SpriteColor
-            };
+            stats = preset.BaseStats.DeepCopy();
             
             // Visual
             if (spriteRenderer != null && stats.MonsterSprite != null)
