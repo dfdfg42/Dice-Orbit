@@ -6,7 +6,7 @@ namespace DiceOrbit.Data.MonsterAI
     /// <summary>
     /// Base class for all Monster AI patterns.
     /// </summary>
-    public abstract class MonsterPattern : ScriptableObject
+    public abstract class MonsterAI : ScriptableObject
     {
         public abstract SkillData GetNextSkill(Monster monster, System.Collections.Generic.List<SkillData> availableSkills);
 

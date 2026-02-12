@@ -15,5 +15,21 @@ namespace DiceOrbit.Data
         [Header("Visual")]
         public Sprite MonsterSprite;
         public Color SpriteColor = Color.red;
+
+        /// <summary>
+        /// MonsterStats 깊은 복사
+        /// </summary>
+        public MonsterStats DeepCopy()
+        {
+            MonsterStats copy = new MonsterStats();
+            CopyBaseTo(copy);
+
+            copy.MonsterName = this.MonsterName;
+            copy.Level = this.Level;
+            copy.MonsterSprite = this.MonsterSprite;
+            copy.SpriteColor = this.SpriteColor;
+
+            return copy;
+        }
     }
 }

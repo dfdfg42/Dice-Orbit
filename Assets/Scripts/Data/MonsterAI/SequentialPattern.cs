@@ -5,7 +5,7 @@ using DiceOrbit.Core;
 namespace DiceOrbit.Data.MonsterAI
 {
     [CreateAssetMenu(fileName = "Sequential Pattern", menuName = "Dice Orbit/Monster AI/Pattern (Sequential)")]
-    public class SequentialPattern : MonsterPattern
+    public class SequentialPattern : MonsterAI
     {
         [SerializeField] private List<MonsterSkill> skills = new List<MonsterSkill>();
         

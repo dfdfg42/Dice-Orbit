@@ -13,7 +13,7 @@ namespace DiceOrbit.Data.MonsterAI
     }
 
     [CreateAssetMenu(fileName = "Weighted Random Pattern", menuName = "Dice Orbit/Monster AI/Pattern (Weighted Random)")]
-    public class WeightedRandomPattern : MonsterPattern
+    public class WeightedRandomPattern : MonsterAI
     {
         [SerializeField] private List<WeightedSkillIndex> weights = new List<WeightedSkillIndex>();
 
