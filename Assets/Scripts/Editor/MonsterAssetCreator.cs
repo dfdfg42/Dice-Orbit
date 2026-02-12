@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using DiceOrbit.Data.MonsterAI;
+using DiceOrbit.Data.MonsterAI.Patterns;
 using System.IO;
 
 namespace DiceOrbit.EditorTools

@@ -1,7 +1,7 @@
 using UnityEngine;
 using DiceOrbit.Core;
 
-namespace DiceOrbit.Data.MonsterAI
+namespace DiceOrbit.Data.MonsterAI.Patterns
 {
     [CreateAssetMenu(fileName = "HP Threshold Pattern", menuName = "Dice Orbit/Monster AI/Pattern (HP Threshold)")]
     public class HPThresholdPattern : MonsterAI
