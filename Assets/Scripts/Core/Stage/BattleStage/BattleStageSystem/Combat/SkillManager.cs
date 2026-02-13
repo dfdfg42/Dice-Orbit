@@ -77,7 +77,7 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 타겟 선택 완료 시 호출 (TargetSelector에서 호출)
         /// </summary>
-        public void OnTargetSelected(Character source, object target, SkillData skill, int diceValue)
+        public void OnTargetSelected(Character source, Unit target, SkillData skill, int diceValue)
         {
             if (source == null || skill == null) return;
             
@@ -87,7 +87,7 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 스킬 실제 실행
         /// </summary>
-        private void ExecuteSkill(Character source, object target, SkillData skill, int diceValue)
+        private void ExecuteSkill(Character source, Unit target, SkillData skill, int diceValue)
         {
             var combatManager = CombatManager.Instance;
             if (combatManager == null) return;
