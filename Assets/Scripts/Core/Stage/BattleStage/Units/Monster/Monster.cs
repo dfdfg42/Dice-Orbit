@@ -15,11 +15,10 @@ namespace DiceOrbit.Core
         [SerializeField] private Data.Monsters.MonsterPreset preset;
 
         [Header("Runtime Info")]
-        [SerializeField] private MonsterStats stats;
         [SerializeField] private List<SkillData> availableSkills = new List<SkillData>();
 
         [Header("AI")]
-        [SerializeField] private Data.MonsterAI.MonsterPattern aiPattern;
+        [SerializeField] private Data.MonsterAI.MonsterAI aiPattern;
         private SkillData nextSkill; // 다음 턴에 사용할 스킬
         public SkillData CurrentIntent => nextSkill;
 
@@ -27,14 +26,14 @@ namespace DiceOrbit.Core
         private Character targetedCharacter;
         private Data.TileData[] targetedTiles;
 
-        // Abstract 프로퍼티 구현
-        public new MonsterStats Stats => stats;
+        // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
+        public new MonsterStats Stats => stat;
         
         protected override void Awake()
         {
-            if (stats == null)
+            if (stat == null)
             {
-                stats = new MonsterStats();
+                stat = new MonsterStats();
             }
 
             base.Awake();
@@ -69,24 +68,15 @@ namespace DiceOrbit.Core
             if (monsterPreset == null) return;
             
             preset = monsterPreset;
-            
+
             // Stats Deep Copy (간단한 복제, 실제로는 Clone 메서드 권장)
-            stats = new MonsterStats
-            {
-                MonsterName = preset.BaseStats.MonsterName,
-                MaxHP = preset.BaseStats.MaxHP,
-                CurrentHP = preset.BaseStats.MaxHP,
-                Attack = preset.BaseStats.Attack,
-                Defense = preset.BaseStats.Defense,
-                MonsterSprite = preset.BaseStats.MonsterSprite,
-                SpriteColor = preset.BaseStats.SpriteColor
-            };
-            
+            stat = preset.BaseStats.DeepCopy();
+
             // Visual
-            if (spriteRenderer != null && stats.MonsterSprite != null)
+            if (spriteRenderer != null && stat.MonsterSprite != null)
             {
-                spriteRenderer.sprite = stats.MonsterSprite;
-                spriteRenderer.color = stats.SpriteColor;
+                spriteRenderer.sprite = stat.MonsterSprite;
+                spriteRenderer.color = stat.SpriteColor;
             }
             
             // AI
@@ -107,7 +97,7 @@ namespace DiceOrbit.Core
                 }
             }
             
-            Debug.Log($"Monster '{stats.MonsterName}' initialized from preset.");
+            Debug.Log($"Monster '{stat.MonsterName}' initialized from preset.");
         }
         
         /// <summary>
@@ -157,12 +147,9 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 턴 시작 (Pipeline TurnStart)
         /// </summary>
-        /// <summary>
-        /// 턴 시작 (Pipeline TurnStart)
-        /// </summary>
         public override void OnStartTurn()
         {
-            Debug.Log($"[Monster] {stats.MonsterName} Start Turn");
+            Debug.Log($"[Monster] {stat?.MonsterName} Start Turn");
             base.OnStartTurn();
         }
         
@@ -228,7 +215,7 @@ namespace DiceOrbit.Core
                  // NOTE: Since ActionModule logic is complex, we use a basic fallback implementation here
                  // conforming to the requested behavior for now using CombatAction.
                  
-                 int damage = skill.CalculateDamage(stats.Attack, 0); // No dice for monsters
+                 int damage = skill.CalculateDamage(stat.Attack, 0); // No dice for monsters
                  var actionType = Pipeline.ActionType.Attack;
                  
                  // Create Context
@@ -254,7 +241,7 @@ namespace DiceOrbit.Core
             // Fallback for Legacy Config (if empty modules)
             if (skill.ActionModules.Count == 0)
             {
-                 int damage = skill.CalculateDamage(stats.Attack, 0);
+                 int damage = skill.CalculateDamage(stat.Attack, 0);
                  var context = new Pipeline.CombatContext(this, primaryTarget, new Pipeline.CombatAction(skill.SkillName, Pipeline.ActionType.Attack, damage));
                  Pipeline.CombatPipeline.Instance.Process(context);
             }
@@ -292,7 +279,7 @@ namespace DiceOrbit.Core
                                 if (tiles != null && tiles.Length > 0)
                                 {
                                     targetedTiles = tiles;
-                                    indicator.ShowAreaAttack(tiles);
+                                    UI.AttackIndicator.Instance.ShowAreaAttack(tiles);
                                     return;
                                 }
                             }
@@ -301,7 +288,7 @@ namespace DiceOrbit.Core
 
                     if (nextSkill.TargetType == SkillTargetType.SingleEnemy)
                     {
-                        indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
+                        UI.AttackIndicator.Instance.ShowTargetedAttack(transform, targetedCharacter.transform);
                     }
                     else if (nextSkill.TargetType == SkillTargetType.AllEnemies)
                     {
@@ -313,11 +300,11 @@ namespace DiceOrbit.Core
 
                         if (tiles.Length > 0)
                         {
-                            indicator.ShowAreaAttack(tiles);
+                            UI.AttackIndicator.Instance.ShowAreaAttack(tiles);
                         }
                         else
                         {
-                            indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
+                            UI.AttackIndicator.Instance.ShowTargetedAttack(transform, targetedCharacter.transform);
                         }
                     }
                 }
@@ -342,7 +329,7 @@ namespace DiceOrbit.Core
         
         private void OnDeath()
         {
-            Debug.Log($"[Monster] {stats.MonsterName} Died.");
+            Debug.Log($"[Monster] {stat?.MonsterName} Died.");
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
             Destroy(gameObject);

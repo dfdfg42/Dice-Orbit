@@ -16,23 +16,35 @@ namespace DiceOrbit.UI
     /// </summary>
     public class AttackIndicator : MonoBehaviour
     {
+        public static AttackIndicator Instance { get; private set; }
+
         [Header("Settings")]
         [SerializeField] private Color areaAttackColor = new Color(1f, 0f, 0f, 0.5f); // 반투명 빨강
         [SerializeField] private Color targetLineColor = Color.red;
         [SerializeField] private float lineWidth = 0.1f;
-        
+
         private LineRenderer lineRenderer;
         private AttackIndicatorType currentType;
-        
+
         // 타일 하이라이트용
         private Data.TileData[] highlightedTiles;
-        
+
         // 타겟팅 공격용 실시간 업데이트
         private Transform monsterTransform;
         private Transform targetTransform;
-        
+
         private void Awake()
         {
+            // 싱글톤 패턴
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning("[AttackIndicator] Duplicate instance detected. Destroying.");
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+
             // LineRenderer 추가 (타겟팅 공격용)
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.startWidth = lineWidth;
@@ -42,6 +54,14 @@ namespace DiceOrbit.UI
             lineRenderer.endColor = targetLineColor;
             lineRenderer.enabled = false;
             lineRenderer.sortingOrder = 100; // 위에 표시
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
         
         private void Update()

@@ -230,17 +230,17 @@ namespace DiceOrbit.Core
             SkillManager.Instance.OnTargetSelected(sourceCharacter, resolved, currentSkill, diceValue);
         }
 
-        private object ResolveTarget(GameObject target)
+        private Unit ResolveTarget(GameObject target)
         {
-            var monster = target.GetComponentInParent<Monster>();
-            if (monster != null) return monster;
-
-            var character = target.GetComponentInParent<Character>();
-            if (character != null) return character;
-
-            return target;
+            var unit = target.GetComponentInParent<Unit>();
+            if (unit == null)
+            {
+                Debug.LogError("Selected target does not have a Unit component!");
+                return null;
+            }
+            else return unit;
         }
-        
+
         /// <summary>
         /// 타겟 선택 취소
         /// </summary>

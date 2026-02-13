@@ -7,7 +7,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     /// 랜덤 패턴 (가중치 없이 단순 랜덤 선택)
     /// </summary>
     [CreateAssetMenu(fileName = "RandomPattern", menuName = "DiceOrbit/Monster/Pattern/Random")]
-    public class RandomPattern : MonsterPattern
+    public class RandomPattern : MonsterAI
     {
         public override SkillData GetNextSkill(Core.Monster monster, List<SkillData> availableSkills)
         {
