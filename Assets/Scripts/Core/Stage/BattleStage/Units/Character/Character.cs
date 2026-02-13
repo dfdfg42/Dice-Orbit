@@ -12,44 +12,41 @@ namespace DiceOrbit.Core
         // 타일 위 유닛 위치 offset
         protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
 
-        [Header("Stats")]
-        [SerializeField] private CharacterStats stats = new CharacterStats();
-
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
         private bool stopMovementRequested = false;  
 
-        // Abstract 프로퍼티 구현
-        public new CharacterStats Stats => stats;
+        // CharacterStats 타입으로 반환 (기존 코드 호환성 유지)
+        public new CharacterStats Stats => stat;
 
         public TileData CurrentTile => currentTile;
-        public Core.CharacterPreset SourcePreset => stats.SourcePreset;
+        public Core.CharacterPreset SourcePreset => Stats?.SourcePreset;
         
         /// <summary>
         /// Stats 초기화 (캐릭터 선택 후)
         /// </summary>
         public void InitializeStats(CharacterStats newStats)
         {
-            stats = newStats;
-            
+            stat = newStats;
+
             // 스프라이트 업데이트
             if (spriteRenderer != null)
             {
-                if (stats.CharacterSprite != null)
+                if (stat.CharacterSprite != null)
                 {
-                    spriteRenderer.sprite = stats.CharacterSprite;
+                    spriteRenderer.sprite = stat.CharacterSprite;
                 }
-                spriteRenderer.color = stats.SpriteColor;
+                spriteRenderer.color = stat.SpriteColor;
                 originalColor = spriteRenderer.color;
             }
-            
+
             // 스킬 재초기화
             InitializeSkills();
 
             ApplyStartingPassives();
-            
-            Debug.Log($"Character initialized: {stats.CharacterName} (HP: {stats.MaxHP}, ATK: {stats.Attack})");
+
+            Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP}, ATK: {stat.Attack})");
         }
 
         /// <summary>
@@ -57,8 +54,10 @@ namespace DiceOrbit.Core
         /// </summary>
         private void InitializeSkills()
         {
+            if (stat == null) return;
+
             // Preset에서 초기 스킬을 가져오지 못한 경우 (예: 구 버전 데이터)
-            if (stats.RuntimeActiveSkills.Count == 0)
+            if (stat.RuntimeActiveSkills.Count == 0)
             {
                Debug.LogWarning("No active skills initialized.");
             }
@@ -68,7 +67,7 @@ namespace DiceOrbit.Core
         {
             if (passives == null) return;
 
-            var preset = stats.SourcePreset;
+            var preset = stat.SourcePreset;
             if (preset == null || preset.StartingPassives == null) return;
 
             foreach (var passive in preset.StartingPassives)
@@ -84,13 +83,16 @@ namespace DiceOrbit.Core
             if (spriteRenderer != null)
             {
                 // 스탯에서 스프라이트 설정
-                if (stats.CharacterSprite != null)
+                if (stat != null && stat.CharacterSprite != null)
                 {
-                    spriteRenderer.sprite = stats.CharacterSprite;
+                    spriteRenderer.sprite = stat.CharacterSprite;
                 }
 
-                spriteRenderer.color = stats.SpriteColor;
-                originalColor = spriteRenderer.color;
+                if (stat != null)
+                {
+                    spriteRenderer.color = stat.SpriteColor;
+                    originalColor = spriteRenderer.color;
+                }
             }
             else
             {
@@ -98,9 +100,6 @@ namespace DiceOrbit.Core
             }
 
             mainCamera = Camera.main;
-
-            // 스킬 초기화
-            InitializeSkills();
 
             // Systems 초기화
             passives = GetComponent<Systems.Passives.PassiveManager>();
@@ -121,9 +120,9 @@ namespace DiceOrbit.Core
         private System.Collections.IEnumerator InitializeAfterDelay()
         {
             yield return null;
-            
-            Debug.Log($"Character {stats.CharacterName} initializing - Current Tile: {(currentTile != null ? "Assigned" : "NULL")}");
-            
+
+            Debug.Log($"Character {stat?.CharacterName} initializing - Current Tile: {(currentTile != null ? "Assigned" : "NULL")}");
+
             // 이미 Inspector에서 타일이 할당되었으면 사용
             if (currentTile != null)
             {
@@ -131,18 +130,18 @@ namespace DiceOrbit.Core
                 transform.position = currentTile.Position + TILE_OFFSET;
                 yield break;
             }
-            
+
             // OrbitManager에서 시작 타일 가져오기
             var orbitManager = Object.FindAnyObjectByType<OrbitManager>();
             if (orbitManager != null)
             {
                 Debug.Log($"OrbitManager found! Tile count: {orbitManager.TileCount}");
-                
+
                 currentTile = orbitManager.GetTile(startTileIndex);
-                
+
                 if (currentTile != null)
                 {
-                    Debug.Log($"{stats.CharacterName} assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
+                    Debug.Log($"{stat?.CharacterName} assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
                     transform.position = currentTile.Position + TILE_OFFSET;
                 }
                 else
@@ -202,7 +201,7 @@ namespace DiceOrbit.Core
 
             if (arrivalTile != null)
             {
-                Debug.Log($"{stats.CharacterName} arrived at tile {arrivalTile.TileIndex}");
+                Debug.Log($"{stat?.CharacterName} arrived at tile {arrivalTile.TileIndex}");
                 arrivalTile.OnArrive(this);
             }
 
@@ -235,7 +234,7 @@ namespace DiceOrbit.Core
         /// </summary>
         public override void OnStartTurn()
         {
-            Debug.Log($"[Character] {stats.CharacterName} Start Turn");
+            Debug.Log($"[Character] {stat?.CharacterName} Start Turn");
             base.OnStartTurn();
         }
 
@@ -295,16 +294,16 @@ namespace DiceOrbit.Core
         /// </summary>
         public void OnSelected()
         {
-            Debug.Log($"{stats.CharacterName} OnSelected called!");
-            
+            Debug.Log($"{stat?.CharacterName} OnSelected called!");
+
             // ActionPanel 표시 - 주사위 드롭 대기 상태 (비활성화된 것도 찾기)
             var actionPanel = Object.FindFirstObjectByType<UI.ActionPanel>(FindObjectsInactive.Include);
-            
+
             if (actionPanel != null)
             {
                 Debug.Log("ActionPanel found! Showing panel...");
                 actionPanel.ShowPanelForCharacter(this);
-                Debug.Log($"{stats.CharacterName} selected! Waiting for dice...");
+                Debug.Log($"{stat?.CharacterName} selected! Waiting for dice...");
             }
             else
             {

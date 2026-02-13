@@ -13,7 +13,7 @@ namespace DiceOrbit.Data.Monsters
         public MonsterStats BaseStats;
         
         [Header("AI & Skills")]
-        public MonsterAI.MonsterPattern AIPattern;
+        public MonsterAI.MonsterAI AIPattern;
         public List<SkillData> Skills = new List<SkillData>();
         
         [Header("Passives")]

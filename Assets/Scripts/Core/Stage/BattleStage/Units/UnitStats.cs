@@ -39,6 +39,27 @@ namespace DiceOrbit.Data
         /// HP 비율
         /// </summary>
         public float HPRatio => MaxHP > 0 ? (float)CurrentHP / MaxHP : 0f;
+
+        /// <summary>
+        /// 깊은 복사 수행
+        /// </summary>
+        public virtual T DeepCopy<T>() where T : UnitStats, new()
+        {
+            T copy = new T();
+            CopyBaseTo(copy);
+            return copy;
+        }
+
+        /// <summary>
+        /// 기본 스탯 복사 (자식 클래스에서 사용)
+        /// </summary>
+        protected void CopyBaseTo(UnitStats target)
+        {
+            target.MaxHP = this.MaxHP;
+            target.CurrentHP = this.CurrentHP;
+            target.Attack = this.Attack;
+            target.Defense = this.Defense;
+        }
     }
 }
 
