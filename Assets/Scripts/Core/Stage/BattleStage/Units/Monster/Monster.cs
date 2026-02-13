@@ -279,7 +279,7 @@ namespace DiceOrbit.Core
                                 if (tiles != null && tiles.Length > 0)
                                 {
                                     targetedTiles = tiles;
-                                    indicator.ShowAreaAttack(tiles);
+                                    UI.AttackIndicator.Instance.ShowAreaAttack(tiles);
                                     return;
                                 }
                             }
@@ -288,7 +288,7 @@ namespace DiceOrbit.Core
 
                     if (nextSkill.TargetType == SkillTargetType.SingleEnemy)
                     {
-                        indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
+                        UI.AttackIndicator.Instance.ShowTargetedAttack(transform, targetedCharacter.transform);
                     }
                     else if (nextSkill.TargetType == SkillTargetType.AllEnemies)
                     {
@@ -300,11 +300,11 @@ namespace DiceOrbit.Core
 
                         if (tiles.Length > 0)
                         {
-                            indicator.ShowAreaAttack(tiles);
+                            UI.AttackIndicator.Instance.ShowAreaAttack(tiles);
                         }
                         else
                         {
-                            indicator.ShowTargetedAttack(transform, targetedCharacter.transform);
+                            UI.AttackIndicator.Instance.ShowTargetedAttack(transform, targetedCharacter.transform);
                         }
                     }
                 }

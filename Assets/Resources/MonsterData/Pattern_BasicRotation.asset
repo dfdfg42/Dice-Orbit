@@ -9,11 +9,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e7e267214987fe47ac2b8f7272e4e36, type: 3}
+  m_Script: {fileID: 11500000, guid: 880fe45df7085e543bea632f03d5f60b, type: 3}
   m_Name: Pattern_BasicRotation
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.SequentialPattern
-  skills:
-  - {fileID: 11400000, guid: 880afa3c81d017948a443959c1e4c779, type: 2}
-  - {fileID: 11400000, guid: 880afa3c81d017948a443959c1e4c779, type: 2}
-  - {fileID: 11400000, guid: 8f2eaced5710e924bb07b5510487f26f, type: 2}
-  - {fileID: 11400000, guid: 4ff5e6a43586c3a4eb7507abcc901ab6, type: 2}
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.Patterns.SequentialPattern
