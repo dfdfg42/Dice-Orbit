@@ -2,6 +2,7 @@ using UnityEngine;
 using DiceOrbit.Data;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace DiceOrbit.Core
 {
@@ -9,7 +10,7 @@ namespace DiceOrbit.Core
     /// 몬스터 (중앙 구역)
     /// AI + Skills + Managers 통합 구현
     /// </summary>
-    public class Monster : Unit<MonsterStats>
+    public class Monster : Unit<MonsterStats>, UI.IHoverTooltipProvider
     {
         [Header("Preset")]
         [SerializeField] private Data.Monsters.MonsterPreset preset;
@@ -38,6 +39,7 @@ namespace DiceOrbit.Core
             }
 
             base.Awake();
+            EnsureHoverCollider();
 
             // Systems 초기화
             passives = GetComponent<Systems.Passives.PassiveManager>();
@@ -367,6 +369,99 @@ namespace DiceOrbit.Core
             }
 
             availableSkills = new List<SkillData>();
+        }
+
+        protected override void OnMouseEnter()
+        {
+            base.OnMouseEnter();
+            Debug.Log($"[Hover] Monster enter: {name}");
+            UI.HoverTooltipUI.EnsureInstance();
+            if (UI.HoverTooltipUI.Instance != null)
+            {
+                UI.HoverTooltipUI.Instance.Show(BuildMonsterTooltipText());
+            }
+        }
+
+        protected override void OnMouseExit()
+        {
+            base.OnMouseExit();
+            Debug.Log($"[Hover] Monster exit: {name}");
+            if (UI.HoverTooltipUI.Instance != null)
+            {
+                UI.HoverTooltipUI.Instance.Hide();
+            }
+        }
+
+        private string BuildMonsterTooltipText()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(Stats.MonsterName);
+            sb.AppendLine($"HP: {Stats.CurrentHP}/{Stats.MaxHP}");
+            sb.AppendLine($"ATK: {Stats.Attack}  DEF: {Stats.Defense}");
+
+            if (CurrentIntent != null)
+            {
+                int expectedDamage = CurrentIntent.CalculateDamage(Stats.Attack, 0);
+                sb.AppendLine("--- Intent ---");
+                sb.AppendLine($"{CurrentIntent.SkillName}");
+                if (!string.IsNullOrWhiteSpace(CurrentIntent.Description))
+                {
+                    sb.AppendLine(CurrentIntent.Description.Trim());
+                }
+                sb.AppendLine($"Target: {CurrentIntent.TargetType}");
+                sb.AppendLine($"Expected DMG: {expectedDamage}");
+
+                if (CurrentIntent.ActionModules != null)
+                {
+                    foreach (var module in CurrentIntent.ActionModules)
+                    {
+                        if (module == null) continue;
+                        var moduleText = module.GetTooltipDescription();
+                        if (string.IsNullOrWhiteSpace(moduleText)) continue;
+                        sb.AppendLine($"- {moduleText.Trim()}");
+                    }
+                }
+            }
+
+            if (passives != null && passives.ActivePassives.Count > 0)
+            {
+                sb.AppendLine("--- Passive ---");
+                foreach (var passive in passives.ActivePassives)
+                {
+                    if (passive == null) continue;
+                    var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? passive.name : passive.PassiveName;
+                    sb.AppendLine(passiveName);
+                    if (!string.IsNullOrWhiteSpace(passive.Description))
+                    {
+                        sb.AppendLine(passive.Description.Trim());
+                    }
+                }
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        public string GetHoverTooltipText()
+        {
+            return BuildMonsterTooltipText();
+        }
+
+        private void EnsureHoverCollider()
+        {
+            var existing = GetComponent<Collider>();
+            if (existing != null) return;
+
+            var box = gameObject.AddComponent<BoxCollider>();
+            if (spriteRenderer != null && spriteRenderer.sprite != null)
+            {
+                var bounds = spriteRenderer.sprite.bounds;
+                box.size = new Vector3(Mathf.Max(0.5f, bounds.size.x), Mathf.Max(0.5f, bounds.size.y), 1.5f);
+                box.center = new Vector3(bounds.center.x, bounds.center.y, 0f);
+            }
+            else
+            {
+                box.size = new Vector3(1.2f, 1.2f, 1.5f);
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DiceOrbit.Data.Tile
@@ -65,6 +66,25 @@ namespace DiceOrbit.Data.Tile
         }
 
         public bool IsEmpty => traverses.Count == 0 && arrives.Count == 0;
+        public int TraverseCount => traverses.Count;
+        public int ArriveCount => arrives.Count;
+
+        public List<string> GetTooltipDescriptions()
+        {
+            var lines = new List<string>();
+
+            lines.AddRange(traverses
+                .Where(t => t != null)
+                .Select(t => $"[경유] {t.TooltipDescription}")
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+            lines.AddRange(arrives
+                .Where(a => a != null)
+                .Select(a => $"[도착] {a.TooltipDescription}")
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+            return lines;
+        }
     }
 }
 

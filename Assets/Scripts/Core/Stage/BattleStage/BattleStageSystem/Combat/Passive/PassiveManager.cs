@@ -11,6 +11,7 @@ namespace DiceOrbit.Systems.Passives
         private object owner;
         private List<PassiveAbility> activePassives = new List<PassiveAbility>();
         private readonly Dictionary<PassiveAbility, PassiveAbility> runtimePassiveMap = new Dictionary<PassiveAbility, PassiveAbility>();
+        public IReadOnlyList<PassiveAbility> ActivePassives => activePassives;
 
         public void Initialize(Character character)
         {
