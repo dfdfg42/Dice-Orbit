@@ -11,7 +11,7 @@ namespace DiceOrbit.Data.MonsterAI
     {
         protected Monster owner;
 
-        public abstract SkillData GetNextSkill();
+        public abstract MonsterSkill GetNextSkill();
 
         /// <summary>
         /// Initialize AI with Monster reference and load initial skills.
@@ -20,7 +20,6 @@ namespace DiceOrbit.Data.MonsterAI
         { 
             owner = monster;
             InitializeRuntimeState();
-            RefreshSkills();
         }
 
         /// <summary>
@@ -31,16 +30,6 @@ namespace DiceOrbit.Data.MonsterAI
         {
             // Base implementation: nothing to copy
             // Derived classes should override to deep copy their [SerializeField] collections
-        }
-
-        /// <summary>
-        /// Refresh available skills from the owner Monster.
-        /// Override this in derived classes if pattern needs to cache skills.
-        /// </summary>
-        public virtual void RefreshSkills()
-        {
-            // Base implementation: do nothing
-            // Derived classes override if they need to cache owner.AvailableSkills
         }
     }
 }
