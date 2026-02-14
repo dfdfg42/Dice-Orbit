@@ -4,57 +4,103 @@ using DiceOrbit.Core;
 
 namespace DiceOrbit.Data.MonsterAI.Patterns
 {
+    /// <summary>
+    /// SkillData와 가중치를 쌍으로 저장하는 구조체
+    /// </summary>
     [System.Serializable]
-    public class WeightedSkillIndex
+    public class WeightedSkill
     {
-        [Tooltip("Index into the Available Skills list (0 = first skill)")]
-        public int SkillIndex;
-        [Range(1, 100)] public int Weight = 1;
+        [Tooltip("Skill to use")]
+        public SkillData Skill;
+
+        [Tooltip("Weight of this skill (higher = more likely to be selected)")]
+        [Range(0.1f, 100f)] 
+        public float Weight = 1f;
     }
 
+    /// <summary>
+    /// 가중치 랜덤 패턴 (SkillData 직접 참조 방식)
+    /// </summary>
     [CreateAssetMenu(fileName = "Weighted Random Pattern", menuName = "Dice Orbit/Monster AI/Pattern (Weighted Random)")]
     public class WeightedRandomPattern : MonsterAI
     {
-        [SerializeField] private List<WeightedSkillIndex> weights = new List<WeightedSkillIndex>();
+        [SerializeField] private List<WeightedSkill> weightedSkills = new List<WeightedSkill>();
+
+        protected override void InitializeRuntimeState()
+        {
+            base.InitializeRuntimeState();
+
+            // Deep copy weightedSkills list to avoid sharing with original ScriptableObject
+            if (weightedSkills != null && weightedSkills.Count > 0)
+            {
+                var originalSkills = weightedSkills;
+                weightedSkills = new List<WeightedSkill>(originalSkills.Count);
+
+                foreach (var ws in originalSkills)
+                {
+                    weightedSkills.Add(new WeightedSkill
+                    {
+                        Skill = ws.Skill, // SkillData는 ScriptableObject이므로 참조 공유 OK
+                        Weight = ws.Weight
+                    });
+                }
+            }
+        }
 
         public override SkillData GetNextSkill()
         {
-            if (availableSkills == null || availableSkills.Count == 0) return null;
-
-            // If configuration is empty, fallback to simple random
-            if (weights.Count == 0)
+            // If no weighted skills configured, fallback to owner's available skills
+            if (weightedSkills == null || weightedSkills.Count == 0)
             {
-                return availableSkills[Random.Range(0, availableSkills.Count)];
+                if (owner == null || owner.AvailableSkills == null || owner.AvailableSkills.Count == 0)
+                    return null;
+
+                return owner.AvailableSkills[Random.Range(0, owner.AvailableSkills.Count)];
             }
 
-            int totalWeight = 0;
-            var validWeights = new List<WeightedSkillIndex>();
+            // Calculate total weight (only count valid skills)
+            float totalWeight = 0f;
 
-            // Filter weights that are valid for current available skills count
-            foreach (var w in weights)
+            foreach (var ws in weightedSkills)
             {
-                if (w.SkillIndex < availableSkills.Count)
+                if (ws.Skill != null && ws.Weight > 0)
                 {
-                    totalWeight += w.Weight;
-                    validWeights.Add(w);
+                    totalWeight += ws.Weight;
                 }
             }
 
-            if (totalWeight == 0) return availableSkills[0];
-
-            int randomValue = Random.Range(0, totalWeight);
-            int currentWeight = 0;
-
-            foreach (var w in validWeights)
+            // No valid skills
+            if (totalWeight <= 0)
             {
-                currentWeight += w.Weight;
-                if (randomValue < currentWeight)
+                return owner?.AvailableSkills != null && owner.AvailableSkills.Count > 0 
+                    ? owner.AvailableSkills[0] 
+                    : null;
+            }
+
+            // Weighted random selection - direct iteration without temp list
+            float randomValue = Random.Range(0f, totalWeight);
+            float currentWeight = 0f;
+
+            foreach (var ws in weightedSkills)
+            {
+                if (ws.Skill != null && ws.Weight > 0)
                 {
-                    return availableSkills[w.SkillIndex];
+                    currentWeight += ws.Weight;
+                    if (randomValue < currentWeight)
+                    {
+                        return ws.Skill;
+                    }
                 }
             }
 
-            return availableSkills[validWeights[0].SkillIndex];
+            // Fallback: return first valid skill
+            foreach (var ws in weightedSkills)
+            {
+                if (ws.Skill != null)
+                    return ws.Skill;
+            }
+
+            return null;
         }
     }
 }
