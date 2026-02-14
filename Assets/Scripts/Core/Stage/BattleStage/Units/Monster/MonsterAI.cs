@@ -10,7 +10,6 @@ namespace DiceOrbit.Data.MonsterAI
     public abstract class MonsterAI : ScriptableObject
     {
         protected Monster owner;
-        protected List<SkillData> availableSkills = new List<SkillData>();
 
         public abstract SkillData GetNextSkill();
 
@@ -20,24 +19,28 @@ namespace DiceOrbit.Data.MonsterAI
         public virtual void Initialize(Monster monster) 
         { 
             owner = monster;
+            InitializeRuntimeState();
             RefreshSkills();
         }
 
         /// <summary>
+        /// Initialize runtime-specific state for deep copy of fields.
+        /// Override this in derived classes to deep copy SerializedField collections.
+        /// </summary>
+        protected virtual void InitializeRuntimeState()
+        {
+            // Base implementation: nothing to copy
+            // Derived classes should override to deep copy their [SerializeField] collections
+        }
+
+        /// <summary>
         /// Refresh available skills from the owner Monster.
-        /// Call this when Monster's skill list changes.
+        /// Override this in derived classes if pattern needs to cache skills.
         /// </summary>
         public virtual void RefreshSkills()
         {
-            if (owner == null) return;
-
-            availableSkills.Clear();
-
-            var monsterSkills = owner.AvailableSkills;
-            if (monsterSkills != null)
-            {
-                availableSkills.AddRange(monsterSkills);
-            }
+            // Base implementation: do nothing
+            // Derived classes override if they need to cache owner.AvailableSkills
         }
     }
 }
