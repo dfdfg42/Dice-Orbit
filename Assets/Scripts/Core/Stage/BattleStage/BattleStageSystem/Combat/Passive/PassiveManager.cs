@@ -10,6 +10,8 @@ namespace DiceOrbit.Systems.Passives
     {
         private object owner;
         private List<PassiveAbility> activePassives = new List<PassiveAbility>();
+        private readonly Dictionary<PassiveAbility, PassiveAbility> runtimePassiveMap = new Dictionary<PassiveAbility, PassiveAbility>();
+        public IReadOnlyList<PassiveAbility> ActivePassives => activePassives;
 
         public void Initialize(Character character)
         {
@@ -24,21 +26,33 @@ namespace DiceOrbit.Systems.Passives
         public void AddPassive(PassiveAbility passive)
         {
             if (passive == null) return;
-            if (!activePassives.Contains(passive))
+            if (!runtimePassiveMap.ContainsKey(passive))
             {
-                activePassives.Add(passive);
-                if (owner is Character c) passive.Initialize(c);
-                else if (owner is Monster m) passive.Initialize(m);
+                var runtimePassive = ScriptableObject.Instantiate(passive);
+                runtimePassive.name = passive.name;
+
+                activePassives.Add(runtimePassive);
+                runtimePassiveMap[passive] = runtimePassive;
+
+                if (owner is Character c) runtimePassive.Initialize(c);
+                else if (owner is Monster m) runtimePassive.Initialize(m);
                 // Trigger OnPassiveAdded reactor?
-                Debug.Log($"[PassiveManager] Added {passive.PassiveName}");
+                Debug.Log($"[PassiveManager] Added {runtimePassive.PassiveName}");
             }
         }
 
         public void RemovePassive(PassiveAbility passive)
         {
-            if (activePassives.Contains(passive))
+            if (passive == null) return;
+
+            if (runtimePassiveMap.TryGetValue(passive, out var runtimePassive))
             {
-                activePassives.Remove(passive);
+                activePassives.Remove(runtimePassive);
+                runtimePassiveMap.Remove(passive);
+                if (runtimePassive != null)
+                {
+                    Destroy(runtimePassive);
+                }
             }
         }
 
@@ -55,6 +69,19 @@ namespace DiceOrbit.Systems.Passives
             {
                 passive.OnReact(trigger, context);
             }
+        }
+
+        private void OnDestroy()
+        {
+            foreach (var passive in activePassives)
+            {
+                if (passive != null)
+                {
+                    Destroy(passive);
+                }
+            }
+            activePassives.Clear();
+            runtimePassiveMap.Clear();
         }
     }
 }

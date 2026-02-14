@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using DiceOrbit.Data.Waves;
 using DiceOrbit.Data.Monsters;
+using System.Linq;
 
 namespace DiceOrbit.Core
 {
@@ -91,11 +92,32 @@ namespace DiceOrbit.Core
             }
 
             int spawnCount = Mathf.Max(1, waveDef.SpawnCount);
-            var spawnPoints = GetSpawnPoints();
+            var spawnPoints = GetSpawnPoints().OrderBy(_ => Random.value).ToList();
 
-            for (int i = 0; i < spawnCount; i++)
+            var validPresets = waveDef.MonsterPresets.Where(p => p != null).ToList();
+            if (validPresets.Count == 0)
             {
-                MonsterPreset preset = waveDef.MonsterPresets[Random.Range(0, waveDef.MonsterPresets.Count)];
+                Debug.LogWarning("[WaveManager] No valid monster presets found in wave definition.");
+                return;
+            }
+
+            var spawnPlan = new List<MonsterPreset>();
+            if (spawnCount <= validPresets.Count)
+            {
+                spawnPlan.AddRange(validPresets.OrderBy(_ => Random.value).Take(spawnCount));
+            }
+            else
+            {
+                spawnPlan.AddRange(validPresets.OrderBy(_ => Random.value));
+                while (spawnPlan.Count < spawnCount)
+                {
+                    spawnPlan.Add(validPresets[Random.Range(0, validPresets.Count)]);
+                }
+            }
+
+            for (int i = 0; i < spawnPlan.Count; i++)
+            {
+                MonsterPreset preset = spawnPlan[i];
                 if (preset == null) continue;
 
                 Vector3 spawnPos = GetSpawnPosition(spawnPoints, i);
@@ -176,12 +198,25 @@ namespace DiceOrbit.Core
         {
             if (points != null && points.Count > 0)
             {
-                var point = points[Random.Range(0, points.Count)];
-                return point.transform.position;
+                // Use each spawn point once before reusing.
+                if (index < points.Count)
+                {
+                    return points[index].transform.position;
+                }
+
+                // If spawn count exceeds point count, place extras around reused points with an offset.
+                var basePoint = points[index % points.Count].transform.position;
+                int overlapTier = index / points.Count;
+                float angle = overlapTier * 137.5f * Mathf.Deg2Rad;
+                float distance = 0.8f + overlapTier * 0.6f;
+                var offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * distance;
+                return basePoint + offset;
             }
 
-            // fallback: center random
-            Vector2 circle = Random.insideUnitCircle * fallbackSpawnRadius;
+            // fallback: spread around center
+            float fallbackAngle = index * 137.5f * Mathf.Deg2Rad;
+            float fallbackDistance = Mathf.Min(fallbackSpawnRadius, 0.8f + index * 0.6f);
+            Vector2 circle = new Vector2(Mathf.Cos(fallbackAngle), Mathf.Sin(fallbackAngle)) * fallbackDistance;
             return new Vector3(circle.x, 0f, circle.y);
         }
 

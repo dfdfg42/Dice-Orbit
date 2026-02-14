@@ -2,6 +2,7 @@ using UnityEngine;
 using DiceOrbit.Data;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace DiceOrbit.Core
 {
@@ -9,7 +10,7 @@ namespace DiceOrbit.Core
     /// 몬스터 (중앙 구역)
     /// AI + Skills + Managers 통합 구현
     /// </summary>
-    public class Monster : Unit<MonsterStats>
+    public class Monster : Unit<MonsterStats>, UI.IHoverTooltipProvider
     {
         [Header("Preset")]
         [SerializeField] private Data.Monsters.MonsterPreset preset;
@@ -19,6 +20,7 @@ namespace DiceOrbit.Core
 
         [Header("AI")]
         [SerializeField] private Data.MonsterAI.MonsterAI aiPattern;
+        private Data.MonsterAI.MonsterAI runtimeAiPattern;
         private SkillData nextSkill; // 다음 턴에 사용할 스킬
         public SkillData CurrentIntent => nextSkill;
 
@@ -37,6 +39,7 @@ namespace DiceOrbit.Core
             }
 
             base.Awake();
+            EnsureHoverCollider();
 
             // Systems 초기화
             passives = GetComponent<Systems.Passives.PassiveManager>();
@@ -69,8 +72,7 @@ namespace DiceOrbit.Core
             
             preset = monsterPreset;
 
-            // Stats Deep Copy (간단한 복제, 실제로는 Clone 메서드 권장)
-            stat = preset.BaseStats.DeepCopy();
+            stat = preset.CreateStats();
 
             // Visual
             if (spriteRenderer != null && stat.MonsterSprite != null)
@@ -80,8 +82,21 @@ namespace DiceOrbit.Core
             }
             
             // AI
-            aiPattern = preset.AIPattern;
-            availableSkills = new List<SkillData>(preset.Skills);
+            if (runtimeAiPattern != null)
+            {
+                Destroy(runtimeAiPattern);
+                runtimeAiPattern = null;
+            }
+
+            aiPattern = null;
+            if (preset.AIPattern != null)
+            {
+                runtimeAiPattern = ScriptableObject.Instantiate(preset.AIPattern);
+                runtimeAiPattern.name = preset.AIPattern.name;
+                aiPattern = runtimeAiPattern;
+            }
+
+            RefreshAvailableSkills();
             
             if (aiPattern != null)
             {
@@ -89,15 +104,21 @@ namespace DiceOrbit.Core
             }
             
             // Passives
-            if (preset.PassiveAbilities != null)
+            foreach (var passiveData in preset.GetStartingPassives())
             {
-                foreach (var passiveData in preset.PassiveAbilities)
-                {
-                    passives.AddPassive(passiveData);
-                }
+                passives.AddPassive(passiveData);
             }
             
             Debug.Log($"Monster '{stat.MonsterName}' initialized from preset.");
+        }
+
+        private void OnDestroy()
+        {
+            if (runtimeAiPattern != null)
+            {
+                Destroy(runtimeAiPattern);
+                runtimeAiPattern = null;
+            }
         }
         
         /// <summary>
@@ -105,6 +126,8 @@ namespace DiceOrbit.Core
         /// </summary>
         public void SelectNextIntent()
         {
+            RefreshAvailableSkills();
+
             if (aiPattern != null)
             {
                 nextSkill = aiPattern.GetNextSkill(this, availableSkills);
@@ -212,8 +235,7 @@ namespace DiceOrbit.Core
                  // 임시: SkillData의 데미지 팩터만 사용 (System Migration 과도기)
                  // 추후 ActionModule.Execute(Context) 형태로 고도화 필요
                  
-                 // NOTE: Since ActionModule logic is complex, we use a basic fallback implementation here
-                 // conforming to the requested behavior for now using CombatAction.
+                 // NOTE: ActionModule가 직접 처리하지 않는 경우 기본 CombatAction 경로를 사용합니다.
                  
                  int damage = skill.CalculateDamage(stat.Attack, 0); // No dice for monsters
                  var actionType = Pipeline.ActionType.Attack;
@@ -238,7 +260,7 @@ namespace DiceOrbit.Core
                  }
             }
             
-            // Fallback for Legacy Config (if empty modules)
+            // ActionModule이 없는 스킬은 기본 데미지 경로를 사용
             if (skill.ActionModules.Count == 0)
             {
                  int damage = skill.CalculateDamage(stat.Attack, 0);
@@ -333,6 +355,113 @@ namespace DiceOrbit.Core
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
             Destroy(gameObject);
+        }
+
+        private void RefreshAvailableSkills()
+        {
+            if (stat != null && stat.RuntimeActiveSkills != null && stat.RuntimeActiveSkills.Count > 0)
+            {
+                availableSkills = stat.RuntimeActiveSkills
+                    .Select(s => s?.ToSkillData())
+                    .Where(s => s != null)
+                    .ToList();
+                return;
+            }
+
+            availableSkills = new List<SkillData>();
+        }
+
+        protected override void OnMouseEnter()
+        {
+            base.OnMouseEnter();
+            Debug.Log($"[Hover] Monster enter: {name}");
+            UI.HoverTooltipUI.EnsureInstance();
+            if (UI.HoverTooltipUI.Instance != null)
+            {
+                UI.HoverTooltipUI.Instance.Show(BuildMonsterTooltipText());
+            }
+        }
+
+        protected override void OnMouseExit()
+        {
+            base.OnMouseExit();
+            Debug.Log($"[Hover] Monster exit: {name}");
+            if (UI.HoverTooltipUI.Instance != null)
+            {
+                UI.HoverTooltipUI.Instance.Hide();
+            }
+        }
+
+        private string BuildMonsterTooltipText()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(Stats.MonsterName);
+            sb.AppendLine($"HP: {Stats.CurrentHP}/{Stats.MaxHP}");
+            sb.AppendLine($"ATK: {Stats.Attack}  DEF: {Stats.Defense}");
+
+            if (CurrentIntent != null)
+            {
+                int expectedDamage = CurrentIntent.CalculateDamage(Stats.Attack, 0);
+                sb.AppendLine("--- Intent ---");
+                sb.AppendLine($"{CurrentIntent.SkillName}");
+                if (!string.IsNullOrWhiteSpace(CurrentIntent.Description))
+                {
+                    sb.AppendLine(CurrentIntent.Description.Trim());
+                }
+                sb.AppendLine($"Target: {CurrentIntent.TargetType}");
+                sb.AppendLine($"Expected DMG: {expectedDamage}");
+
+                if (CurrentIntent.ActionModules != null)
+                {
+                    foreach (var module in CurrentIntent.ActionModules)
+                    {
+                        if (module == null) continue;
+                        var moduleText = module.GetTooltipDescription();
+                        if (string.IsNullOrWhiteSpace(moduleText)) continue;
+                        sb.AppendLine($"- {moduleText.Trim()}");
+                    }
+                }
+            }
+
+            if (passives != null && passives.ActivePassives.Count > 0)
+            {
+                sb.AppendLine("--- Passive ---");
+                foreach (var passive in passives.ActivePassives)
+                {
+                    if (passive == null) continue;
+                    var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? passive.name : passive.PassiveName;
+                    sb.AppendLine(passiveName);
+                    if (!string.IsNullOrWhiteSpace(passive.Description))
+                    {
+                        sb.AppendLine(passive.Description.Trim());
+                    }
+                }
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        public string GetHoverTooltipText()
+        {
+            return BuildMonsterTooltipText();
+        }
+
+        private void EnsureHoverCollider()
+        {
+            var existing = GetComponent<Collider>();
+            if (existing != null) return;
+
+            var box = gameObject.AddComponent<BoxCollider>();
+            if (spriteRenderer != null && spriteRenderer.sprite != null)
+            {
+                var bounds = spriteRenderer.sprite.bounds;
+                box.size = new Vector3(Mathf.Max(0.5f, bounds.size.x), Mathf.Max(0.5f, bounds.size.y), 1.5f);
+                box.center = new Vector3(bounds.center.x, bounds.center.y, 0f);
+            }
+            else
+            {
+                box.size = new Vector3(1.2f, 1.2f, 1.5f);
+            }
         }
     }
 }

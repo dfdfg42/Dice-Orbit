@@ -43,25 +43,5 @@ namespace DiceOrbit.Data
             Debug.Log($"{CharacterName} leveled up to {Level}! HP: {MaxHP}, ATK: {Attack}, DEF: {Defense}");
         }
 
-        /// <summary>
-        /// CharacterStats 깊은 복사
-        /// </summary>
-        public CharacterStats DeepCopy()
-        {
-            CharacterStats copy = new CharacterStats();
-            CopyBaseTo(copy);
-
-            copy.CharacterName = this.CharacterName;
-            copy.Level = this.Level;
-            copy.CharacterSprite = this.CharacterSprite;
-            copy.SpriteColor = this.SpriteColor;
-            copy.SourcePreset = this.SourcePreset;
-
-            // RuntimeSkills는 새 리스트로 복사 (참조 공유 방지)
-            copy.RuntimeActiveSkills = new List<Skills.RuntimeSkill>(this.RuntimeActiveSkills);
-            copy.RuntimePassiveSkills = new List<Skills.RuntimeSkill>(this.RuntimePassiveSkills);
-
-            return copy;
-        }
     }
 }

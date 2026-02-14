@@ -72,5 +72,15 @@ namespace DiceOrbit.Data.Skills.Modules
 
             return selected.ToArray();
         }
+
+        public override string GetTooltipDescription()
+        {
+            if (!string.IsNullOrWhiteSpace(TooltipDescription))
+            {
+                return TooltipDescription;
+            }
+
+            return $"무작위 타일 {trapCount}곳에 속박 함정을 설치합니다. 해당 타일을 지나가면 즉시 이동이 중단됩니다.";
+        }
     }
 }

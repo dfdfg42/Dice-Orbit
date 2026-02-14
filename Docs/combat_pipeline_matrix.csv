@@ -1,0 +1,20 @@
+Sheet,Category,Item,DefinedIn,ProducedBy,ConsumedBy,FiredInMainPath,Notes
+Trigger,CombatTrigger,OnPreAction,ICombatReactor,CombatPipeline,PassiveManager/StatusEffectManager,Yes,Can cancel action via context.IsCancelled
+Trigger,CombatTrigger,OnCalculateOutput,ICombatReactor,CombatPipeline,PassiveManager/StatusEffectManager,Yes,Main damage/heal modifier phase
+Trigger,CombatTrigger,OnHit,ICombatReactor,CombatPipeline,PassiveManager/StatusEffectManager,Yes,Post apply immediate reaction
+Trigger,CombatTrigger,OnPostAction,ICombatReactor,CombatPipeline,PassiveManager/StatusEffectManager,Yes,Post processing and state update
+Trigger,CombatTrigger,OnTurnStart,ICombatReactor,CombatTrigger enum,StatusEffectManager and some passives,No,Defined but not emitted in main pipeline
+Trigger,CombatTrigger,OnTurnEnd,ICombatReactor,CombatTrigger enum,Potential future use,No,Defined only
+Trigger,CombatTrigger,OnActionSuccess,ICombatReactor,CombatTrigger enum,Potential future use,No,Defined only
+Context,Field,SourceUnit,CombatContext,SkillManager/Monster/Effect systems,Reactors,Yes,Actor unit
+Context,Field,Target,CombatContext,SkillManager/Monster/Effect systems,Reactors,Yes,Receiver unit
+Context,Field,Action,CombatContext,SkillManager/Monster/Effect systems,Pipeline+Reactors,Yes,Type BaseValue Tags
+Context,Field,OutputValue,CombatContext,CombatContext ctor,Pipeline+Reactors,Yes,Mutable final value
+Context,Field,IsCancelled,CombatContext,Reactors,Pipeline,Yes,Stops execution
+Data,Skill,CharacterSkill,Data.Skills,Designer content,RuntimeSkill,Yes,Level-based asset
+Data,Skill,RuntimeSkill,Data.Skills,CharacterStats,SkillManager,Yes,Converted to SkillData
+Data,Skill,SkillData,Data namespace,RuntimeSkill,SkillManager,Yes,Runtime execution payload
+Data,Passive,PassiveAbility,Data.Passives,Designer content,PassiveManager,Yes,SO reactor logic
+Data,Status,StatusEffect,Systems.Effects,StatusEffectManager,StatusEffectManager,Partial,Owner typing currently Character-centric
+Data,Effect,EffectData,Data namespace,SkillData,EffectManager,Yes,Type/value/duration payload
+Data,Effect,IEffect registry,Systems.Effects,EffectManager,Character/Monster target,Yes,Some effects bypass pipeline modifiers
