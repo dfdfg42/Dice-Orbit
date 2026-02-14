@@ -13,28 +13,75 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
         public MonsterAI NormalPattern;
         public MonsterAI CriticalPattern;
 
+        private MonsterAI runtimeNormalPattern;
+        private MonsterAI runtimeCriticalPattern;
+
         public override void Initialize(Monster monster)
         {
-            if (NormalPattern != null) NormalPattern.Initialize(monster);
-            if (CriticalPattern != null) CriticalPattern.Initialize(monster);
+            RecreateRuntimePatterns();
+
+            if (runtimeNormalPattern != null) runtimeNormalPattern.Initialize(monster);
+            if (runtimeCriticalPattern != null) runtimeCriticalPattern.Initialize(monster);
         }
 
         public override SkillData GetNextSkill(Monster monster, System.Collections.Generic.List<SkillData> availableSkills)
         {
             if (monster.Stats.HPRatio <= ThresholdPercent)
             {
-                if (CriticalPattern != null)
+                if (runtimeCriticalPattern != null)
                 {
-                    return CriticalPattern.GetNextSkill(monster, availableSkills);
+                    return runtimeCriticalPattern.GetNextSkill(monster, availableSkills);
                 }
+            }
+
+            if (runtimeNormalPattern != null)
+            {
+                return runtimeNormalPattern.GetNextSkill(monster, availableSkills);
+            }
+
+            return null;
+        }
+
+        private void RecreateRuntimePatterns()
+        {
+            if (runtimeNormalPattern != null)
+            {
+                Destroy(runtimeNormalPattern);
+                runtimeNormalPattern = null;
+            }
+
+            if (runtimeCriticalPattern != null)
+            {
+                Destroy(runtimeCriticalPattern);
+                runtimeCriticalPattern = null;
             }
 
             if (NormalPattern != null)
             {
-                return NormalPattern.GetNextSkill(monster, availableSkills);
+                runtimeNormalPattern = Instantiate(NormalPattern);
+                runtimeNormalPattern.name = NormalPattern.name;
             }
 
-            return null;
+            if (CriticalPattern != null)
+            {
+                runtimeCriticalPattern = Instantiate(CriticalPattern);
+                runtimeCriticalPattern.name = CriticalPattern.name;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (runtimeNormalPattern != null)
+            {
+                Destroy(runtimeNormalPattern);
+                runtimeNormalPattern = null;
+            }
+
+            if (runtimeCriticalPattern != null)
+            {
+                Destroy(runtimeCriticalPattern);
+                runtimeCriticalPattern = null;
+            }
         }
     }
 }
