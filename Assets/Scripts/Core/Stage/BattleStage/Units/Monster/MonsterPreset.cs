@@ -15,9 +15,6 @@ namespace DiceOrbit.Data.Monsters
         
         [Header("AI & Skills")]
         public MonsterAI.MonsterAI AIPattern;
-
-        [Header("Starting Skills")]
-        public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
         
         [Header("Starting Passives")]
         public List<Passives.PassiveAbility> StartingPassives = new List<Passives.PassiveAbility>();
@@ -35,17 +32,6 @@ namespace DiceOrbit.Data.Monsters
                 stats.MonsterSprite = MonsterSprite;
             }
             stats.SpriteColor = SpriteColor;
-
-            stats.RuntimeActiveSkills = new List<RuntimeSkill>();
-            if (StartingSkills != null)
-            {
-                foreach (var skill in StartingSkills)
-                {
-                    if (skill == null) continue;
-                    stats.RuntimeActiveSkills.Add(new RuntimeSkill(skill));
-                }
-            }
-
             return stats;
         }
 

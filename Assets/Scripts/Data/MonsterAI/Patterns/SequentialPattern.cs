@@ -10,7 +10,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     [CreateAssetMenu(fileName = "SequencePattern", menuName = "DiceOrbit/Monster/Pattern/Sequence")]
     public class SequentialPattern : MonsterAI
     {
-        [SerializeField] List<SkillData> availableSkills = new List<SkillData>();
+        [SerializeField] List<MonsterSkill> availableSkills = new List<MonsterSkill>();
         [SerializeField] private int currentIndex = 0;
 
         protected override void InitializeRuntimeState()
@@ -19,20 +19,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
             currentIndex = 0;
         }
 
-        public override void RefreshSkills()
-        {
-            if (owner == null) return;
-
-            availableSkills.Clear();
-
-            var monsterSkills = owner.AvailableSkills;
-            if (monsterSkills != null)
-            {
-                availableSkills.AddRange(monsterSkills);
-            }
-        }
-
-        public override SkillData GetNextSkill()
+        public override MonsterSkill GetNextSkill()
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;
 
