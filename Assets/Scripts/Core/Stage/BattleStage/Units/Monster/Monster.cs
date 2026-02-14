@@ -3,6 +3,7 @@ using DiceOrbit.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using DiceOrbit.UI;
 
 namespace DiceOrbit.Core
 {
@@ -274,8 +275,8 @@ namespace DiceOrbit.Core
         public void ShowAttackPreview()
         {
             if (nextSkill == null) return;
-            
-            var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
+
+            var indicator = AttackIndicator.Instance;
             if (indicator == null) return;
 
             indicator.Hide();
@@ -335,7 +336,7 @@ namespace DiceOrbit.Core
         
         public void HideAttackPreview()
         {
-            var indicator = Object.FindAnyObjectByType<UI.AttackIndicator>();
+            var indicator = AttackIndicator.Instance;
             if (indicator != null) indicator.Hide();
         }
         
