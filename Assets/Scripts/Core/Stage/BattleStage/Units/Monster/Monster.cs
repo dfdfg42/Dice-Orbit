@@ -81,7 +81,9 @@ namespace DiceOrbit.Core
             
             // AI
             aiPattern = preset.AIPattern;
-            availableSkills = new List<SkillData>(preset.Skills);
+            availableSkills = preset.Skills != null
+                ? preset.Skills.Where(s => s != null).Select(s => s.DeepCopy()).ToList()
+                : new List<SkillData>();
             
             if (aiPattern != null)
             {
