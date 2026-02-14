@@ -68,9 +68,9 @@ namespace DiceOrbit.Core
             if (passives == null) return;
 
             var preset = stat.SourcePreset;
-            if (preset == null || preset.StartingPassives == null) return;
+            if (preset == null) return;
 
-            foreach (var passive in preset.StartingPassives)
+            foreach (var passive in preset.GetStartingPassives())
             {
                 passives.AddPassive(passive);
             }

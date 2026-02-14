@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 466f85b8c91d21a48a505813b96bdd09, type: 3}
+  m_Name: GoblinTrap
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Skills.CharacterSkill
+  SkillName: "\uD568\uC815"
+  Description: "\uBB34\uC791\uC704 \uD0C0\uC77C 3\uACF3\uC5D0 \uD568\uC815 \uC124\uCE58 (\uD134 \uC885\uB8CC \uC2DC \uD53C\uD574 5)"
+  Icon: {fileID: 0}
+  Type: 0
+  TargetType: 2
+  Levels:
+  - Level: 1
+    Description: "\uB514\uBC84\uD504 \uD0C0\uC77C \uC124\uCE58"
+    Damage: 0
+    DamageMultiplier: 0
+    BonusDamage: 0
+    IgnoreDefense: 0
+    Cooldown: 0
+    Requirement:
+      MinDiceCount: 1
+      MinDiceValue: 1
+      Pattern: 0
+    Effects: []
+    ActionModules:
+    - {fileID: 11400000, guid: 9a72c44f5f71467c8b0b39bc6c0e5fa3, type: 2}

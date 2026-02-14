@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 466f85b8c91d21a48a505813b96bdd09, type: 3}
+  m_Name: SkeletonSlash
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Skills.CharacterSkill
+  SkillName: "\uAC80\uACA9"
+  Description: "\uB300\uC0C1 1\uBA85\uC5D0\uAC8C 2 \uD53C\uD574"
+  Icon: {fileID: 0}
+  Type: 0
+  TargetType: 0
+  Levels:
+  - Level: 1
+    Description: "\uC9C0\uC815 \uD53C\uD574 2"
+    Damage: 0
+    DamageMultiplier: 0
+    BonusDamage: 2
+    IgnoreDefense: 0
+    Cooldown: 0
+    Requirement:
+      MinDiceCount: 1
+      MinDiceValue: 1
+      Pattern: 0
+    Effects: []

@@ -67,5 +67,10 @@ namespace DiceOrbit.Core
             
             return stats;
         }
+
+        public List<Data.Passives.PassiveAbility> GetStartingPassives()
+        {
+            return StartingPassives ?? new List<Data.Passives.PassiveAbility>();
+        }
     }
 }

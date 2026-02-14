@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 371b1fd56cb849e9b36793f3cf980114, type: 3}
+  m_Name: EndTurnTrapTile
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Skills.Modules.EndTurnTrapTileModule
+  trapCount: 3
+  trapDamage: 5
+  avoidLevelUpTile: 1
+  highlightColor: {r: 0.2, g: 0.8, b: 0.2, a: 0.6}
