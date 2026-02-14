@@ -26,9 +26,6 @@ namespace DiceOrbit.Core
         public Sprite CharacterSprite;
         public Color SpriteColor = Color.white;
         
-        [Header("Starting Skills")]
-        public List<SkillData> ActiveSkills = new List<SkillData>();
-        public List<SkillData> PassiveSkills = new List<SkillData>();
 
         [Header("Starting Skills (New System)")]
         public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
