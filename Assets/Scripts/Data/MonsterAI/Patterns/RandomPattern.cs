@@ -9,7 +9,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     [CreateAssetMenu(fileName = "RandomPattern", menuName = "DiceOrbit/Monster/Pattern/Random")]
     public class RandomPattern : MonsterAI
     {
-        private List<SkillData> availableSkills = new List<SkillData>();
+        [SerializeField] private List<SkillData> availableSkills = new List<SkillData>();
 
         public override void RefreshSkills()
         {
