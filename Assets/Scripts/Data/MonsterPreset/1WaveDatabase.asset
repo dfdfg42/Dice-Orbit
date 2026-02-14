@@ -14,5 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Waves.WaveDatabase
   Waves:
   - MonsterPresets:
-    - {fileID: 11400000, guid: f2c1666bc97eda141809a77e6b82f7b1, type: 2}
-    SpawnCount: 1
+    - {fileID: 11400000, guid: f5b5d77c98a74dc3954f59f40efdc8ec, type: 2}
+    - {fileID: 11400000, guid: 2e2e9ce3316643979f8f80356ece9d3d, type: 2}
+    - {fileID: 11400000, guid: 25bda3da432d43d7ba92bdb9f4d11f5a, type: 2}
+    SpawnCount: 3

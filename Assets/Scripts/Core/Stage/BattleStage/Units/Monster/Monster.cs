@@ -70,7 +70,7 @@ namespace DiceOrbit.Core
             
             preset = monsterPreset;
 
-            stat = preset.BaseStats.DeepCopy();
+            stat = preset.CreateStats();
 
             // Visual
             if (spriteRenderer != null && stat.MonsterSprite != null)
@@ -94,28 +94,7 @@ namespace DiceOrbit.Core
                 aiPattern = runtimeAiPattern;
             }
 
-            // New system: CharacterSkill -> RuntimeSkill -> SkillData
-            stat.RuntimeActiveSkills = new List<Data.Skills.RuntimeSkill>();
-            if (preset.StartingSkills != null && preset.StartingSkills.Count > 0)
-            {
-                foreach (var skill in preset.StartingSkills)
-                {
-                    if (skill == null) continue;
-                    stat.RuntimeActiveSkills.Add(new Data.Skills.RuntimeSkill(skill));
-                }
-
-                availableSkills = stat.RuntimeActiveSkills
-                    .Select(s => s?.ToSkillData())
-                    .Where(s => s != null)
-                    .ToList();
-            }
-            else
-            {
-                // Legacy fallback: direct SkillData list
-                availableSkills = preset.Skills != null
-                    ? preset.Skills.Where(s => s != null).Select(s => s.DeepCopy()).ToList()
-                    : new List<SkillData>();
-            }
+            RefreshAvailableSkills();
             
             if (aiPattern != null)
             {
@@ -123,12 +102,9 @@ namespace DiceOrbit.Core
             }
             
             // Passives
-            if (preset.PassiveAbilities != null)
+            foreach (var passiveData in preset.GetStartingPassives())
             {
-                foreach (var passiveData in preset.PassiveAbilities)
-                {
-                    passives.AddPassive(passiveData);
-                }
+                passives.AddPassive(passiveData);
             }
             
             Debug.Log($"Monster '{stat.MonsterName}' initialized from preset.");
@@ -148,6 +124,8 @@ namespace DiceOrbit.Core
         /// </summary>
         public void SelectNextIntent()
         {
+            RefreshAvailableSkills();
+
             if (aiPattern != null)
             {
                 nextSkill = aiPattern.GetNextSkill(this, availableSkills);
@@ -255,8 +233,7 @@ namespace DiceOrbit.Core
                  // 임시: SkillData의 데미지 팩터만 사용 (System Migration 과도기)
                  // 추후 ActionModule.Execute(Context) 형태로 고도화 필요
                  
-                 // NOTE: Since ActionModule logic is complex, we use a basic fallback implementation here
-                 // conforming to the requested behavior for now using CombatAction.
+                 // NOTE: ActionModule가 직접 처리하지 않는 경우 기본 CombatAction 경로를 사용합니다.
                  
                  int damage = skill.CalculateDamage(stat.Attack, 0); // No dice for monsters
                  var actionType = Pipeline.ActionType.Attack;
@@ -281,7 +258,7 @@ namespace DiceOrbit.Core
                  }
             }
             
-            // Fallback for Legacy Config (if empty modules)
+            // ActionModule이 없는 스킬은 기본 데미지 경로를 사용
             if (skill.ActionModules.Count == 0)
             {
                  int damage = skill.CalculateDamage(stat.Attack, 0);
@@ -376,6 +353,20 @@ namespace DiceOrbit.Core
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
             Destroy(gameObject);
+        }
+
+        private void RefreshAvailableSkills()
+        {
+            if (stat != null && stat.RuntimeActiveSkills != null && stat.RuntimeActiveSkills.Count > 0)
+            {
+                availableSkills = stat.RuntimeActiveSkills
+                    .Select(s => s?.ToSkillData())
+                    .Where(s => s != null)
+                    .ToList();
+                return;
+            }
+
+            availableSkills = new List<SkillData>();
         }
     }
 }
