@@ -34,15 +34,15 @@ namespace DiceOrbit.UI
             DiceRequirement requirement = null;
             if (isNew)
             {
-                var lvl1 = skill.GetLevelData(1);
+                var lvl1 = skill.GetSkillData(1); // use GetSkillData to get Description
                 desc = lvl1 != null ? lvl1.Description : "No Description";
-                requirement = lvl1 != null ? lvl1.Requirement : null;
+                requirement = skill.GetLevelData(1) != null ? skill.GetLevelData(1).Requirement : null;
             }
             else
             {
-                var nextLv = skill.GetLevelData(currentLevel + 1);
-                desc = nextLv != null ? nextLv.Description : "Max Level Reached!";
-                requirement = nextLv != null ? nextLv.Requirement : null;
+                var nextLvData = skill.GetSkillData(currentLevel + 1);
+                desc = nextLvData != null ? nextLvData.Description : "Max Level Reached!";
+                requirement = skill.GetLevelData(currentLevel + 1) != null ? skill.GetLevelData(currentLevel + 1).Requirement : null;
             }
 
             if (requirement != null)
