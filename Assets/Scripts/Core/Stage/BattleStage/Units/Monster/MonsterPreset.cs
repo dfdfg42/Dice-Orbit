@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using DiceOrbit.Data.Skills;
 
 namespace DiceOrbit.Data.Monsters
 {
@@ -15,6 +16,9 @@ namespace DiceOrbit.Data.Monsters
         [Header("AI & Skills")]
         public MonsterAI.MonsterAI AIPattern;
         public List<SkillData> Skills = new List<SkillData>();
+
+        [Header("AI & Skills (New System)")]
+        public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
         
         [Header("Passives")]
         public List<Passives.PassiveAbility> PassiveAbilities = new List<Passives.PassiveAbility>();

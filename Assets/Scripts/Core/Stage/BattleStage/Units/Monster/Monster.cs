@@ -19,6 +19,7 @@ namespace DiceOrbit.Core
 
         [Header("AI")]
         [SerializeField] private Data.MonsterAI.MonsterAI aiPattern;
+        private Data.MonsterAI.MonsterAI runtimeAiPattern;
         private SkillData nextSkill; // 다음 턴에 사용할 스킬
         public SkillData CurrentIntent => nextSkill;
 
@@ -69,7 +70,6 @@ namespace DiceOrbit.Core
             
             preset = monsterPreset;
 
-            // Stats Deep Copy (간단한 복제, 실제로는 Clone 메서드 권장)
             stat = preset.BaseStats.DeepCopy();
 
             // Visual
@@ -80,10 +80,42 @@ namespace DiceOrbit.Core
             }
             
             // AI
-            aiPattern = preset.AIPattern;
-            availableSkills = preset.Skills != null
-                ? preset.Skills.Where(s => s != null).Select(s => s.DeepCopy()).ToList()
-                : new List<SkillData>();
+            if (runtimeAiPattern != null)
+            {
+                Destroy(runtimeAiPattern);
+                runtimeAiPattern = null;
+            }
+
+            aiPattern = null;
+            if (preset.AIPattern != null)
+            {
+                runtimeAiPattern = ScriptableObject.Instantiate(preset.AIPattern);
+                runtimeAiPattern.name = preset.AIPattern.name;
+                aiPattern = runtimeAiPattern;
+            }
+
+            // New system: CharacterSkill -> RuntimeSkill -> SkillData
+            stat.RuntimeActiveSkills = new List<Data.Skills.RuntimeSkill>();
+            if (preset.StartingSkills != null && preset.StartingSkills.Count > 0)
+            {
+                foreach (var skill in preset.StartingSkills)
+                {
+                    if (skill == null) continue;
+                    stat.RuntimeActiveSkills.Add(new Data.Skills.RuntimeSkill(skill));
+                }
+
+                availableSkills = stat.RuntimeActiveSkills
+                    .Select(s => s?.ToSkillData())
+                    .Where(s => s != null)
+                    .ToList();
+            }
+            else
+            {
+                // Legacy fallback: direct SkillData list
+                availableSkills = preset.Skills != null
+                    ? preset.Skills.Where(s => s != null).Select(s => s.DeepCopy()).ToList()
+                    : new List<SkillData>();
+            }
             
             if (aiPattern != null)
             {
@@ -100,6 +132,15 @@ namespace DiceOrbit.Core
             }
             
             Debug.Log($"Monster '{stat.MonsterName}' initialized from preset.");
+        }
+
+        private void OnDestroy()
+        {
+            if (runtimeAiPattern != null)
+            {
+                Destroy(runtimeAiPattern);
+                runtimeAiPattern = null;
+            }
         }
         
         /// <summary>
