@@ -1,5 +1,6 @@
-using UnityEngine;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace DiceOrbit.Data.MonsterAI.Patterns
 {
@@ -9,27 +10,13 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     [CreateAssetMenu(fileName = "SequencePattern", menuName = "DiceOrbit/Monster/Pattern/Sequence")]
     public class SequentialPattern : MonsterAI
     {
-        // 몬스터마다 현재 인덱스를 저장해야 하므로, 
-        // Runtime 상태는 Monster 클래스 내에 저장하거나 Dictionary로 관리해야 함.
-        // 여기서는 간단히 Monster의 상태 저장이 필요하므로, 
-        // MonsterPattern은 Stateless여야 하지만 상태 추적을 위해 Dictionary를 사용.
-
-        private Dictionary<int, int> monsterSequenceIndices = new Dictionary<int, int>();
-        private List<SkillData> availableSkills = new List<SkillData>();
+        [SerializeField] List<SkillData> availableSkills = new List<SkillData>();
+        [SerializeField] private int currentIndex = 0;
 
         protected override void InitializeRuntimeState()
         {
             base.InitializeRuntimeState();
-
-            // Deep copy: Create new Dictionary instance for this runtime AI
-            monsterSequenceIndices = new Dictionary<int, int>();
-        }
-
-        public override void Initialize(Core.Monster monster)
-        {
-            base.Initialize(monster);
-            if (monster == null) return;
-            monsterSequenceIndices[monster.GetInstanceID()] = 0;
+            currentIndex = 0;
         }
 
         public override void RefreshSkills()
@@ -48,19 +35,9 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
         public override SkillData GetNextSkill()
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;
-            if (owner == null) return null;
 
-            int id = owner.GetInstanceID();
-            if (!monsterSequenceIndices.ContainsKey(id))
-            {
-                monsterSequenceIndices[id] = 0;
-            }
-
-            int index = monsterSequenceIndices[id];
-            var skill = availableSkills[index % availableSkills.Count];
-
-            // Update index for next turn
-            monsterSequenceIndices[id]++;
+            var skill = availableSkills[currentIndex % availableSkills.Count];
+            currentIndex++;
 
             return skill;
         }
