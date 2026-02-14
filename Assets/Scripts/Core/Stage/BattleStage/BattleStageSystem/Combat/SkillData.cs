@@ -32,6 +32,7 @@ namespace DiceOrbit.Data
     {
         [Header("Basic Info")]
         public string SkillName = "Basic Attack";
+        [TextArea] public string Description;
         public SkillType Type = SkillType.Active;
         public SkillTargetType TargetType = SkillTargetType.SingleEnemy;
         

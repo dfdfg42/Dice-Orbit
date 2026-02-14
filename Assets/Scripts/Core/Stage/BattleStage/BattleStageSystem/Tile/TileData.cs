@@ -2,6 +2,7 @@ using UnityEngine;
 using DiceOrbit.Visuals;
 using DiceOrbit.Data.Tile;
 using System.Collections.Generic;
+using System.Text;
 
 namespace DiceOrbit.Data
 {
@@ -18,7 +19,7 @@ namespace DiceOrbit.Data
     /// <summary>
     /// 개별 타일 데이터
     /// </summary>
-    public class TileData : MonoBehaviour
+    public class TileData : MonoBehaviour, UI.IHoverTooltipProvider
     {
         [Header("Tile Properties")]
         [SerializeField] private int tileIndex;
@@ -105,6 +106,73 @@ namespace DiceOrbit.Data
             {
                 attribute.OnArrive(character);
             }
+        }
+
+        private void OnMouseEnter()
+        {
+            Debug.Log($"[Hover] Tile enter: {name}");
+            UI.HoverTooltipUI.EnsureInstance();
+            if (UI.HoverTooltipUI.Instance != null)
+            {
+                UI.HoverTooltipUI.Instance.Show(BuildTooltipText());
+            }
+        }
+
+        private void OnMouseExit()
+        {
+            Debug.Log($"[Hover] Tile exit: {name}");
+            if (UI.HoverTooltipUI.Instance != null)
+            {
+                UI.HoverTooltipUI.Instance.Hide();
+            }
+        }
+
+        private string BuildTooltipText()
+        {
+            int traverseCount = 0;
+            int arriveCount = 0;
+            var detailLines = new List<string>();
+
+            foreach (var attribute in attributes)
+            {
+                if (attribute == null) continue;
+                traverseCount += attribute.TraverseCount;
+                arriveCount += attribute.ArriveCount;
+                detailLines.AddRange(attribute.GetTooltipDescriptions());
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"Tile #{tileIndex}");
+            sb.AppendLine($"Type: {ResolveTileTypeName()}");
+            if (attributes.Count > 0)
+            {
+                sb.AppendLine($"Attributes: {attributes.Count}");
+            }
+            if (traverseCount > 0 || arriveCount > 0)
+            {
+                sb.AppendLine($"Effects: Traverse {traverseCount}, Arrive {arriveCount}");
+            }
+            if (detailLines.Count > 0)
+            {
+                sb.AppendLine("--- Details ---");
+                foreach (var line in detailLines)
+                {
+                    sb.AppendLine(line);
+                }
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        public string GetHoverTooltipText()
+        {
+            return BuildTooltipText();
+        }
+
+        private string ResolveTileTypeName()
+        {
+            if (tileIndex == 0) return TileType.LevelUp.ToString();
+            return TileType.Normal.ToString();
         }
 
         //래거시 코드

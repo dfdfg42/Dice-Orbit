@@ -15,6 +15,8 @@ namespace DiceOrbit.Data.Tile
         private Character occupant;
         private bool subscribed;
 
+        public string TooltipDescription => $"함정: 이 타일에서 턴 종료 시 {damage} 피해를 받고 함정은 제거됩니다.";
+
         public EndTurnDamageTrapArrive(TileData tile, TileAttribute attribute, Monster sourceMonster, int damage, Color highlightColor)
         {
             this.tile = tile;

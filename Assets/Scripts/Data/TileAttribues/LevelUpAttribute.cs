@@ -5,6 +5,8 @@ namespace DiceOrbit.Data.Tile
 {
     public class LevelUpTraverse : IOnTraverse
     {
+        public string TooltipDescription => "이 타일을 지나가면 레벨업합니다.";
+
         void IOnTraverse.OnTraverse(Character character)
         {
             character.Stats.LevelUp();

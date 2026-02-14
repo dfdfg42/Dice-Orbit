@@ -19,13 +19,12 @@ MonoBehaviour:
     Defense: 0
     MonsterName: "\uD761\uD608 \uBC15\uC950"
     Level: 1
-    MonsterSprite: {fileID: 0}
-    SpriteColor: {r: 1, g: 1, b: 1, a: 1}
+    MonsterSprite: {fileID: 21300000, guid: dbf30dee13804f642972b7e6f961c4ec, type: 3}
+    SpriteColor: {r: 1, g: 0, b: 0, a: 1}
     RuntimeActiveSkills: []
   AIPattern: {fileID: 11400000, guid: be0156ac94604104bb9a431d8d1423f3, type: 2}
   StartingSkills:
   - {fileID: 11400000, guid: ad4dbaf5efc84ad59bcd3c3464dbfc4d, type: 2}
-  StartingPassives:
-  - {fileID: 11400000, guid: be2f7b7a01f347ed883ae3bf8c8f8438, type: 2}
+  StartingPassives: []
   MonsterSprite: {fileID: 0}
   SpriteColor: {r: 1, g: 1, b: 1, a: 1}

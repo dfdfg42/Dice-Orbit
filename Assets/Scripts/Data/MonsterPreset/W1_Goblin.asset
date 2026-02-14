@@ -19,8 +19,8 @@ MonoBehaviour:
     Defense: 0
     MonsterName: "\uACE0\uBE14\uB9B0"
     Level: 1
-    MonsterSprite: {fileID: 0}
-    SpriteColor: {r: 1, g: 1, b: 1, a: 1}
+    MonsterSprite: {fileID: 21300000, guid: dbf30dee13804f642972b7e6f961c4ec, type: 3}
+    SpriteColor: {r: 0, g: 1, b: 0.024693727, a: 1}
     RuntimeActiveSkills: []
   AIPattern: {fileID: 11400000, guid: be0156ac94604104bb9a431d8d1423f3, type: 2}
   StartingSkills:

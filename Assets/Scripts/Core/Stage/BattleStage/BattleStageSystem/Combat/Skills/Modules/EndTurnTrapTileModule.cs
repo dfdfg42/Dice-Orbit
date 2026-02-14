@@ -74,5 +74,15 @@ namespace DiceOrbit.Data.Skills.Modules
 
             return selected.ToArray();
         }
+
+        public override string GetTooltipDescription()
+        {
+            if (!string.IsNullOrWhiteSpace(TooltipDescription))
+            {
+                return TooltipDescription;
+            }
+
+            return $"무작위 타일 {trapCount}곳에 함정을 설치합니다. 해당 타일에서 턴 종료 시 {trapDamage} 피해를 입고 함정은 제거됩니다.";
+        }
     }
 }
