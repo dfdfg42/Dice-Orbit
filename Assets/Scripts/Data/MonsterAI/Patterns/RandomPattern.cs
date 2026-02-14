@@ -9,7 +9,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     [CreateAssetMenu(fileName = "RandomPattern", menuName = "DiceOrbit/Monster/Pattern/Random")]
     public class RandomPattern : MonsterAI
     {
-        public override SkillData GetNextSkill(Core.Monster monster, List<SkillData> availableSkills)
+        public override SkillData GetNextSkill()
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;
             return availableSkills[Random.Range(0, availableSkills.Count)];

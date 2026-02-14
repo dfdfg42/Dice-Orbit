@@ -34,12 +34,12 @@ namespace DiceOrbit.Data.Skills
             }
         }
 
-        public SkillData ToSkillData()
+        public CharacterSkillData ToSkillData()
         {
             var levelData = GetCurrentLevelData();
             if (levelData == null) return null;
 
-            return new SkillData
+            return new CharacterSkillData
             {
                 SkillName = BaseSkill.SkillName,
                 Description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseSkill.Description : levelData.Description,

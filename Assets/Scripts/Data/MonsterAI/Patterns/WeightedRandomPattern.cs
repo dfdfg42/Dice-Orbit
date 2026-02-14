@@ -17,10 +17,10 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     {
         [SerializeField] private List<WeightedSkillIndex> weights = new List<WeightedSkillIndex>();
 
-        public override SkillData GetNextSkill(Monster monster, System.Collections.Generic.List<SkillData> availableSkills)
+        public override SkillData GetNextSkill()
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;
-            
+
             // If configuration is empty, fallback to simple random
             if (weights.Count == 0)
             {
@@ -29,7 +29,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
 
             int totalWeight = 0;
             var validWeights = new List<WeightedSkillIndex>();
-            
+
             // Filter weights that are valid for current available skills count
             foreach (var w in weights)
             {
@@ -39,7 +39,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
                     validWeights.Add(w);
                 }
             }
-            
+
             if (totalWeight == 0) return availableSkills[0];
 
             int randomValue = Random.Range(0, totalWeight);
