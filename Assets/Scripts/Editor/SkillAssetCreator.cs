@@ -41,7 +41,8 @@ public class SkillAssetCreator
             Level = 1,
             Description = "100% Damage",
             DamageMultiplier = 1,
-            BonusDamage = 0
+            BonusDamage = 0,
+            Requirement = new DiceRequirement()
         });
         
         // Level 2
@@ -50,7 +51,8 @@ public class SkillAssetCreator
             Level = 2,
             Description = "100% Damage + 2 Bonus",
             DamageMultiplier = 1,
-            BonusDamage = 2
+            BonusDamage = 2,
+            Requirement = new DiceRequirement()
         });
 
         CreateAsset(skill, path, "BasicAttack.asset");
@@ -69,7 +71,8 @@ public class SkillAssetCreator
             Level = 1,
             Description = "Hit with 150% Attack Power",
             DamageMultiplier = 1,
-            BonusDamage = 5
+            BonusDamage = 5,
+            Requirement = new DiceRequirement()
         });
 
         skill.Levels.Add(new SkillLevelData
@@ -77,7 +80,8 @@ public class SkillAssetCreator
             Level = 2,
             Description = "Hit with 200% Attack Power",
             DamageMultiplier = 2,
-            BonusDamage = 5
+            BonusDamage = 5,
+            Requirement = new DiceRequirement()
         });
 
         CreateAsset(skill, path, "StrongBash.asset");
@@ -99,7 +103,8 @@ public class SkillAssetCreator
             Level = 1,
             Description = "Heal 5 HP",
             Effects = effectsLv1,
-            BonusDamage = 0
+            BonusDamage = 0,
+            Requirement = new DiceRequirement()
         });
         
         var effectsLv2 = new List<EffectData>();
@@ -110,7 +115,8 @@ public class SkillAssetCreator
             Level = 2,
             Description = "Heal 10 HP",
             Effects = effectsLv2,
-            BonusDamage = 0
+            BonusDamage = 0,
+            Requirement = new DiceRequirement()
         });
 
         CreateAsset(skill, path, "LesserHeal.asset");
@@ -125,14 +131,14 @@ public class SkillAssetCreator
         skill.Description = "Permanently increases Attack.";
 
         var effects = new List<EffectData>();
-        // Assuming Duration 99 = Persistent/Long-term for now
         effects.Add(new EffectData(EffectType.BuffAttack, 2, 99));
 
         skill.Levels.Add(new SkillLevelData
         {
             Level = 1,
             Description = "+2 Attack",
-            Effects = effects
+            Effects = effects,
+            Requirement = new DiceRequirement()
         });
 
         CreateAsset(skill, path, "StrengthPassive.asset");

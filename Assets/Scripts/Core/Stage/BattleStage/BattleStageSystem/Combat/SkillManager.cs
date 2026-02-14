@@ -43,7 +43,7 @@ namespace DiceOrbit.Core
             }
             
             var runtimeSkill = source.Stats.RuntimeActiveSkills[skillIndex];
-            var skillData = runtimeSkill.ToSkillData();
+            var skillData = runtimeSkill.CurrentSkillData;
             
             if (skillData == null) return;
             
@@ -53,8 +53,8 @@ namespace DiceOrbit.Core
                 // TODO: Check Stun/Silence
             }
             
-            // 3. 주사위 조건 확인
-            if (!skillData.CanUse(diceValue))
+            // 3. 주사위 조건 확인 (CharacterSkill의 Requirement 사용)
+            if (!runtimeSkill.BaseSkill.CanUse(diceValue))
             {
                 Debug.LogWarning($"[SkillManager] Cannot use {skillData.SkillName}. Requirement not met.");
                 return;
