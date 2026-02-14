@@ -6,6 +6,6 @@ namespace DiceOrbit.Data
     public class MonsterSkill : ScriptableObject
     {
         public SkillData skillData; // ❌ get-only property
+        
     }
 }
-
