@@ -1,6 +1,10 @@
 using UnityEngine;
 
-public class MonsterSkillData
+namespace DiceOrbit.Data
 {
-    
+    public class MonsterSkillData : SkillData
+    {
+
+    }
 }
+

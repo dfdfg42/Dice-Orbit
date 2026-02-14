@@ -1,5 +1,6 @@
 using UnityEngine;
 using DiceOrbit.Core;
+using System.Collections.Generic;
 
 namespace DiceOrbit.Data.MonsterAI
 {
@@ -8,11 +9,35 @@ namespace DiceOrbit.Data.MonsterAI
     /// </summary>
     public abstract class MonsterAI : ScriptableObject
     {
-        public abstract SkillData GetNextSkill(Monster monster, System.Collections.Generic.List<SkillData> availableSkills);
+        protected Monster owner;
+        protected List<SkillData> availableSkills = new List<SkillData>();
+
+        public abstract SkillData GetNextSkill();
 
         /// <summary>
-        /// Optional hook for initialization or resetting state when a battle starts or phase changes.
+        /// Initialize AI with Monster reference and load initial skills.
         /// </summary>
-        public virtual void Initialize(Monster monster) { }
+        public virtual void Initialize(Monster monster) 
+        { 
+            owner = monster;
+            RefreshSkills();
+        }
+
+        /// <summary>
+        /// Refresh available skills from the owner Monster.
+        /// Call this when Monster's skill list changes.
+        /// </summary>
+        public virtual void RefreshSkills()
+        {
+            if (owner == null) return;
+
+            availableSkills.Clear();
+
+            var monsterSkills = owner.AvailableSkills;
+            if (monsterSkills != null)
+            {
+                availableSkills.AddRange(monsterSkills);
+            }
+        }
     }
 }

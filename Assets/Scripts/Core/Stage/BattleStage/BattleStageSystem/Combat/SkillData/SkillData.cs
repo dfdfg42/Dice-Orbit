@@ -39,9 +39,6 @@ namespace DiceOrbit.Data
         [Header("Effects")]
         public List<EffectData> Effects = new List<EffectData>();
         
-        [Header("Requirements")]
-        public DiceRequirement Requirement = new DiceRequirement();
-        
         [Header("Modules")]
         public List<Skills.Modules.SkillActionModule> ActionModules = new List<Skills.Modules.SkillActionModule>();
         
@@ -49,14 +46,6 @@ namespace DiceOrbit.Data
         public int DamageMultiplier = 1;
         public int BonusDamage = 0;
         public bool IgnoreDefense = false;
-        
-        /// <summary>
-        /// 주사위 값으로 스킬 사용 가능한지 확인
-        /// </summary>
-        public bool CanUse(int diceValue)
-        {
-            return Requirement.CanUse(diceValue);
-        }
         
         /// <summary>
         /// 데미지 계산

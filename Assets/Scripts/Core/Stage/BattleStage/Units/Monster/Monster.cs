@@ -18,10 +18,11 @@ namespace DiceOrbit.Core
 
         [Header("Runtime Info")]
         [SerializeField] private List<SkillData> availableSkills = new List<SkillData>();
+        public List<SkillData> AvailableSkills => availableSkills;
 
         [Header("AI")]
-        [SerializeField] private Data.MonsterAI.MonsterAI aiPattern;
-        private Data.MonsterAI.MonsterAI runtimeAiPattern;
+        [SerializeField] private Data.MonsterAI.MonsterAI aiPattern; // Inspector 설정 전용 (원본 참조)
+        private Data.MonsterAI.MonsterAI runtimeAiPattern; // 실제 실행되는 런타임 인스턴스
         private SkillData nextSkill; // 다음 턴에 사용할 스킬
         public SkillData CurrentIntent => nextSkill;
 
@@ -69,48 +70,89 @@ namespace DiceOrbit.Core
         /// </summary>
         public void InitializeFromPreset(Data.Monsters.MonsterPreset monsterPreset)
         {
-            if (monsterPreset == null) return;
-            
+            if (monsterPreset == null)
+            {
+                Debug.LogError($"[Monster] InitializeFromPreset called with null preset.");
+                return;
+            }
             preset = monsterPreset;
 
-            stat = preset.CreateStats();
+            InitializeStats();
+            InitializeVisuals();
+            InitializeAI();
+            InitializePassives();
 
-            // Visual
+            Debug.Log($"Monster '{stat.MonsterName}' initialized from preset.");
+        }
+
+        /// <summary>
+        /// Stats 초기화
+        /// </summary>
+        private void InitializeStats()
+        {
+            if (preset == null) return;
+            stat = preset.CreateStats();
+        }
+
+        /// <summary>
+        /// Visual 초기화 (Sprite, Color)
+        /// </summary>
+        private void InitializeVisuals()
+        {
+            if (stat == null) return;
+
             if (spriteRenderer != null && stat.MonsterSprite != null)
             {
                 spriteRenderer.sprite = stat.MonsterSprite;
                 spriteRenderer.color = stat.SpriteColor;
             }
-            
-            // AI
+        }
+
+        /// <summary>
+        /// AI 패턴 초기화
+        /// </summary>
+        private void InitializeAI()
+        {
+            // 기존 런타임 인스턴스 정리
             if (runtimeAiPattern != null)
             {
                 Destroy(runtimeAiPattern);
                 runtimeAiPattern = null;
             }
 
-            aiPattern = null;
-            if (preset.AIPattern != null)
+            // Preset에서 AI 패턴 가져오기
+            if (preset != null && preset.AIPattern != null)
             {
-                runtimeAiPattern = ScriptableObject.Instantiate(preset.AIPattern);
+                aiPattern = preset.AIPattern; // Inspector 표시용 원본 참조
+                runtimeAiPattern = ScriptableObject.Instantiate(preset.AIPattern); // 실행용 복사본 생성
                 runtimeAiPattern.name = preset.AIPattern.name;
-                aiPattern = runtimeAiPattern;
+            }
+            else
+            {
+                aiPattern = null;
+                runtimeAiPattern = null;
             }
 
             RefreshAvailableSkills();
-            
-            if (aiPattern != null)
+
+            // 런타임 AI 초기화
+            if (runtimeAiPattern != null)
             {
-                aiPattern.Initialize(this);
+                runtimeAiPattern.Initialize(this);
             }
-            
-            // Passives
+        }
+
+        /// <summary>
+        /// Passive 초기화
+        /// </summary>
+        private void InitializePassives()
+        {
+            if (preset == null) return;
+
             foreach (var passiveData in preset.GetStartingPassives())
             {
                 passives.AddPassive(passiveData);
             }
-            
-            Debug.Log($"Monster '{stat.MonsterName}' initialized from preset.");
         }
 
         private void OnDestroy()
@@ -129,10 +171,11 @@ namespace DiceOrbit.Core
         {
             RefreshAvailableSkills();
 
-            if (aiPattern != null)
+            if (runtimeAiPattern != null)
             {
-                nextSkill = aiPattern.GetNextSkill(this, availableSkills);
-                
+                runtimeAiPattern.RefreshSkills();
+                nextSkill = runtimeAiPattern.GetNextSkill();
+
                 if (nextSkill != null)
                 {
                     Debug.Log($"[Monster] Next Skill Selected: {nextSkill.SkillName}");
@@ -360,14 +403,14 @@ namespace DiceOrbit.Core
 
         private void RefreshAvailableSkills()
         {
-            if (stat != null && stat.RuntimeActiveSkills != null && stat.RuntimeActiveSkills.Count > 0)
-            {
-                availableSkills = stat.RuntimeActiveSkills
-                    .Select(s => s?.ToSkillData())
-                    .Where(s => s != null)
-                    .ToList();
-                return;
-            }
+            //if (stat != null && stat.RuntimeActiveSkills != null && stat.RuntimeActiveSkills.Count > 0)
+            //{
+            //    availableSkills = stat.RuntimeActiveSkills
+            //        .Select(s => s?.ToSkillData())
+            //        .Where(s => s != null)
+            //        .ToList();
+            //    return;
+            //}
 
             availableSkills = new List<SkillData>();
         }
