@@ -16,15 +16,12 @@ namespace DiceOrbit.Core
         [Header("Preset")]
         [SerializeField] private Data.Monsters.MonsterPreset preset;
 
-        [Header("Runtime Info")]
-        [SerializeField] private List<SkillData> availableSkills = new List<SkillData>();
-        public List<SkillData> AvailableSkills => availableSkills;
-
         [Header("AI")]
         [SerializeField] private Data.MonsterAI.MonsterAI aiPattern; // Inspector 설정 전용 (원본 참조)
         private Data.MonsterAI.MonsterAI runtimeAiPattern; // 실제 실행되는 런타임 인스턴스
-        private SkillData nextSkill; // 다음 턴에 사용할 스킬
-        public SkillData CurrentIntent => nextSkill;
+        private MonsterSkill nextSkill;
+        private SkillData nextSkillData=>nextSkill.skillData; // 다음 턴에 사용할 스킬
+        public SkillData CurrentIntent => nextSkillData;
 
         // Target Logic
         private Character targetedCharacter;
@@ -173,12 +170,11 @@ namespace DiceOrbit.Core
 
             if (runtimeAiPattern != null)
             {
-                runtimeAiPattern.RefreshSkills();
                 nextSkill = runtimeAiPattern.GetNextSkill();
 
-                if (nextSkill != null)
+                if (nextSkillData != null)
                 {
-                    Debug.Log($"[Monster] Next Skill Selected: {nextSkill.SkillName}");
+                    Debug.Log($"[Monster] Next Skill Selected: {nextSkillData.SkillName}");
                     ShowAttackPreview();
                 }
                 else
@@ -198,9 +194,9 @@ namespace DiceOrbit.Core
             // 턴 시작 효과 처리 (Passives etc)
             OnStartTurn();
             
-            if (nextSkill != null)
+            if (nextSkillData != null)
             {
-                ExecuteSkill(nextSkill);
+                ExecuteSkill(nextSkillData);
             }
             else
             {
@@ -317,7 +313,7 @@ namespace DiceOrbit.Core
         
         public void ShowAttackPreview()
         {
-            if (nextSkill == null) return;
+            if (nextSkillData == null) return;
 
             var indicator = AttackIndicator.Instance;
             if (indicator == null) return;
@@ -335,9 +331,9 @@ namespace DiceOrbit.Core
                     targetedCharacter = alive[Random.Range(0, alive.Count)];
                     
                     // Tile-based previews (monster modules)
-                    if (nextSkill.ActionModules != null)
+                    if (nextSkillData.ActionModules != null)
                     {
-                        foreach (var module in nextSkill.ActionModules)
+                        foreach (var module in nextSkillData.ActionModules)
                         {
                             if (module is Data.Skills.Modules.IMonsterTileActionModule tileModule)
                             {
@@ -352,11 +348,11 @@ namespace DiceOrbit.Core
                         }
                     }
 
-                    if (nextSkill.TargetType == SkillTargetType.SingleEnemy)
+                    if (nextSkillData.TargetType == SkillTargetType.SingleEnemy)
                     {
                         UI.AttackIndicator.Instance.ShowTargetedAttack(transform, targetedCharacter.transform);
                     }
-                    else if (nextSkill.TargetType == SkillTargetType.AllEnemies)
+                    else if (nextSkillData.TargetType == SkillTargetType.AllEnemies)
                     {
                         var tiles = alive
                             .Where(c => c != null && c.CurrentTile != null)
@@ -403,16 +399,7 @@ namespace DiceOrbit.Core
 
         private void RefreshAvailableSkills()
         {
-            //if (stat != null && stat.RuntimeActiveSkills != null && stat.RuntimeActiveSkills.Count > 0)
-            //{
-            //    availableSkills = stat.RuntimeActiveSkills
-            //        .Select(s => s?.ToSkillData())
-            //        .Where(s => s != null)
-            //        .ToList();
-            //    return;
-            //}
-
-            availableSkills = new List<SkillData>();
+            
         }
 
         protected override void OnMouseEnter()

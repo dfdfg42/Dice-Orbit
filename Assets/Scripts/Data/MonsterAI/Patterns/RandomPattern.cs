@@ -9,22 +9,9 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     [CreateAssetMenu(fileName = "RandomPattern", menuName = "DiceOrbit/Monster/Pattern/Random")]
     public class RandomPattern : MonsterAI
     {
-        [SerializeField] private List<SkillData> availableSkills = new List<SkillData>();
+        [SerializeField] private List<MonsterSkill> availableSkills = new List<MonsterSkill>();
 
-        public override void RefreshSkills()
-        {
-            if (owner == null) return;
-
-            availableSkills.Clear();
-
-            var monsterSkills = owner.AvailableSkills;
-            if (monsterSkills != null)
-            {
-                availableSkills.AddRange(monsterSkills);
-            }
-        }
-
-        public override SkillData GetNextSkill()
+        public override MonsterSkill GetNextSkill()
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;
             return availableSkills[Random.Range(0, availableSkills.Count)];
