@@ -14,14 +14,19 @@ namespace DiceOrbit.Data.Skills
             CurrentLevel = initialLevel;
         }
 
+        /// <summary>
+        /// 현재 레벨의 스킬 데이터 반환
+        /// </summary>
+        public SkillData CurrentSkillData => BaseSkill?.GetSkillData(CurrentLevel);
+
         public SkillLevelData GetCurrentLevelData()
         {
-            return BaseSkill.GetLevelData(CurrentLevel);
+            return BaseSkill?.GetLevelData(CurrentLevel);
         }
 
         public SkillLevelData GetNextLevelData()
         {
-            return BaseSkill.GetLevelData(CurrentLevel + 1);
+            return BaseSkill?.GetLevelData(CurrentLevel + 1);
         }
 
         public bool IsMaxLevel => CurrentLevel >= BaseSkill.MaxLevel;
@@ -32,27 +37,6 @@ namespace DiceOrbit.Data.Skills
             {
                 CurrentLevel++;
             }
-        }
-
-        public CharacterSkillData ToSkillData()
-        {
-            var levelData = GetCurrentLevelData();
-            if (levelData == null) return null;
-
-            return new CharacterSkillData
-            {
-                SkillName = BaseSkill.SkillName,
-                Description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseSkill.Description : levelData.Description,
-                Type = BaseSkill.Type == CharacterSkillType.Active ? SkillType.Active : SkillType.Passive,
-                TargetType = BaseSkill.TargetType,
-                Effects = levelData.Effects ?? new System.Collections.Generic.List<EffectData>(),
-                Requirement = levelData.Requirement ?? new DiceRequirement(),
-                ActionModules = levelData.ActionModules ?? new System.Collections.Generic.List<Skills.Modules.SkillActionModule>(),
-                
-                DamageMultiplier = levelData.DamageMultiplier,
-                BonusDamage = levelData.BonusDamage,
-                IgnoreDefense = levelData.IgnoreDefense
-            };
         }
     }
 }
