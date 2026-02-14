@@ -30,8 +30,8 @@ namespace DiceOrbit.Core
         [Header("Starting Skills (New System)")]
         public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
 
-    [Header("Starting Passives")]
-    public List<Data.Passives.PassiveAbility> StartingPassives = new List<Data.Passives.PassiveAbility>();
+        [Header("Starting Passives")]
+        public List<Data.Passives.PassiveAbility> StartingPassives = new List<Data.Passives.PassiveAbility>();
 
 
         
