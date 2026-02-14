@@ -103,8 +103,7 @@ namespace DiceOrbit.UI
             
             if (prefab == null)
             {
-                Debug.LogWarning("DamagePopup prefab not found in Resources/Prefabs/");
-                return null;
+                return CreateFallback(damage, worldPosition, isCritical);
             }
             
             GameObject instance = Instantiate(prefab, worldPosition, Quaternion.identity);
@@ -115,6 +114,42 @@ namespace DiceOrbit.UI
                 popup.Show(damage, worldPosition, isCritical);
             }
             
+            return popup;
+        }
+
+        private static DamagePopup CreateFallback(int damage, Vector3 worldPosition, bool isCritical)
+        {
+            Debug.LogWarning("DamagePopup prefab not found. Using fallback popup.");
+
+            var go = new GameObject("DamagePopup_Fallback");
+            var canvas = go.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            go.AddComponent<CanvasGroup>();
+
+            var rect = go.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(120f, 40f);
+            rect.localScale = Vector3.one * 0.01f;
+
+            var textGo = new GameObject("Text");
+            textGo.transform.SetParent(go.transform, false);
+            var textRect = textGo.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            var tmp = textGo.AddComponent<TextMeshProUGUI>();
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.fontSize = 36;
+            tmp.color = Color.white;
+            if (TMP_Settings.defaultFontAsset != null)
+            {
+                tmp.font = TMP_Settings.defaultFontAsset;
+            }
+
+            var popup = go.AddComponent<DamagePopup>();
+            popup.damageText = tmp;
+            popup.Show(damage, worldPosition, isCritical);
             return popup;
         }
     }

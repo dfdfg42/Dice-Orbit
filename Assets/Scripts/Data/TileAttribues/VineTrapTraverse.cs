@@ -10,6 +10,8 @@ namespace DiceOrbit.Data.Tile
         private readonly Color highlightColor;
         private bool triggered;
 
+        public string TooltipDescription => "속박 함정: 이 타일을 지나가면 이동이 즉시 중단되고 함정은 제거됩니다.";
+
         public VineTrapTraverse(TileData tile, TileAttribute attribute, Color highlightColor)
         {
             this.tile = tile;

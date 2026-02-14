@@ -1,0 +1,10 @@
+EntityType,Id,DisplayName,OwnerType,SourceAssetPath,ActionType,TargetType,DiceRequirement,BaseFormula,Modules,Effects,TriggersUsed,TagsUsed,Priority,DurationPolicy,StackPolicy,CurrentStatus,DesignNotes
+Skill,SKILL_BASIC_ATTACK,Basic Attack,Character,Assets/Resources/Skills/Generated/BasicAttack.asset,Attack,SingleEnemy,MinDiceValue=1,DamageMultiplier+BonusDamage,DealDamageModule,Damage,None,Skill,,Instant,None,Active,Default single target damage
+Skill,SKILL_GREATSWORD,Greatsword,Character,Assets/Resources/Skills/Generated/Greatsword.asset,Attack,SingleEnemy,MinDiceValue=1,DamageMultiplier+BonusDamage,GreatswordDamage,Damage,None,Skill,,Instant,None,Active,Heavy attack variant
+Skill,SKILL_AMBUSH,Ambush,Character,Assets/Resources/Skills/Generated/Ambush.asset,Attack,SingleEnemy,Pattern=High or custom,DamageMultiplier+BonusDamage,AmbushDamage,Damage,None,Skill,,Instant,None,Active,Conditional burst
+Passive,PASSIVE_BATTLE_CRY_FIRST_ALLY,Battle Cry (First Ally),Party,Assets/Resources/Passives/BattleCryFirstAlly.asset,Attack,Any,NA,OutputValue*=1+bonusPercent,None,None,OnCalculateOutput,None,0,Turn,None,Active,Consumes first team action per turn
+Passive,PASSIVE_POSITIONING,Positioning,Character,Assets/Resources/Passives/PositioningPassive.asset,Attack,Any,NA,OutputValue*=1+bonusPercent,None,None,OnTurnStart/OnPostAction/OnCalculateOutput,Move,0,Turn,None,Active,Requires move threshold before attack
+Passive,PASSIVE_REGEN_ON_HIT,Regeneration On Hit,Monster,Assets/Resources/Passives/RegenerationOnHit.asset,Heal,Self,NA,Heal fixed amount,None,None,OnHit,None,0,Instant,None,Active,Self heal after being hit
+Status,STATUS_DOT,Dot,Unit,Runtime only,Attack,Self,NA,Fixed value per turn,None,None,OnTurnStart,Dot,10,Duration based,Stackable,Partial,Needs guaranteed OnTurnStart emit
+Effect,EFFECT_DAMAGE,Damage,Unit,Code Registry,Attack,Single,NA,BaseValue direct,None,Damage,Pipeline(OnPre/Calc/Post),Effect,,Instant,None,Active,Registered in EffectManager
+Effect,EFFECT_HEAL,Heal,Unit,Code Registry,Heal,Single,NA,BaseValue direct,None,Heal,Pipeline(OnPre/Calc/Post),Effect,,Instant,None,Active,Registered in EffectManager

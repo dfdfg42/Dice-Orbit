@@ -26,15 +26,12 @@ namespace DiceOrbit.Core
         public Sprite CharacterSprite;
         public Color SpriteColor = Color.white;
         
-        [Header("Starting Skills")]
-        public List<SkillData> ActiveSkills = new List<SkillData>();
-        public List<SkillData> PassiveSkills = new List<SkillData>();
 
         [Header("Starting Skills (New System)")]
         public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
 
-    [Header("Starting Passives")]
-    public List<Data.Passives.PassiveAbility> StartingPassives = new List<Data.Passives.PassiveAbility>();
+        [Header("Starting Passives")]
+        public List<Data.Passives.PassiveAbility> StartingPassives = new List<Data.Passives.PassiveAbility>();
 
 
         
@@ -69,6 +66,11 @@ namespace DiceOrbit.Core
             stats.SourcePreset = this;
             
             return stats;
+        }
+
+        public List<Data.Passives.PassiveAbility> GetStartingPassives()
+        {
+            return StartingPassives ?? new List<Data.Passives.PassiveAbility>();
         }
     }
 }

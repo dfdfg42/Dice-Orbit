@@ -42,6 +42,7 @@ namespace DiceOrbit.Data.Skills
             return new SkillData
             {
                 SkillName = BaseSkill.SkillName,
+                Description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseSkill.Description : levelData.Description,
                 Type = BaseSkill.Type == CharacterSkillType.Active ? SkillType.Active : SkillType.Passive,
                 TargetType = BaseSkill.TargetType,
                 Effects = levelData.Effects ?? new System.Collections.Generic.List<EffectData>(),

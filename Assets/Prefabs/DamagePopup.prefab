@@ -115,7 +115,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9aac19945c2df3418a60de6e2c5d816, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.DamagePopup
-  damageText: {fileID: 0}
+  damageText: {fileID: 3051802282586001542}
   moveSpeed: 2
   lifetime: 1.5
   normalColor: {r: 1, g: 1, b: 1, a: 1}

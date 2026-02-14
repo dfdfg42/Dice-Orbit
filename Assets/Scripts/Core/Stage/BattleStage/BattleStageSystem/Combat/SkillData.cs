@@ -32,6 +32,7 @@ namespace DiceOrbit.Data
     {
         [Header("Basic Info")]
         public string SkillName = "Basic Attack";
+        [TextArea] public string Description;
         public SkillType Type = SkillType.Active;
         public SkillTargetType TargetType = SkillTargetType.SingleEnemy;
         
@@ -44,7 +45,7 @@ namespace DiceOrbit.Data
         [Header("Modules")]
         public List<Skills.Modules.SkillActionModule> ActionModules = new List<Skills.Modules.SkillActionModule>();
         
-        [Header("Legacy (deprecated)")]
+        [Header("Damage")]
         public int DamageMultiplier = 1;
         public int BonusDamage = 0;
         public bool IgnoreDefense = false;
@@ -58,11 +59,12 @@ namespace DiceOrbit.Data
         }
         
         /// <summary>
-        /// 레거시 데미지 계산 (하위 호환)
+        /// 데미지 계산
         /// </summary>
         public int CalculateDamage(int baseAttack, int diceValue)
         {
             return baseAttack * DamageMultiplier + diceValue + BonusDamage;
         }
+
     }
 }

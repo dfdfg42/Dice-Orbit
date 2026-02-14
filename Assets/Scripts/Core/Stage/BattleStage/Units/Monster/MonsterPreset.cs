@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using DiceOrbit.Data.Skills;
 
 namespace DiceOrbit.Data.Monsters
 {
@@ -14,13 +15,43 @@ namespace DiceOrbit.Data.Monsters
         
         [Header("AI & Skills")]
         public MonsterAI.MonsterAI AIPattern;
-        public List<SkillData> Skills = new List<SkillData>();
+
+        [Header("Starting Skills")]
+        public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
         
-        [Header("Passives")]
-        public List<Passives.PassiveAbility> PassiveAbilities = new List<Passives.PassiveAbility>();
+        [Header("Starting Passives")]
+        public List<Passives.PassiveAbility> StartingPassives = new List<Passives.PassiveAbility>();
         
         [Header("Visual")]
         public Sprite MonsterSprite;
         public Color SpriteColor = Color.white;
+
+        public MonsterStats CreateStats()
+        {
+            var stats = BaseStats != null ? BaseStats.DeepCopy() : new MonsterStats();
+
+            if (MonsterSprite != null)
+            {
+                stats.MonsterSprite = MonsterSprite;
+            }
+            stats.SpriteColor = SpriteColor;
+
+            stats.RuntimeActiveSkills = new List<RuntimeSkill>();
+            if (StartingSkills != null)
+            {
+                foreach (var skill in StartingSkills)
+                {
+                    if (skill == null) continue;
+                    stats.RuntimeActiveSkills.Add(new RuntimeSkill(skill));
+                }
+            }
+
+            return stats;
+        }
+
+        public List<Passives.PassiveAbility> GetStartingPassives()
+        {
+            return StartingPassives ?? new List<Passives.PassiveAbility>();
+        }
     }
 }
