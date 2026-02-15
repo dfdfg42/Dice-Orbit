@@ -120,46 +120,28 @@ namespace DiceOrbit.UI
         /// <summary>
         /// 공격 의도 UI 업데이트
         /// </summary>
-        /// <summary>
-        /// 공격 의도 UI 업데이트
-        /// </summary>
         private void UpdateIntent()
         {
-            if (monster == null) return;
+            if (monster == null || monster.CurrentIntent == null) return;
 
-            SkillData intent = monster.CurrentIntent;
-            if (intent == null) return;
-            
-            // 타입 추론 (SkillData에는 명시적인 IntentType이 없으므로 간이 로직)
-            // 기본은 Attack으로 가정
-            IntentType type = IntentType.Attack;
-            string valueText = "";
-            
-            // Simple mapping logic
-            if (intent.Type == SkillType.Passive) type = IntentType.Defend; // Just for visuals
-            else if (intent.TargetType == SkillTargetType.Self || intent.TargetType == SkillTargetType.Ally) type = IntentType.Buff;
-            
-            // 데미지 계산 (Display용 - 주사위 0 가정)
-            int attack = monster.Stats != null ? monster.Stats.Attack : 0;
-            int damage = intent.CalculateDamage(attack, 0);
-            valueText = damage.ToString();
-            
-            if (intent.TargetType == SkillTargetType.AllEnemies)
-            {
-                type = IntentType.Multi; // Use Multi icon/color for Area
-            }
+            AttackIntent intent = monster.CurrentIntent; // AttackIntent 타입으로 변경
+
+            // AttackIntent가 이미 IntentType을 가지고 있음
+            IntentType type = intent.Type;
+
+            // 데미지 값도 이미 계산되어 있음
+            string valueText = intent.Damage.ToString();
 
             // 의도 아이콘 색상
             if (intentIcon != null)
             {
                 intentIcon.color = GetIntentColor(type);
             }
-            
+
             // 의도 텍스트
             if (intentText != null)
             {
-                 intentText.text = valueText;
-                 // Special overrides?
+                intentText.text = valueText;
             }
         }
         

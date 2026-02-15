@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.Patterns.SequentialPattern
   availableSkills:
   - {fileID: 11400000, guid: 1293954ced587514e992631ffd3b0ab9, type: 2}
+  - {fileID: 11400000, guid: 1293954ced587514e992631ffd3b0ab9, type: 2}
   currentIndex: 0
