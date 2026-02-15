@@ -22,6 +22,7 @@ namespace DiceOrbit.Data.Monsters
         [Header("Visual")]
         public Sprite MonsterSprite;
         public Color SpriteColor = Color.white;
+        public float VisualScale = 1.0f;
 
         public MonsterStats CreateStats()
         {

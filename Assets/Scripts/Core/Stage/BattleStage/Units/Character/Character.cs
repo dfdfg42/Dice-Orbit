@@ -39,6 +39,21 @@ namespace DiceOrbit.Core
                 }
                 spriteRenderer.color = stat.SpriteColor;
                 originalColor = spriteRenderer.color;
+
+                // Visual Scale 적용
+                if (stat.SourcePreset != null)
+                {
+                    // CharacterSpriteVisual 컴포넌트가 있으면 사용, 없으면 직접 Transform 조정
+                    var visual = spriteRenderer.GetComponent<DiceOrbit.Visuals.CharacterSpriteVisual>();
+                    if (visual != null)
+                    {
+                        visual.SetScale(stat.SourcePreset.VisualScale);
+                    }
+                    else
+                    {
+                        spriteRenderer.transform.localScale = new Vector3(stat.SourcePreset.VisualScale, stat.SourcePreset.VisualScale, 1f);
+                    }
+                }
             }
 
             // 스킬 재초기화
@@ -78,7 +93,8 @@ namespace DiceOrbit.Core
         
         protected override void Awake()
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            // 자식 오브젝트에서 SpriteRenderer 찾기 (Visual 분리 지원)
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
             if (spriteRenderer != null)
             {
@@ -96,12 +112,12 @@ namespace DiceOrbit.Core
             }
             else
             {
-                Debug.LogWarning("SpriteRenderer not found! Add SpriteRenderer component.");
+                Debug.LogWarning("SpriteRenderer not found in children! Add SpriteRenderer component to a child object.");
             }
 
             mainCamera = Camera.main;
 
-            // Systems 초기화
+            // Systems 초기화 (기존 컴포넌트 유지를 위해 GetComponent 유지, 필요시 Children으로 변경 고려)
             passives = GetComponent<Systems.Passives.PassiveManager>();
             if (passives == null) passives = gameObject.AddComponent<Systems.Passives.PassiveManager>();
             passives.Initialize(this);

@@ -25,6 +25,7 @@ namespace DiceOrbit.Core
         public int Defense = 0;
         public Sprite CharacterSprite;
         public Color SpriteColor = Color.white;
+        public float VisualScale = 1.0f;
         
 
         [Header("Starting Skills (New System)")]

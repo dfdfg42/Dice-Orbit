@@ -33,7 +33,11 @@ namespace DiceOrbit.Core
                 stat = new MonsterStats();
             }
 
+            // 자식 오브젝트에서 SpriteRenderer 찾기
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            
             base.Awake();
+            
             EnsureHoverCollider();
 
             // Systems 초기화
@@ -45,7 +49,7 @@ namespace DiceOrbit.Core
             if (statusEffects == null) statusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
             statusEffects.Initialize(this);
         }
-        
+
         private void Start()
         {
             // Preset이 Inspector에 할당되어 있다면 바로 초기화
@@ -98,11 +102,16 @@ namespace DiceOrbit.Core
             {
                 spriteRenderer.sprite = stat.MonsterSprite;
                 spriteRenderer.color = stat.SpriteColor;
+
+                // Visual Scale 적용
+                if (preset != null)
+                {
+                    spriteRenderer.transform.localScale = new Vector3(preset.VisualScale, preset.VisualScale, 1f);
+                }
             }
         }
 
         /// <summary>
-        /// AI 패턴 초기화
         /// </summary>
         private void InitializeAI()
         {
