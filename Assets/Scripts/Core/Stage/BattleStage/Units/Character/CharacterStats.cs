@@ -15,8 +15,6 @@ namespace DiceOrbit.Data
         
         [Header("Skills")]
         [Header("Skills")]
-        // Legacy: public List<SkillData> ActiveSkills = new List<SkillData>();
-        // Legacy: public List<SkillData> PassiveSkills = new List<SkillData>();
         
         // New System
         public List<Skills.RuntimeSkill> RuntimeActiveSkills = new List<Skills.RuntimeSkill>();

@@ -9,6 +9,7 @@ namespace DiceOrbit.Data.Waves
     {
         public List<MonsterPreset> MonsterPresets;
         public int SpawnCount = 1;
+        public Sprite BackgroundSprite;
         // Reward info can be added here
     }
 

@@ -21,11 +21,8 @@ MonoBehaviour:
     Level: 1
     MonsterSprite: {fileID: 21300000, guid: 266ead5b90421f845a98fddb90631a76, type: 3}
     SpriteColor: {r: 0, g: 1, b: 0.024693727, a: 1}
-    RuntimeActiveSkills: []
   AIPattern: {fileID: 11400000, guid: be0156ac94604104bb9a431d8d1423f3, type: 2}
-  StartingSkills:
-  - {fileID: 11400000, guid: 2f1d474b0d5f466fb4101eb4977f7c18, type: 2}
-  - {fileID: 11400000, guid: e37dbb10b41a4c0f8a43d66d9e58fb56, type: 2}
   StartingPassives: []
   MonsterSprite: {fileID: 0}
   SpriteColor: {r: 1, g: 1, b: 1, a: 1}
+  VisualScale: 0.4

@@ -13,14 +13,13 @@ MonoBehaviour:
   m_Name: Mage
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.CharacterPreset
   CharacterName: Mage
-  Portrait: {fileID: 21300000, guid: 293bddd5bb1369148a536dd0940ef6d2, type: 3}
+  Portrait: {fileID: 21300000, guid: ec76c4df3e1628642b9ebc0f4f7c8a1b, type: 3}
   Description: MAGE
   MaxHP: 30
-  Attack: 5
+  Attack: 1
   Defense: 0
-  CharacterSprite: {fileID: 21300000, guid: 293bddd5bb1369148a536dd0940ef6d2, type: 3}
+  CharacterSprite: {fileID: 21300000, guid: ec76c4df3e1628642b9ebc0f4f7c8a1b, type: 3}
   SpriteColor: {r: 0.3066038, g: 0.5314737, b: 1, a: 1}
-  ActiveSkills: []
-  PassiveSkills: []
+  VisualScale: 0.6
   StartingSkills: []
   StartingPassives: []

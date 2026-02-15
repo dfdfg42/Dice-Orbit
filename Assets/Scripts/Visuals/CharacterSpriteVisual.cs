@@ -44,8 +44,8 @@ namespace DiceOrbit.Visuals
             
             spriteRenderer.color = normalColor;
             
-            // 크기 조정 (타일 크기에 맞춤)
-            transform.localScale = new Vector3(1.5f, 1.5f, 1f);
+            // 크기 조정 로직 삭제 (Character/Monster 클래스에서 제어)
+            // transform.localScale = new Vector3(1.5f, 1.5f, 1f);
         }
         
         private void LateUpdate()
@@ -89,6 +89,13 @@ namespace DiceOrbit.Visuals
             {
                 spriteRenderer.color = color;
             }
+        }
+        /// <summary>
+        /// 크기 설정 (외부 제어)
+        /// </summary>
+        public void SetScale(float scale)
+        {
+            transform.localScale = new Vector3(scale, scale, 1f);
         }
     }
 }
