@@ -20,7 +20,7 @@ namespace DiceOrbit.Core
         [SerializeField] private Data.MonsterAI.MonsterAI aiPattern; // Inspector 설정 전용 (원본 참조)
         private Data.MonsterAI.MonsterAI runtimeAiPattern; // 실제 실행되는 런타임 인스턴스
         private MonsterSkill nextSkill;
-        private SkillData nextSkillData=>nextSkill.skillData; // 다음 턴에 사용할 스킬
+        private SkillData nextSkillData => nextSkill != null ? nextSkill.skillData : null; // 다음 턴에 사용할 스킬
         public SkillData CurrentIntent => nextSkillData;
 
         // Target Logic
@@ -37,7 +37,11 @@ namespace DiceOrbit.Core
                 stat = new MonsterStats();
             }
 
+            // 자식 오브젝트에서 SpriteRenderer 찾기
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            
             base.Awake();
+            
             EnsureHoverCollider();
 
             // Systems 초기화
@@ -49,7 +53,7 @@ namespace DiceOrbit.Core
             if (statusEffects == null) statusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
             statusEffects.Initialize(this);
         }
-        
+
         private void Start()
         {
             // Preset이 Inspector에 할당되어 있다면 바로 초기화
@@ -102,11 +106,16 @@ namespace DiceOrbit.Core
             {
                 spriteRenderer.sprite = stat.MonsterSprite;
                 spriteRenderer.color = stat.SpriteColor;
+
+                // Visual Scale 적용
+                if (preset != null)
+                {
+                    spriteRenderer.transform.localScale = new Vector3(preset.VisualScale, preset.VisualScale, 1f);
+                }
             }
         }
 
         /// <summary>
-        /// AI 패턴 초기화
         /// </summary>
         private void InitializeAI()
         {

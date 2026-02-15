@@ -12,3 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 880fe45df7085e543bea632f03d5f60b, type: 3}
   m_Name: Pattern_BasicRotation
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.Patterns.SequentialPattern
+  availableSkills:
+  - {fileID: 11400000, guid: 1293954ced587514e992631ffd3b0ab9, type: 2}
+  currentIndex: 0
