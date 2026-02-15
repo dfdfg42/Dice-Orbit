@@ -21,7 +21,7 @@ namespace DiceOrbit.Data.Passives
     public abstract class PassiveAbility : ScriptableObject, ICombatReactor
     {
         public string PassiveName;
-        [TextArea] public string Description;
+        [TextArea] protected string basic_description= "패시브 설명";
         public PassiveType type;
         public Sprite Icon;
         protected Unit owner;
@@ -29,6 +29,10 @@ namespace DiceOrbit.Data.Passives
         // 우선순위 (기본 0, 높으면 먼저 실행)
         public virtual int Priority => 0;
 
+        public virtual string Description()
+        {
+            return basic_description;
+        }
         /// <summary>
         /// 초기화 (필요 시)
         /// </summary>

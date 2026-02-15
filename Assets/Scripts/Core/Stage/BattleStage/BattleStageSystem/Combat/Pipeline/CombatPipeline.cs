@@ -59,6 +59,7 @@ namespace DiceOrbit.Core.Pipeline
 
         private void HandlePostAction(CombatContext context)
         {
+            //Debug.LogWarning($"{context.SourceUnit.name}, {context.Target.name}, {context.Action.Type}");
             // 적중했다면 OnHit, 처치했다면 OnKill 등 세분화 가능
             NotifyReactors(context, CombatTrigger.OnHit); // 일단 OnHit으로 통일
             NotifyReactors(context, CombatTrigger.OnPostAction);
@@ -90,27 +91,15 @@ namespace DiceOrbit.Core.Pipeline
             }
         }
 
-        private void CollectReactors(object unit, List<ICombatReactor> list)
+        private void CollectReactors(Unit unit, List<ICombatReactor> list)
         {
             if (unit == null) return;
-
+            // Passives
+            unit.CollectReactors(list);
+            //Unit 리엑터는 여기서 전부 수집. 일단은 패시브에서만 수집하게 했음. 나중에 수정 반드시 해야 함
+            //Unit의 CollectReactors도 수정해야 함
             if (unit is Core.Character character)
             {
-                // Passives
-                if (character.Passives != null)
-                {
-                    // PassiveManager should expose GetReactors or implement IEnumerable
-                    // For now, assuming PassiveManager creates/holds ICombatReactor compliant objects
-                    // We need to refactor PassiveManager to allow list access or make Passives Implement ICombatReactor
-                    
-                    // Temp: PassiveManager itself acts as a dispatcher or we iterate its passives
-                    // Let's assume PassiveManager implements ICombatReactor or we update it later.
-                    // For this refactor, we will make PassiveAbility implement ICombatReactor.
-                    
-                     if (character.Passives is ICombatReactor pmReactor)
-                        list.Add(pmReactor);
-                }
-
                 // Include party passives so ally passives can react to actions
                 if (Core.PartyManager.Instance != null)
                 {

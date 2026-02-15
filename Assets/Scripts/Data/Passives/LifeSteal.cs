@@ -17,13 +17,16 @@ namespace DiceOrbit.Data.Passives.Impl
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (trigger == CombatTrigger.OnHit)
+            if (context.SourceUnit == owner && context.Action.Type == ActionType.Attack &&trigger == CombatTrigger.OnHit)
             {
-                if (context.SourceUnit == owner)
-                {
-                    owner.Heal(stealAmount);
-                }
+                owner.Heal(stealAmount);
+   
             }
+        }
+
+        public override string Description()
+        {
+            return $"공격 시 피해량의 {stealAmount}만큼 생명력 회복";
         }
     }
 }

@@ -151,7 +151,7 @@ namespace DiceOrbit.UI
             var diceManager = Core.DiceManager.Instance;
             if (diceManager != null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentTarget, ActionType.Move);
+                bool success = diceManager.AssignDice(currentDice, currentTarget, DiceOrbit.Core.Pipeline.ActionType.Move);
                 
                 if (success)
                 {
@@ -246,7 +246,7 @@ namespace DiceOrbit.UI
             var diceManager = Core.DiceManager.Instance;
             if (diceManager != null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentTarget, ActionType.Skill);
+                bool success = diceManager.AssignDice(currentDice, currentTarget, DiceOrbit.Core.Pipeline.ActionType.Skill);
                 
                 if (success)
                 {

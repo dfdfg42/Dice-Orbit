@@ -86,7 +86,7 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 주사위를 캐릭터에 할당
         /// </summary>
-        public bool AssignDice(DiceData dice, object character, ActionType action)
+        public bool AssignDice(DiceData dice, object character, DiceOrbit.Core.Pipeline.ActionType action)
         {
             if (dice == null || dice.IsUsed)
             {
@@ -94,7 +94,7 @@ namespace DiceOrbit.Core
                 return false;
             }
             
-            if (action == ActionType.None)
+            if (action == DiceOrbit.Core.Pipeline.ActionType.None)
             {
                 Debug.LogWarning("Cannot assign dice: action type is None");
                 return false;

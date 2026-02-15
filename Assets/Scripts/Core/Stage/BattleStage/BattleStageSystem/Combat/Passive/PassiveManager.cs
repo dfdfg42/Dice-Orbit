@@ -7,10 +7,11 @@ using System.Linq;
 
 namespace DiceOrbit.Systems.Passives
 {
+    [System.Serializable]
     public class PassiveManager : MonoBehaviour, ICombatReactor
     {
         private Unit owner;
-        private Dictionary<PassiveType, HashSet<PassiveAbility>> activePassives = new();
+        [SerializeField] private Dictionary<PassiveType, HashSet<PassiveAbility>> activePassives = new();
         public IReadOnlyDictionary<PassiveType, HashSet<PassiveAbility>> ActivePassives => activePassives;
 
         public void Initialize(Unit unit)
