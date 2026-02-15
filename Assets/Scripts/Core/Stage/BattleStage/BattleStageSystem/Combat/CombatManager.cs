@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UI;
 using TMPro;
+using DiceOrbit.UI;
 
 namespace DiceOrbit.Core
 {
@@ -353,13 +354,8 @@ namespace DiceOrbit.Core
         /// </summary>
         private void ShowMonsterIntents()
         {
-            foreach (var monster in activeMonsters)
-            {
-                if (monster != null && monster.IsAlive)
-                {
-                    monster.ShowAttackPreview();
-                }
-            }
+            // AttackIndicator가 등록된 모든 Intent를 시각화
+            UI.AttackIndicator.Instance?.Show();
             Debug.Log("[CombatManager] Showing monster attack previews");
         }
         
@@ -368,13 +364,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private void HideMonsterIntents()
         {
-            foreach (var monster in activeMonsters)
-            {
-                if (monster != null)
-                {
-                    monster.HideAttackPreview();
-                }
-            }
+            UI.AttackIndicator.Instance?.Hide();
             Debug.Log("[CombatManager] Hiding monster attack previews");
         }
 
