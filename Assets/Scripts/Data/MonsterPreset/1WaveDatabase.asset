@@ -18,4 +18,4 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 2e2e9ce3316643979f8f80356ece9d3d, type: 2}
     - {fileID: 11400000, guid: 25bda3da432d43d7ba92bdb9f4d11f5a, type: 2}
     SpawnCount: 3
-    BackgroundSprite: {fileID: 21300000, guid: a7f784dc63c50bb40a6c7900a3d3a2de, type: 3}
+    BackgroundSprite: {fileID: 21300000, guid: 715804659320d264d988fed45bed7527, type: 3}

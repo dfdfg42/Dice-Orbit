@@ -15,6 +15,14 @@ namespace DiceOrbit.UI
         [SerializeField] private Color tileAttackColor = new Color(1f, 0f, 0f, 0.5f); // 반투명 빨강
         [SerializeField] private Color targetLineColor = Color.red;
         [SerializeField] private float lineWidth = 0.1f;
+        [SerializeField] private int parabolaSegments = 24;
+        [SerializeField] private float parabolaHeightMultiplier = 0.2f;
+        [SerializeField] private float minParabolaHeight = 0.4f;
+        [SerializeField] private float maxParabolaHeight = 2.0f;
+        [SerializeField] private float dashWorldLength = 0.45f;
+        [SerializeField] private float dashScrollSpeed = 1.75f;
+        [SerializeField] private float fadeEdgeRatio = 0.14f;
+        [SerializeField] private float dashPixelShiftInterval = 0.05f;
 
         // 다중 몬스터 Intent 관리
         private Dictionary<Core.Monster, Data.AttackIntent> registeredIntents 
@@ -32,6 +40,9 @@ namespace DiceOrbit.UI
         private Data.TileData[] highlightedTiles;
 
         private bool isShowing = false; // Show 상태 플래그
+        private Texture2D dashedLineTexture;
+        private Color[] dashPixels;
+        private float dashPixelTimer = 0f;
 
         private void Awake()
         {
@@ -44,6 +55,7 @@ namespace DiceOrbit.UI
             }
 
             Instance = this;
+            CreateDashTexture();
         }
 
         private void OnDestroy()
@@ -135,6 +147,7 @@ namespace DiceOrbit.UI
         {
             // 모든 타겟팅 공격 라인 실시간 업데이트 (항상 실행)
             UpdateAllTargetLines();
+            AnimateDashLines();
         }
 
         /// <summary>
@@ -157,9 +170,7 @@ namespace DiceOrbit.UI
                     {
                         Vector3 startPos = monster.transform.position + Vector3.up * 0.5f;
                         Vector3 endPos = targets[0].transform.position + Vector3.up * 0.5f;
-
-                        line.SetPosition(0, startPos);
-                        line.SetPosition(1, endPos);
+                        UpdateParabolaLine(line, startPos, endPos);
                     }
                 }
             }
@@ -259,13 +270,9 @@ namespace DiceOrbit.UI
 
             // LineRenderer 설정
             line.enabled = true;
-            line.positionCount = 2;
-
             Vector3 startPos = monster.transform.position + Vector3.up * 0.5f;
             Vector3 endPos = target.transform.position + Vector3.up * 0.5f;
-
-            line.SetPosition(0, startPos);
-            line.SetPosition(1, endPos);
+            UpdateParabolaLine(line, startPos, endPos);
         }
 
         /// <summary>
@@ -279,13 +286,146 @@ namespace DiceOrbit.UI
             var line = go.AddComponent<LineRenderer>();
             line.startWidth = lineWidth;
             line.endWidth = lineWidth;
-            line.material = new Material(Shader.Find("Sprites/Default"));
-            line.startColor = targetLineColor;
-            line.endColor = targetLineColor;
+            line.textureMode = LineTextureMode.Tile;
+            line.alignment = LineAlignment.View;
+            line.numCapVertices = 0;
+            line.numCornerVertices = 2;
+
+            var shader = Shader.Find("Sprites/Default");
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Transparent");
+            }
+
+            line.material = new Material(shader);
+            line.material.color = Color.white;
+            if (dashedLineTexture != null)
+            {
+                line.material.mainTexture = dashedLineTexture;
+            }
+
+            line.colorGradient = CreateFadedGradient();
             line.sortingOrder = 100;
             line.enabled = false;
 
             return line;
+        }
+
+        private void UpdateParabolaLine(LineRenderer line, Vector3 startPos, Vector3 endPos)
+        {
+            if (line == null) return;
+            line.colorGradient = CreateFadedGradient();
+
+            int segments = Mathf.Max(4, parabolaSegments);
+            line.positionCount = segments + 1;
+
+            float distance = Vector3.Distance(startPos, endPos);
+            float height = Mathf.Clamp(distance * parabolaHeightMultiplier, minParabolaHeight, maxParabolaHeight);
+
+            for (int i = 0; i <= segments; i++)
+            {
+                float t = i / (float)segments;
+                Vector3 p = Vector3.Lerp(startPos, endPos, t);
+                float arc = 4f * t * (1f - t); // 0->1->0 parabola profile
+                p.y += arc * height;
+                line.SetPosition(i, p);
+            }
+
+            if (line.material != null && line.material.mainTexture != null)
+            {
+                float repeatX = Mathf.Max(1f, distance / Mathf.Max(0.05f, dashWorldLength));
+                line.material.mainTextureScale = new Vector2(repeatX, 1f);
+            }
+        }
+
+        private void AnimateDashLines()
+        {
+            float scroll = -(Time.time * dashScrollSpeed);
+
+            foreach (var line in monsterLineRenderers.Values)
+            {
+                if (line == null || !line.enabled) continue;
+                if (line.material == null || line.material.mainTexture == null) continue;
+
+                line.material.mainTextureOffset = new Vector2(scroll, 0f);
+                if (line.material.HasProperty("_MainTex"))
+                {
+                    line.material.SetTextureOffset("_MainTex", new Vector2(scroll, 0f));
+                }
+                if (line.material.HasProperty("_BaseMap"))
+                {
+                    line.material.SetTextureOffset("_BaseMap", new Vector2(scroll, 0f));
+                }
+            }
+
+            // Shader가 UV 오프셋을 무시하는 경우에도 점선이 움직이도록 텍스처 자체를 순환시킴.
+            AnimateDashTexturePixels();
+        }
+
+        private Gradient CreateFadedGradient()
+        {
+            float edge = Mathf.Clamp01(fadeEdgeRatio);
+
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(targetLineColor, 0f),
+                    new GradientColorKey(targetLineColor, 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(1f, edge),
+                    new GradientAlphaKey(1f, 1f - edge),
+                    new GradientAlphaKey(0f, 1f)
+                }
+            );
+
+            return gradient;
+        }
+
+        private void CreateDashTexture()
+        {
+            if (dashedLineTexture != null) return;
+
+            // 8-on / 8-off pattern (repeat in U)
+            const int width = 16;
+            dashedLineTexture = new Texture2D(width, 1, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Repeat,
+                filterMode = FilterMode.Point,
+                name = "AttackLineDashTex"
+            };
+            dashPixels = new Color[width];
+
+            for (int x = 0; x < width; x++)
+            {
+                bool on = x < width / 2;
+                dashPixels[x] = on ? Color.white : new Color(1f, 1f, 1f, 0f);
+            }
+            dashedLineTexture.SetPixels(dashPixels);
+            dashedLineTexture.Apply(false, false);
+        }
+
+        private void AnimateDashTexturePixels()
+        {
+            if (dashedLineTexture == null || dashPixels == null || dashPixels.Length <= 1) return;
+            if (dashPixelShiftInterval <= 0f) return;
+
+            dashPixelTimer += Time.deltaTime;
+            if (dashPixelTimer < dashPixelShiftInterval) return;
+            dashPixelTimer = 0f;
+
+            Color last = dashPixels[dashPixels.Length - 1];
+            for (int i = dashPixels.Length - 1; i > 0; i--)
+            {
+                dashPixels[i] = dashPixels[i - 1];
+            }
+            dashPixels[0] = last;
+
+            dashedLineTexture.SetPixels(dashPixels);
+            dashedLineTexture.Apply(false, false);
         }
 
         /// <summary>
