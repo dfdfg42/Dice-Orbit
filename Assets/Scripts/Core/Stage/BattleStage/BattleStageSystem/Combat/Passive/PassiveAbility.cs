@@ -21,10 +21,12 @@ namespace DiceOrbit.Data.Passives
         /// </summary>
         public virtual void Initialize(Core.Character owner) { }
 
-    /// <summary>
-    /// 몬스터 초기화 (필요 시)
-    /// </summary>
-    public virtual void Initialize(Core.Monster owner) { }
+        /// <summary>
+        /// 몬스터 초기화 (필요 시)
+        /// </summary>
+        public virtual void Initialize(Core.Monster owner) { }
+
+        public virtual void Initialize(Core.Unit owner) { }
 
         /// <summary>
         /// 전투 파이프라인 반응 로직
