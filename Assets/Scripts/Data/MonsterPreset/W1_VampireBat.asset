@@ -23,12 +23,15 @@ MonoBehaviour:
     SpriteColor: {r: 1, g: 0, b: 0, a: 1}
   AIPattern: {fileID: 11400000, guid: be0156ac94604104bb9a431d8d1423f3, type: 2}
   StartingPassives:
-  - rid: -2
+  - rid: 3474513169916100670
   MonsterSprite: {fileID: 0}
   SpriteColor: {r: 1, g: 1, b: 1, a: 1}
   VisualScale: 0.4
   references:
     version: 2
     RefIds:
-    - rid: -2
-      type: {class: , ns: , asm: }
+    - rid: 3474513169916100670
+      type: {class: IntValuePassiveConfig, ns: DiceOrbit.Data.Passives, asm: Assembly-CSharp}
+      data:
+        passiveAsset: {fileID: 11400000, guid: 485669180ae188e409bbc0260ec535ef, type: 2}
+        initialValue: 3
