@@ -164,7 +164,7 @@ namespace DiceOrbit.Core
             }
 
             // AttackIndicator에서 Intent 제거
-            UI.AttackIndicator.Instance?.RemoveAttackIntent(this);
+            UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
         }
         
         /// <summary>
@@ -186,7 +186,7 @@ namespace DiceOrbit.Core
                         Debug.Log($"[Monster] Next Intent Selected: {nextIntent}");
 
                         // AttackIndicator에 Intent 등록 (시각화는 Battle 시스템에서 Show() 호출)
-                        UI.AttackIndicator.Instance?.AddAttackIntent(this, nextIntent);
+                        UI.MonsterAttackIntentManager.Instance?.AddAttackIntent(this, nextIntent);
                     }
                     else
                     {
@@ -307,7 +307,7 @@ namespace DiceOrbit.Core
             Debug.Log($"[Monster] {stat?.MonsterName} Died.");
 
             // AttackIndicator에서 Intent 제거
-            UI.AttackIndicator.Instance?.RemoveAttackIntent(this);
+            UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
 
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);

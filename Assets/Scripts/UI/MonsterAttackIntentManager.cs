@@ -7,9 +7,9 @@ namespace DiceOrbit.UI
     /// <summary>
     /// 몬스터 공격 시각화
     /// </summary>
-    public class AttackIndicator : MonoBehaviour
+    public class MonsterAttackIntentManager : MonoBehaviour
     {
-        public static AttackIndicator Instance { get; private set; }
+        public static MonsterAttackIntentManager Instance { get; private set; }
 
         [Header("Settings")]
         [SerializeField] private Color tileAttackColor = new Color(1f, 0f, 0f, 0.5f); // 반투명 빨강

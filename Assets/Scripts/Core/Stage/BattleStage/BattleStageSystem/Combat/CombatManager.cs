@@ -355,7 +355,7 @@ namespace DiceOrbit.Core
         private void ShowMonsterIntents()
         {
             // AttackIndicator가 등록된 모든 Intent를 시각화
-            UI.AttackIndicator.Instance?.Show();
+            UI.MonsterAttackIntentManager.Instance?.Show();
             Debug.Log("[CombatManager] Showing monster attack previews");
         }
         
@@ -364,7 +364,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private void HideMonsterIntents()
         {
-            UI.AttackIndicator.Instance?.Hide();
+            UI.MonsterAttackIntentManager.Instance?.Hide();
             Debug.Log("[CombatManager] Hiding monster attack previews");
         }
 

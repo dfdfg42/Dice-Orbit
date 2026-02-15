@@ -8,19 +8,14 @@ namespace DiceOrbit.Systems.Passives
 {
     public class PassiveManager : MonoBehaviour, ICombatReactor
     {
-        private object owner;
+        private Unit owner;
         private List<PassiveAbility> activePassives = new List<PassiveAbility>();
         private readonly Dictionary<PassiveAbility, PassiveAbility> runtimePassiveMap = new Dictionary<PassiveAbility, PassiveAbility>();
         public IReadOnlyList<PassiveAbility> ActivePassives => activePassives;
 
-        public void Initialize(Character character)
+        public void Initialize(Unit character)
         {
             owner = character;
-        }
-        
-        public void Initialize(Monster monster)
-        {
-            owner = monster;
         }
 
         public void AddPassive(PassiveAbility passive)
@@ -34,8 +29,7 @@ namespace DiceOrbit.Systems.Passives
                 activePassives.Add(runtimePassive);
                 runtimePassiveMap[passive] = runtimePassive;
 
-                if (owner is Character c) runtimePassive.Initialize(c);
-                else if (owner is Monster m) runtimePassive.Initialize(m);
+                runtimePassive.Initialize(owner);
                 // Trigger OnPassiveAdded reactor?
                 Debug.Log($"[PassiveManager] Added {runtimePassive.PassiveName}");
             }
