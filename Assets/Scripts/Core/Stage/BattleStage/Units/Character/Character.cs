@@ -287,25 +287,6 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
-        /// 시작 타일 찾기 (재시도용)
-        /// </summary>
-        private void FindStartTile()
-        {
-            var orbitManager = FindFirstObjectByType<OrbitManager>();
-            if (orbitManager != null)
-            {
-                Debug.Log($"OrbitManager found! Tile count: {orbitManager.TileCount}");
-                currentTile = orbitManager.GetTile(startTileIndex);
-                
-                if (currentTile != null)
-                {
-                    Debug.Log($"Assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
-                    transform.position = currentTile.Position + TILE_OFFSET;
-                }
-            }
-        }
-        
-        /// <summary>
         /// 캐릭터 선택됨 (CharacterSelector에서 호출)
         /// </summary>
         public void OnSelected()
