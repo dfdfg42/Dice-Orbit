@@ -13,7 +13,7 @@ namespace DiceOrbit.Core
         [SerializeField] private SpriteRenderer backgroundRenderer;
         
         [Header("Settings")]
-        [SerializeField] private float fadeDuration = 0.5f;
+        // [SerializeField] private float fadeDuration = 0.5f;
         [SerializeField] private bool isFloor = true; // 3D 바닥으로 사용할지 여부 (X축 90도 회전)
         [SerializeField] private Vector3 floorOffset = new Vector3(0, -1f, 0); // 바닥 높이 (궤도보다 낮게)
         [SerializeField] private float floorScale = 5f; // 바닥 크기 배율

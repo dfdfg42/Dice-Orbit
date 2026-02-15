@@ -53,10 +53,10 @@ namespace DiceOrbit.Core
         private void Start()
         {
             // Preset이 Inspector에 할당되어 있다면 바로 초기화
-            if (preset != null)
-            {
-                InitializeFromPreset(preset);
-            }
+            //if (preset != null)
+            //{
+            //    InitializeFromPreset(preset);
+            //}
             
             // 첫 턴 의도 선택
             SelectNextIntent();
@@ -148,10 +148,18 @@ namespace DiceOrbit.Core
         private void InitializePassives()
         {
             if (preset == null) return;
-
-            foreach (var passiveData in preset.GetStartingPassives())
+            foreach (var config in preset.GetStartingPassives())
             {
-                passives.AddPassive(passiveData);
+                if (config == null) continue;
+                
+                // Config를 통해 런타임 패시브 인스턴스 생성 및 데이터 주입
+                var runtimePassive = config.CreateRuntimePassive(this);
+                
+                // 매니저에 등록 (이미 인스턴스화된 객체 전달)
+                if (runtimePassive != null)
+                {
+                    passives.AddPassive(runtimePassive);
+                }
             }
         }
 
@@ -164,7 +172,7 @@ namespace DiceOrbit.Core
             }
 
             // AttackIndicator에서 Intent 제거
-            UI.AttackIndicator.Instance?.RemoveAttackIntent(this);
+            UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
         }
         
         /// <summary>
@@ -186,7 +194,7 @@ namespace DiceOrbit.Core
                         Debug.Log($"[Monster] Next Intent Selected: {nextIntent}");
 
                         // AttackIndicator에 Intent 등록 (시각화는 Battle 시스템에서 Show() 호출)
-                        UI.AttackIndicator.Instance?.AddAttackIntent(this, nextIntent);
+                        UI.MonsterAttackIntentManager.Instance?.AddAttackIntent(this, nextIntent);
                     }
                     else
                     {
@@ -307,8 +315,9 @@ namespace DiceOrbit.Core
             Debug.Log($"[Monster] {stat?.MonsterName} Died.");
 
             // AttackIndicator에서 Intent 제거
-            UI.AttackIndicator.Instance?.RemoveAttackIntent(this);
+            UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
 
+    
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
             Destroy(gameObject);
@@ -381,14 +390,18 @@ namespace DiceOrbit.Core
             if (passives != null && passives.ActivePassives.Count > 0)
             {
                 sb.AppendLine("--- Passive ---");
-                foreach (var passive in passives.ActivePassives)
+                foreach (var passiveList in passives.ActivePassives.Values)
                 {
-                    if (passive == null) continue;
-                    var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? passive.name : passive.PassiveName;
-                    sb.AppendLine(passiveName);
-                    if (!string.IsNullOrWhiteSpace(passive.Description))
+                    foreach (var passive in passiveList)
                     {
-                        sb.AppendLine(passive.Description.Trim());
+
+                        if (passive == null) continue;
+                        var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? passive.name : passive.PassiveName;
+                        sb.AppendLine(passiveName);
+                        if (!string.IsNullOrWhiteSpace(passive.Description()))
+                        {
+                            sb.AppendLine(passive.Description().Trim());
+                        }
                     }
                 }
             }
