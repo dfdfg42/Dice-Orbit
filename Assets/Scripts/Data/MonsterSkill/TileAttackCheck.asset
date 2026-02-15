@@ -10,15 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 321b39f2761af5642a3dcf9306232468, type: 3}
-  m_Name: SkillA
+  m_Name: TileAttackCheck
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterSkill
   skillData:
-    SkillName: Basic Attack
-    Description: "\uD1A1\uD1A1"
+    SkillName: TileAttack
+    Description: 
     Type: 0
     TargetType: 0
     Effects: []
-    ActionModules: []
-    DamageMultiplier: 5
+    ActionModules:
+    - {fileID: 11400000, guid: f1a2b3c4d5e6f708192a3b4c5d6e7f80, type: 2}
+    DamageMultiplier: 1
     BonusDamage: 0
     IgnoreDefense: 0
+  targetStrategy: 0

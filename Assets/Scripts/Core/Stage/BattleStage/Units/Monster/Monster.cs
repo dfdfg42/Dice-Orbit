@@ -20,12 +20,8 @@ namespace DiceOrbit.Core
         [SerializeField] private Data.MonsterAI.MonsterAI aiPattern; // Inspector 설정 전용 (원본 참조)
         private Data.MonsterAI.MonsterAI runtimeAiPattern; // 실제 실행되는 런타임 인스턴스
         private MonsterSkill nextSkill;
-        private SkillData nextSkillData => nextSkill != null ? nextSkill.skillData : null; // 다음 턴에 사용할 스킬
-        public SkillData CurrentIntent => nextSkillData;
-
-        // Target Logic
-        private Character targetedCharacter;
-        private Data.TileData[] targetedTiles;
+        private AttackIntent nextIntent; // 다음 턴에 사용할 AttackIntent
+        public AttackIntent CurrentIntent => nextIntent; // AttackIntent 타입으로 반환
 
         // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
         public new MonsterStats Stats => stat;
@@ -139,8 +135,6 @@ namespace DiceOrbit.Core
                 runtimeAiPattern = null;
             }
 
-            RefreshAvailableSkills();
-
             // 런타임 AI 초기화
             if (runtimeAiPattern != null)
             {
@@ -168,6 +162,9 @@ namespace DiceOrbit.Core
                 Destroy(runtimeAiPattern);
                 runtimeAiPattern = null;
             }
+
+            // AttackIndicator에서 Intent 제거
+            UI.AttackIndicator.Instance?.RemoveAttackIntent(this);
         }
         
         /// <summary>
@@ -175,16 +172,26 @@ namespace DiceOrbit.Core
         /// </summary>
         public void SelectNextIntent()
         {
-            RefreshAvailableSkills();
-
             if (runtimeAiPattern != null)
             {
                 nextSkill = runtimeAiPattern.GetNextSkill();
 
-                if (nextSkillData != null)
+                if (nextSkill != null)
                 {
-                    Debug.Log($"[Monster] Next Skill Selected: {nextSkillData.SkillName}");
-                    ShowAttackPreview();
+                    // MonsterSkill이 타겟 선정 및 Intent 생성
+                    nextIntent = nextSkill.GenerateIntent(this);
+
+                    if (nextIntent != null)
+                    {
+                        Debug.Log($"[Monster] Next Intent Selected: {nextIntent}");
+
+                        // AttackIndicator에 Intent 등록 (시각화는 Battle 시스템에서 Show() 호출)
+                        UI.AttackIndicator.Instance?.AddAttackIntent(this, nextIntent);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[Monster] Failed to generate intent.");
+                    }
                 }
                 else
                 {
@@ -199,19 +206,23 @@ namespace DiceOrbit.Core
         public void ExecuteIntent()
         {
             if (!IsAlive) return;
-            
+
             // 턴 시작 효과 처리 (Passives etc)
             OnStartTurn();
-            
-            if (nextSkillData != null)
+
+            if (nextIntent != null && nextSkill != null)
             {
-                ExecuteSkill(nextSkillData);
+                // AttackIntent의 유효성 확인 (죽은 타겟 제거)
+                nextIntent.RefreshTargets();
+
+                // 스킬 실행 (Intent에 저장된 타겟 사용)
+                ExecuteSkillWithIntent(nextSkill.skillData, nextIntent);
             }
             else
             {
                 Debug.Log($"[Monster] Idling (No Skill)");
             }
-            
+
             // 다음 의도 준비
             SelectNextIntent();
         }
@@ -225,7 +236,7 @@ namespace DiceOrbit.Core
             base.OnStartTurn();
         }
         
-        private void ExecuteSkill(SkillData skill)
+        private void ExecuteSkillWithIntent(SkillData skill, AttackIntent intent)
         {
             Debug.Log($"[Monster] Executing Skill: {skill.SkillName}");
 
@@ -237,7 +248,8 @@ namespace DiceOrbit.Core
                 {
                     if (module is Data.Skills.Modules.IMonsterTileActionModule tileModule)
                     {
-                        tileModule.Execute(this, 0, targetedTiles);
+                        var tiles = intent.TargetTiles;
+                        tileModule.Execute(this, 0, tiles);
                         handledByMonsterModule = true;
                     }
                     else if (module is Data.Skills.Modules.IMonsterActionModule monsterModule)
@@ -252,142 +264,34 @@ namespace DiceOrbit.Core
                     return;
                 }
             }
-            
-            // 타겟 선정 (Pipeline 처리 전 결정)
-            // 여기서는 단순화하여 TargetType에 따라 처리
-            // 실제로는 ActionModule 내부에서 처리하거나, Context에 Target 목록을 담아야 함.
-            
-            var partyManager = PartyManager.Instance;
-            if (partyManager == null) return;
-            
-            var aliveCharacters = partyManager.GetAliveCharacters();
-            if (aliveCharacters.Count == 0) return;
-            
-            // 타겟팅 로직 (미리보기에서 저장된 타겟 사용 혹은 새로 선정)
-            Character primaryTarget = targetedCharacter; 
-            if (primaryTarget == null || !primaryTarget.IsAlive)
+
+            // Intent에서 타겟 가져오기
+            var targets = intent.Targets;
+            if (targets == null || targets.Count == 0)
             {
-                 primaryTarget = aliveCharacters[Random.Range(0, aliveCharacters.Count)];
+                Debug.LogWarning("[Monster] No valid targets in intent.");
+                return;
             }
 
-            // 스킬의 모든 모듈 실행 via Pipeline
-            // 몬스터 스킬은 ActionModule을 직접 실행하기보다,
-            // SkillData 자체가 ActionModule을 가지고 있으므로
-            // 각 모듈을 Pipeline Action으로 변환하여 실행
-            
-            foreach (var module in skill.ActionModules)
+            // 각 타겟에게 스킬 적용
+            int damage = skill.CalculateDamage(stat.Attack, 0);
+            var actionType = Pipeline.ActionType.Attack;
+
+            foreach (var target in targets)
             {
-                 // 모듈 실행 로직 (간소화: 모듈이 직접 Context를 받아 처리하도록 설계되어야 함)
-                 // 현재 구조: CombatPipeline.Process(Context) -> Context.Action
-                 // SkillData -> ActionModule -> CombatAction?
-                 
-                 // 임시: SkillData의 데미지 팩터만 사용 (System Migration 과도기)
-                 // 추후 ActionModule.Execute(Context) 형태로 고도화 필요
-                 
-                 // NOTE: ActionModule가 직접 처리하지 않는 경우 기본 CombatAction 경로를 사용합니다.
-                 
-                 int damage = skill.CalculateDamage(stat.Attack, 0); // No dice for monsters
-                 var actionType = Pipeline.ActionType.Attack;
-                 
-                 // Create Context
-                 var context = new Pipeline.CombatContext(this, primaryTarget, new Pipeline.CombatAction(skill.SkillName, actionType, damage));
-                 
-                 // Apply Logic based on TargetType
-                 if (skill.TargetType == SkillTargetType.AllEnemies || skill.TargetType == SkillTargetType.AllAllies) // Monster perspective: Enemy = Character
-                 {
-                     // Area Attack
-                     foreach(var chara in aliveCharacters)
-                     {
-                         var areaContext = new Pipeline.CombatContext(this, chara, new Pipeline.CombatAction(skill.SkillName, actionType, damage));
-                         Pipeline.CombatPipeline.Instance.Process(areaContext);
-                     }
-                 }
-                 else
-                 {
-                     // Single
-                     Pipeline.CombatPipeline.Instance.Process(context);
-                 }
-            }
-            
-            // ActionModule이 없는 스킬은 기본 데미지 경로를 사용
-            if (skill.ActionModules.Count == 0)
-            {
-                 int damage = skill.CalculateDamage(stat.Attack, 0);
-                 var context = new Pipeline.CombatContext(this, primaryTarget, new Pipeline.CombatAction(skill.SkillName, Pipeline.ActionType.Attack, damage));
-                 Pipeline.CombatPipeline.Instance.Process(context);
+                if (target == null || !target.IsAlive) continue;
+
+                var context = new Pipeline.CombatContext(
+                    this, 
+                    target, 
+                    new Pipeline.CombatAction(skill.SkillName, actionType, damage)
+                );
+                Pipeline.CombatPipeline.Instance.Process(context);
             }
         }
 
-        // === Preview Logic ===
-        
-        public void ShowAttackPreview()
-        {
-            if (nextSkillData == null) return;
+        // === Damage & Death ===
 
-            var indicator = AttackIndicator.Instance;
-            if (indicator == null) return;
-
-            indicator.Hide();
-            targetedTiles = null;
-            
-            // 타겟 선정 (미리 해둠)
-            var partyManager = PartyManager.Instance;
-            if (partyManager != null)
-            {
-                var alive = partyManager.GetAliveCharacters();
-                if (alive.Count > 0)
-                {
-                    targetedCharacter = alive[Random.Range(0, alive.Count)];
-                    
-                    // Tile-based previews (monster modules)
-                    if (nextSkillData.ActionModules != null)
-                    {
-                        foreach (var module in nextSkillData.ActionModules)
-                        {
-                            if (module is Data.Skills.Modules.IMonsterTileActionModule tileModule)
-                            {
-                                var tiles = tileModule.GetPreviewTiles(this);
-                                if (tiles != null && tiles.Length > 0)
-                                {
-                                    targetedTiles = tiles;
-                                    UI.AttackIndicator.Instance.ShowAreaAttack(tiles);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-
-                    if (nextSkillData.TargetType == SkillTargetType.SingleEnemy)
-                    {
-                        UI.AttackIndicator.Instance.ShowTargetedAttack(transform, targetedCharacter.transform);
-                    }
-                    else if (nextSkillData.TargetType == SkillTargetType.AllEnemies)
-                    {
-                        var tiles = alive
-                            .Where(c => c != null && c.CurrentTile != null)
-                            .Select(c => c.CurrentTile)
-                            .Distinct()
-                            .ToArray();
-
-                        if (tiles.Length > 0)
-                        {
-                            UI.AttackIndicator.Instance.ShowAreaAttack(tiles);
-                        }
-                        else
-                        {
-                            UI.AttackIndicator.Instance.ShowTargetedAttack(transform, targetedCharacter.transform);
-                        }
-                    }
-                }
-            }
-        }
-        
-        public void HideAttackPreview()
-        {
-            var indicator = AttackIndicator.Instance;
-            if (indicator != null) indicator.Hide();
-        }
-        
         /// <summary>
         /// 데미지 처리
         /// </summary>
@@ -401,16 +305,16 @@ namespace DiceOrbit.Core
         private void OnDeath()
         {
             Debug.Log($"[Monster] {stat?.MonsterName} Died.");
+
+            // AttackIndicator에서 Intent 제거
+            UI.AttackIndicator.Instance?.RemoveAttackIntent(this);
+
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
             Destroy(gameObject);
         }
 
-        private void RefreshAvailableSkills()
-        {
-            
-        }
-
+        // === Tooltip ===
         protected override void OnMouseEnter()
         {
             base.OnMouseEnter();
@@ -441,24 +345,35 @@ namespace DiceOrbit.Core
 
             if (CurrentIntent != null)
             {
-                int expectedDamage = CurrentIntent.CalculateDamage(Stats.Attack, 0);
                 sb.AppendLine("--- Intent ---");
-                sb.AppendLine($"{CurrentIntent.SkillName}");
-                if (!string.IsNullOrWhiteSpace(CurrentIntent.Description))
-                {
-                    sb.AppendLine(CurrentIntent.Description.Trim());
-                }
-                sb.AppendLine($"Target: {CurrentIntent.TargetType}");
-                sb.AppendLine($"Expected DMG: {expectedDamage}");
+                sb.AppendLine(CurrentIntent.ToString()); // AttackIntent의 ToString 사용
 
-                if (CurrentIntent.ActionModules != null)
+                var targets = CurrentIntent.Targets;
+                if (targets != null && targets.Count > 0)
                 {
-                    foreach (var module in CurrentIntent.ActionModules)
+                    sb.AppendLine($"Targets: {string.Join(", ", targets.Select(t => t.Stats.CharacterName))}");
+                }
+
+                // 스킬 설명 (nextSkill에서 가져오기)
+                if (nextSkill != null && nextSkill.skillData != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(nextSkill.skillData.Description))
                     {
-                        if (module == null) continue;
-                        var moduleText = module.GetTooltipDescription();
-                        if (string.IsNullOrWhiteSpace(moduleText)) continue;
-                        sb.AppendLine($"- {moduleText.Trim()}");
+                        sb.AppendLine(nextSkill.skillData.Description.Trim());
+                    }
+
+                    // ActionModules 정보
+                    if (nextSkill.skillData.ActionModules != null)
+                    {
+                        foreach (var module in nextSkill.skillData.ActionModules)
+                        {
+                            if (module == null) continue;
+                            var moduleText = module.GetTooltipDescription();
+                            if (!string.IsNullOrWhiteSpace(moduleText))
+                            {
+                                sb.AppendLine($"- {moduleText.Trim()}");
+                            }
+                        }
                     }
                 }
             }
