@@ -125,9 +125,10 @@ namespace DiceOrbit.UI
         /// </summary>
         private void UpdateIntent()
         {
-            if (monster == null || monster.CurrentIntent == null) return;
-            
+            if (monster == null) return;
+
             SkillData intent = monster.CurrentIntent;
+            if (intent == null) return;
             
             // 타입 추론 (SkillData에는 명시적인 IntentType이 없으므로 간이 로직)
             // 기본은 Attack으로 가정
@@ -139,7 +140,8 @@ namespace DiceOrbit.UI
             else if (intent.TargetType == SkillTargetType.Self || intent.TargetType == SkillTargetType.Ally) type = IntentType.Buff;
             
             // 데미지 계산 (Display용 - 주사위 0 가정)
-            int damage = intent.CalculateDamage(monster.Stats.Attack, 0);
+            int attack = monster.Stats != null ? monster.Stats.Attack : 0;
+            int damage = intent.CalculateDamage(attack, 0);
             valueText = damage.ToString();
             
             if (intent.TargetType == SkillTargetType.AllEnemies)
