@@ -12,3 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 321b39f2761af5642a3dcf9306232468, type: 3}
   m_Name: SkillA
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterSkill
+  skillData:
+    SkillName: Basic Attack
+    Description: "\uD1A1\uD1A1"
+    Type: 0
+    TargetType: 0
+    Effects: []
+    ActionModules: []
+    DamageMultiplier: 5
+    BonusDamage: 0
+    IgnoreDefense: 0
