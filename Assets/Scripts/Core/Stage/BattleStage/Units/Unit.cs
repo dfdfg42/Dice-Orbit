@@ -56,7 +56,7 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// �� ���� ó�� (Pipeline)
+        /// �� ���� ó��  (Pipeline)
         /// </summary>
         public virtual void OnStartTurn()
         {
@@ -84,6 +84,12 @@ namespace DiceOrbit.Core
             {
                 DamagePopup.Create(actualDamage, transform.position + Vector3.up * 1.6f);
             }
+        }
+
+        public virtual void Heal(int value)
+        {
+            int hpBefore = Stats.CurrentHP;
+            Stats.Heal(value);
         }
 
         /// <summary>
