@@ -119,7 +119,7 @@ namespace DiceOrbit.UI
 
         private static DamagePopup CreateFallback(int damage, Vector3 worldPosition, bool isCritical)
         {
-            Debug.LogWarning("DamagePopup prefab not found. Using fallback popup.");
+            Debug.Log("DamagePopup prefab not found. Using fallback popup.");
 
             var go = new GameObject("DamagePopup_Fallback");
             var canvas = go.AddComponent<Canvas>();
