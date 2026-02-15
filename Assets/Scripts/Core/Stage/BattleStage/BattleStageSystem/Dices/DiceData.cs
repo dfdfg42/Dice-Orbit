@@ -11,7 +11,7 @@ namespace DiceOrbit.Data
         [SerializeField] private int id;
         [SerializeField] private int value; // 1~6
         [SerializeField] private bool isUsed;
-        [SerializeField] private ActionType assignedAction;
+        [SerializeField] private DiceOrbit.Core.Pipeline.ActionType assignedAction;
         
         // 할당된 캐릭터 (Phase 3에서 사용)
         private object assignedCharacter; // 일단 object로, 나중에 Character 타입으로 변경
@@ -20,7 +20,7 @@ namespace DiceOrbit.Data
         public int ID => id;
         public int Value => value;
         public bool IsUsed => isUsed;
-        public ActionType AssignedAction => assignedAction;
+        public DiceOrbit.Core.Pipeline.ActionType AssignedAction => assignedAction;
         public object AssignedCharacter => assignedCharacter;
         
         /// <summary>
@@ -31,14 +31,14 @@ namespace DiceOrbit.Data
             this.id = id;
             this.value = Mathf.Clamp(value, 1, 6);
             this.isUsed = false;
-            this.assignedAction = ActionType.None;
+            this.assignedAction = DiceOrbit.Core.Pipeline.ActionType.None;
             this.assignedCharacter = null;
         }
         
         /// <summary>
         /// 주사위를 캐릭터에 할당
         /// </summary>
-        public void Assign(object character, ActionType action)
+        public void Assign(object character, DiceOrbit.Core.Pipeline.ActionType action)
         {
             assignedCharacter = character;
             assignedAction = action;
@@ -51,7 +51,7 @@ namespace DiceOrbit.Data
         public void Unassign()
         {
             assignedCharacter = null;
-            assignedAction = ActionType.None;
+            assignedAction = DiceOrbit.Core.Pipeline.ActionType.None;
             isUsed = false;
         }
         

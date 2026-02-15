@@ -53,10 +53,10 @@ namespace DiceOrbit.Core
         private void Start()
         {
             // Preset이 Inspector에 할당되어 있다면 바로 초기화
-            if (preset != null)
-            {
-                InitializeFromPreset(preset);
-            }
+            //if (preset != null)
+            //{
+            //    InitializeFromPreset(preset);
+            //}
             
             // 첫 턴 의도 선택
             SelectNextIntent();
@@ -148,7 +148,6 @@ namespace DiceOrbit.Core
         private void InitializePassives()
         {
             if (preset == null) return;
-
             foreach (var config in preset.GetStartingPassives())
             {
                 if (config == null) continue;
@@ -399,9 +398,9 @@ namespace DiceOrbit.Core
                         if (passive == null) continue;
                         var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? passive.name : passive.PassiveName;
                         sb.AppendLine(passiveName);
-                        if (!string.IsNullOrWhiteSpace(passive.Description))
+                        if (!string.IsNullOrWhiteSpace(passive.Description()))
                         {
-                            sb.AppendLine(passive.Description.Trim());
+                            sb.AppendLine(passive.Description().Trim());
                         }
                     }
                 }
