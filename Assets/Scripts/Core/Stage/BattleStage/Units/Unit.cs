@@ -1,6 +1,8 @@
-using UnityEngine;
+using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
 using DiceOrbit.UI;
+using UnityEditor.Experimental.GraphView;
+using UnityEngine;
 
 namespace DiceOrbit.Core
 {
@@ -56,7 +58,7 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// �� ���� ó�� (Pipeline)
+        /// �� ���� ó��  (Pipeline)
         /// </summary>
         public virtual void OnStartTurn()
         {
@@ -71,6 +73,21 @@ namespace DiceOrbit.Core
             }
         }
 
+        //Unit 리엑터는 여기서 전부 수집. 일단은 패시브에서만 수집하게 했음. 나중에 수정 반드시 해야 함
+        //CombatPipeline의 CollectReactors도 수정해야 함
+        public void CollectReactors(System.Collections.Generic.List<DiceOrbit.Core.Pipeline.ICombatReactor> reactors)
+        {
+            foreach (var passiveList in passives.ActivePassives.Values)
+            {
+                foreach (var passive in passiveList)
+                {
+                    if (passive is ICombatReactor reactor)
+                    {
+                        reactors.Add(passive);
+                    }
+                }
+            }
+        }
         /// <summary>
         /// ������ ó��
         /// </summary>
@@ -84,6 +101,12 @@ namespace DiceOrbit.Core
             {
                 DamagePopup.Create(actualDamage, transform.position + Vector3.up * 1.6f);
             }
+        }
+
+        public virtual void Heal(int value)
+        {
+            int hpBefore = Stats.CurrentHP;
+            Stats.Heal(value);
         }
 
         /// <summary>

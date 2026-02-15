@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using DiceOrbit.Data.Skills;
+using DiceOrbit.Data.Passives;
 
 namespace DiceOrbit.Data.Monsters
 {
@@ -17,7 +18,8 @@ namespace DiceOrbit.Data.Monsters
         public MonsterAI.MonsterAI AIPattern;
         
         [Header("Starting Passives")]
-        public List<Passives.PassiveAbility> StartingPassives = new List<Passives.PassiveAbility>();
+        [SerializeReference] // 다형성 직렬화 지원
+        public List<DiceOrbit.Data.Passives.PassiveConfig> StartingPassives = new List<DiceOrbit.Data.Passives.PassiveConfig>();
         
         [Header("Visual")]
         public Sprite MonsterSprite;
@@ -36,9 +38,9 @@ namespace DiceOrbit.Data.Monsters
             return stats;
         }
 
-        public List<Passives.PassiveAbility> GetStartingPassives()
+        public List<DiceOrbit.Data.Passives.PassiveConfig> GetStartingPassives()
         {
-            return StartingPassives ?? new List<Passives.PassiveAbility>();
+            return StartingPassives ?? new List<DiceOrbit.Data.Passives.PassiveConfig>();
         }
     }
 }

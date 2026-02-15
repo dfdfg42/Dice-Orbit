@@ -14,7 +14,7 @@ namespace DiceOrbit.Data
         AllTargets        // 모든 타겟
     }
 
-    [CreateAssetMenu(fileName = "MonsterSkill", menuName = "Scriptable Objects/MonsterSkill")]
+    [CreateAssetMenu(fileName = "MonsterSkill", menuName = "Monster/MonsterSkill")]
     public class MonsterSkill : ScriptableObject
     {
         [Header("Skill Data")]
