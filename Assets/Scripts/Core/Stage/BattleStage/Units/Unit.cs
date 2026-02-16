@@ -7,10 +7,10 @@ using UnityEngine;
 namespace DiceOrbit.Core
 {
     /// <summary>
-    /// ���� ������ �⺻ Ŭ���� (�÷��̾�, ����)
+    /// 전투 유닛의 기본 클래스 (플레이어, 몬스터)
     /// </summary>
     [RequireComponent(typeof(SpriteRenderer))]
-    public abstract class Unit : MonoBehaviour 
+    public abstract class Unit : MonoBehaviour
     {
         [Header("Visual")]
         [SerializeField] protected Color highlightColor = Color.yellow;
@@ -22,7 +22,7 @@ namespace DiceOrbit.Core
         [SerializeField] protected Systems.Passives.PassiveManager passives;
         [SerializeField] protected Systems.Effects.StatusEffectManager statusEffects;
 
-        // Abstract ������Ƽ - �ڽ� Ŭ�������� �ݵ�� ����
+        // Abstract 프로퍼티 - 자식 클래스에서 반드시 구현
         public abstract UnitStats Stats { get; }
 
         public bool IsAlive => Stats.IsAlive;
@@ -41,16 +41,16 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// �ý��� �ʱ�ȭ (�ڽ� Ŭ�������� override)
+        /// 시스템 초기화 (자식 클래스에서 override)
         /// </summary>
         protected virtual void InitializeSystems()
         {
-            // Systems �⺻ �ʱ�ȭ - �ڽĿ��� override
+            // Systems 기본 초기화 - 자식에서 override
         }
 
         protected virtual void LateUpdate()
         {
-            // Billboard: �׻� ī�޶� ���ϵ���
+            // Billboard: 항상 카메라 향하도록
             if (mainCamera != null)
             {
                 transform.rotation = mainCamera.transform.rotation;
@@ -58,7 +58,7 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// �� ���� ó��  (Pipeline)
+        /// 턴 시작 처리 (Pipeline)
         /// </summary>
         public virtual void OnStartTurn()
         {
@@ -89,7 +89,7 @@ namespace DiceOrbit.Core
             }
         }
         /// <summary>
-        /// ������ ó��
+        /// 데미지 처리
         /// </summary>
         public virtual void TakeDamage(int damage)
         {
@@ -110,7 +110,7 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// ���콺 ȣ�� �� ���̶���Ʈ
+        /// 마우스 호버 시 하이라이트
         /// </summary>
         protected virtual void OnMouseEnter()
         {
@@ -121,7 +121,7 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// ���콺 ���� �� ���� ����
+        /// 마우스 벗어날 때 원래 색상
         /// </summary>
         protected virtual void OnMouseExit()
         {
@@ -132,7 +132,7 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// ��������Ʈ�� ���� ������Ʈ
+        /// 스프라이트와 색상 업데이트
         /// </summary>
         protected void UpdateVisuals(Sprite sprite, Color spriteColor)
         {
@@ -153,7 +153,7 @@ namespace DiceOrbit.Core
         [SerializeField]
         protected TStats stat;
 
-        // Unit ���������� �׻� UnitStats
+        // Unit 제네릭에서 항상 UnitStats 반환
         public override UnitStats Stats => stat;
     }
 }

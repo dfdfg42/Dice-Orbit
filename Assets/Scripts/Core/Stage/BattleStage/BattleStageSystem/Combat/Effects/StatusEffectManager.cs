@@ -10,22 +10,15 @@ namespace DiceOrbit.Systems.Effects
     public class StatusEffectManager : MonoBehaviour, ICombatReactor
     {
         private Unit owner;
-        private Character ownerCharacter => owner as Character;
-        private Monster ownerMonster => owner as Monster;
-        
+
         // Restore activeEffects
         private Dictionary<EffectType, StatusEffect> activeEffects = new Dictionary<EffectType, StatusEffect>();
 
         public int Priority => 10;
 
-        public void Initialize(Character character)
+        public void Initialize(Unit unit)
         {
-            owner = character;
-        }
-
-        public void Initialize(Monster monster)
-        {
-            owner = monster;
+            owner = unit;
         }
 
         public void AddEffect(EffectType type, int value, int duration)
@@ -38,11 +31,14 @@ namespace DiceOrbit.Systems.Effects
             }
             else
             {
-                var newEffect = new StatusEffect(type, value, duration);
-                // newEffect.SetOwner(owner); // Helper if needed
+                var newEffect = CreateEffect(type, value, duration);
+                newEffect.SetOwner(owner); 
                 activeEffects.Add(type, newEffect);
             }
-            string name = ownerCharacter?.Stats.CharacterName ?? ownerMonster?.Stats.MonsterName ?? "Unknown";
+            string name = "Unknown";
+            if (owner is Character c) name = c.Stats.CharacterName;
+            else if (owner is Monster m) name = m.Stats.MonsterName;
+
             Debug.Log($"[Status] Added {type} to {name}");
         }
 
@@ -57,53 +53,47 @@ namespace DiceOrbit.Systems.Effects
         // ICombatReactor Implementation
         public void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            // 턴 시작 시 지속시간 관리 (별도 로직 필요하지만 여기서 처리 가능)
-            if (trigger == CombatTrigger.OnTurnStart && context.SourceUnit == owner)
-            {
-                HandleTurnStart();
-            }
-
-            // 각 효과의 반응 로직 실행
+            // 각 효과의 반응 로직 실행 (StatusEffect가 스스로 Duration 관리)
             foreach (var effect in activeEffects.Values.ToList())
             {
-                effect.ProcessReaction(trigger, context);
+                effect.OnReact(trigger, context);
+            }
+
+            // 턴 시작 시, 반응 처리 후 만료된 효과 정리
+            if (trigger == CombatTrigger.OnTurnStart && context.SourceUnit == owner)
+            {
+                CleanupExpiredEffects();
             }
         }
 
-        private void HandleTurnStart()
+        private void CleanupExpiredEffects()
         {
             var keys = activeEffects.Keys.ToList();
             foreach (var key in keys)
             {
                 var effect = activeEffects[key];
-                
-                // 도트 데미지 처리 (간략화)
-                if (effect.Type == EffectType.Dot)
+                // -1은 영구 지속이므로 제거하지 않음
+                if (effect.Duration != -1 && effect.Duration <= 0)
                 {
-                    if (CombatPipeline.Instance != null)
-                    {
-                        var action = new CombatAction("DoT", Core.Pipeline.ActionType.Attack, effect.Value);
-                        action.AddTag("Dot");
-                        var context = new CombatContext(owner, owner, action);
-                        CombatPipeline.Instance.Process(context);
-                    }
-                    else
-                    {
-                        if(ownerCharacter != null) ownerCharacter.Stats.TakeDamage(effect.Value);
-                        else if(ownerMonster != null) ownerMonster.Stats.TakeDamage(effect.Value);
-                    }
-                    Debug.Log($"[Status] Dot Damage: {effect.Value}");
+                    RemoveEffect(key);
+                    Debug.Log($"[Status] {key} expired.");
                 }
+            }
+        }
 
-                if (effect.Duration > 0)
-                {
-                    effect.Duration--;
-                    if (effect.Duration <= 0)
-                    {
-                        RemoveEffect(key);
-                        Debug.Log($"[Status] {key} expired.");
-                    }
-                }
+        private StatusEffect CreateEffect(EffectType type, int value, int duration)
+        {
+            switch (type)
+            {
+                case EffectType.BuffAttack:
+                    return new BuffAttackStatus(value, duration);
+
+                // 추후 BuffDefense, Dot 등 추가
+
+                default:
+                    // 기본(아직 구현 안된 타입)은 StatusEffect 사용
+                    // (단, 기본 StatusEffect는 특별한 로직 없이 지속시간만 깎임)
+                    return new StatusEffect(type, value, duration);
             }
         }
     }

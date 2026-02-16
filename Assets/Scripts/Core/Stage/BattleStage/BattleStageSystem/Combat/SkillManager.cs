@@ -128,6 +128,15 @@ namespace DiceOrbit.Core
                 action.IgnoreDefense = skill.IgnoreDefense;
                 action.AddTag("Skill");
 
+                // 효과 추가
+                if (skill.Effects != null)
+                {
+                    foreach (var eff in skill.Effects)
+                    {
+                        action.AddEffect(eff.Type, eff.Value, eff.Duration);
+                    }
+                }
+
                 if (pipeline != null)
                 {
                     var context = new Pipeline.CombatContext(source, mTarget, action);
@@ -148,7 +157,16 @@ namespace DiceOrbit.Core
 
                 var action = new Pipeline.CombatAction(skill.SkillName, actionType, baseDamage);
                 action.AddTag("Skill");
-                
+
+                // 효과 추가
+                if (skill.Effects != null)
+                {
+                    foreach (var eff in skill.Effects)
+                    {
+                        action.AddEffect(eff.Type, eff.Value, eff.Duration);
+                    }
+                }
+
                 if (pipeline != null)
                 {
                     var context = new Pipeline.CombatContext(source, cTarget, action);
@@ -169,7 +187,8 @@ namespace DiceOrbit.Core
 
             // 4. 상태 이상 부여 (Status Effects)
             // 추후 Effect 부착도 Action으로 만들 수 있음.
-            ApplyStatusEffects(source, target, skill);
+            // Action에 포함시켜 처리했으므로 별도 호출 제거
+            // ApplyStatusEffects(source, target, skill);
         }
         
         private void ResolveTargets(object initialTarget, SkillTargetType type, List<Monster> mList, List<Character> cList)
@@ -198,36 +217,67 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
-        /// 상태 이상 적용 로직 (Legacy Wrapper or Pipeline Action)
+        /// 상태 이상 적용 로직 (모듈 처리 시 등 별도 호출용)
         /// </summary>
         private void ApplyStatusEffects(Character source, object target, SkillData skill)
         {
             if (skill.Effects == null || skill.Effects.Count == 0) return;
 
-            // EffectManager는 "즉발 효과(IEffect)" 레지스트리임.
-            // StatusEffect는 "지속 효과".
-            // SkillData.Effects가 무엇을 담고 있는지에 따라 다름.
-            // EffectManager.ApplyEffects는 IEffect를 찾아서 Apply.
-            // 만약 지속효과(Buff)라면 IEffect 구현체(BuffAttackEffect 등)가 StatusEffectManager를 호출해야 함.
-            
-            // 기존 EffectManager 사용 유지
-            // (가장 깔끔한 방법: EffectManager의 IEffect 구현체를 수정해서 StatusEffectManager를 호출하게 만듦)
-            
-            // 여기서는 타겟 분기 후 적용
-            if (target is Monster mTarget)
+            var monsterTargets = new List<Monster>();
+            var characterTargets = new List<Character>();
+
+            ResolveTargets(target, skill.TargetType, monsterTargets, characterTargets);
+
+            var pipeline = Pipeline.CombatPipeline.Instance;
+
+            // 몬스터 타겟
+            foreach (var mTarget in monsterTargets)
             {
-                 Systems.EffectManager.ApplyEffects(skill.Effects, mTarget);
+                if (pipeline != null)
+                {
+                    var action = new Pipeline.CombatAction("Effect Applying", Pipeline.ActionType.Utility, 0);
+                    action.AddTag("Effect");
+                    foreach (var eff in skill.Effects)
+                    {
+                        action.AddEffect(eff.Type, eff.Value, eff.Duration);
+                    }
+                    var context = new Pipeline.CombatContext(source, mTarget, action);
+                    pipeline.Process(context);
+                }
+                else
+                {
+                    // Fallback: 직접 매니저 호출 (임시)
+                    if (mTarget.StatusEffects != null)
+                    {
+                         foreach (var eff in skill.Effects)
+                            mTarget.StatusEffects.AddEffect(eff.Type, eff.Value, eff.Duration);
+                    }
+                }
             }
-            else if (target is Character cTarget)
+
+            // 캐릭터 타겟
+            foreach (var cTarget in characterTargets)
             {
-                 Systems.EffectManager.ApplyEffects(skill.Effects, cTarget);
+                if (pipeline != null)
+                {
+                    var action = new Pipeline.CombatAction("Effect Applying", Pipeline.ActionType.Utility, 0);
+                    action.AddTag("Effect");
+                    foreach (var eff in skill.Effects)
+                    {
+                        action.AddEffect(eff.Type, eff.Value, eff.Duration);
+                    }
+                    var context = new Pipeline.CombatContext(source, cTarget, action);
+                    pipeline.Process(context);
+                }
+                else
+                {
+                     if (cTarget.StatusEffects != null)
+                    {
+                         foreach (var eff in skill.Effects)
+                            cTarget.StatusEffects.AddEffect(eff.Type, eff.Value, eff.Duration);
+                    }
+                }
             }
-            else if (skill.TargetType == SkillTargetType.AllEnemies)
-            {
-                 foreach(var m in CombatManager.Instance.GetAliveMonsters())
-                     Systems.EffectManager.ApplyEffects(skill.Effects, m);
-            }
-            // ... 생략된 타겟 타입 처리
         }
 
         private bool ExecuteModules(Character source, object target, SkillData skill, int diceValue)

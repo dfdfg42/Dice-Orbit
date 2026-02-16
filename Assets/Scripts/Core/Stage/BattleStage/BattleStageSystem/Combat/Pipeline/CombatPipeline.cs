@@ -128,6 +128,7 @@ namespace DiceOrbit.Core.Pipeline
 
         private void ApplyAction(CombatContext context)
         {
+            // 1. 기본 액션 값 적용 (Base Value)
             int finalValue = Mathf.RoundToInt(context.OutputValue);
 
             if (context.Action.Type == ActionType.Attack)
@@ -136,7 +137,41 @@ namespace DiceOrbit.Core.Pipeline
             }
             else if (context.Action.Type == ActionType.Heal)
             {
-                context.Target.Stats.Heal(finalValue);
+                // Unit.Heal을 사용하는 것이 일관성에 좋음 (오버라이드 가능성 고려)
+                context.Target.Heal(finalValue);
+            }
+
+            // 2. 추가 효과 적용 (Effects)
+            if (context.Action.Effects != null && context.Action.Effects.Count > 0)
+            {
+                foreach (var effect in context.Action.Effects)
+                {
+                    ApplyEffect(context.Target, effect);
+                }
+            }
+        }
+
+        private void ApplyEffect(Core.Unit target, ActionEffectInfo effectInfo)
+        {
+            if (target == null) return;
+
+            switch (effectInfo.Type)
+            {
+                case DiceOrbit.Data.EffectType.Damage:
+                    target.TakeDamage(effectInfo.Value);
+                    break;
+
+                case DiceOrbit.Data.EffectType.Heal:
+                    target.Heal(effectInfo.Value);
+                    break;
+
+                default:
+                    // 버프, 디버프, 도트 등은 StatusEffectManager로 위임
+                    if (target.StatusEffects != null)
+                    {
+                        target.StatusEffects.AddEffect(effectInfo.Type, effectInfo.Value, effectInfo.Duration);
+                    }
+                    break;
             }
         }
     }
