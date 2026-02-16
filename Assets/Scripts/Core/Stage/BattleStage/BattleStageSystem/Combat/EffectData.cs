@@ -1,5 +1,4 @@
 using UnityEngine;
-using DiceOrbit.Systems;
 
 namespace DiceOrbit.Data
 {
@@ -39,6 +38,8 @@ namespace DiceOrbit.Data
         
         private string GenerateDescription()
         {
+            string durationText = (Duration == -1) ? "Permanent" : $"{Duration} turns";
+
             switch (Type)
             {
                 case EffectType.Damage:
@@ -46,11 +47,11 @@ namespace DiceOrbit.Data
                 case EffectType.Heal:
                     return $"Heal {Value} HP";
                 case EffectType.BuffAttack:
-                    return $"+{Value} ATK for {Duration} turns";
+                    return $"+{Value} ATK ({durationText})";
                 case EffectType.BuffDefense:
-                    return $"+{Value} DEF for {Duration} turns";
+                    return $"+{Value} DEF ({durationText})";
                 case EffectType.Dot:
-                    return $"{Value} damage for {Duration} turns";
+                    return $"{Value} damage ({durationText})";
                 default:
                     return Type.ToString();
             }
