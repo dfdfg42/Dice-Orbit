@@ -14,6 +14,7 @@ namespace DiceOrbit.Core.Pipeline
         public CombatAction Action;     // 수행 중인 액션
         public float OutputValue;       // 최종 결과값 (데미지/힐량)
         public bool IsCancelled;        // 액션 취소 여부
+        public bool IsEffected;         // 영향을 끼쳤는지 (추가 가능)
 
         // 생성자
         public CombatContext(Unit source, Unit target, CombatAction action)
@@ -23,6 +24,7 @@ namespace DiceOrbit.Core.Pipeline
             Action = action;
             OutputValue = action.BaseValue;
             IsCancelled = false;
+            IsEffected= false;
         }
 
         /// <summary>

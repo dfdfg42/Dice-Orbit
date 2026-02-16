@@ -68,15 +68,26 @@ namespace DiceOrbit.Core.Pipeline
         private void NotifyReactors(CombatContext context, CombatTrigger trigger)
         {
             // 반응할 수 있는 모든 후보 수집 (Source의 패시브, Target의 상태이상 등)
-            // 지금은 Source(시전자)와 Target(피격자) 양쪽의 Reactor를 모두 호출
-            
+            // 기본적으로 모든 파티원들에서 수집하고, Source나 Target이 몬스터라면 몬스터에서도 수집하는 방식으로 구현.
             var reactors = new List<ICombatReactor>();
 
             // A. Source의 Reactor 수집
-            CollectReactors(context.SourceUnit, reactors);
+            if (context.SourceUnit is not Character) CollectReactors(context.SourceUnit, reactors);
 
             // B. Target의 Reactor 수집
-            CollectReactors(context.Target, reactors);
+            if (context.Target is not Character) CollectReactors(context.Target, reactors);
+
+            // C. Party 전체에서 Reactor 수집
+                if (Core.PartyManager.Instance != null)
+                {
+                    foreach (var ally in Core.PartyManager.Instance.Party)
+                    {
+                        if (ally != null && ally.Passives is ICombatReactor allyReactor)
+                        {
+                            CollectReactors(ally, reactors);
+                        }
+                    }
+            }
 
             // 우선순위 정렬 (높은 게 먼저 실행 -> 데미지 계산 시 중요)
             // 예: "데미지 2배" vs "데미지 +10" -> 순서에 따라 결과가 다름.
@@ -91,39 +102,12 @@ namespace DiceOrbit.Core.Pipeline
             }
         }
 
+        // 유닛에서 Reactor 수집 (패시브 및 상태이상)
         private void CollectReactors(Unit unit, List<ICombatReactor> list)
         {
             if (unit == null) return;
             // Passives
             unit.CollectReactors(list);
-            //Unit 리엑터는 여기서 전부 수집. 일단은 패시브에서만 수집하게 했음. 나중에 수정 반드시 해야 함
-            //Unit의 CollectReactors도 수정해야 함
-            if (unit is Core.Character character)
-            {
-                // Include party passives so ally passives can react to actions
-                if (Core.PartyManager.Instance != null)
-                {
-                    foreach (var ally in Core.PartyManager.Instance.Party)
-                    {
-                        if (ally != null && ally.Passives is ICombatReactor allyReactor)
-                        {
-                            list.Add(allyReactor);
-                        }
-                    }
-                }
-
-                // Status Effects
-                if (character.StatusEffects != null)
-                {
-                    // Similar logic for StatusEffects
-                     if (character.StatusEffects is ICombatReactor efReactor)
-                        list.Add(efReactor);
-                }
-            }
-            else if (unit is Core.Monster monster)
-            {
-                // Monster Logic (Monster Passives?) or Status Effects
-            }
         }
 
         private void ApplyAction(CombatContext context)
@@ -133,7 +117,7 @@ namespace DiceOrbit.Core.Pipeline
 
             if (context.Action.Type == ActionType.Attack)
             {
-                context.Target.TakeDamage(finalValue);
+                if (context.Target.TakeDamage(finalValue)!=0) context.IsEffected = true;
             }
             else if (context.Action.Type == ActionType.Heal)
             {

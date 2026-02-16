@@ -303,11 +303,12 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 데미지 처리
         /// </summary>
-        public override void TakeDamage(int damage)
+        public override int TakeDamage(int damage)
         {
-            if (!IsAlive) return;
-            base.TakeDamage(damage);
+            if (!IsAlive) return 0;
+            int result=base.TakeDamage(damage);
             if (!IsAlive) OnDeath();
+            return result;
         }
         
         private void OnDeath()
@@ -350,6 +351,7 @@ namespace DiceOrbit.Core
             var sb = new StringBuilder();
             sb.AppendLine(Stats.MonsterName);
             sb.AppendLine($"HP: {Stats.CurrentHP}/{Stats.MaxHP}");
+            sb.AppendLine($"Armor: {Stats.TempArmor}");
             sb.AppendLine($"ATK: {Stats.Attack}  DEF: {Stats.Defense}");
 
             if (CurrentIntent != null)

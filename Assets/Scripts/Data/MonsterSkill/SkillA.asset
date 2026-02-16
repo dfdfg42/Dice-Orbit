@@ -19,6 +19,7 @@ MonoBehaviour:
     TargetType: 0
     Effects: []
     ActionModules: []
-    DamageMultiplier: 5
+    DamageMultiplier: 2
     BonusDamage: 0
     IgnoreDefense: 0
+  targetStrategy: 0

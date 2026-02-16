@@ -1,15 +1,29 @@
 using UnityEngine;
+using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data
 {
     [System.Serializable]
-    public class UnitStats
+    public class UnitStats : ICombatReactor
     {
         [Header("Combat Stats")]
         public int MaxHP = 50;
         public int CurrentHP = 50;
         public int Attack = 8;
         public int Defense = 2;
+        public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)
+
+        // ICombatReactor implementation
+        public virtual int Priority => 20;
+
+        public virtual void OnReact(CombatTrigger trigger, CombatContext context)
+        {
+            //턴 시작 시 임시 방어도를 깎는다
+            if (trigger == CombatTrigger.OnTurnStart)
+            {
+                TempArmor = 0;
+            }
+        }
 
         /// <summary>
         /// HP 증가
@@ -20,14 +34,24 @@ namespace DiceOrbit.Data
         }
 
         /// <summary>
-        /// 데미지 받기
+        /// 데미지 받기, 받은 데미지만큼 리턴
         /// </summary>
-        public void TakeDamage(int damage)
+        public int TakeDamage(int damage)
         {
             int actualDamage = Mathf.Max(1, damage - Defense); // 최소 1 데미지
-            CurrentHP = Mathf.Max(0, CurrentHP - actualDamage);
 
+            // 임시 방어도가 있다면 데미지를 우선 흡수
+            if (TempArmor > 0)
+            {
+                int absorbed = Mathf.Min(actualDamage, TempArmor);
+                TempArmor -= absorbed;
+                actualDamage -= absorbed;
+                Debug.Log($"TempArmor absorbed {absorbed} dmg");
+            }
+            
+            CurrentHP = Mathf.Max(0, CurrentHP - actualDamage);
             Debug.Log($" took {actualDamage} damage! (HP: {CurrentHP}/{MaxHP})");
+            return actualDamage;
         }
 
         /// <summary>

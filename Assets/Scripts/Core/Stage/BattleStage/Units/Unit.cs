@@ -73,8 +73,7 @@ namespace DiceOrbit.Core
             }
         }
 
-        //Unit 리엑터는 여기서 전부 수집. 일단은 패시브에서만 수집하게 했음. 나중에 수정 반드시 해야 함
-        //CombatPipeline의 CollectReactors도 수정해야 함
+        //패시브와 현재 상태이상에서 Reactor 수집
         public void CollectReactors(System.Collections.Generic.List<DiceOrbit.Core.Pipeline.ICombatReactor> reactors)
         {
             foreach (var passiveList in passives.ActivePassives.Values)
@@ -87,20 +86,19 @@ namespace DiceOrbit.Core
                     }
                 }
             }
+            reactors.Add(statusEffects);
         }
         /// <summary>
         /// 데미지 처리
         /// </summary>
-        public virtual void TakeDamage(int damage)
+        public virtual int TakeDamage(int damage)
         {
-            int hpBefore = Stats.CurrentHP;
-            Stats.TakeDamage(damage);
-            int actualDamage = Mathf.Max(0, hpBefore - Stats.CurrentHP);
-
+            int actualDamage = Stats.TakeDamage(damage);
             if (actualDamage > 0)
             {
                 DamagePopup.Create(actualDamage, transform.position + Vector3.up * 1.6f);
             }
+            return actualDamage;
         }
 
         public virtual void Heal(int value)
