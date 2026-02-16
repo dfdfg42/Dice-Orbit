@@ -281,9 +281,9 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 데미지 처리 (파이프라인 외부 호출 대비)
         /// </summary>
-        public override void TakeDamage(int damage)
+        public override int TakeDamage(int damage)
         {
-            base.TakeDamage(damage);
+            return base.TakeDamage(damage);
         }
         
         /// <summary>
