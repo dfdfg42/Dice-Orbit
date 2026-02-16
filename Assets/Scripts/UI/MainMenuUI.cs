@@ -9,12 +9,18 @@ namespace DiceOrbit.UI
         [Header("UI References")]
         [SerializeField] private GameObject panel;
         [SerializeField] private Button startButton;
+        [SerializeField] private Button quitButton;
 
         private void Awake()
         {
             if (startButton != null)
             {
                 startButton.onClick.AddListener(OnStartGameButtonClicked);
+            }
+            
+            if (quitButton != null)
+            {
+                quitButton.onClick.AddListener(OnQuitButtonClicked);
             }
         }
 
@@ -48,6 +54,14 @@ namespace DiceOrbit.UI
             {
                 GameFlowManager.Instance.StartGame();
             }
+        }
+        public void OnQuitButtonClicked()
+        {
+            Debug.Log("Quit Game");
+            Application.Quit();
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#endif
         }
     }
 }
