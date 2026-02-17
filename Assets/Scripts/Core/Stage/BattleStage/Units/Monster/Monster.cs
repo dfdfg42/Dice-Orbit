@@ -248,31 +248,6 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"[Monster] Executing Skill: {skill.SkillName}");
 
-            // Monster-specific action modules (tile traps, custom patterns, etc.)
-            if (skill.ActionModules != null && skill.ActionModules.Count > 0)
-            {
-                bool handledByMonsterModule = false;
-                foreach (var module in skill.ActionModules)
-                {
-                    if (module is Data.Skills.Modules.IMonsterTileActionModule tileModule)
-                    {
-                        var tiles = intent.TargetTiles;
-                        tileModule.Execute(this, 0, tiles);
-                        handledByMonsterModule = true;
-                    }
-                    else if (module is Data.Skills.Modules.IMonsterActionModule monsterModule)
-                    {
-                        monsterModule.Execute(this, 0);
-                        handledByMonsterModule = true;
-                    }
-                }
-
-                if (handledByMonsterModule)
-                {
-                    return;
-                }
-            }
-
             // Intent에서 타겟 가져오기
             var targets = intent.Targets;
             if (targets == null || targets.Count == 0)
@@ -371,20 +346,6 @@ namespace DiceOrbit.Core
                     if (!string.IsNullOrWhiteSpace(nextSkill.skillData.Description))
                     {
                         sb.AppendLine(nextSkill.skillData.Description.Trim());
-                    }
-
-                    // ActionModules 정보
-                    if (nextSkill.skillData.ActionModules != null)
-                    {
-                        foreach (var module in nextSkill.skillData.ActionModules)
-                        {
-                            if (module == null) continue;
-                            var moduleText = module.GetTooltipDescription();
-                            if (!string.IsNullOrWhiteSpace(moduleText))
-                            {
-                                sb.AppendLine($"- {moduleText.Trim()}");
-                            }
-                        }
                     }
                 }
             }

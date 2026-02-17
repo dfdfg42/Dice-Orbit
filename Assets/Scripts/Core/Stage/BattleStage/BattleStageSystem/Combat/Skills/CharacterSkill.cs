@@ -23,7 +23,6 @@ namespace DiceOrbit.Data.Skills
         
         public DiceRequirement Requirement;
         public List<EffectData> Effects;
-        public List<Modules.SkillActionModule> ActionModules;
     }
 
     [CreateAssetMenu(fileName = "New Character Skill", menuName = "Dice Orbit/Skills/Character Skill")]
@@ -101,7 +100,6 @@ namespace DiceOrbit.Data.Skills
                 BonusDamage = levelData.BonusDamage,
                 IgnoreDefense = levelData.IgnoreDefense,
                 Effects = levelData.Effects ?? new List<EffectData>(),
-                ActionModules = levelData.ActionModules ?? new List<Modules.SkillActionModule>()
             };
             
             return skillData;
