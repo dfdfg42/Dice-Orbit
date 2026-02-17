@@ -21,7 +21,8 @@ namespace DiceOrbit.Data
         AllEnemies,
         Self,
         Ally,
-        AllAllies
+        AllAllies,
+        Tiles
     }
     
     /// <summary>
@@ -38,9 +39,6 @@ namespace DiceOrbit.Data
         
         [Header("Effects")]
         public List<EffectData> Effects = new List<EffectData>();
-        
-        [Header("Modules")]
-        public List<Skills.Modules.SkillActionModule> ActionModules = new List<Skills.Modules.SkillActionModule>();
         
         [Header("Damage")]
         public int DamageMultiplier = 1;

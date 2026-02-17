@@ -49,7 +49,7 @@ namespace DiceOrbit.Data
             List<Character> selectedTargets = SelectTargets(aliveCharacters, owner);
 
             // TileData 선정 (필요한 경우)
-            TileData[] targetTiles = SelectTiles(owner);
+            TileData[] targetTiles = SelectTiles();
 
             // IntentType 결정
             IntentType intentType = DetermineIntentType();
@@ -116,19 +116,9 @@ namespace DiceOrbit.Data
         /// <summary>
         /// 타일 기반 타겟 선정 (MonsterTileActionModule 처리)
         /// </summary>
-        private TileData[] SelectTiles(Monster owner)
+        private TileData[] SelectTiles()
         {
-            if (skillData.ActionModules == null) return null;
-
-            // ActionModule이 IMonsterTileActionModule인 경우 처리
-            foreach (var module in skillData.ActionModules)
-            {
-                if (module is Skills.Modules.IMonsterTileActionModule tileModule)
-                {
-                    return tileModule.GetPreviewTiles(owner);
-                }
-            }
-            return null;
+            return new TileData[0]; // 현재는 타일 선택 로직이 없으므로 빈 배열 반환
         }
 
         /// <summary>

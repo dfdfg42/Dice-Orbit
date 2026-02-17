@@ -94,17 +94,6 @@ namespace DiceOrbit.Core
 
             Debug.Log($"[SkillManager] Executing {skill.SkillName} via Pipeline...");
 
-            // 1. 모듈 실행 (모듈 내부 동작)
-            bool handledByModules = ExecuteModules(source, target, skill, diceValue);
-            
-            // 모듈이 처리했어도 기본 데미지가 있다면 파이프라인 태울 수 있음.
-            // 여기서는 기존 로직대로 모듈 처리 시 종료
-            if (handledByModules)
-            {
-                ApplyStatusEffects(source, target, skill);
-                return;
-            }
-
             // 2. 기본 스킬 로직 -> Pipeline Action으로 변환
             int baseDamage = skill.CalculateDamage(source.Stats.Attack, diceValue);
             Debug.Log($"[SkillManager] BaseDamage={baseDamage}, Dice={diceValue}, Skill={skill.SkillName}");
@@ -275,55 +264,6 @@ namespace DiceOrbit.Core
                     {
                          foreach (var eff in skill.Effects)
                             cTarget.StatusEffects.AddEffect(eff.Type, eff.Value, eff.Duration);
-                    }
-                }
-            }
-        }
-
-        private bool ExecuteModules(Character source, object target, SkillData skill, int diceValue)
-        {
-            if (skill.ActionModules == null || skill.ActionModules.Count == 0) return false;
-
-            if (skill.TargetType == SkillTargetType.AllEnemies)
-            {
-                var combatManager = CombatManager.Instance;
-                if (combatManager != null)
-                {
-                    foreach (var monster in combatManager.GetAliveMonsters())
-                    {
-                        ExecuteModulesOnTarget(source, monster, skill, diceValue);
-                    }
-                }
-                return true;
-            }
-
-            if (skill.TargetType == SkillTargetType.AllAllies)
-            {
-                var partyManager = PartyManager.Instance;
-                if (partyManager != null)
-                {
-                    foreach (var ally in partyManager.GetAliveCharacters())
-                    {
-                        ExecuteModulesOnTarget(source, ally, skill, diceValue);
-                    }
-                }
-                return true;
-            }
-
-            ExecuteModulesOnTarget(source, target, skill, diceValue);
-            return true;
-        }
-
-        private void ExecuteModulesOnTarget(Character source, object target, SkillData skill, int diceValue)
-        {
-            foreach (var module in skill.ActionModules)
-            {
-                if (module != null)
-                {
-                    GameObject targetObj = GetTargetGameObject(target);
-                    if (targetObj != null)
-                    {
-                        module.Execute(source, targetObj, diceValue);
                     }
                 }
             }
