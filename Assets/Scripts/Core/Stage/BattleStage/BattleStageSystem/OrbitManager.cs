@@ -1,3 +1,4 @@
+using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Tile;
 using DiceOrbit.Visuals;
@@ -110,9 +111,8 @@ namespace DiceOrbit.Core
                 tileData = tileObj.AddComponent<TileData>();
                 if (type == TileType.LevelUp)
                 {
-                    TileAttribute levelUpAttr = tileObj.AddComponent<TileAttribute>();
-                    levelUpAttr.AddTraverse(new DiceOrbit.Data.Tile.LevelUpTraverse());
-                    tileData.AddAttribute(levelUpAttr);
+                    var levelUpAttribute = new treavse_LevelUP(TileAttributeType.LevelUp, 1, -1);
+                    tileData.AddAttribute(levelUpAttribute);
                 }
             }
             
@@ -251,7 +251,7 @@ namespace DiceOrbit.Core
             
             return tiles[index];
         }
-        
+
         // Editor에서 실시간 갱신을 위한 메서드
         private void OnValidate()
         {

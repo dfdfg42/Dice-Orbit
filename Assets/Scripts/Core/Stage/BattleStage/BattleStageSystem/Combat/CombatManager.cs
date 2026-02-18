@@ -1,9 +1,10 @@
-using UnityEngine;
+using DiceOrbit.Core.Pipeline;
+using DiceOrbit.UI;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.UI;
 using TMPro;
-using DiceOrbit.UI;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace DiceOrbit.Core
 {
@@ -125,28 +126,7 @@ namespace DiceOrbit.Core
 
             return null;
         }
-        
-        /// <summary>
-        /// Scene의 몬스터 자동 감지
-        /// </summary>
-        private void AutoDetectMonsters()
-        {
-            var monsters = Object.FindObjectsByType<Monster>(FindObjectsSortMode.None);
 
-            foreach (var monster in monsters)
-            {
-                if (!activeMonsters.Contains(monster))
-                {
-                    activeMonsters.Add(monster);
-                }
-            }
-            
-            if (activeMonsters.Count > 0)
-            {
-                StartCombat();
-            }
-        }
-        
         /// <summary>
         /// 전투 시작
         /// </summary>
@@ -342,11 +322,23 @@ namespace DiceOrbit.Core
             yield return new WaitForSeconds(1.0f); // Default monster turn duration
             
             Debug.Log("=== Monster Turn End ===");
-            
+
+            if (inCombat)
+            {
+                TileTurnEnd(); // Loop back to player
+            }
+
             if (inCombat)
             {
                 StartPlayerTurn(); // Loop back to player
             }
+        }
+
+        private void TileTurnEnd()
+        {
+            // 타일 턴 시작 처리 (패시브/상태효과)
+            CombatContext context = new CombatContext(null, null, new CombatAction("Turn End", ActionType.None, 0));
+            CombatPipeline.Instance.Process(context);
         }
 
         /// <summary>
