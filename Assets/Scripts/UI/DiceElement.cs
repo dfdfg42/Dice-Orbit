@@ -147,15 +147,14 @@ namespace DiceOrbit.UI
             
             foreach (var result in results)
             {
-                // ActionPanel에 드롭했는지 확인
-                var actionPanel = result.gameObject.GetComponentInParent<ActionPanel>();
-                if (actionPanel != null)
+                // CharacterActionUI 패널에 드롭했는지 확인
+                var actionUI = result.gameObject.GetComponentInParent<CharacterActionUI>();
+                if (actionUI != null)
                 {
-                    // ActionPanel에 주사위 전달
-                    actionPanel.OnDiceDropped(diceData);
+                    // CharacterActionUI에 주사위 전달
+                    actionUI.OnDiceDropped(diceData);
                     dropped = true;
-                    
-                    // 드롭 성공 - 원위치 복귀 (사용 후 UI 업데이트)
+
                     ReturnToOriginalPosition();
                     break;
                 }

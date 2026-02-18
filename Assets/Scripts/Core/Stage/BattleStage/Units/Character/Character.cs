@@ -293,18 +293,16 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"{stat?.CharacterName} OnSelected called!");
 
-            // ActionPanel 표시 - 주사위 드롭 대기 상태 (비활성화된 것도 찾기)
-            var actionPanel = Object.FindFirstObjectByType<UI.ActionPanel>(FindObjectsInactive.Include);
-
-            if (actionPanel != null)
+            // CharacterActionUI 표시
+            var actionUI = UI.CharacterActionUI.Instance;
+            if (actionUI != null)
             {
-                Debug.Log("ActionPanel found! Showing panel...");
-                actionPanel.ShowPanelForCharacter(this);
+                actionUI.Show(this);
                 Debug.Log($"{stat?.CharacterName} selected! Waiting for dice...");
             }
             else
             {
-                Debug.LogError("ActionPanel NOT FOUND! Make sure ActionPanel component exists in scene.");
+                Debug.LogError("CharacterActionUI NOT FOUND! Make sure CharacterActionUI component exists in scene.");
             }
         }
     }
