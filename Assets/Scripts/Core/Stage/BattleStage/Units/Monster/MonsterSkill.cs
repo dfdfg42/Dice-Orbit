@@ -6,12 +6,33 @@ using DiceOrbit.Core;
 namespace DiceOrbit.Data
 {
     /// <summary>
+    /// 타겟 타입
+    /// </summary>
+    public enum TargetType
+    {
+        Characters,     // 단일 타겟
+        Tiles,       // 특정 범위 (주변 N칸)
+    }
+
+    /// <summary>
     /// 타겟 선정 전략
     /// </summary>
     public enum TargetSelectionStrategy
     {
         Random,           // 무작위 선택
         AllTargets        // 모든 타겟
+    }
+
+    /// <summary>
+    /// 공격 의도 타입
+    /// </summary>
+    public enum IntentType
+    {
+        Attack,      // 공격
+        Defend,      // 방어 버프
+        Buff,        // 공격력 버프
+        Special,     // 특수 행동
+        Multi        // 다중 공격 (Deprecated: Use Attack with TargetType.Area/All)
     }
 
     [CreateAssetMenu(fileName = "MonsterSkill", menuName = "Monster/MonsterSkill")]
@@ -22,6 +43,7 @@ namespace DiceOrbit.Data
 
         [Header("Targeting")]
         [SerializeField] private TargetSelectionStrategy targetStrategy = TargetSelectionStrategy.Random;
+        [SerializeField] TargetType TargetType = TargetType.Characters;
 
         // 런타임에 생성된 AttackIntent (캐싱용)
         private AttackIntent cachedIntent;
@@ -46,10 +68,26 @@ namespace DiceOrbit.Data
             }
 
             // 타겟 선정
-            List<Character> selectedTargets = SelectTargets(aliveCharacters, owner);
+            List<Character> selectedTargets = new();
 
             // TileData 선정 (필요한 경우)
-            TileData[] targetTiles = SelectTiles();
+            List<TileData> targetTiles = new();
+
+            switch (TargetType)
+            {
+                case TargetType.Characters:
+                    selectedTargets = SelectTargets(aliveCharacters, owner);
+                    break;
+                case TargetType.Tiles:
+                    if (targetTiles == null || targetTiles.Count() == 0)
+                    {
+                        targetTiles = SelectTiles();
+                    }
+                    break;
+                default:
+                    Debug.LogWarning("[MonsterSkill] Invalid TargetType specified!");
+                    return null;
+            }
 
             // IntentType 결정
             IntentType intentType = DetermineIntentType();
@@ -60,7 +98,7 @@ namespace DiceOrbit.Data
             // AttackIntent 생성
             var intent = new AttackIntent(
                 intentType, 
-                ConvertToTargetType(), 
+                TargetType,
                 damage, 
                 selectedTargets, 
                 skillData.Description
@@ -116,9 +154,9 @@ namespace DiceOrbit.Data
         /// <summary>
         /// 타일 기반 타겟 선정 (MonsterTileActionModule 처리)
         /// </summary>
-        private TileData[] SelectTiles()
+        private List<TileData> SelectTiles()
         {
-            return new TileData[0]; // 현재는 타일 선택 로직이 없으므로 빈 배열 반환
+            return new(); // 현재는 타일 선택 로직이 없으므로 빈 배열 반환
         }
 
         /// <summary>
@@ -137,23 +175,6 @@ namespace DiceOrbit.Data
             //    return IntentType.Multi;
 
             return IntentType.Attack;
-        }
-
-        /// <summary>
-        /// SkillTargetType을 TargetType으로 변환
-        /// </summary>
-        private TargetType ConvertToTargetType()
-        {
-            switch (skillData.TargetType)
-            {
-                case SkillTargetType.AllEnemies:
-                case SkillTargetType.AllAllies:
-                    return TargetType.All;
-
-                case SkillTargetType.SingleEnemy:
-                default:
-                    return TargetType.Single;
-            }
         }
     }
 }

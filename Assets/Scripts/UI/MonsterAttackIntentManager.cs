@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace DiceOrbit.UI
 {
@@ -33,11 +34,11 @@ namespace DiceOrbit.UI
             = new Dictionary<Core.Monster, LineRenderer>();
 
         // 몬스터별 타일 추적 (타일 하이라이트 관리)
-        private Dictionary<Core.Monster, Data.TileData[]> monsterTiles 
-            = new Dictionary<Core.Monster, Data.TileData[]>();
+        private Dictionary<Core.Monster, List<Data.TileData>> monsterTiles 
+            = new Dictionary<Core.Monster, List<Data.TileData>>();
 
         // 타일 하이라이트용 (모든 몬스터의 타일 병합)
-        private Data.TileData[] highlightedTiles;
+        private List<Data.TileData> highlightedTiles;
 
         private bool isShowing = false; // Show 상태 플래그
         private Texture2D dashedLineTexture;
@@ -120,7 +121,7 @@ namespace DiceOrbit.UI
                 // 다른 몬스터가 사용 중인 타일 확인
                 var otherMonsterTiles = monsterTiles
                     .Where(kvp => kvp.Key != monster && kvp.Key != null)
-                    .SelectMany(kvp => kvp.Value ?? System.Array.Empty<Data.TileData>())
+                    .SelectMany(kvp => kvp.Value ?? new List<Data.TileData>())
                     .Where(t => t != null)
                     .Distinct()
                     .ToHashSet();
@@ -202,41 +203,37 @@ namespace DiceOrbit.UI
             if (monster == null || intent == null) return;
 
             // 타일 기반 공격
-            if (intent.TargetTiles != null && intent.TargetTiles.Length > 0)
+            if (intent.TargetType == Data.TargetType.Tiles)
             {
-                ShowTileAttackForMonster(intent.TargetTiles, monster);
+                ShowTileAttackForMonster(intent.TargetTiles.ToList(), monster);
                 return;
             }
-
-            // 타겟 기반 공격
-            var targets = intent.Targets;
-            if (targets == null || targets.Count == 0) return;
-
-            if (intent.TargetType == Data.TargetType.Single && targets.Count == 1)
+            else if (intent.TargetType == Data.TargetType.Characters)
             {
-                ShowTargetedAttackForMonster(monster, targets[0]);
-            }
-            else if (intent.TargetType == Data.TargetType.All)
-            {
-                var targetTiles = targets
-                    .Where(c => c != null && c.CurrentTile != null)
-                    .Select(c => c.CurrentTile)
-                    .Distinct()
-                    .ToArray();
-
-                if (targetTiles.Length > 0)
+                var targets = intent.Targets;
+                if (targets == null || targets.Count == 0) return;
+                if (targets.Count == 1)
                 {
-                    ShowTileAttackForMonster(targetTiles, monster);
+                    ShowTargetedAttackForMonster(monster, targets[0]);
                 }
+                else
+                {
+                    // 다중 타겟인 경우, 첫 번째 타겟만 시각화 (추후 개선 가능)
+                    ShowTargetedAttackForMonster(monster, targets[0]);
+                }
+            }         
+            else
+            {
+                Debug.LogError($"[AttackIndicator] Unknown TargetType for {monster.name}: {intent.TargetType}");
             }
         }
 
         /// <summary>
         /// 타일 공격 시각화 (타일 하이라이트)
         /// </summary>
-        private void ShowTileAttackForMonster(Data.TileData[] tiles, Core.Monster monster)
+        private void ShowTileAttackForMonster(List<Data.TileData> tiles, Core.Monster monster)
         {
-            if (tiles == null || tiles.Length == 0 || monster == null) return;
+            if (tiles == null || tiles.Count == 0 || monster == null) return;
 
             // 몬스터별 타일 저장
             monsterTiles[monster] = tiles;
@@ -438,7 +435,7 @@ namespace DiceOrbit.UI
                 .SelectMany(tiles => tiles)
                 .Where(tile => tile != null)
                 .Distinct()
-                .ToArray();
+                .ToList();
         }
 
         /// <summary>
