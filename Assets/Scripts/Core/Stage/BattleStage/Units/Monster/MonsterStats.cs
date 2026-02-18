@@ -13,7 +13,8 @@ namespace DiceOrbit.Data
         [Header("Basic Info")]
         public string MonsterName = "Slime";
         public int Level = 1;
-        
+        public int Speed = 1;
+
         [Header("Visual")]
         public Sprite MonsterSprite;
         public Color SpriteColor = Color.red;
@@ -30,6 +31,7 @@ namespace DiceOrbit.Data
             copy.Level = this.Level;
             copy.MonsterSprite = this.MonsterSprite;
             copy.SpriteColor = this.SpriteColor;
+            copy.Speed = this.Speed;
             return copy;
         }
     }
