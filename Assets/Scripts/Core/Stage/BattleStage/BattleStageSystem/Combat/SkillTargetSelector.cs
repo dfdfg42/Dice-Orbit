@@ -246,6 +246,7 @@ namespace DiceOrbit.Core
         /// </summary>
         public void CancelTargetSelection()
         {
+            sourceCharacter?.OnSkillResolved();
             EndTargetSelection();
             Debug.Log("Target selection cancelled");
         }

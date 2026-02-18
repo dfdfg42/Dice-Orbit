@@ -26,6 +26,12 @@ namespace DiceOrbit.Core
         public Sprite CharacterSprite;
         public Color SpriteColor = Color.white;
         public float VisualScale = 1.0f;
+
+        [Header("Animation Sprites")]
+        public Sprite IdleSprite;
+        public Sprite MoveSprite;
+        public Sprite DamageSprite;
+        public Sprite SkillSprite;
         
 
         [Header("Starting Skills (New System)")]

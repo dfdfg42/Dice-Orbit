@@ -1,5 +1,6 @@
 using UnityEngine;
 using DiceOrbit.Data;
+using DiceOrbit.Visuals;
 using System.Collections.Generic;
 
 namespace DiceOrbit.Core
@@ -15,7 +16,12 @@ namespace DiceOrbit.Core
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
-        private bool stopMovementRequested = false;  
+        [SerializeField] private float stepHopHeight = 0.35f;
+        [SerializeField] private float stepIdlePause = 0.05f;
+        private bool stopMovementRequested = false;
+
+        // 스프라이트 비주얼
+        private CharacterSpriteVisual spriteVisual;
 
         // CharacterStats 타입으로 반환 (기존 코드 호환성 유지)
         public new CharacterStats Stats => stat;
@@ -43,7 +49,6 @@ namespace DiceOrbit.Core
                 // Visual Scale 적용
                 if (stat.SourcePreset != null)
                 {
-                    // CharacterSpriteVisual 컴포넌트가 있으면 사용, 없으면 직접 Transform 조정
                     var visual = spriteRenderer.GetComponent<DiceOrbit.Visuals.CharacterSpriteVisual>();
                     if (visual != null)
                     {
@@ -54,6 +59,18 @@ namespace DiceOrbit.Core
                         spriteRenderer.transform.localScale = new Vector3(stat.SourcePreset.VisualScale, stat.SourcePreset.VisualScale, 1f);
                     }
                 }
+            }
+
+            // Preset의 애니메이션 스프라이트를 spriteVisual에 적용
+            if (spriteVisual != null && stat.SourcePreset != null)
+            {
+                spriteVisual.SetAnimationSprites(
+                    stat.SourcePreset.IdleSprite,
+                    stat.SourcePreset.MoveSprite,
+                    stat.SourcePreset.DamageSprite,
+                    stat.SourcePreset.SkillSprite
+                );
+                spriteVisual.PlayIdle();
             }
 
             // 스킬 재초기화
@@ -95,6 +112,7 @@ namespace DiceOrbit.Core
         {
             // 자식 오브젝트에서 SpriteRenderer 찾기 (Visual 분리 지원)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            spriteVisual   = GetComponentInChildren<CharacterSpriteVisual>();
 
             if (spriteRenderer != null)
             {
@@ -186,17 +204,30 @@ namespace DiceOrbit.Core
                 Vector3 startPos = transform.position;
                 Vector3 endPos = tile.Position + TILE_OFFSET;
                 float elapsed = 0f;
-                
+
+                // 한 칸 이동 시작 → Move 스프라이트
+                spriteVisual?.PlayMove();
+
                 while (elapsed < stepDuration)
                 {
                     elapsed += Time.deltaTime;
                     float t = elapsed / stepDuration;
-                    transform.position = Vector3.Lerp(startPos, endPos, t);
+                    var pos = Vector3.Lerp(startPos, endPos, t);
+                    pos.y += Mathf.Sin(Mathf.PI * Mathf.Clamp01(t)) * stepHopHeight;
+                    transform.position = pos;
                     yield return null;
                 }
-                
+
                 transform.position = endPos;
                 currentTile = tile;
+
+                // 한 칸 도착 → Idle 스프라이트
+                spriteVisual?.PlayIdle();
+                if (stepIdlePause > 0f)
+                {
+                    yield return new WaitForSeconds(stepIdlePause);
+                }
+
                 tile.OnTraverse(this);
 
                 stepsTraveled++;
@@ -235,6 +266,8 @@ namespace DiceOrbit.Core
             {
                 spriteRenderer.color = originalColor;
             }
+
+            spriteVisual?.PlayIdle();
         }
 
         /// <summary>
@@ -267,6 +300,8 @@ namespace DiceOrbit.Core
         /// </summary>
         public void UseSkillByIndex(int skillIndex, int diceValue)
         {
+            spriteVisual?.PlaySkill();
+
             // SkillManager에게 위임
             if (SkillManager.Instance != null)
             {
@@ -278,11 +313,17 @@ namespace DiceOrbit.Core
             }
         }
 
+        public void OnSkillResolved()
+        {
+            spriteVisual?.PlayIdle();
+        }
+
         /// <summary>
         /// 데미지 처리 (파이프라인 외부 호출 대비)
         /// </summary>
         public override int TakeDamage(int damage)
         {
+            spriteVisual?.PlayDamage();
             return base.TakeDamage(damage);
         }
         

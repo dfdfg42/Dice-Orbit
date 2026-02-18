@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7285017965273395617}
   - component: {fileID: 7173844916151027190}
   - component: {fileID: 7310821223762627741}
+  - component: {fileID: 7253072701798279166}
   m_Layer: 0
   m_Name: TestHero
   m_TagString: Untagged
@@ -128,11 +129,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb71867168fc3584e917965036238c7a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.Character
-  stats:
-    MaxHP: 30
-    CurrentHP: 30
-    Attack: 5
-    Defense: 0
+  highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  passives: {fileID: 0}
+  statusEffects: {fileID: 0}
+  stat:
+    MaxHP: 50
+    CurrentHP: 50
+    Attack: 8
+    Defense: 2
+    TempArmor: 0
     CharacterName: Hero
     Level: 1
     RuntimeActiveSkills: []
@@ -142,9 +147,6 @@ MonoBehaviour:
     SpriteColor: {r: 1, g: 1, b: 1, a: 1}
   currentTile: {fileID: 0}
   startTileIndex: 0
-  highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  passives: {fileID: 0}
-  statusEffects: {fileID: 0}
 --- !u!65 &7310821223762627741
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -166,6 +168,28 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &7253072701798279166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8058604080863002569}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 341bccab65da7ae4f8a85999f9f7a0fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Visuals.CharacterSpriteVisual
+  billboardToCamera: 1
+  spriteOffset: {x: 0, y: 0, z: 0}
+  idleSprite: {fileID: 0}
+  moveSprite: {fileID: 0}
+  damageSprite: {fileID: 0}
+  skillSprite: {fileID: 0}
+  damageDisplayTime: 0.4
+  skillDisplayTime: 0.5
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1001 &5715495533670935785
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -39,13 +39,18 @@ namespace DiceOrbit.Core
             if (skillIndex < 0 || skillIndex >= source.Stats.RuntimeActiveSkills.Count)
             {
                 Debug.LogWarning($"[SkillManager] Invalid skill index: {skillIndex}");
+                source.OnSkillResolved();
                 return;
             }
             
             var runtimeSkill = source.Stats.RuntimeActiveSkills[skillIndex];
             var skillData = runtimeSkill.CurrentSkillData;
             
-            if (skillData == null) return;
+            if (skillData == null)
+            {
+                source.OnSkillResolved();
+                return;
+            }
             
             // 2. 상태 이상 체크
             if (source.StatusEffects != null)
@@ -57,6 +62,7 @@ namespace DiceOrbit.Core
             if (!runtimeSkill.BaseSkill.CanUse(diceValue))
             {
                 Debug.LogWarning($"[SkillManager] Cannot use {skillData.SkillName}. Requirement not met.");
+                source.OnSkillResolved();
                 return;
             }
             
@@ -71,6 +77,7 @@ namespace DiceOrbit.Core
             else
             {
                 Debug.LogError("[SkillManager] SkillTargetSelector not found!");
+                source.OnSkillResolved();
             }
         }
         
@@ -90,7 +97,11 @@ namespace DiceOrbit.Core
         private void ExecuteSkill(Character source, Unit target, SkillData skill, int diceValue)
         {
             var combatManager = CombatManager.Instance;
-            if (combatManager == null) return;
+            if (combatManager == null)
+            {
+                source?.OnSkillResolved();
+                return;
+            }
 
             Debug.Log($"[SkillManager] Executing {skill.SkillName} via Pipeline...");
 
@@ -178,6 +189,7 @@ namespace DiceOrbit.Core
             // 추후 Effect 부착도 Action으로 만들 수 있음.
             // Action에 포함시켜 처리했으므로 별도 호출 제거
             // ApplyStatusEffects(source, target, skill);
+            source?.OnSkillResolved();
         }
         
         private void ResolveTargets(object initialTarget, SkillTargetType type, List<Monster> mList, List<Character> cList)

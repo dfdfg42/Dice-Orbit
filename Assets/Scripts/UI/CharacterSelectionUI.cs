@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 using System.Linq;
+using DiceOrbit.Visuals;
 
 namespace DiceOrbit.UI
 {
@@ -207,6 +208,19 @@ namespace DiceOrbit.UI
             
             spriteRenderer.color = preset.SpriteColor;
             Debug.Log($"[CreatePlayer] SpriteRenderer configured with color: {preset.SpriteColor}");
+
+            // CharacterSpriteVisual 추가 (애니메이션 스프라이트는 CharacterPreset 값만 사용)
+            var spriteVisual = characterObj.AddComponent<CharacterSpriteVisual>();
+            if (spriteVisual != null)
+            {
+                spriteVisual.SetAnimationSprites(
+                    preset.IdleSprite,
+                    preset.MoveSprite,
+                    preset.DamageSprite,
+                    preset.SkillSprite
+                );
+                spriteVisual.PlayIdle();
+            }
             
             // Character 컴포넌트 추가
             var character = characterObj.AddComponent<Core.Character>();
