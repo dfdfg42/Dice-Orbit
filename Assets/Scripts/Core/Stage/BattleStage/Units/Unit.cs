@@ -64,7 +64,7 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"[Unit] Start Turn");
 
-            var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.TurnStart, 0);
+            var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.None, 0);
             var context = new Pipeline.CombatContext(this, this, action);
 
             if (Pipeline.CombatPipeline.Instance != null)

@@ -1,90 +1,82 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data.Tile
 {
-
-    public class TileAttribute : MonoBehaviour
+    public enum TileAttributeType
     {
-        /// <summary>
-        /// 타일을 지나갈 때 실행할 액션들 (직렬화되어 인스펙터에서 설정 가능).
-        /// </summary>
-        [Header("Actions")]
-        [SerializeField] private List<IOnTraverse> traverses = new();
+        None,
+        LevelUp,
+    }
 
-        /// <summary>
-        /// 타일에 도착했을 때 실행할 액션들 (직렬화되어 인스펙터에서 설정 가능).
-        /// </summary>
-        [SerializeField] private List<IOnArrive> arrives = new();
+    /// <summary>
+    /// 타일에 적용되는 속성 인스턴스
+    /// </summary>
+    public class TileAttribute : ICombatReactor
+    {
+        public TileAttributeType Type;
+        public int Value;
+        public int Duration;
+        public bool IsStackable;
 
-        /// <summary>
-        /// 타일에 도착했을 때 등록된 모든 `IOnArrive` 액션을 호출합니다.
-        /// </summary>
-        public void OnArrive(Core.Character character) { 
-            foreach (var arrive in arrives)
+        public int Priority => 5;
+
+        public TileAttribute(TileAttributeType type, int value, int duration, bool isStackable = false)
+        {
+            Type = type;
+            Value = value;
+            Duration = duration;
+            IsStackable = isStackable;
+        }
+
+        public void AddStack(int value)
+        {
+            Value += value;
+        }
+
+        public void RefreshDuration(int duration)
+        {
+            if (Duration == -1 || duration == -1)
             {
-                arrive.OnArrive(character);
+                Duration = -1;
+            }
+            else
+            {
+                Duration = Mathf.Max(Duration, duration);
             }
         }
 
-        /// <summary>
-        /// 타일을 통과할 때 등록된 모든 `IOnTraverse` 액션을 호출합니다.
-        /// </summary>
-        public void OnTraverse(Core.Character character)
+        // ICombatReactor Implementation
+        public virtual void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            foreach (var traverse in traverses)
+            if (Owner == null) return;
+
+            // 공통 로직: 턴 종료 시 지속시간 감소
+            if (trigger == CombatTrigger.OnTurnEnd && context.IsTiling == true)
             {
-                traverse.OnTraverse(character);
+                if (Duration > 0)
+                {
+                    Duration--;
+                }
             }
         }
 
-        /// <summary>
-        /// 런타임에 `IOnTraverse` 액션을 추가합니다.
-        /// </summary>
-        public void AddTraverse(IOnTraverse traverse)
+        public virtual void OnArrive(Core.Character character)
         {
-            traverses.Add(traverse);
+            
         }
 
-        public void RemoveTraverse(IOnTraverse traverse)
+        public virtual void OnTraverse(Core.Character character)
         {
-            traverses.Remove(traverse);
+
         }
 
-        /// <summary>
-        /// 런타임에 `IOnArrive` 액션을 추가합니다.
-        /// </summary>
-        public void AddArrive(IOnArrive arrive)
+        // Owner를 주입받아야 함
+        public TileData Owner { get; set; }
+
+        public void SetOwner(TileData owner)
         {
-            arrives.Add(arrive);
-        }
-
-        public void RemoveArrive(IOnArrive arrive)
-        {
-            arrives.Remove(arrive);
-        }
-
-        public bool IsEmpty => traverses.Count == 0 && arrives.Count == 0;
-        public int TraverseCount => traverses.Count;
-        public int ArriveCount => arrives.Count;
-
-        public List<string> GetTooltipDescriptions()
-        {
-            var lines = new List<string>();
-
-            lines.AddRange(traverses
-                .Where(t => t != null)
-                .Select(t => $"[경유] {t.TooltipDescription}")
-                .Where(s => !string.IsNullOrWhiteSpace(s)));
-
-            lines.AddRange(arrives
-                .Where(a => a != null)
-                .Select(a => $"[도착] {a.TooltipDescription}")
-                .Where(s => !string.IsNullOrWhiteSpace(s)));
-
-            return lines;
+            Owner = owner;
         }
     }
 }
-
