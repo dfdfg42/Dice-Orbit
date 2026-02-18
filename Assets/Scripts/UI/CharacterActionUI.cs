@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using DiceOrbit.Data;
 using DiceOrbit.Core;
+using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.UI
 {
@@ -139,7 +140,7 @@ namespace DiceOrbit.UI
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentCharacter, Pipeline.ActionType.Move);
+                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Move);
                 if (success)
                 {
                     orbitManager?.Move(currentCharacter, currentDice.Value);
@@ -205,7 +206,7 @@ namespace DiceOrbit.UI
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentCharacter, Pipeline.ActionType.Skill);
+                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Skill);
                 if (success)
                 {
                     currentCharacter.UseSkillByIndex(index, currentDice.Value);
