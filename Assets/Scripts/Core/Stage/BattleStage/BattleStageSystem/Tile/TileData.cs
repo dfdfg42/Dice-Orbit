@@ -1,8 +1,12 @@
 using UnityEngine;
 using DiceOrbit.Visuals;
 using DiceOrbit.Data.Tile;
+using DiceOrbit.Core.Pipeline;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
+using DiceOrbit.Core;
+using System;
 
 namespace DiceOrbit.Data
 {
@@ -19,13 +23,13 @@ namespace DiceOrbit.Data
     /// <summary>
     /// 개별 타일 데이터
     /// </summary>
-    public class TileData : MonoBehaviour, UI.IHoverTooltipProvider
+    public class TileData : MonoBehaviour, UI.IHoverTooltipProvider, ICombatReactor
     {
         [Header("Tile Properties")]
         [SerializeField] private int tileIndex;
 
         [Header("Attribute")]
-        [SerializeField] private List<TileAttribute> attributes = new();
+        private Dictionary<TileAttributeType, TileAttribute> attributes = new Dictionary<TileAttributeType, TileAttribute>();
 
         [Header("Connections")]
         [SerializeField] private TileData nextTile;
@@ -42,6 +46,7 @@ namespace DiceOrbit.Data
         public TileData NextTile => nextTile;
         public TileData PreviousTile => previousTile;
         public Vector3 Position => transform.position;
+        int ICombatReactor.Priority => 11;
 
         /// <summary>
         /// 타일 초기화
@@ -90,21 +95,20 @@ namespace DiceOrbit.Data
 
         public void AddAttribute(TileAttribute attribue)
         {
-            attributes.Add(attribue);
-        }
-        
-        public void OnTraverse(Core.Character character)
-        {
-            foreach (var attribute in attributes)
+            if (attribue == null) return;
+
+            if (!attributes.ContainsKey(attribue.Type))
             {
-                attribute.OnTraverse(character);
+                attribue.SetOwner(this);
+                attributes.Add(attribue.Type, attribue);
             }
         }
-        public void OnArrive(Core.Character character)
+
+        public void RemoveAttribute(TileAttributeType type)
         {
-            foreach (var attribute in attributes)
+            if (attributes.ContainsKey(type))
             {
-                attribute.OnArrive(character);
+                attributes.Remove(type);
             }
         }
 
@@ -135,10 +139,15 @@ namespace DiceOrbit.Data
 
             foreach (var attribute in attributes)
             {
-                if (attribute == null) continue;
-                traverseCount += attribute.TraverseCount;
-                arriveCount += attribute.ArriveCount;
-                detailLines.AddRange(attribute.GetTooltipDescriptions());
+                if (attribute.Value == null) continue;
+                traverseCount++;
+                if (traverseCount>0)
+                {
+                    Debug.Log(traverseCount);
+                }
+                //traverseCount += attribute.TraverseCount;
+                //arriveCount += attribute.ArriveCount;
+                //detailLines.AddRange(attribute.GetTooltipDescriptions());
             }
 
             var sb = new StringBuilder();
@@ -175,52 +184,65 @@ namespace DiceOrbit.Data
             return TileType.Normal.ToString();
         }
 
-        //래거시 코드
-        ///// <summary>
-        ///// 타일 효과를 캐릭터에게 적용
-        ///// </summary>
-        //public void ApplyEffects(Core.Character character)
-        //{
-        //    if (effects == null || effects.Length == 0) return;
+        void ICombatReactor.OnReact(CombatTrigger trigger, CombatContext context)
+        {
+            // 각 속성의 반응 로직 실행 (TileAttribute가 스스로 Duration 관리)
+            foreach (var attribute in attributes.Values.ToList())
+            {
+                attribute.OnReact(trigger, context);
+            }
 
-        //    foreach (var effect in effects)
-        //    {
-        //        ApplyEffect(effect, character);
-        //    }
-        //}
+            // 턴 시작 시, 반응 처리 후 만료된 속성 정리
+            if (trigger == CombatTrigger.OnTurnEnd && context.IsTiling == true)
+            {
+                CleanupExpiredAttributes();
+            }
+        }
 
-        ///// <summary>
-        ///// 개별 효과 적용
-        ///// </summary>
-        //private void ApplyEffect(TileEffect effect, Core.Character character)
-        //{
-        //    switch (effect.Type)
-        //    {
-        //        case TileEffectType.Heal:
-        //            character.Stats.Heal(effect.Value);
-        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} healed {effect.Value} HP!");
-        //            break;
+        private void CleanupExpiredAttributes()
+        {
+            var keys = attributes.Keys.ToList();
+            foreach (var key in keys)
+            {
+                var attribute = attributes[key];
+                // -1은 영구 지속이므로 제거하지 않음
+                if (attribute.Duration != -1 && attribute.Duration <= 0)
+                {
+                    RemoveAttribute(key);
+                    Debug.Log($"[TileAttribute] {key} expired on Tile #{tileIndex}.");
+                }
+            }
+        }
 
-        //        case TileEffectType.Damage:
-        //            character.Stats.TakeDamage(effect.Value);
-        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} took {effect.Value} damage from trap!");
-        //            break;
+        private TileAttribute CreateAttribute(TileAttributeType type, int value, int duration)
+        {
+            switch (type)
+            {
+                case TileAttributeType.LevelUp:
+                    return new treavse_LevelUP(type, value, duration);
 
-        //        case TileEffectType.BuffAttack:
-        //            character.Stats.Attack += effect.Value;
-        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} gained +{effect.Value} ATK!");
-        //            break;
+                default:
+                    // 기본 TileAttribute 사용
+                    return new TileAttribute(type, value, duration);
+            }
+        }
 
-        //        case TileEffectType.BuffDefense:
-        //            character.Stats.Defense += effect.Value;
-        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} gained +{effect.Value} DEF!");
-        //            break;
+        public void OnArrive(Core.Character character)
+        {
+            foreach (var attribute in attributes.Values)
+            {
+                if (attribute == null) continue;
+                attribute.OnArrive(character);
+            }
+        }
 
-        //        case TileEffectType.LevelUp:
-        //            character.Stats.LevelUp();
-        //            Debug.Log($"[Tile #{tileIndex}] {character.Stats.CharacterName} leveled up!");
-        //            break;
-        //    }
-        //}
+        internal void OnTraverse(Character character)
+        {
+            foreach (var attribute in attributes.Values)
+            {
+                if (attribute == null) continue;
+                attribute.OnTraverse(character);
+            }
+        }
     }
 }
