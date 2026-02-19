@@ -39,7 +39,10 @@ namespace DiceOrbit.Data
         
         [Header("Effects")]
         public List<EffectData> Effects = new List<EffectData>();
-        
+
+        [Header("Attribute")]
+        public List<Tile.TileAttribute> TileAttributes = new List<Tile.TileAttribute>();
+
         [Header("Damage")]
         public int DamageMultiplier = 1;
         public int BonusDamage = 0;

@@ -13,5 +13,16 @@ MonoBehaviour:
   m_Name: Pattern_BasicRotation
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.Patterns.SequentialPattern
   availableSkills:
-  - {fileID: 11400000, guid: 1293954ced587514e992631ffd3b0ab9, type: 2}
+  - skillData:
+      SkillName: Basic Attack
+      Description: 
+      Type: 0
+      TargetType: 0
+      Effects: []
+      DamageMultiplier: 1
+      BonusDamage: 0
+      IgnoreDefense: 0
+    targetStrategy: 0
+    targetType: 0
+    targetCount: 1
   currentIndex: 0

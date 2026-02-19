@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 using DiceOrbit.Core;
 
 namespace DiceOrbit.Data
@@ -11,7 +10,7 @@ namespace DiceOrbit.Data
     public enum TargetType
     {
         Characters,     // 단일 타겟
-        Tiles,       // 특정 범위 (주변 N칸)
+        Tiles,          // 특정 범위 (주변 N칸)
     }
 
     /// <summary>
@@ -35,15 +34,19 @@ namespace DiceOrbit.Data
         Multi        // 다중 공격 (Deprecated: Use Attack with TargetType.Area/All)
     }
 
-    [CreateAssetMenu(fileName = "MonsterSkill", menuName = "Monster/MonsterSkill")]
-    public class MonsterSkill : ScriptableObject
+    /// <summary>
+    /// 몬스터 스킬 (직렬화 가능, 에디터에서 수치 조정 가능)
+    /// </summary>
+    [System.Serializable]
+    public class MonsterSkill
     {
         [Header("Skill Data")]
         public SkillData skillData;
 
         [Header("Targeting")]
         [SerializeField] private TargetSelectionStrategy targetStrategy = TargetSelectionStrategy.Random;
-        [SerializeField] TargetType TargetType = TargetType.Characters;
+        [SerializeField] private TargetType targetType = TargetType.Characters;
+        [SerializeField] private int targetCount = 1; // 타겟 수
 
         // 런타임에 생성된 AttackIntent (캐싱용)
         private AttackIntent cachedIntent;
@@ -73,13 +76,13 @@ namespace DiceOrbit.Data
             // TileData 선정 (필요한 경우)
             List<TileData> targetTiles = new();
 
-            switch (TargetType)
+            switch (targetType)
             {
                 case TargetType.Characters:
                     selectedTargets = SelectTargets(aliveCharacters, owner);
                     break;
                 case TargetType.Tiles:
-                    if (targetTiles == null || targetTiles.Count() == 0)
+                    if (targetTiles == null || targetTiles.Count == 0)
                     {
                         targetTiles = SelectTiles();
                     }
@@ -98,7 +101,7 @@ namespace DiceOrbit.Data
             // AttackIntent 생성
             var intent = new AttackIntent(
                 intentType, 
-                TargetType,
+                targetType,
                 damage, 
                 selectedTargets, 
                 skillData.Description
