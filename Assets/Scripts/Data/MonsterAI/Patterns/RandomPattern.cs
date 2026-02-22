@@ -6,7 +6,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     /// <summary>
     /// 랜덤 패턴 (가중치 없이 단순 랜덤 선택)
     /// </summary>
-    [CreateAssetMenu(fileName = "RandomPattern", menuName = "DiceOrbit/Monster/Pattern/Random")]
+    [System.Serializable]
     public class RandomPattern : MonsterAI
     {
         [SerializeField] private List<MonsterSkill> availableSkills = new List<MonsterSkill>();

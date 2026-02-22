@@ -15,6 +15,7 @@ namespace DiceOrbit.Data.Monsters
         public MonsterStats BaseStats;
         
         [Header("AI & Skills")]
+        [SerializeReference] // Inspector에서 AI 타입 선택 가능
         public MonsterAI.MonsterAI AIPattern;
         
         [Header("Starting Passives")]

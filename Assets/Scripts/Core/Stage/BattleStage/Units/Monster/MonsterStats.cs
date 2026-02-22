@@ -16,8 +16,8 @@ namespace DiceOrbit.Data
         public int Speed = 1;
 
         [Header("Visual")]
-        public Sprite MonsterSprite;
-        public Color SpriteColor = Color.red;
+        [HideInInspector] public Sprite MonsterSprite;
+        [HideInInspector] public Color SpriteColor = Color.red;
 
         /// <summary>
         /// MonsterStats 깊은 복사

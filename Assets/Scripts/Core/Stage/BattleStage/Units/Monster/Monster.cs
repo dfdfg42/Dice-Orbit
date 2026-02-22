@@ -115,23 +115,13 @@ namespace DiceOrbit.Core
         /// </summary>
         private void InitializeAI()
         {
-            // 기존 런타임 인스턴스 정리
-            if (runtimeAiPattern != null)
-            {
-                Destroy(runtimeAiPattern);
-                runtimeAiPattern = null;
-            }
-
             // Preset에서 AI 패턴 가져오기
             if (preset != null && preset.AIPattern != null)
             {
-                aiPattern = preset.AIPattern; // Inspector 표시용 원본 참조
-                runtimeAiPattern = ScriptableObject.Instantiate(preset.AIPattern); // 실행용 복사본 생성
-                runtimeAiPattern.name = preset.AIPattern.name;
+                runtimeAiPattern = preset.AIPattern;
             }
             else
             {
-                aiPattern = null;
                 runtimeAiPattern = null;
             }
 
@@ -165,12 +155,6 @@ namespace DiceOrbit.Core
 
         private void OnDestroy()
         {
-            if (runtimeAiPattern != null)
-            {
-                Destroy(runtimeAiPattern);
-                runtimeAiPattern = null;
-            }
-
             // AttackIndicator에서 Intent 제거
             UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
         }

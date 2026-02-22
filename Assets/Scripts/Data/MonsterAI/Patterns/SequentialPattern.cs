@@ -1,21 +1,22 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using DiceOrbit.Core;
 
 namespace DiceOrbit.Data.MonsterAI.Patterns
 {
     /// <summary>
     /// 순차 패턴 (스킬 목록을 순서대로 사용)
     /// </summary>
-    [CreateAssetMenu(fileName = "SequencePattern", menuName = "DiceOrbit/Monster/Pattern/Sequence")]
+    [System.Serializable]
     public class SequentialPattern : MonsterAI
     {
         [SerializeField] List<MonsterSkill> availableSkills = new List<MonsterSkill>();
         [SerializeField] private int currentIndex = 0;
 
-        protected override void InitializeRuntimeState()
+        public override void Initialize(Monster monster)
         {
-            base.InitializeRuntimeState();
+            base.Initialize(monster);
             currentIndex = 0;
         }
 

@@ -8,10 +8,10 @@ namespace DiceOrbit.Data
     {
         [Header("Combat Stats")]
         public int MaxHP = 50;
-        public int CurrentHP = 50;
+        [HideInInspector] public int CurrentHP = 50;
         public int Attack = 8;
         public int Defense = 2;
-        public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)
+        [HideInInspector] public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)
 
         // ICombatReactor implementation
         public virtual int Priority => 20;
