@@ -18,8 +18,9 @@ namespace DiceOrbit.Data
     /// </summary>
     public enum TargetSelectionStrategy
     {
-        Random,           // 무작위 선택
-        AllTargets        // 모든 타겟
+        RandomCharacter,  // 무작위 선택
+        AllTargets,        // 모든 타겟
+        RandomTiles,
     }
 
     /// <summary>
@@ -44,10 +45,10 @@ namespace DiceOrbit.Data
         public SkillData skillData;
 
         [Header("Targeting")]
-        [SerializeField] private TargetSelectionStrategy targetStrategy = TargetSelectionStrategy.Random;
+        [SerializeField] private TargetSelectionStrategy targetStrategy = TargetSelectionStrategy.RandomCharacter;
         [SerializeField] private TargetType targetType = TargetType.Characters;
         [SerializeField] private int targetCount = 1; // 타겟 수
-
+        [SerializeField] private IntentType intentType=IntentType.Attack;
         // 런타임에 생성된 AttackIntent (캐싱용)
         private AttackIntent cachedIntent;
 
@@ -62,14 +63,6 @@ namespace DiceOrbit.Data
                 return null;
             }
 
-            // PartyManager에서 생존한 캐릭터 가져오기
-            var aliveCharacters = PartyManager.Instance?.GetAliveCharacters();
-            if (aliveCharacters == null || aliveCharacters.Count == 0)
-            {
-                Debug.LogWarning("[MonsterSkill] No alive characters found!");
-                return null;
-            }
-
             // 타겟 선정
             List<Character> selectedTargets = new();
 
@@ -79,13 +72,10 @@ namespace DiceOrbit.Data
             switch (targetType)
             {
                 case TargetType.Characters:
-                    selectedTargets = SelectTargets(aliveCharacters, owner);
+                    selectedTargets = SelectTargets();
                     break;
                 case TargetType.Tiles:
-                    if (targetTiles == null || targetTiles.Count == 0)
-                    {
-                        targetTiles = SelectTiles();
-                    }
+                    targetTiles = SelectTiles();
                     break;
                 default:
                     Debug.LogWarning("[MonsterSkill] Invalid TargetType specified!");
@@ -115,43 +105,54 @@ namespace DiceOrbit.Data
         /// <summary>
         /// 타겟 선정 로직
         /// </summary>
-        private List<Character> SelectTargets(List<Character> candidates, Monster owner)
+        private List<Character> SelectTargets()
         {
+            // PartyManager에서 생존한 캐릭터 가져오기
+            var candidates = PartyManager.Instance?.GetAliveCharacters();
+            if (candidates == null || candidates.Count == 0)
+            {
+                Debug.LogWarning("[MonsterSkill] No alive characters found!");
+                return null;
+            }
+
             if (candidates == null || candidates.Count == 0)
                 return new List<Character>();
 
-            // SkillData.TargetType에 따라 분기
-            switch (skillData.TargetType)
-            {
-                case SkillTargetType.SingleEnemy:
-                    return SelectSingleTarget(candidates);
-                case SkillTargetType.AllEnemies:
-                    return candidates; // 모든 적
-                default:
-                    return new List<Character>();
-            }
+            return SelectCharactersByTargetStrategy(targetStrategy);
         }
 
-        /// <summary>
-        /// 단일 타겟 선정 (전략 기반)
-        /// </summary>
-        private List<Character> SelectSingleTarget(List<Character> candidates)
+        private List<Character> SelectCharactersByTargetStrategy(TargetSelectionStrategy strategy)
         {
-            if (candidates == null || candidates.Count == 0)
-                return new List<Character>();
-
-            Character selected = null;
-
-            switch (targetStrategy)
+            var candidates = PartyManager.Instance?.GetAliveCharacters();
+            List<Character> selected = new();
+            switch (strategy)
             {
-                case TargetSelectionStrategy.Random:
+                case TargetSelectionStrategy.RandomCharacter:
+                    int count = Mathf.Min(targetCount, candidates.Count);
+                    List<Character> shuffled = new List<Character>(candidates);
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        int randomIndex = Random.Range(i, shuffled.Count);
+                        Character temp = shuffled[i];
+                        shuffled[i] = shuffled[randomIndex];
+                        shuffled[randomIndex] = temp;
+                    }
+
+                    selected = shuffled.GetRange(0, count);
+                    break;
                 case TargetSelectionStrategy.AllTargets:
+                    selected.AddRange(candidates);
+                    break;
+                case TargetSelectionStrategy.RandomTiles:
+                    Debug.LogError("[MonsterSkill] TargetSelectionStrategy.RandomTiles is not valid for Character TargetType!");
+                    break;
                 default:
-                    selected = candidates[Random.Range(0, candidates.Count)];
+                    selected.Add(candidates[Random.Range(0, candidates.Count)]);
+                    Debug.LogWarning("has an invalid TargetSelectionStrategy, defaulting to random selection.");
                     break;
             }
-
-            return new List<Character> { selected };
+            return selected;
         }
 
         /// <summary>
@@ -159,7 +160,60 @@ namespace DiceOrbit.Data
         /// </summary>
         private List<TileData> SelectTiles()
         {
-            return new(); // 현재는 타일 선택 로직이 없으므로 빈 배열 반환
+            var tileList = GameManager.Instance?.GetOrbitManager().Tiles;
+            List<TileData> selectedTiles = new();
+            List<Character> candidates = PartyManager.Instance?.GetAliveCharacters();
+            switch (targetStrategy)
+            {
+                case TargetSelectionStrategy.RandomCharacter:
+                    SelectTilesByCharacter(SelectCharactersByTargetStrategy(targetStrategy));
+                    break;
+                case TargetSelectionStrategy.AllTargets:
+                    SelectTilesByCharacter(SelectCharactersByTargetStrategy(targetStrategy));
+                    break;
+                case TargetSelectionStrategy.RandomTiles:
+                    if (tileList != null && tileList.Count > 0)
+                    {
+                        int count = Mathf.Min(targetCount, tileList.Count);
+                        List<TileData> shuffled = new List<TileData>(tileList);
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            int randomIndex = Random.Range(i, shuffled.Count);
+                            TileData temp = shuffled[i];
+                            shuffled[i] = shuffled[randomIndex];
+                            shuffled[randomIndex] = temp;
+                        }
+
+                        selectedTiles = shuffled.GetRange(0, count);
+                    }
+                    break;
+                default:
+                    Debug.LogWarning("has an invalid TargetSelectionStrategy, defaulting to random selection.");
+                    break;
+            }
+            return selectedTiles;
+        }
+
+        private List<TileData> SelectTilesByCharacter(List<Character> candidates)
+        {
+            List<TileData> selectedTiles = new();
+
+            if (candidates == null || candidates.Count == 0)
+                return selectedTiles;
+
+            foreach (var character in candidates)
+            {
+                if (character != null && character.CurrentTile != null)
+                {
+                    if (!selectedTiles.Contains(character.CurrentTile))
+                    {
+                        selectedTiles.Add(character.CurrentTile);
+                    }
+                }
+            }
+
+            return selectedTiles;
         }
 
         /// <summary>
@@ -167,17 +221,7 @@ namespace DiceOrbit.Data
         /// </summary>
         private IntentType DetermineIntentType()
         {
-            //if (skillData.Type == SkillType.Passive)
-            //    return IntentType.Defend;
-
-            //if (skillData.TargetType == SkillTargetType.Self || 
-            //    skillData.TargetType == SkillTargetType.Ally)
-            //    return IntentType.Buff;
-
-            //if (skillData.TargetType == SkillTargetType.AllEnemies)
-            //    return IntentType.Multi;
-
-            return IntentType.Attack;
+            return intentType;
         }
     }
 }
