@@ -49,6 +49,7 @@ namespace DiceOrbit.Data
         [SerializeField] private TargetType targetType = TargetType.Characters;
         [SerializeField] private int targetCount = 1; // 타겟 수
         [SerializeField] private IntentType intentType=IntentType.Attack;
+
         // 런타임에 생성된 AttackIntent (캐싱용)
         private AttackIntent cachedIntent;
 
@@ -92,9 +93,7 @@ namespace DiceOrbit.Data
             var intent = new AttackIntent(
                 intentType, 
                 targetType,
-                damage, 
-                selectedTargets, 
-                skillData.Description
+                selectedTargets
             );
             intent.TargetTiles = targetTiles;
 

@@ -17,7 +17,6 @@ public class SkillAssetCreator
         }
 
         CreateBasicAttack(path);
-        CreateStrongBash(path);
         CreateHeal(path);
         CreateStrengthPassive(path);
         

@@ -51,7 +51,7 @@ namespace DiceOrbit.Data.Skills
         public string Description
         {
             get => BaseData.Description;
-            set => BaseData.Description = value;
+            set => BaseData.description = value;
         }
 
         public SkillTargetType TargetType
@@ -93,8 +93,7 @@ namespace DiceOrbit.Data.Skills
             var skillData = new SkillData
             {
                 SkillName = BaseData.SkillName,
-                Description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.Description : levelData.Description,
-                Type = Type == CharacterSkillType.Active ? SkillType.Active : SkillType.Passive,
+                description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.description : levelData.Description,
                 TargetType = BaseData.TargetType,
                 DamageMultiplier = levelData.DamageMultiplier,
                 BonusDamage = levelData.BonusDamage,

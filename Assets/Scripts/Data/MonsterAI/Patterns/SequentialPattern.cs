@@ -24,8 +24,8 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;
 
-            var skill = availableSkills[currentIndex % availableSkills.Count];
-            currentIndex++;
+            var skill = availableSkills[currentIndex];
+            currentIndex= (currentIndex + 1 ) % availableSkills.Count;
 
             return skill;
         }

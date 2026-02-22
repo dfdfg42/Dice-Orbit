@@ -232,29 +232,8 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"[Monster] Executing Skill: {skill.SkillName}");
 
-            // Intent에서 타겟 가져오기
-            var targets = intent.Targets;
-            if (targets == null || targets.Count == 0)
-            {
-                Debug.LogWarning("[Monster] No valid targets in intent.");
-                return;
-            }
-
-            // 각 타겟에게 스킬 적용
-            int damage = skill.CalculateDamage(stat.Attack, 0);
-            var actionType = Pipeline.ActionType.Attack;
-
-            foreach (var target in targets)
-            {
-                if (target == null || !target.IsAlive) continue;
-
-                var context = new Pipeline.CombatContext(
-                    this, 
-                    target, 
-                    new Pipeline.CombatAction(skill.SkillName, actionType, damage)
-                );
-                Pipeline.CombatPipeline.Instance.Process(context);
-            }
+            // SkillData의 Execute 메서드에 위임
+            skill.Execute(this, intent);
         }
 
         // === Damage & Death ===
@@ -315,8 +294,6 @@ namespace DiceOrbit.Core
 
             if (CurrentIntent != null)
             {
-                sb.AppendLine("--- Intent ---");
-                sb.AppendLine(CurrentIntent.ToString()); // AttackIntent의 ToString 사용
 
                 var targets = CurrentIntent.Targets;
                 if (targets != null && targets.Count > 0)

@@ -14,10 +14,6 @@ namespace DiceOrbit.Data
         public TargetType TargetType = TargetType.Characters;
         public int AreaRadius = 0;   // 0: 단일, 1: 좌우 1칸 (총 3칸), etc.
 
-        public int Damage;           // 예정 데미지
-        public int HitCount = 1;     // 공격 횟수
-        public string Description;
-
         // 선정된 타겟들 (Character 리스트)
         private List<Core.Character> selectedTargets = new List<Core.Character>();
 
@@ -45,19 +41,15 @@ namespace DiceOrbit.Data
         public AttackIntent(IntentType type, int damage = 0, string desc = "")
         {
             Type = type;
-            Damage = damage;
-            Description = desc;
         }
 
         /// <summary>
         /// 생성자 오버로드 (타겟 포함)
         /// </summary>
-        public AttackIntent(IntentType type, TargetType targetType, int damage, List<Core.Character> targets, string desc = "")
+        public AttackIntent(IntentType type, TargetType targetType,List<Core.Character> targets)
         {
             Type = type;
             TargetType = targetType;
-            Damage = damage;
-            Description = desc;
             selectedTargets = targets ?? new List<Core.Character>();
         }
 
@@ -68,29 +60,6 @@ namespace DiceOrbit.Data
         {
             if (selectedTargets == null) return;
             selectedTargets = selectedTargets.Where(t => t != null && t.IsAlive).ToList();
-        }
-
-        /// <summary>
-        /// 의도 설명
-        /// </summary>
-        public override string ToString()
-        {
-            switch (Type)
-            {
-                case IntentType.Attack:
-                    string targetInfo = "Temp";
-                    return $"Attack {targetInfo} ({Damage} dmg)";
-                case IntentType.Multi:
-                    return $"Multi Attack x{HitCount} ({Damage} each)";
-                case IntentType.Defend:
-                    return "Defend (+Defense)";
-                case IntentType.Buff:
-                    return "Power Up (+Attack)";
-                case IntentType.Special:
-                    return Description;
-                default:
-                    return "Unknown";
-            }
         }
     }
 }

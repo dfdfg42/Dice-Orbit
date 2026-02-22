@@ -175,11 +175,36 @@ public class MonsterPresetEditor : Editor
         {
             EditorGUILayout.Space(5);
             EditorGUI.indentLevel++;
+
+            // MonsterSkill의 targetCount 자동 초기화
+            EnsureSkillTargetCounts(aiPatternProp);
+
             DrawPropertyFields(aiPatternProp);
             EditorGUI.indentLevel--;
         }
 
         EditorGUILayout.EndVertical();
+    }
+
+    /// <summary>
+    /// MonsterSkill의 targetCount를 기본값 1로 설정
+    /// </summary>
+    private void EnsureSkillTargetCounts(SerializedProperty aiProp)
+    {
+        // availableSkills 리스트 찾기
+        var skillsListProp = aiProp.FindPropertyRelative("availableSkills");
+        if (skillsListProp == null || !skillsListProp.isArray) return;
+
+        for (int i = 0; i < skillsListProp.arraySize; i++)
+        {
+            var skillProp = skillsListProp.GetArrayElementAtIndex(i);
+            var targetCountProp = skillProp.FindPropertyRelative("targetCount");
+
+            if (targetCountProp != null && targetCountProp.intValue == 0)
+            {
+                targetCountProp.intValue = 1;
+            }
+        }
     }
 
     private void ShowAITypeMenu(SerializedProperty property)

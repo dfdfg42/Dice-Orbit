@@ -129,19 +129,10 @@ namespace DiceOrbit.UI
             // AttackIntent가 이미 IntentType을 가지고 있음
             IntentType type = intent.Type;
 
-            // 데미지 값도 이미 계산되어 있음
-            string valueText = intent.Damage.ToString();
-
             // 의도 아이콘 색상
             if (intentIcon != null)
             {
                 intentIcon.color = GetIntentColor(type);
-            }
-
-            // 의도 텍스트
-            if (intentText != null)
-            {
-                intentText.text = valueText;
             }
         }
         
