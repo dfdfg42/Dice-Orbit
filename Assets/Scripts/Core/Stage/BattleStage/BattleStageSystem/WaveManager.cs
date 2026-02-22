@@ -104,14 +104,17 @@ namespace DiceOrbit.Core
             var spawnPlan = new List<MonsterPreset>();
             if (spawnCount <= validPresets.Count)
             {
-                spawnPlan.AddRange(validPresets.OrderBy(_ => Random.value).Take(spawnCount));
+                // 리스트 순서대로 spawnCount만큼 선택
+                spawnPlan.AddRange(validPresets.Take(spawnCount));
             }
             else
             {
-                spawnPlan.AddRange(validPresets.OrderBy(_ => Random.value));
+                // SpawnCount가 프리셋 개수보다 많으면 순서대로 반복
+                spawnPlan.AddRange(validPresets);
                 while (spawnPlan.Count < spawnCount)
                 {
-                    spawnPlan.Add(validPresets[Random.Range(0, validPresets.Count)]);
+                    int index = spawnPlan.Count % validPresets.Count;
+                    spawnPlan.Add(validPresets[index]);
                 }
             }
 

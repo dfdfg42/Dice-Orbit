@@ -35,7 +35,7 @@ namespace DiceOrbit.Data
         public string SkillName = "Basic Attack";
         [TextArea] public string Description;
         public SkillType Type = SkillType.Active;
-        public SkillTargetType TargetType = SkillTargetType.SingleEnemy;
+        [HideInInspector] public SkillTargetType TargetType = SkillTargetType.SingleEnemy;
         
         [Header("Effects")]
         public List<EffectData> Effects = new List<EffectData>();
