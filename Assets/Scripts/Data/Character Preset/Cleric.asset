@@ -15,11 +15,15 @@ MonoBehaviour:
   CharacterName: Clelic
   Portrait: {fileID: 21300000, guid: fe598d2c1bcfe0a409941a1f105ab823, type: 3}
   Description: CLERIC
-  MaxHP: 30
+  MaxHP: 300
   Attack: 5
   Defense: 0
   CharacterSprite: {fileID: 21300000, guid: fe598d2c1bcfe0a409941a1f105ab823, type: 3}
   SpriteColor: {r: 0.58937645, g: 0.8867924, b: 0.5479708, a: 1}
   VisualScale: 0.6
+  IdleSprite: {fileID: 0}
+  MoveSprite: {fileID: 0}
+  DamageSprite: {fileID: 0}
+  SkillSprite: {fileID: 0}
   StartingSkills: []
   StartingPassives: []

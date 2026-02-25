@@ -7,6 +7,8 @@ namespace DiceOrbit.Data.Tile
     {
         None,
         LevelUp,
+        RandMine,
+        Bone,
     }
 
     /// <summary>
@@ -52,7 +54,7 @@ namespace DiceOrbit.Data.Tile
             if (Owner == null) return;
 
             // 공통 로직: 턴 종료 시 지속시간 감소
-            if (trigger == CombatTrigger.OnTurnEnd && context.IsTiling == true)
+            if (context.Action.Type==ActionType.OnEndTurn && context.IsTiling == true)
             {
                 if (Duration > 0)
                 {
@@ -67,6 +69,11 @@ namespace DiceOrbit.Data.Tile
         }
 
         public virtual void OnTraverse(Core.Character character)
+        {
+
+        }
+
+        public virtual void OnEndTurn(Core.Character character)
         {
 
         }

@@ -72,10 +72,10 @@ namespace DiceOrbit.Core.Pipeline
             var reactors = new List<ICombatReactor>();
 
             // A. Source의 Reactor 수집
-            if (context.SourceUnit is not Character) CollectReactors(context.SourceUnit, reactors);
+           CollectReactors(context.SourceUnit, reactors);
 
             // B. Target의 Reactor 수집
-            if (context.Target is not Character) CollectReactors(context.Target, reactors);
+            CollectReactors(context.Target, reactors);
 
             // C. Party 전체에서 Reactor 수집
                 if (Core.PartyManager.Instance != null)
@@ -94,6 +94,8 @@ namespace DiceOrbit.Core.Pipeline
             // 보통 곱연산이나 고정값 합산을 하려면 합의된 Priority가 필요.
             reactors.Sort((a, b) => b.Priority.CompareTo(a.Priority));
 
+            //중복 제거 (같은 유닛의 패시브와 상태이상이 겹칠 수 있음)
+            reactors = reactors.Distinct().ToList();
             // 실행
             foreach (var reactor in reactors)
             {

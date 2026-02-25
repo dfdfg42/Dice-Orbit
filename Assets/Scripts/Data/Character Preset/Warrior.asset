@@ -15,12 +15,16 @@ MonoBehaviour:
   CharacterName: Hero
   Portrait: {fileID: 21300000, guid: f4473d22607f6814e8d6cf36aef2d72e, type: 3}
   Description: WARRIOR
-  MaxHP: 30
+  MaxHP: 300
   Attack: 5
   Defense: 0
   CharacterSprite: {fileID: 21300000, guid: f4473d22607f6814e8d6cf36aef2d72e, type: 3}
   SpriteColor: {r: 0.8679245, g: 0.6895507, b: 0.3725525, a: 1}
   VisualScale: 0.6
+  IdleSprite: {fileID: 0}
+  MoveSprite: {fileID: 0}
+  DamageSprite: {fileID: 0}
+  SkillSprite: {fileID: 0}
   StartingSkills:
   - {fileID: 11400000, guid: 057f7da87dbe12d4ea89b19bad5ca9a7, type: 2}
   - {fileID: 11400000, guid: a1b2c3d4e5f60718293a4b5c6d7e8f90, type: 2}

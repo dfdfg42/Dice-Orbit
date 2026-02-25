@@ -237,6 +237,19 @@ namespace DiceOrbit.Core
         {
             if (!playerTurnActive) return;
 
+            var partyManager = PartyManager.Instance;
+            if (partyManager != null)
+            {
+                partyManager.ResetTeamFirstAction();
+                foreach (var character in partyManager.Party)
+                {
+                    if (character != null && character.IsAlive)
+                    {
+                        character.OnEndTurn();
+                    }
+                }
+            }
+
             playerTurnActive = false;
 
             Debug.Log("=== Player Turn End ===");
@@ -296,6 +309,8 @@ namespace DiceOrbit.Core
             Debug.Log("=== Monster Turn Start ===");
             OnMonsterTurnStart?.Invoke();
 
+            StartMonsterTurn();
+
             var sortedMonster = activeMonsters.OrderByDescending(m => m.Stats.Speed).ToList();
             // 실제 행동
             foreach (var monster in sortedMonster)
@@ -316,6 +331,19 @@ namespace DiceOrbit.Core
 
             // End Monster Turn after delay
             StartCoroutine(EndMonsterTurnRoutine());
+        }
+
+        private void StartMonsterTurn()
+        {
+            var sortedMonster = activeMonsters.OrderByDescending(m => m.Stats.Speed).ToList();
+            // 실제 행동
+            foreach (var monster in sortedMonster)
+            {
+                if (monster != null && monster.IsAlive)
+                {
+                    monster.OnStartTurn();
+                }
+            }
         }
 
         private System.Collections.IEnumerator EndMonsterTurnRoutine()

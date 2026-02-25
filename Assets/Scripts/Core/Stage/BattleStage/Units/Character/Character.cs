@@ -283,8 +283,16 @@ namespace DiceOrbit.Core
         /// </summary>
         public override void OnStartTurn()
         {
-            Debug.Log($"[Character] {stat?.CharacterName} Start Turn");
             base.OnStartTurn();
+        }
+
+        /// <summary>
+        /// 턴 종료 처리
+        /// </summary>
+        public override void OnEndTurn()
+        {
+            base.OnEndTurn();
+            currentTile.OnEndTurn(this);
         }
 
         /// <summary>

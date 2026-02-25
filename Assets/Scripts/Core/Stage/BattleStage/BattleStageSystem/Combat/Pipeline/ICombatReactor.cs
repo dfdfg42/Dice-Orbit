@@ -7,9 +7,6 @@ namespace DiceOrbit.Core.Pipeline
     /// </summary>
     public enum CombatTrigger
     {
-        // 1. 턴 관련
-        OnTurnStart,        // 턴 시작
-        OnTurnEnd,          // 턴 종료
 
         // 2. 액션 실행 전
         OnPreAction,        // 액션 준비 (실행 가능 여부, 비용 소모 확인)

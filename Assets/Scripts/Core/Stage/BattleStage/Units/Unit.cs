@@ -62,9 +62,9 @@ namespace DiceOrbit.Core
         /// </summary>
         public virtual void OnStartTurn()
         {
-            Debug.Log($"[Unit] Start Turn");
+            Debug.Log($"{Stats.MaxHP} Start Turn");
 
-            var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.None, 0);
+            var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.OnStartTurn, 0);
             var context = new Pipeline.CombatContext(this, this, action);
 
             if (Pipeline.CombatPipeline.Instance != null)
@@ -73,9 +73,27 @@ namespace DiceOrbit.Core
             }
         }
 
+
+
+        /// <summary>
+        /// 턴 종료 처리
+        /// </summary>
+        public virtual void OnEndTurn()
+        {
+            Debug.Log($"[Unit] End Turn");
+
+            var action = new Pipeline.CombatAction("Turn End", Pipeline.ActionType.OnEndTurn, 0);
+            var context = new Pipeline.CombatContext(this, this, action);
+
+            if (Pipeline.CombatPipeline.Instance != null)
+            {
+                Pipeline.CombatPipeline.Instance.Process(context);
+            }
+        }
         //패시브와 현재 상태이상에서 Reactor 수집
         public void CollectReactors(System.Collections.Generic.List<DiceOrbit.Core.Pipeline.ICombatReactor> reactors)
         {
+            reactors.Add(Stats);
             foreach (var passiveList in passives.ActivePassives.Values)
             {
                 foreach (var passive in passiveList)

@@ -104,11 +104,15 @@ namespace DiceOrbit.Data
             }
         }
 
-        public void RemoveAttribute(TileAttributeType type)
+        public void RemoveAttribute(TileAttribute attribute)
         {
-            if (attributes.ContainsKey(type))
+            if (attribute == null) return;
+
+            if (attributes.ContainsKey(attribute.Type) && attributes[attribute.Type] == attribute)
             {
-                attributes.Remove(type);
+                attributes.Remove(attribute.Type);
+                attribute.SetOwner(null);
+                Debug.Log($"[TileAttribute] {attribute.Type} removed from Tile #{tileIndex}.");
             }
         }
 
@@ -193,7 +197,7 @@ namespace DiceOrbit.Data
             }
 
             // 턴 시작 시, 반응 처리 후 만료된 속성 정리
-            if (trigger == CombatTrigger.OnTurnEnd && context.IsTiling == true)
+            if (context.Action.Type==ActionType.OnStartTurn && context.IsTiling == true)
             {
                 CleanupExpiredAttributes();
             }
@@ -201,35 +205,17 @@ namespace DiceOrbit.Data
 
         private void CleanupExpiredAttributes()
         {
-            var keys = attributes.Keys.ToList();
-            foreach (var key in keys)
+            var attributesToRemove = attributes.Values.Where(attr => attr.Duration != -1 && attr.Duration <= 0).ToList();
+            foreach (var attribute in attributesToRemove)
             {
-                var attribute = attributes[key];
-                // -1은 영구 지속이므로 제거하지 않음
-                if (attribute.Duration != -1 && attribute.Duration <= 0)
-                {
-                    RemoveAttribute(key);
-                    Debug.Log($"[TileAttribute] {key} expired on Tile #{tileIndex}.");
-                }
-            }
-        }
-
-        private TileAttribute CreateAttribute(TileAttributeType type, int value, int duration)
-        {
-            switch (type)
-            {
-                case TileAttributeType.LevelUp:
-                    return new treavse_LevelUP(type, value, duration);
-
-                default:
-                    // 기본 TileAttribute 사용
-                    return new TileAttribute(type, value, duration);
+                Debug.Log($"[TileAttribute] {attribute.Type} expired on Tile #{tileIndex}.");
+                RemoveAttribute(attribute);
             }
         }
 
         public void OnArrive(Core.Character character)
         {
-            foreach (var attribute in attributes.Values)
+            foreach (var attribute in attributes.Values.ToList())
             {
                 if (attribute == null) continue;
                 attribute.OnArrive(character);
@@ -238,10 +224,19 @@ namespace DiceOrbit.Data
 
         internal void OnTraverse(Character character)
         {
-            foreach (var attribute in attributes.Values)
+            foreach (var attribute in attributes.Values.ToList())
             {
                 if (attribute == null) continue;
                 attribute.OnTraverse(character);
+            }
+        }
+
+        public void OnEndTurn(Core.Character character)
+        {
+            foreach (var attribute in attributes.Values.ToList())
+            {
+                if (attribute == null) continue;
+                attribute.OnEndTurn(character);
             }
         }
     }

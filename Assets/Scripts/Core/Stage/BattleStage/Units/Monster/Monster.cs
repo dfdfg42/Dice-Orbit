@@ -198,10 +198,6 @@ namespace DiceOrbit.Core
         public void ExecuteIntent()
         {
             if (!IsAlive) return;
-
-            // 턴 시작 효과 처리 (Passives etc)
-            OnStartTurn();
-
             if (nextIntent != null && nextSkill != null)
             {
                 // AttackIntent의 유효성 확인 (죽은 타겟 제거)

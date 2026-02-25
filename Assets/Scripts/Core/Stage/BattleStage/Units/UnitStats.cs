@@ -1,5 +1,6 @@
-using UnityEngine;
 using DiceOrbit.Core.Pipeline;
+using UnityEngine;
+using static UnityEngine.UI.GridLayoutGroup;
 
 namespace DiceOrbit.Data
 {
@@ -11,7 +12,7 @@ namespace DiceOrbit.Data
         public int CurrentHP = 50;
         public int Attack = 8;
         public int Defense = 2;
-        [HideInInspector] public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)
+        public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)
 
         // ICombatReactor implementation
         public virtual int Priority => 20;
@@ -19,7 +20,7 @@ namespace DiceOrbit.Data
         public virtual void OnReact(CombatTrigger trigger, CombatContext context)
         {
             //턴 시작 시 임시 방어도를 깎는다
-            if (trigger == CombatTrigger.OnTurnStart)
+            if (context.Action.Type == ActionType.OnStartTurn && trigger == CombatTrigger.OnPreAction)
             {
                 TempArmor = 0;
             }

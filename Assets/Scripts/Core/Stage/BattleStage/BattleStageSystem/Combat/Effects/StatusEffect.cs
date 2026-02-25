@@ -48,7 +48,7 @@ namespace DiceOrbit.Systems.Effects
 
             // 공통 로직: 턴 시작 시 지속시간 감소
             // (SourceUnit == Owner일 때 = 나의 턴 시작)
-            if (trigger == CombatTrigger.OnTurnStart && context.SourceUnit == Owner)
+            if (context.Action.Type == ActionType.OnStartTurn && context.SourceUnit == Owner)
             {
                 if (Duration > 0)
                 {

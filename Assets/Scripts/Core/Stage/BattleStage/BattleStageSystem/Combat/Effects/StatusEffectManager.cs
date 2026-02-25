@@ -60,7 +60,7 @@ namespace DiceOrbit.Systems.Effects
             }
 
             // 턴 시작 시, 반응 처리 후 만료된 효과 정리
-            if (trigger == CombatTrigger.OnTurnStart && context.SourceUnit == owner)
+            if (context.Action.Type==ActionType.OnStartTurn && context.SourceUnit == owner)
             {
                 CleanupExpiredEffects();
             }

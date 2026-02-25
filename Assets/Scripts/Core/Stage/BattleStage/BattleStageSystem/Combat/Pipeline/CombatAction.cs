@@ -13,6 +13,8 @@ namespace DiceOrbit.Core.Pipeline
         Move,
         OnArrive,
         OnTreaverse,
+        OnStartTurn,
+        OnEndTurn,
     }
 
     /// <summary>

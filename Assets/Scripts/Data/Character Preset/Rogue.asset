@@ -15,7 +15,7 @@ MonoBehaviour:
   CharacterName: Rogue
   Portrait: {fileID: 21300000, guid: 289617ae1d9eb3248aec28670bdee44c, type: 3}
   Description: "\uC791\uC740 \uC8FC\uC0AC\uC704\uC5D0 \uC720\uB9AC\uD569\uB2C8\uB2E4."
-  MaxHP: 30
+  MaxHP: 300
   Attack: 5
   Defense: 0
   CharacterSprite: {fileID: 21300000, guid: e8abd4d1cb1334a4cab1a135e0f5f70e, type: 3}
