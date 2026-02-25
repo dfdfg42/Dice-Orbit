@@ -1,21 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d349577f01afdfd4586880571249252f, type: 3}
-  m_Name: 1WaveDatabase
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.Waves.WaveDatabase
-  Waves:
-  - MonsterPresets:
-    - {fileID: 11400000, guid: 2e2e9ce3316643979f8f80356ece9d3d, type: 2}
-    - {fileID: 11400000, guid: 2e2e9ce3316643979f8f80356ece9d3d, type: 2}
-    - {fileID: 11400000, guid: 25bda3da432d43d7ba92bdb9f4d11f5a, type: 2}
-    SpawnCount: 1
-    BackgroundSprite: {fileID: 21300000, guid: 715804659320d264d988fed45bed7527, type: 3}
+version https://git-lfs.github.com/spec/v1
+oid sha256:76a092adf83dc3948530912e6839be36fb3b9098d04fe0fa671c1422c834c32f
+size 811

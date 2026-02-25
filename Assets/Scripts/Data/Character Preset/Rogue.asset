@@ -1,32 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c15595559fc69394782045259f55f893, type: 3}
-  m_Name: Rogue
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.CharacterPreset
-  CharacterName: Rogue
-  Portrait: {fileID: 21300000, guid: 289617ae1d9eb3248aec28670bdee44c, type: 3}
-  Description: "\uC791\uC740 \uC8FC\uC0AC\uC704\uC5D0 \uC720\uB9AC\uD569\uB2C8\uB2E4."
-  MaxHP: 300
-  Attack: 5
-  Defense: 0
-  CharacterSprite: {fileID: 21300000, guid: e8abd4d1cb1334a4cab1a135e0f5f70e, type: 3}
-  SpriteColor: {r: 0.8396226, g: 0.30495724, b: 0.30495724, a: 1}
-  VisualScale: 0.6
-  IdleSprite: {fileID: 21300000, guid: 289617ae1d9eb3248aec28670bdee44c, type: 3}
-  MoveSprite: {fileID: 21300000, guid: 5b60d6cabdc6973429aaedcc92d571cf, type: 3}
-  DamageSprite: {fileID: 21300000, guid: a1b14dc225291994b94e1e7409ccf9a7, type: 3}
-  SkillSprite: {fileID: 21300000, guid: e8abd4d1cb1334a4cab1a135e0f5f70e, type: 3}
-  StartingSkills:
-  - {fileID: 11400000, guid: 057f7da87dbe12d4ea89b19bad5ca9a7, type: 2}
-  - {fileID: 11400000, guid: b1c2d3e4f5061728394a5b6c7d8e9f01, type: 2}
-  StartingPassives:
-  - {fileID: 11400000, guid: d1e2f30415263748596a7b8c9d0e1f23, type: 2}
+version https://git-lfs.github.com/spec/v1
+oid sha256:8b0bb45f37758c36a35a3be45edfdc516b460be0d279602663a8e73d1304bde4
+size 1426

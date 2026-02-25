@@ -1,32 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c15595559fc69394782045259f55f893, type: 3}
-  m_Name: Warrior
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.CharacterPreset
-  CharacterName: Hero
-  Portrait: {fileID: 21300000, guid: f4473d22607f6814e8d6cf36aef2d72e, type: 3}
-  Description: WARRIOR
-  MaxHP: 300
-  Attack: 5
-  Defense: 0
-  CharacterSprite: {fileID: 21300000, guid: f4473d22607f6814e8d6cf36aef2d72e, type: 3}
-  SpriteColor: {r: 0.8679245, g: 0.6895507, b: 0.3725525, a: 1}
-  VisualScale: 0.6
-  IdleSprite: {fileID: 0}
-  MoveSprite: {fileID: 0}
-  DamageSprite: {fileID: 0}
-  SkillSprite: {fileID: 0}
-  StartingSkills:
-  - {fileID: 11400000, guid: 057f7da87dbe12d4ea89b19bad5ca9a7, type: 2}
-  - {fileID: 11400000, guid: a1b2c3d4e5f60718293a4b5c6d7e8f90, type: 2}
-  StartingPassives:
-  - {fileID: 11400000, guid: c1d2e3f405162738495a6b7c8d9e0f12, type: 2}
+version https://git-lfs.github.com/spec/v1
+oid sha256:a41c1bee1de1ed403c16296faa991d0bf524d70a0796ec3deaccc4427f0be832
+size 1137

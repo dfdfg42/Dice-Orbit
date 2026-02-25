@@ -1,20 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c801b415777df4f4ab91094351378823, type: 3}
-  m_Name: PlantMine
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterPresets.Wave1.Goblin.PlantMine
-  PassiveName: "\uC9C0\uB8B0 \uC124\uCE58"
-  type:
-    Name: "\uC9C0\uB8B0 \uC124\uCE58"
-    IsStackable: 0
-  Icon: {fileID: 0}
-  mineDuration: -1
+version https://git-lfs.github.com/spec/v1
+oid sha256:b2b1a55b5a3b3dbd3ae511acabf34e1908dcfbe90ed01ddce58a326ba70b232a
+size 614

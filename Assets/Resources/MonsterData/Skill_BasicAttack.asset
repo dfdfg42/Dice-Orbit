@@ -1,22 +1,3 @@
-%YAML 1.1
-%TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 526be945845f08a4889762a97caeec5d, type: 3}
-  m_Name: Skill_BasicAttack
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Data.MonsterAI.MonsterSkill
-  SkillName: Basic Attack
-  Type: 0
-  Description: A simple scratch.
-  TargetType: 0
-  AreaRadius: 0
-  BaseDamage: 5
-  DamageMultiplier: 1
-  HitCount: 1
+version https://git-lfs.github.com/spec/v1
+oid sha256:b399704b1313334b4ba741a3df0d6b19528e5c90affa39e4f942bc9cac73d99d
+size 635
