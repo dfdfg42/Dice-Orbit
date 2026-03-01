@@ -24,6 +24,8 @@ namespace DiceOrbit.Data.Monsters
         
         [Header("Visual")]
         public Sprite MonsterSprite;
+        public Sprite AttackSprite;
+        public Sprite DamageSprite;
         public Color SpriteColor = Color.white;
         public float VisualScale = 1.0f;
 
@@ -34,6 +36,14 @@ namespace DiceOrbit.Data.Monsters
             if (MonsterSprite != null)
             {
                 stats.MonsterSprite = MonsterSprite;
+            }
+            if (AttackSprite != null)
+            {
+                stats.AttackSprite = AttackSprite;
+            }
+            if (DamageSprite != null)
+            {
+                stats.DamageSprite = DamageSprite;
             }
             stats.SpriteColor = SpriteColor;
             return stats;

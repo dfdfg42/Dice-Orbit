@@ -17,6 +17,8 @@ namespace DiceOrbit.Data
 
         [Header("Visual")]
         [HideInInspector] public Sprite MonsterSprite;
+        [HideInInspector] public Sprite AttackSprite;
+        [HideInInspector] public Sprite DamageSprite;
         [HideInInspector] public Color SpriteColor = Color.red;
 
         /// <summary>
@@ -30,6 +32,8 @@ namespace DiceOrbit.Data
             copy.MonsterName = this.MonsterName;
             copy.Level = this.Level;
             copy.MonsterSprite = this.MonsterSprite;
+            copy.AttackSprite = this.AttackSprite;
+            copy.DamageSprite = this.DamageSprite;
             copy.SpriteColor = this.SpriteColor;
             copy.Speed = this.Speed;
             return copy;

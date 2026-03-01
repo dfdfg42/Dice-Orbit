@@ -204,6 +204,7 @@ namespace DiceOrbit.Core
                 Vector3 startPos = transform.position;
                 Vector3 endPos = tile.Position + TILE_OFFSET;
                 float elapsed = 0f;
+                UpdateFacingByMoveDirection(endPos - startPos);
 
                 // 한 칸 이동 시작 → Move 스프라이트
                 spriteVisual?.PlayMove();
@@ -268,6 +269,21 @@ namespace DiceOrbit.Core
             }
 
             spriteVisual?.PlayIdle();
+        }
+
+        private void UpdateFacingByMoveDirection(Vector3 moveDirection)
+        {
+            if (spriteRenderer == null) return;
+            if (moveDirection.sqrMagnitude <= 0.000001f) return;
+
+            Vector3 rightAxis = mainCamera != null ? mainCamera.transform.right : Vector3.right;
+            float lateral = Vector3.Dot(moveDirection.normalized, rightAxis.normalized);
+
+            // Base sprites are left-facing. Flip only when moving to screen-right.
+            if (Mathf.Abs(lateral) > 0.01f)
+            {
+                spriteRenderer.flipX = lateral > 0f;
+            }
         }
 
         /// <summary>

@@ -13,6 +13,10 @@ namespace DiceOrbit.Core
     /// </summary>
     public class Monster : Unit<MonsterStats>, UI.IHoverTooltipProvider
     {
+        [Header("Animation")]
+        [SerializeField] private float attackSpriteDuration = 0.25f;
+        [SerializeField] private float damageSpriteDuration = 0.35f;
+
         [Header("Preset")]
         [SerializeField] private Data.Monsters.MonsterPreset preset;
 
@@ -21,6 +25,7 @@ namespace DiceOrbit.Core
         private Data.MonsterAI.MonsterAI runtimeAiPattern; // 실제 실행되는 런타임 인스턴스
         private MonsterSkill nextSkill;
         private AttackIntent nextIntent; // 다음 턴에 사용할 AttackIntent
+        private Coroutine visualResetCoroutine;
         public AttackIntent CurrentIntent => nextIntent; // AttackIntent 타입으로 반환
 
         // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
@@ -32,11 +37,9 @@ namespace DiceOrbit.Core
             {
                 stat = new MonsterStats();
             }
-
-            // 자식 오브젝트에서 SpriteRenderer 찾기
-            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
             
             base.Awake();
+            EnsureSpriteScalingIsolation();
             
             EnsureHoverCollider();
 
@@ -98,9 +101,12 @@ namespace DiceOrbit.Core
         {
             if (stat == null) return;
 
-            if (spriteRenderer != null && stat.MonsterSprite != null)
+            if (spriteRenderer != null)
             {
-                spriteRenderer.sprite = stat.MonsterSprite;
+                if (stat.MonsterSprite != null)
+                {
+                    spriteRenderer.sprite = stat.MonsterSprite;
+                }
                 spriteRenderer.color = stat.SpriteColor;
 
                 // Visual Scale 적용
@@ -227,9 +233,11 @@ namespace DiceOrbit.Core
         private void ExecuteSkillWithIntent(SkillData skill, AttackIntent intent)
         {
             Debug.Log($"[Monster] Executing Skill: {skill.SkillName}");
+            PlayAttackVisual();
 
             // SkillData의 Execute 메서드에 위임
             skill.Execute(this, intent);
+            QueueReturnToIdle(attackSpriteDuration);
         }
 
         // === Damage & Death ===
@@ -240,6 +248,8 @@ namespace DiceOrbit.Core
         public override int TakeDamage(int damage)
         {
             if (!IsAlive) return 0;
+            PlayDamageVisual();
+            QueueReturnToIdle(damageSpriteDuration);
             int result=base.TakeDamage(damage);
             if (!IsAlive) OnDeath();
             return result;
@@ -350,6 +360,82 @@ namespace DiceOrbit.Core
             {
                 box.size = new Vector3(1.2f, 1.2f, 1.5f);
             }
+        }
+
+        private void PlayAttackVisual()
+        {
+            if (spriteRenderer == null || stat == null) return;
+            if (stat.AttackSprite != null)
+            {
+                spriteRenderer.sprite = stat.AttackSprite;
+            }
+        }
+
+        private void PlayDamageVisual()
+        {
+            if (spriteRenderer == null || stat == null) return;
+            if (stat.DamageSprite != null)
+            {
+                spriteRenderer.sprite = stat.DamageSprite;
+            }
+        }
+
+        private void ReturnToIdleVisual()
+        {
+            if (spriteRenderer == null || stat == null) return;
+            if (stat.MonsterSprite != null)
+            {
+                spriteRenderer.sprite = stat.MonsterSprite;
+            }
+        }
+
+        private void QueueReturnToIdle(float delay)
+        {
+            if (!isActiveAndEnabled) return;
+            if (visualResetCoroutine != null)
+            {
+                StopCoroutine(visualResetCoroutine);
+            }
+            visualResetCoroutine = StartCoroutine(CoReturnToIdle(delay));
+        }
+
+        private System.Collections.IEnumerator CoReturnToIdle(float delay)
+        {
+            yield return new WaitForSeconds(Mathf.Max(0f, delay));
+            ReturnToIdleVisual();
+            visualResetCoroutine = null;
+        }
+
+        private void EnsureSpriteScalingIsolation()
+        {
+            if (spriteRenderer == null)
+            {
+                spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+                if (spriteRenderer == null) return;
+            }
+
+            // If SpriteRenderer is on root, scaling it also scales child UI.
+            // Clone renderer to a child visual root so only sprite scales.
+            if (spriteRenderer.transform != transform) return;
+
+            var original = spriteRenderer;
+            var visualRoot = new GameObject("MonsterVisualRoot").transform;
+            visualRoot.SetParent(transform, false);
+            visualRoot.localPosition = Vector3.zero;
+            visualRoot.localRotation = Quaternion.identity;
+            visualRoot.localScale = Vector3.one;
+
+            var cloned = visualRoot.gameObject.AddComponent<SpriteRenderer>();
+            cloned.sprite = original.sprite;
+            cloned.color = original.color;
+            cloned.material = original.sharedMaterial;
+            cloned.sortingLayerID = original.sortingLayerID;
+            cloned.sortingOrder = original.sortingOrder;
+            cloned.flipX = original.flipX;
+            cloned.flipY = original.flipY;
+
+            original.enabled = false;
+            spriteRenderer = cloned;
         }
     }
 }
