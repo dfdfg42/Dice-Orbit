@@ -9,6 +9,8 @@ namespace DiceOrbit.UI
     /// </summary>
     public class DamagePopup : MonoBehaviour
     {
+        private static DamagePopup configuredPrefab;
+
         [Header("UI")]
         [SerializeField] private TextMeshProUGUI damageText;
         
@@ -98,15 +100,12 @@ namespace DiceOrbit.UI
         /// </summary>
         public static DamagePopup Create(int damage, Vector3 worldPosition, bool isCritical = false)
         {
-            // 프리팹에서 생성 (Resources 폴더 사용)
-            GameObject prefab = Resources.Load<GameObject>("Prefabs/DamagePopup");
-            
-            if (prefab == null)
+            if (configuredPrefab == null)
             {
                 return CreateFallback(damage, worldPosition, isCritical);
             }
             
-            GameObject instance = Instantiate(prefab, worldPosition, Quaternion.identity);
+            GameObject instance = Instantiate(configuredPrefab.gameObject, worldPosition, Quaternion.identity);
             DamagePopup popup = instance.GetComponent<DamagePopup>();
             
             if (popup != null)
@@ -117,9 +116,14 @@ namespace DiceOrbit.UI
             return popup;
         }
 
+        public static void ConfigurePrefab(DamagePopup prefab)
+        {
+            configuredPrefab = prefab;
+        }
+
         private static DamagePopup CreateFallback(int damage, Vector3 worldPosition, bool isCritical)
         {
-            Debug.Log("DamagePopup prefab not found. Using fallback popup.");
+            Debug.Log("DamagePopup prefab not configured. Using fallback popup.");
 
             var go = new GameObject("DamagePopup_Fallback");
             var canvas = go.AddComponent<Canvas>();

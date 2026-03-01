@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using DiceOrbit.Core;
+using DiceOrbit.Data.MonsterPresets.Wave1.Goblin;
 
 namespace DiceOrbit.Data
 {
@@ -85,6 +87,15 @@ namespace DiceOrbit.Data
                     return null;
             }
 
+            var resolvedTargetType = targetType;
+            // MineBomb is tile-centric, so preview should always use mine-affected tiles.
+            if (skillData.SpecialEffects != null && skillData.SpecialEffects.Any(effect => effect is MineBomb))
+            {
+                targetTiles = MineBomb.CollectAffectedTiles();
+                resolvedTargetType = TargetType.Tiles;
+                selectedTargets.Clear();
+            }
+
             // IntentType 결정
             IntentType type = DetermineIntentType(); // To avoid variable shadowing
 
@@ -94,7 +105,7 @@ namespace DiceOrbit.Data
             // AttackIntent 생성
             var intent = new AttackIntent(
                 type, 
-                targetType,
+                resolvedTargetType,
                 selectedTargets,
                 intentIcon // 아이콘 정보 전달
             );
@@ -168,10 +179,10 @@ namespace DiceOrbit.Data
             switch (targetStrategy)
             {
                 case TargetSelectionStrategy.RandomCharacter:
-                    SelectTilesByCharacter(SelectCharactersByTargetStrategy(targetStrategy));
+                    selectedTiles = SelectTilesByCharacter(SelectCharactersByTargetStrategy(targetStrategy));
                     break;
                 case TargetSelectionStrategy.AllTargets:
-                    SelectTilesByCharacter(SelectCharactersByTargetStrategy(targetStrategy));
+                    selectedTiles = SelectTilesByCharacter(SelectCharactersByTargetStrategy(targetStrategy));
                     break;
                 case TargetSelectionStrategy.RandomTiles:
                     if (tileList != null && tileList.Count > 0)

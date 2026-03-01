@@ -67,13 +67,19 @@ namespace DiceOrbit.Visuals
                 if (highlightMaterial != null)
                 {
                     Material highlightInstance = new Material(highlightMaterial);
-                    highlightInstance.color = color;
+                    if (highlightInstance.HasProperty("_Color"))
+                    {
+                        highlightInstance.color = color;
+                    }
                     meshRenderer.material = highlightInstance;
                 }
                 else
                 {
                     Material coloredMat = new Material(originalMaterial);
-                    coloredMat.color = color;
+                    if (coloredMat.HasProperty("_Color"))
+                    {
+                        coloredMat.color = color;
+                    }
                     meshRenderer.material = coloredMat;
                 }
             }

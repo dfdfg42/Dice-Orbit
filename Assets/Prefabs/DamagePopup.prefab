@@ -85,7 +85,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &4485764480168256016
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -118,7 +118,7 @@ MonoBehaviour:
   damageText: {fileID: 3051802282586001542}
   moveSpeed: 2
   lifetime: 1.5
-  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  normalColor: {r: 1, g: 0, b: 0, a: 1}
   criticalColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1 &7309051800215185340
 GameObject:
@@ -188,7 +188,7 @@ MonoBehaviour:
   m_text: 99
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: ab682e8a845911f43a9bdbb5943b392b, type: 2}
-  m_sharedMaterial: {fileID: -3036244498164315457, guid: ab682e8a845911f43a9bdbb5943b392b, type: 2}
+  m_sharedMaterial: {fileID: 3688429707017869774, guid: ab682e8a845911f43a9bdbb5943b392b, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -212,8 +212,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 60
-  m_fontSizeBase: 60
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

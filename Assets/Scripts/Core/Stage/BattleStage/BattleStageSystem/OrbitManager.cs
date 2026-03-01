@@ -25,6 +25,7 @@ namespace DiceOrbit.Core
         [SerializeField] private Material normalMaterial;
         [SerializeField] private Material levelUpMaterial;
         [SerializeField] private Material specialMaterial;
+        [SerializeField] private Material attackIntentMaterial;
         
         [Header("Visual Settings")]
         [SerializeField] private float tileWidth = 1.5f;
@@ -150,10 +151,13 @@ namespace DiceOrbit.Core
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var specialField = typeof(TileVisual).GetField("specialMaterial", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var highlightField = typeof(TileVisual).GetField("highlightMaterial",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
             if (normalField != null) normalField.SetValue(visual, normalMaterial);
             if (levelUpField != null) levelUpField.SetValue(visual, levelUpMaterial);
             if (specialField != null) specialField.SetValue(visual, specialMaterial);
+            if (highlightField != null) highlightField.SetValue(visual, attackIntentMaterial);
             
             visual.SetTileType(type);
         }
