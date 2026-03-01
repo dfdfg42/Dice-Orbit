@@ -16,5 +16,10 @@ namespace DiceOrbit.Data.Tile
         {
             character.Stats.LevelUp();
         }
+
+        public override string GetDescription()
+        {
+            return "지나가면 레벨이 상승합니다.";
+        }
     }
 }

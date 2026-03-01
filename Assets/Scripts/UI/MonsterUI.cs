@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DiceOrbit.Data;
+using System.Collections;
 
 namespace DiceOrbit.UI
 {
@@ -19,6 +20,8 @@ namespace DiceOrbit.UI
         [SerializeField] private Slider hpSlider;
         [SerializeField] private TextMeshProUGUI nameText;
         [SerializeField] private TextMeshProUGUI hpText;
+        [SerializeField] private RectTransform intentBubbleRoot;
+        [SerializeField] private Image intentBubbleBg;
         [SerializeField] private Image intentIcon;
         [SerializeField] private TextMeshProUGUI intentText;
         
@@ -27,12 +30,23 @@ namespace DiceOrbit.UI
         [SerializeField] private Color defendColor = Color.blue;
         [SerializeField] private Color buffColor = Color.yellow;
         [SerializeField] private Color specialColor = Color.magenta;
+        [SerializeField] private Color neutralBubbleColor = new Color(1f, 1f, 1f, 0.92f);
         
         [Header("Settings")]
         [SerializeField] private Vector3 uiOffset = new Vector3(0, 2f, 0);
         [SerializeField] private bool autoFindMonster = true;
+        [SerializeField] private bool hideBubbleWhenNoIntent = true;
+        [SerializeField] private bool tintBubbleByIntent = false;
+        [SerializeField] private bool showIntentText = true;
+        
+        [Header("Animation")]
+        [SerializeField] private bool animateOnIntentChange = true;
+        [SerializeField] private float popScale = 1.12f;
+        [SerializeField] private float popDuration = 0.12f;
         
         private Camera mainCamera;
+        private int lastIntentVisualKey = int.MinValue;
+        private Coroutine popRoutine;
         
         private void Awake()
         {
@@ -48,6 +62,7 @@ namespace DiceOrbit.UI
             }
             
             mainCamera = Camera.main;
+            AutoResolveIntentRefs();
         }
         
         private void Start()
@@ -82,6 +97,19 @@ namespace DiceOrbit.UI
             {
                 rectTransform.sizeDelta = new Vector2(3, 1f);
                 rectTransform.localScale = Vector3.one * 0.1f;
+            }
+        }
+        
+        private void AutoResolveIntentRefs()
+        {
+            if (intentBubbleRoot == null && intentIcon != null)
+            {
+                intentBubbleRoot = intentIcon.rectTransform;
+            }
+            
+            if (intentBubbleBg == null && intentBubbleRoot != null)
+            {
+                intentBubbleBg = intentBubbleRoot.GetComponent<Image>();
             }
         }
         
@@ -122,27 +150,147 @@ namespace DiceOrbit.UI
         /// </summary>
         private void UpdateIntent()
         {
-            if (monster == null || monster.CurrentIntent == null) return;
+            if (monster == null)
+            {
+                SetIntentVisible(false);
+                return;
+            }
 
-            AttackIntent intent = monster.CurrentIntent; // AttackIntent 타입으로 변경
+            AttackIntent intent = monster.CurrentIntent;
+            if (intent == null)
+            {
+                if (hideBubbleWhenNoIntent)
+                {
+                    SetIntentVisible(false);
+                }
+                return;
+            }
 
-            // AttackIntent가 이미 IntentType을 가지고 있음
+            SetIntentVisible(true);
+
             IntentType type = intent.Type;
+            int visualKey = BuildIntentVisualKey(intent);
+            bool changed = visualKey != lastIntentVisualKey;
+            lastIntentVisualKey = visualKey;
 
-            // 의도 아이콘 및 텍스트 설정
+            if (intentBubbleBg != null)
+            {
+                intentBubbleBg.color = tintBubbleByIntent ? GetIntentColor(type) : neutralBubbleColor;
+            }
+
             if (intentIcon != null)
             {
                 if (intent.Icon != null)
                 {
                     intentIcon.sprite = intent.Icon;
-                    intentIcon.color = Color.white; // 원본 색상 사용
+                    intentIcon.color = Color.white;
+                    intentIcon.enabled = true;
                 }
                 else
                 {
-                    // 아이콘이 없으면 예전처럼 컬러만 변경 (Fallback)
+                    // 기본 스프라이트를 유지하고 색상만 의도 타입에 맞춤
                     intentIcon.color = GetIntentColor(type);
+                    intentIcon.enabled = true;
                 }
             }
+
+            if (intentText != null)
+            {
+                if (showIntentText)
+                {
+                    intentText.text = GetIntentLabel(type, intent);
+                    intentText.gameObject.SetActive(true);
+                }
+                else
+                {
+                    intentText.gameObject.SetActive(false);
+                }
+            }
+
+            if (animateOnIntentChange && changed)
+            {
+                PlayIntentPop();
+            }
+        }
+        
+        private void SetIntentVisible(bool visible)
+        {
+            if (intentBubbleRoot != null)
+            {
+                intentBubbleRoot.gameObject.SetActive(visible);
+            }
+            else
+            {
+                if (intentIcon != null) intentIcon.gameObject.SetActive(visible);
+                if (intentText != null) intentText.gameObject.SetActive(visible && showIntentText);
+            }
+        }
+        
+        private int BuildIntentVisualKey(AttackIntent intent)
+        {
+            unchecked
+            {
+                int key = 17;
+                key = key * 31 + (int)intent.Type;
+                key = key * 31 + (int)intent.TargetType;
+                key = key * 31 + intent.AreaRadius;
+                key = key * 31 + (intent.Icon != null ? intent.Icon.GetInstanceID() : 0);
+                key = key * 31 + (intent.Targets != null ? intent.Targets.Count : 0);
+                return key;
+            }
+        }
+        
+        private string GetIntentLabel(IntentType type, AttackIntent intent)
+        {
+            switch (type)
+            {
+                case IntentType.Attack:
+                    return "공격";
+                case IntentType.Multi:
+                    return intent.Targets != null && intent.Targets.Count > 1 ? $"연타 x{intent.Targets.Count}" : "연타";
+                case IntentType.Defend:
+                    return "방어";
+                case IntentType.Buff:
+                    return "강화";
+                case IntentType.Special:
+                    return "특수";
+                default:
+                    return "행동";
+            }
+        }
+        
+        private void PlayIntentPop()
+        {
+            if (intentBubbleRoot == null) return;
+            if (popRoutine != null) StopCoroutine(popRoutine);
+            popRoutine = StartCoroutine(CoPlayIntentPop());
+        }
+        
+        private IEnumerator CoPlayIntentPop()
+        {
+            Vector3 baseScale = Vector3.one;
+            float half = Mathf.Max(0.01f, popDuration * 0.5f);
+            float t = 0f;
+            
+            while (t < half)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / half);
+                intentBubbleRoot.localScale = Vector3.Lerp(baseScale, baseScale * popScale, k);
+                yield return null;
+            }
+
+            t = 0f;
+            while (t < half)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / half);
+                intentBubbleRoot.localScale = Vector3.Lerp(baseScale * popScale, baseScale, k);
+                yield return null;
+            }
+            
+            intentBubbleRoot.localScale = baseScale;
+            popRoutine = null;
         }
         
         /// <summary>

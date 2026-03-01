@@ -101,6 +101,8 @@ namespace DiceOrbit.Data
             {
                 attribue.SetOwner(this);
                 attributes.Add(attribue.Type, attribue);
+                UI.TileAttributeBubbleManager.EnsureInstance();
+                UI.TileAttributeBubbleManager.Instance?.RefreshTile(this);
             }
         }
 
@@ -113,7 +115,14 @@ namespace DiceOrbit.Data
                 attributes.Remove(attribute.Type);
                 attribute.SetOwner(null);
                 Debug.Log($"[TileAttribute] {attribute.Type} removed from Tile #{tileIndex}.");
+                UI.TileAttributeBubbleManager.EnsureInstance();
+                UI.TileAttributeBubbleManager.Instance?.RefreshTile(this);
             }
+        }
+
+        public IReadOnlyCollection<TileAttribute> GetAttributes()
+        {
+            return attributes.Values.ToList().AsReadOnly();
         }
 
         private void OnMouseEnter()
@@ -137,21 +146,12 @@ namespace DiceOrbit.Data
 
         private string BuildTooltipText()
         {
-            int traverseCount = 0;
-            int arriveCount = 0;
             var detailLines = new List<string>();
 
             foreach (var attribute in attributes)
             {
                 if (attribute.Value == null) continue;
-                traverseCount++;
-                if (traverseCount>0)
-                {
-                    Debug.Log(traverseCount);
-                }
-                //traverseCount += attribute.TraverseCount;
-                //arriveCount += attribute.ArriveCount;
-                //detailLines.AddRange(attribute.GetTooltipDescriptions());
+                detailLines.AddRange(attribute.Value.GetTooltipDescriptions());
             }
 
             var sb = new StringBuilder();
@@ -160,10 +160,6 @@ namespace DiceOrbit.Data
             if (attributes.Count > 0)
             {
                 sb.AppendLine($"Attributes: {attributes.Count}");
-            }
-            if (traverseCount > 0 || arriveCount > 0)
-            {
-                sb.AppendLine($"Effects: Traverse {traverseCount}, Arrive {arriveCount}");
             }
             if (detailLines.Count > 0)
             {
@@ -211,6 +207,8 @@ namespace DiceOrbit.Data
                 Debug.Log($"[TileAttribute] {attribute.Type} expired on Tile #{tileIndex}.");
                 RemoveAttribute(attribute);
             }
+            UI.TileAttributeBubbleManager.EnsureInstance();
+            UI.TileAttributeBubbleManager.Instance?.RefreshTile(this);
         }
 
         public void OnArrive(Core.Character character)

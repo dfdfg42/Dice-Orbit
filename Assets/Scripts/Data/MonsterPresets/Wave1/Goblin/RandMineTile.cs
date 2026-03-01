@@ -35,5 +35,11 @@ namespace DiceOrbit.Data.Tile
             Core.Pipeline.CombatPipeline.Instance?.Process(context);
             Owner.RemoveAttribute(this);
         }
+
+        public override string GetDescription()
+        {
+            string durationText = Duration < 0 ? "영구" : $"{Duration}턴";
+            return $"지나가거나 턴 종료 시 {Value} 피해, 지속 {durationText}";
+        }
     }
 }

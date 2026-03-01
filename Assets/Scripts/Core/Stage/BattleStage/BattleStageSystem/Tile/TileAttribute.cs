@@ -1,5 +1,6 @@
 using UnityEngine;
 using DiceOrbit.Core.Pipeline;
+using System.Collections.Generic;
 
 namespace DiceOrbit.Data.Tile
 {
@@ -84,6 +85,28 @@ namespace DiceOrbit.Data.Tile
         public void SetOwner(TileData owner)
         {
             Owner = owner;
+        }
+
+        public virtual string GetDisplayName()
+        {
+            return Type switch
+            {
+                TileAttributeType.LevelUp => "레벨업 타일",
+                TileAttributeType.RandMine => "지뢰",
+                TileAttributeType.Bone => "뼈 방패",
+                _ => Type.ToString()
+            };
+        }
+
+        public virtual string GetDescription()
+        {
+            string durationText = Duration < 0 ? "영구" : $"{Duration}턴";
+            return $"값: {Value}, 지속: {durationText}";
+        }
+
+        public virtual IEnumerable<string> GetTooltipDescriptions()
+        {
+            yield return $"{GetDisplayName()}: {GetDescription()}";
         }
     }
 }
