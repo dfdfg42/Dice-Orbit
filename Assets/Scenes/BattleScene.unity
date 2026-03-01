@@ -3135,6 +3135,7 @@ MonoBehaviour:
   normalMaterial: {fileID: 2100000, guid: 7587bb46b3f332442bf5b566a8979acc, type: 2}
   levelUpMaterial: {fileID: 2100000, guid: cbf02cd639a5a044290b8cededf6a9c2, type: 2}
   specialMaterial: {fileID: 2100000, guid: 5d03417d360354643b8548707f2845da, type: 2}
+  attackIntentMaterial: {fileID: 2100000, guid: d869d5311969f0346af9a71596a88054, type: 2}
   tileWidth: 1.5
   tileHeight: 0.2
 --- !u!4 &1279481570
@@ -3987,6 +3988,7 @@ MonoBehaviour:
   rollDiceButton: {fileID: 723251453}
   endTurnButton: {fileID: 451284319}
   turnCountText: {fileID: 758120398}
+  damagePopupPrefab: {fileID: 2776620792795709358, guid: 3fa37f56ff1d8464eae9a956421daeab, type: 3}
 --- !u!1001 &2580814691204360157
 PrefabInstance:
   m_ObjectHideFlags: 0
