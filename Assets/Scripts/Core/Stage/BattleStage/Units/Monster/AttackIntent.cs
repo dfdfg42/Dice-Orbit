@@ -13,6 +13,7 @@ namespace DiceOrbit.Data
         public IntentType Type;
         public TargetType TargetType = TargetType.Characters;
         public int AreaRadius = 0;   // 0: 단일, 1: 좌우 1칸 (총 3칸), etc.
+        public Sprite Icon { get; private set; } // 추가된 아이콘 필드
 
         // 선정된 타겟들 (Character 리스트)
         private List<Core.Character> selectedTargets = new List<Core.Character>();
@@ -46,11 +47,12 @@ namespace DiceOrbit.Data
         /// <summary>
         /// 생성자 오버로드 (타겟 포함)
         /// </summary>
-        public AttackIntent(IntentType type, TargetType targetType,List<Core.Character> targets)
+        public AttackIntent(IntentType type, TargetType targetType,List<Core.Character> targets, Sprite icon = null)
         {
             Type = type;
             TargetType = targetType;
             selectedTargets = targets ?? new List<Core.Character>();
+            Icon = icon;
         }
 
         /// <summary>

@@ -126,12 +126,20 @@ namespace DiceOrbit.UI
                     .Distinct()
                     .ToHashSet();
 
-                // 해당 몬스터만 사용하던 타일만 언하이라이트
+                // 해당 몬스터만 사용하던 타일만 언하이라이트 및 플로팅 풍선 파괴
                 foreach (var tile in tiles)
                 {
                     if (tile != null && !otherMonsterTiles.Contains(tile))
                     {
                         tile.ClearHighlight();
+                        
+                        // 이 타일 위의 플로팅 말풍선 제거 (간단하게 모든 생성된 Floating UI 중 위치가 겹치는 것을 삭제)
+                        var uisToRemove = activeFloatingUIs.Where(ui => ui != null && Vector3.Distance(ui.transform.position, tile.transform.position + new Vector3(0, 1.5f, 0)) < 0.1f).ToList();
+                        foreach(var ui in uisToRemove)
+                        {
+                            activeFloatingUIs.Remove(ui);
+                            Destroy(ui);
+                        }
                     }
                 }
 
@@ -205,7 +213,7 @@ namespace DiceOrbit.UI
             // 타일 기반 공격
             if (intent.TargetType == Data.TargetType.Tiles)
             {
-                ShowTileAttackForMonster(intent.TargetTiles.ToList(), monster);
+                ShowTileAttackForMonster(intent.TargetTiles.ToList(), monster, intent);
                 return;
             }
             else if (intent.TargetType == Data.TargetType.Characters)
@@ -229,9 +237,9 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
-        /// 타일 공격 시각화 (타일 하이라이트)
+        /// 타일 공격 시각화 (타일 하이라이트 및 풍선 띄우기)
         /// </summary>
-        private void ShowTileAttackForMonster(List<Data.TileData> tiles, Core.Monster monster)
+        private void ShowTileAttackForMonster(List<Data.TileData> tiles, Core.Monster monster, Data.AttackIntent intent)
         {
             if (tiles == null || tiles.Count == 0 || monster == null) return;
 
@@ -241,12 +249,33 @@ namespace DiceOrbit.UI
             // highlightedTiles 재계산
             RecalculateHighlightedTiles();
 
-            // 타일 하이라이트
+            // 타일 하이라이트 및 플로팅 풍선 생성
             foreach (var tile in tiles)
             {
                 if (tile != null)
                 {
                     tile.Highlight(tileAttackColor);
+
+                    // 플로팅 말풍선 생성
+                    if (floatingIntentUIPrefab != null)
+                    {
+                        var floatingUIObj = Instantiate(floatingIntentUIPrefab, tile.transform.position, Quaternion.identity);
+                        var floatingUI = floatingUIObj.GetComponent<FloatingIntentUI>();
+                        
+                        if (floatingUI != null)
+                        {
+                            // 인텐트 색상 결정 (기존 방식 유지)
+                            Color colorToUse = Color.white;
+                            if (intent.Icon == null)
+                            {
+                                colorToUse = intent.Type == Data.IntentType.Defend ? Color.blue : tileAttackColor;
+                            }
+                            
+                            // 타깃을 Tile의 Transform으로 설정
+                            floatingUI.Setup(tile.transform, intent.Icon, colorToUse);
+                            activeFloatingUIs.Add(floatingUIObj);
+                        }
+                    }
                 }
             }
         }
@@ -438,6 +467,13 @@ namespace DiceOrbit.UI
                 .ToList();
         }
 
+        // 플로팅 UI 프리팹 보관
+        [Header("Floating Tile UI")]
+        [SerializeField] private GameObject floatingIntentUIPrefab;
+        
+        // 생성된 플로팅 UI 인스턴스 관리
+        private List<GameObject> activeFloatingUIs = new List<GameObject>();
+
         /// <summary>
         /// 시각화만 초기화 (데이터는 유지)
         /// </summary>
@@ -455,6 +491,13 @@ namespace DiceOrbit.UI
                 }
                 highlightedTiles = null;
             }
+
+            // 모든 플로팅 풍선 제거
+            foreach (var floatingUI in activeFloatingUIs)
+            {
+                if (floatingUI != null) Destroy(floatingUI);
+            }
+            activeFloatingUIs.Clear();
 
             // 모든 LineRenderer 비활성화
             foreach (var line in monsterLineRenderers.Values)

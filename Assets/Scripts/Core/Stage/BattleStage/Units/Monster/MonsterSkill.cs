@@ -49,6 +49,8 @@ namespace DiceOrbit.Data
         [SerializeField] private TargetType targetType = TargetType.Characters;
         [SerializeField] private int targetCount = 1; // 타겟 수
         [SerializeField] private IntentType intentType=IntentType.Attack;
+        [Tooltip("표시할 스킬 아이콘")]
+        [SerializeField] private Sprite intentIcon;
 
         // 런타임에 생성된 AttackIntent (캐싱용)
         private AttackIntent cachedIntent;
@@ -84,16 +86,17 @@ namespace DiceOrbit.Data
             }
 
             // IntentType 결정
-            IntentType intentType = DetermineIntentType();
+            IntentType type = DetermineIntentType(); // To avoid variable shadowing
 
             // Damage 계산
             int damage = skillData.CalculateDamage(owner.Stats.Attack, 0);
 
             // AttackIntent 생성
             var intent = new AttackIntent(
-                intentType, 
+                type, 
                 targetType,
-                selectedTargets
+                selectedTargets,
+                intentIcon // 아이콘 정보 전달
             );
             intent.TargetTiles = targetTiles;
 

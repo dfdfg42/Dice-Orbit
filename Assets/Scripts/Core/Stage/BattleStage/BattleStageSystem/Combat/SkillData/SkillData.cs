@@ -79,11 +79,11 @@ namespace DiceOrbit.Data
         [HideInInspector] public bool IgnoreDefense = false;
         
         /// <summary>
-        /// 데미지 계산 (Legacy - 호환성 유지)
+        /// 데미지 계산 (DamageMultiplier를 주사위 눈금 배수로 적용)
         /// </summary>
         public int CalculateDamage(int baseAttack, int diceValue)
         {
-            return baseAttack * DamageMultiplier + diceValue + BonusDamage;
+            return baseAttack + (diceValue * DamageMultiplier) + BonusDamage;
         }
 
         /// <summary>

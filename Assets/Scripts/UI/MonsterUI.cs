@@ -129,10 +129,19 @@ namespace DiceOrbit.UI
             // AttackIntent가 이미 IntentType을 가지고 있음
             IntentType type = intent.Type;
 
-            // 의도 아이콘 색상
+            // 의도 아이콘 및 텍스트 설정
             if (intentIcon != null)
             {
-                intentIcon.color = GetIntentColor(type);
+                if (intent.Icon != null)
+                {
+                    intentIcon.sprite = intent.Icon;
+                    intentIcon.color = Color.white; // 원본 색상 사용
+                }
+                else
+                {
+                    // 아이콘이 없으면 예전처럼 컬러만 변경 (Fallback)
+                    intentIcon.color = GetIntentColor(type);
+                }
             }
         }
         
