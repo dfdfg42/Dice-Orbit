@@ -1,13 +1,19 @@
+using DiceOrbit.Core;
+using DiceOrbit.Data;
 using System.Collections.Generic;
 using UnityEngine;
-using DiceOrbit.Data;
-using DiceOrbit.Core;
 
 namespace DiceOrbit.Data
 {
     [System.Serializable]
     public class CharacterSkillData : SkillData
     {
+        // SkillName, Description은 부모 클래스에서 상속받음
+
+        // 내부에서 값을 설정할 수 있도록 public 메서드 제공
+        public void SetSkillName(string name) => skillName = name;
+        public void SetDescription(string desc) => description = desc;
+
         [HideInInspector] public SkillTargetType skillTargetType = SkillTargetType.SingleEnemy;
 
         [Header("Skill Effects")]
@@ -65,13 +71,13 @@ namespace DiceOrbit.Data.Skills
         public string SkillName
         {
             get => BaseData.SkillName;
-            set => BaseData.SkillName = value;
+            set => BaseData.SetSkillName(value);
         }
 
         public string Description
         {
             get => BaseData.Description;
-            set => BaseData.description = value;
+            set => BaseData.SetDescription(value);
         }
 
         public SkillTargetType TargetType
@@ -108,20 +114,20 @@ namespace DiceOrbit.Data.Skills
         {
             var levelData = GetLevelData(level);
             if (levelData == null) return BaseData;
-
+            
             var resolvedEffects = (levelData.Effects != null && levelData.Effects.Count > 0)
                 ? levelData.Effects
                 : (BaseData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>());
-            
+
             // BaseData 복사 후 레벨별 데이터 적용
             var skillData = new CharacterSkillData
             {
-                SkillName = BaseData.SkillName,
-                description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.description : levelData.Description,
                 skillTargetType = BaseData.skillTargetType,
                 Effects = resolvedEffects,
             };
-            
+
+            skillData.SetSkillName(BaseData.SkillName);
+            skillData.SetDescription(string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.Description : levelData.Description);
             return skillData;
         }
     }

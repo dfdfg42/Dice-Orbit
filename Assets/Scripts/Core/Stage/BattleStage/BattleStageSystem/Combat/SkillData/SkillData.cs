@@ -18,14 +18,16 @@ namespace DiceOrbit.Data
     }
 
     /// <summary>
-    /// 스킬 데이터
+    /// 스킬 데이터 (다형성 지원 - [SerializeReference]로 사용)
     /// </summary>
     [System.Serializable]
-    public class SkillData
+    public abstract class SkillData
     {
-        public virtual string SkillName  { get; set; }
-        public virtual string description { get; set; }
-        [HideInInspector] public string Description => description;
+        [SerializeField] protected string skillName = "";
+        [SerializeField] protected string description = "";
+
+        public virtual string SkillName => skillName;
+        public virtual string Description => description;
 
         public void ExecuteSkillWithIntent(Core.Unit source, AttackIntent intent)
         {
@@ -57,67 +59,5 @@ namespace DiceOrbit.Data
         {
             
         }
-
-        /// <summary>
-        /// 데미지 적용
-        /// </summary>
-        private void ApplyDamage(Core.Unit source, List<Core.Unit> targets, int amount)
-        {
-            foreach (var target in targets)
-            {
-                if (target == null || !target.IsAlive) continue;
-
-                var context = new Core.Pipeline.CombatContext(
-                    source,
-                    target,
-                    new Core.Pipeline.CombatAction(SkillName, Core.Pipeline.ActionType.Attack, amount)
-                );
-                Core.Pipeline.CombatPipeline.Instance?.Process(context);
-            }
-        }
-
-        /// <summary>
-        /// 힐 적용
-        /// </summary>
-        private void ApplyHeal(Core.Unit source, int amount)
-        {
-            if (source == null) return;
-            source.Heal(amount);
-            Debug.Log($"[SkillData] {source.name} healed for {amount}");
-        }
-
-        /// <summary>
-        /// 방어막 적용
-        /// </summary>
-        private void ApplyArmor(Core.Unit source, int amount)
-        {
-            if (source == null) return;
-            source.Stats.TempArmor += amount;
-            Debug.Log($"[SkillData] {source.name} gained {amount} armor");
-        }
-
-        /// <summary>
-        /// 버프 적용 (공격력 증가)
-        /// </summary>
-        private void ApplyBuff(Core.Unit source, int amount)
-        {
-            if (source == null) return;
-            source.Stats.Attack += amount;
-            Debug.Log($"[SkillData] {source.name} gained {amount} attack");
-        }
-
-        /// <summary>
-        /// 디버프 적용 (공격력 감소)
-        /// </summary>
-        private void ApplyDebuff(List<Core.Unit> targets, int amount)
-        {
-            foreach (var target in targets)
-            {
-                if (target == null || !target.IsAlive) continue;
-                target.Stats.Attack = Mathf.Max(0, target.Stats.Attack - amount);
-                Debug.Log($"[SkillData] {target.name} lost {amount} attack");
-            }
-        }
-
     }
 }
