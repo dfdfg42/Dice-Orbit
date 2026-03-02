@@ -4,11 +4,9 @@ using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data.Passives
 {
-    [CreateAssetMenu(fileName = "FocusPassive", menuName = "Dice Orbit/Passives/Focus (Mage)")]
+    [System.Serializable]
     public class FocusPassive : PassiveAbility
     {
-        [Header("Focus Settings")]
-        [Tooltip("턴 종료 시 획득할 집중 스택 수")]
         public int stacksPerTurn = 1;
 
         public override int Priority => 50;

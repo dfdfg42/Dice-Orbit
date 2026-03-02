@@ -4,6 +4,7 @@ using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data.Skills.Effects;
 using DiceOrbit.Data.Tile;
+using DiceOrbit.Visuals;
 using UnityEngine;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
@@ -52,18 +53,36 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
                 .ToList();
             if (mineTiles.Count == 0) return;
 
+            VfxManager.PlayCast(vfxProfile, source);
+
+            foreach (var tile in affectedTiles)
+            {
+                VfxManager.PlayTile(vfxProfile, tile);
+            }
+
             var aliveCharacters = partyManager.GetAliveCharacters();
             foreach (var character in aliveCharacters)
             {
                 if (character == null || !character.IsAlive) continue;
                 if (character.CurrentTile == null || !affectedTiles.Contains(character.CurrentTile)) continue;
 
+                var action = new CombatAction("Mine Bomb", ActionType.Attack, damage);
+                if (vfxProfile != null)
+                {
+                    action.AddTag("CustomVfx");
+                }
+
                 var context = new CombatContext(
                     source,
                     character,
-                    new CombatAction("Mine Bomb", ActionType.Attack, damage)
+                    action
                 );
                 CombatPipeline.Instance?.Process(context);
+
+                if (context.IsEffected)
+                {
+                    VfxManager.PlayHit(vfxProfile, character);
+                }
             }
 
             // Remove only mine attributes from mine tiles after detonation.

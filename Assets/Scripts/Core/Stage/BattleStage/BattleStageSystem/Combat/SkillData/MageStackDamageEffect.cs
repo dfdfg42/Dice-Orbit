@@ -3,6 +3,7 @@ using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
+using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Data.Skills.Effects
 {
@@ -25,17 +26,30 @@ namespace DiceOrbit.Data.Skills.Effects
             
             float finalDamageFloat = baseDamage * (1.0f + (focusStacks * bonusDamageRatioPerStack));
             int finalDamage = Mathf.RoundToInt(finalDamageFloat);
+
+            VfxManager.PlayCast(vfxProfile, source);
             
             foreach (var target in targets)
             {
                 if (target == null || !target.IsAlive) continue;
 
+                var action = new CombatAction("Energy Ball", ActionType.Attack, finalDamage);
+                if (vfxProfile != null)
+                {
+                    action.AddTag("CustomVfx");
+                }
+
                 var context = new CombatContext(
                     source,
                     target,
-                    new CombatAction("Energy Ball", ActionType.Attack, finalDamage)
+                    action
                 );
                 CombatPipeline.Instance?.Process(context);
+
+                if (context.IsEffected)
+                {
+                    VfxManager.PlayHit(vfxProfile, target);
+                }
             }
             
             if (source != null && source.StatusEffects != null && focusStacks > 0)

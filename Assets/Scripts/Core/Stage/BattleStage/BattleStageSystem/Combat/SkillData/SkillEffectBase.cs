@@ -6,6 +6,11 @@ namespace DiceOrbit.Data.Skills.Effects
 {
     public abstract class SkillEffectBase : ScriptableObject
     {
+        [Header("VFX")]
+        [SerializeField] protected DiceOrbit.Visuals.CombatVfxProfile vfxProfile;
+
+        public DiceOrbit.Visuals.CombatVfxProfile VfxProfile => vfxProfile;
+
         /// <summary>
         /// (선택적) 타일 공격 등 특정 범위를 하이라이트/프리뷰 해야 할 때 오버라이드.
         /// 기본적으로는 아무 추가 타일도 반환하지 않음.
