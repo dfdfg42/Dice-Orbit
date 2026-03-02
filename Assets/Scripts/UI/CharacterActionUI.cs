@@ -6,6 +6,8 @@ using TMPro;
 using DiceOrbit.Data;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Data.Skills;
+using DiceOrbit.Data.Skills.Effects;
 
 namespace DiceOrbit.UI
 {
@@ -108,6 +110,7 @@ namespace DiceOrbit.UI
         public void Hide()
         {
             overlay?.Hide();
+            HoverTooltipUI.Instance?.HidePinned();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
 
             StopSlide();
@@ -185,18 +188,68 @@ namespace DiceOrbit.UI
             for (int i = 0; i < skills.Count; i++)
             {
                 int index = i;
-                var skill = skills[i];
+                var runtimeSkill = skills[i];
                 var go    = Instantiate(skillSelectButtonPrefab, skillButtonContainer);
 
                 var txt = go.GetComponentInChildren<TextMeshProUGUI>();
-                if (txt != null) txt.text = $"{skill.BaseSkill.SkillName} (Lv.{skill.CurrentLevel})";
+                if (txt != null)
+                {
+                    var skillName = runtimeSkill.BaseSkill != null ? runtimeSkill.BaseSkill.SkillName : "Unknown Skill";
+                    txt.text = $"{skillName} (Lv.{runtimeSkill.CurrentLevel})";
+                }
 
                 var imgs = go.GetComponentsInChildren<Image>();
-                if (imgs.Length > 1 && skill.BaseSkill.Icon != null) imgs[1].sprite = skill.BaseSkill.Icon;
+                if (imgs.Length > 1 && runtimeSkill.BaseSkill != null && runtimeSkill.BaseSkill.Icon != null) imgs[1].sprite = runtimeSkill.BaseSkill.Icon;
+
+                var hoverPreview = go.GetComponent<SkillPreviewHoverUI>();
+                if (hoverPreview == null) hoverPreview = go.AddComponent<SkillPreviewHoverUI>();
+                hoverPreview.SetPreview(BuildDamagePreview(runtimeSkill));
 
                 var btn = go.GetComponent<Button>();
                 btn?.onClick.AddListener(() => OnSpecificSkillClicked(index));
             }
+        }
+
+        private string BuildDamagePreview(RuntimeSkill runtimeSkill)
+        {
+            if (runtimeSkill == null || runtimeSkill.BaseSkill == null || currentCharacter == null || currentDice == null)
+                return "예상: -";
+
+            var skillData = runtimeSkill.CurrentSkillData;
+            if (skillData == null || skillData.Effects == null || skillData.Effects.Count == 0)
+                return "예상: -";
+
+            int dice = currentDice.Value;
+            var lines = new List<string>();
+
+            foreach (var effect in skillData.Effects)
+            {
+                if (effect == null) continue;
+
+                if (effect is DiceMultiplierDamageEffect diceEffect)
+                {
+                    int baseDamage = dice * diceEffect.multiplier;
+                    lines.Add($"예상 피해: ({dice} x {diceEffect.multiplier}) = {baseDamage}");
+                    lines.Add("실피해: max(1, 예상 피해 - 대상 DEF)");
+                }
+                else if (effect is MageStackDamageEffect mageEffect)
+                {
+                    int focusStacks = currentCharacter.StatusEffects != null
+                        ? currentCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
+                        : 0;
+
+                    int baseDamage = dice * mageEffect.baseMultiplier;
+                    float bonusMultiplier = 1.0f + (focusStacks * mageEffect.bonusDamageRatioPerStack);
+                    int finalDamage = Mathf.RoundToInt(baseDamage * bonusMultiplier);
+                    float bonusPercent = focusStacks * mageEffect.bonusDamageRatioPerStack * 100f;
+
+                    lines.Add($"예상 피해: ({dice} x {mageEffect.baseMultiplier}) x (1 + {focusStacks} x {mageEffect.bonusDamageRatioPerStack:0.##})");
+                    lines.Add($"= {baseDamage} x {bonusMultiplier:0.##} = {finalDamage} (집중 +{bonusPercent:0.#}%)");
+                    lines.Add("실피해: max(1, 예상 피해 - 대상 DEF)");
+                }
+            }
+
+            return lines.Count > 0 ? string.Join("\n", lines) : "예상: -";
         }
 
         private void ExecuteSkill(int index)

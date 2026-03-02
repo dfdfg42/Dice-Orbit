@@ -24,6 +24,7 @@ namespace DiceOrbit.UI
         private Vector2 offset = new Vector2(16f, -16f);
         private bool visible;
         private IHoverTooltipProvider currentProvider;
+        private bool pinnedByUI;
         private Camera cachedCamera;
         private TMP_FontAsset resolvedFont;
 
@@ -83,6 +84,19 @@ namespace DiceOrbit.UI
             }
         }
 
+        public void ShowPinned(string message)
+        {
+            pinnedByUI = true;
+            currentProvider = null;
+            Show(message);
+        }
+
+        public void HidePinned()
+        {
+            pinnedByUI = false;
+            Hide();
+        }
+
         private void BuildUI()
         {
             canvas = GetComponentInChildren<Canvas>();
@@ -140,6 +154,8 @@ namespace DiceOrbit.UI
 
         private void UpdateHoveredTarget()
         {
+            if (pinnedByUI) return;
+
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             {
                 ClearProvider();
