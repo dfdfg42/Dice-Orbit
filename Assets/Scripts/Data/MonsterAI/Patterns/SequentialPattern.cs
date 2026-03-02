@@ -11,7 +11,6 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     [System.Serializable]
     public class SequentialPattern : MonsterAI
     {
-        [SerializeField] List<MonsterSkill> availableSkills = new List<MonsterSkill>();
         [SerializeField] private int currentIndex = 0;
 
         public override void Initialize(Monster monster)
@@ -25,7 +24,7 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
             if (availableSkills == null || availableSkills.Count == 0) return null;
 
             var skill = availableSkills[currentIndex];
-            currentIndex= (currentIndex + 1 ) % availableSkills.Count;
+            currentIndex = (currentIndex + 1) % availableSkills.Count;
 
             return skill;
         }

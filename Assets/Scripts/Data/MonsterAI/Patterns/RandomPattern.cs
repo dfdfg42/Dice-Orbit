@@ -9,8 +9,6 @@ namespace DiceOrbit.Data.MonsterAI.Patterns
     [System.Serializable]
     public class RandomPattern : MonsterAI
     {
-        [SerializeField] private List<MonsterSkill> availableSkills = new List<MonsterSkill>();
-
         public override MonsterSkill GetNextSkill()
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;

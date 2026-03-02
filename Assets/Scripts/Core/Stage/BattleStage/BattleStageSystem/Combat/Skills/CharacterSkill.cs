@@ -7,6 +7,12 @@ namespace DiceOrbit.Data
 {
     public class CharacterSkillData : SkillData
     {
+        // SkillName, Description은 부모 클래스에서 상속받음
+
+        // 내부에서 값을 설정할 수 있도록 public 메서드 제공
+        public void SetSkillName(string name) => skillName = name;
+        public void SetDescription(string desc) => description = desc;
+
         [HideInInspector] public SkillTargetType skillTargetType = SkillTargetType.SingleEnemy;
 
         [Header("Legacy Effects - For Compatibility")]
@@ -70,13 +76,13 @@ namespace DiceOrbit.Data.Skills
         public string SkillName
         {
             get => BaseData.SkillName;
-            set => BaseData.SkillName = value;
+            set => BaseData.SetSkillName(value);
         }
 
         public string Description
         {
             get => BaseData.Description;
-            set => BaseData.description = value;
+            set => BaseData.SetDescription(value);
         }
 
         public SkillTargetType TargetType
@@ -113,19 +119,17 @@ namespace DiceOrbit.Data.Skills
         {
             var levelData = GetLevelData(level);
             if (levelData == null) return BaseData;
-            
+
             // BaseData 복사 후 레벨별 데이터 적용
-            var skillData = new CharacterSkillData
-            {
-                SkillName = BaseData.SkillName,
-                description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.description : levelData.Description,
-                skillTargetType = BaseData.skillTargetType,
-                DamageMultiplier = levelData.DamageMultiplier,
-                BonusDamage = levelData.BonusDamage,
-                IgnoreDefense = levelData.IgnoreDefense,
-                Effects = levelData.Effects ?? new List<EffectData>(),
-            };
-            
+            var skillData = new CharacterSkillData();
+            skillData.SetSkillName(BaseData.SkillName);
+            skillData.SetDescription(string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.Description : levelData.Description);
+            skillData.skillTargetType = BaseData.skillTargetType;
+            skillData.DamageMultiplier = levelData.DamageMultiplier;
+            skillData.BonusDamage = levelData.BonusDamage;
+            skillData.IgnoreDefense = levelData.IgnoreDefense;
+            skillData.Effects = levelData.Effects ?? new List<EffectData>();
+
             return skillData;
         }
     }

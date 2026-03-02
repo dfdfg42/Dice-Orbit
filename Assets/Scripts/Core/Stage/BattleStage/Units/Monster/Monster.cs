@@ -144,18 +144,15 @@ namespace DiceOrbit.Core
         private void InitializePassives()
         {
             if (preset == null) return;
-            foreach (var config in preset.GetStartingPassives())
+            foreach (var passive in preset.GetStartingPassives())
             {
-                if (config == null) continue;
-                
-                // Config를 통해 런타임 패시브 인스턴스 생성 및 데이터 주입
-                var runtimePassive = config.CreateRuntimePassive(this);
-                
-                // 매니저에 등록 (이미 인스턴스화된 객체 전달)
-                if (runtimePassive != null)
-                {
-                    passives.AddPassive(runtimePassive);
-                }
+                if (passive == null) continue;
+
+                // 패시브 초기화
+                passive.Initialize(this);
+
+                // 매니저에 등록
+                passives.AddPassive(passive);
             }
         }
 
@@ -320,18 +317,14 @@ namespace DiceOrbit.Core
             if (passives != null && passives.ActivePassives.Count > 0)
             {
                 sb.AppendLine("--- Passive ---");
-                foreach (var passiveList in passives.ActivePassives.Values)
+                foreach (var passive in passives.ActivePassives)
                 {
-                    foreach (var passive in passiveList)
+                    if (passive == null) continue;
+                    var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
+                    sb.AppendLine(passiveName);
+                    if (!string.IsNullOrWhiteSpace(passive.Description))
                     {
-
-                        if (passive == null) continue;
-                        var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? passive.name : passive.PassiveName;
-                        sb.AppendLine(passiveName);
-                        if (!string.IsNullOrWhiteSpace(passive.Description()))
-                        {
-                            sb.AppendLine(passive.Description().Trim());
-                        }
+                        sb.AppendLine(passive.Description.Trim());
                     }
                 }
             }
