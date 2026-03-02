@@ -1,7 +1,8 @@
-using System.Collections.Generic;
-using UnityEngine;
-using DiceOrbit.Data;
 using DiceOrbit.Core;
+using DiceOrbit.Data;
+using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEngine;
 
 namespace DiceOrbit.Data
 {
@@ -117,12 +118,12 @@ namespace DiceOrbit.Data.Skills
             // BaseData 복사 후 레벨별 데이터 적용
             var skillData = new CharacterSkillData
             {
-                SkillName = BaseData.SkillName,
-                description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.description : levelData.Description,
                 skillTargetType = BaseData.skillTargetType,
                 Effects = levelData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>(),
             };
-            
+
+            skillData.SetSkillName(BaseData.SkillName);
+            skillData.SetDescription(string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.Description : levelData.Description);
             return skillData;
         }
     }

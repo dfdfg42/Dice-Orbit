@@ -67,10 +67,15 @@ namespace DiceOrbit.EditorTools
                 mageEffect
             );
 
-            var warriorPassive = GetOrCreateBattleCryPassive("Warrior_BattleCry_Passive", 1.05f);
-            var roguePassive = GetOrCreatePositioningPassive("Rogue_Positioning_Passive", 1.05f, 5);
-            var alchemistPassive = GetOrCreateStableReactionPassive("Alchemist_StableReaction_Passive", 1.10f, 0.6f);
-            var magePassive = GetOrCreateFocusPassive("Mage_Focus_Passive", 1);
+            //var warriorPassive = GetOrCreateBattleCryPassive("Warrior_BattleCry_Passive", 1.05f);
+            //var roguePassive = GetOrCreatePositioningPassive("Rogue_Positioning_Passive", 1.05f, 5);
+            //var alchemistPassive = GetOrCreateStableReactionPassive("Alchemist_StableReaction_Passive", 1.10f, 0.6f);
+            //var magePassive = GetOrCreateFocusPassive("Mage_Focus_Passive", 1);
+
+            PassiveAbility warriorPassive = null;
+            PassiveAbility roguePassive = null;
+            PassiveAbility alchemistPassive = null;
+            PassiveAbility magePassive = null;
 
             ApplyPreset("Warrior", warriorSkill, warriorPassive, 600);
             ApplyPreset("Rogue", rogueSkill, roguePassive, 600);
@@ -160,8 +165,8 @@ namespace DiceOrbit.EditorTools
             skill.TargetType = targetType;
             skill.Requirement = requirement;
 
-            skill.BaseData.SkillName = displayName;
-            skill.BaseData.description = description;
+            skill.BaseData.SetSkillName(displayName);
+            skill.BaseData.SetDescription(description);
             skill.BaseData.skillTargetType = targetType;
             skill.BaseData.Effects = new List<SkillEffectBase> { effect };
             skill.Levels = new List<SkillLevelData>();
@@ -221,70 +226,70 @@ namespace DiceOrbit.EditorTools
             return preset;
         }
 
-        private static BattleCryPassive GetOrCreateBattleCryPassive(string fileName, float multiplier)
-        {
-            var assetPath = $"{PassiveDir}/{fileName}.asset";
-            var passive = AssetDatabase.LoadAssetAtPath<BattleCryPassive>(assetPath);
-            if (passive == null)
-            {
-                passive = ScriptableObject.CreateInstance<BattleCryPassive>();
-                AssetDatabase.CreateAsset(passive, assetPath);
-            }
+        //private static BattleCryPassive GetOrCreateBattleCryPassive(string fileName, float multiplier)
+        //{
+        //    var assetPath = $"{PassiveDir}/{fileName}.asset";
+        //    var passive = AssetDatabase.LoadAssetAtPath<BattleCryPassive>(assetPath);
+        //    if (passive == null)
+        //    {
+        //        passive = ScriptableObject.CreateInstance<BattleCryPassive>();
+        //        AssetDatabase.CreateAsset(passive, assetPath);
+        //    }
 
-            passive.PassiveName = "전투의 함성";
-            passive.DamageMultiplier = multiplier;
-            EditorUtility.SetDirty(passive);
-            return passive;
-        }
+        //    passive.PassiveName = "전투의 함성";
+        //    passive.DamageMultiplier = multiplier;
+        //    EditorUtility.SetDirty(passive);
+        //    return passive;
+        //}
 
-        private static StableReactionPassive GetOrCreateStableReactionPassive(string fileName, float multiplier, float thresholdRatio)
-        {
-            var assetPath = $"{PassiveDir}/{fileName}.asset";
-            var passive = AssetDatabase.LoadAssetAtPath<StableReactionPassive>(assetPath);
-            if (passive == null)
-            {
-                passive = ScriptableObject.CreateInstance<StableReactionPassive>();
-                AssetDatabase.CreateAsset(passive, assetPath);
-            }
+        //private static StableReactionPassive GetOrCreateStableReactionPassive(string fileName, float multiplier, float thresholdRatio)
+        //{
+        //    var assetPath = $"{PassiveDir}/{fileName}.asset";
+        //    var passive = AssetDatabase.LoadAssetAtPath<StableReactionPassive>(assetPath);
+        //    if (passive == null)
+        //    {
+        //        passive = ScriptableObject.CreateInstance<StableReactionPassive>();
+        //        AssetDatabase.CreateAsset(passive, assetPath);
+        //    }
 
-            passive.PassiveName = "안정 반응";
-            passive.DamageMultiplier = multiplier;
-            passive.HealthThresholdRatio = thresholdRatio;
-            EditorUtility.SetDirty(passive);
-            return passive;
-        }
+        //    passive.PassiveName = "안정 반응";
+        //    passive.DamageMultiplier = multiplier;
+        //    passive.HealthThresholdRatio = thresholdRatio;
+        //    EditorUtility.SetDirty(passive);
+        //    return passive;
+        //}
 
-        private static PositioningPassive GetOrCreatePositioningPassive(string fileName, float multiplier, int distanceThreshold)
-        {
-            var assetPath = $"{PassiveDir}/{fileName}.asset";
-            var passive = AssetDatabase.LoadAssetAtPath<PositioningPassive>(assetPath);
-            if (passive == null)
-            {
-                passive = ScriptableObject.CreateInstance<PositioningPassive>();
-                AssetDatabase.CreateAsset(passive, assetPath);
-            }
+        //private static PositioningPassive GetOrCreatePositioningPassive(string fileName, float multiplier, int distanceThreshold)
+        //{
+        //    var assetPath = $"{PassiveDir}/{fileName}.asset";
+        //    var passive = AssetDatabase.LoadAssetAtPath<PositioningPassive>(assetPath);
+        //    if (passive == null)
+        //    {
+        //        passive = ScriptableObject.CreateInstance<PositioningPassive>();
+        //        AssetDatabase.CreateAsset(passive, assetPath);
+        //    }
 
-            passive.PassiveName = "위치 선정";
-            passive.DamageMultiplier = multiplier;
-            passive.ThresholdDistance = distanceThreshold;
-            EditorUtility.SetDirty(passive);
-            return passive;
-        }
+        //    passive.PassiveName = "위치 선정";
+        //    passive.DamageMultiplier = multiplier;
+        //    passive.ThresholdDistance = distanceThreshold;
+        //    EditorUtility.SetDirty(passive);
+        //    return passive;
+        //}
 
-        private static FocusPassive GetOrCreateFocusPassive(string fileName, int stacksPerTurn)
-        {
-            var assetPath = $"{PassiveDir}/{fileName}.asset";
-            var passive = AssetDatabase.LoadAssetAtPath<FocusPassive>(assetPath);
-            if (passive == null)
-            {
-                passive = ScriptableObject.CreateInstance<FocusPassive>();
-                AssetDatabase.CreateAsset(passive, assetPath);
-            }
+        //private static FocusPassive GetOrCreateFocusPassive(string fileName, int stacksPerTurn)
+        //{
+        //    var assetPath = $"{PassiveDir}/{fileName}.asset";
+        //    var passive = AssetDatabase.LoadAssetAtPath<FocusPassive>(assetPath);
+        //    if (passive == null)
+        //    {
+        //        passive = ScriptableObject.CreateInstance<FocusPassive>();
+        //        AssetDatabase.CreateAsset(passive, assetPath);
+        //    }
 
-            passive.PassiveName = "정신 집중";
-            passive.stacksPerTurn = stacksPerTurn;
-            EditorUtility.SetDirty(passive);
-            return passive;
-        }
+        //    passive.PassiveName = "정신 집중";
+        //    passive.stacksPerTurn = stacksPerTurn;
+        //    EditorUtility.SetDirty(passive);
+        //    return passive;
+        //}
     }
 }
