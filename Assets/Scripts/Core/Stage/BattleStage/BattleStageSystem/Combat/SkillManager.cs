@@ -97,7 +97,7 @@ namespace DiceOrbit.Core
         private void ExecuteTargetingSkill(Character source, Unit target, CharacterSkillData skill, int diceValue)
         {
             List<Unit> targets = new List<Unit> { target };
-            skill.Execute(source, targets,new List<TileData>(), diceValue);
+            skill.Execute(source, targets, new List<TileData>(), diceValue);
         }
         
         private void ResolveTargets(object initialTarget, SkillTargetType type, List<Monster> mList, List<Character> cList)

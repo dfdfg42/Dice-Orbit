@@ -94,14 +94,11 @@ namespace DiceOrbit.Core
         public void CollectReactors(System.Collections.Generic.List<DiceOrbit.Core.Pipeline.ICombatReactor> reactors)
         {
             reactors.Add(Stats);
-            foreach (var passiveList in passives.ActivePassives.Values)
+            foreach (var passive in passives.ActivePassives)
             {
-                foreach (var passive in passiveList)
+                if (passive is ICombatReactor reactor)
                 {
-                    if (passive is ICombatReactor reactor)
-                    {
-                        reactors.Add(passive);
-                    }
+                    reactors.Add(passive);
                 }
             }
             reactors.Add(statusEffects);

@@ -40,14 +40,16 @@ namespace DiceOrbit.Data
     }
 
     /// <summary>
-    /// 스킬 데이터
+    /// 스킬 데이터 (다형성 지원 - [SerializeReference]로 사용)
     /// </summary>
     [System.Serializable]
-    public class SkillData
+    public abstract class SkillData
     {
-        public virtual string SkillName  { get; set; }
-        public virtual string description { get; set; }
-        [HideInInspector] public string Description => description;
+        [SerializeField] protected string skillName = "";
+        [SerializeField] protected string description = "";
+
+        public virtual string SkillName => skillName;
+        public virtual string Description => description;
 
         public void ExecuteSkillWithIntent(Core.Unit source, AttackIntent intent)
         {

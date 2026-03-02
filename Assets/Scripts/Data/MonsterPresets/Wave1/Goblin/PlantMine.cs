@@ -9,32 +9,25 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
 {
     /// <summary>
     /// 지뢰 설치 패시브
-    /// 몬스터가 이동 시 일정 확률로 현재 타일에 지뢰를 설치합니다.
+    /// 몬스터가 턴 시작 시 무작위 타일에 지뢰를 설치합니다.
     /// </summary>
-    [CreateAssetMenu(fileName = "PlantMine", menuName = "Passives/Monster/PlantMine")]
-    public class PlantMine : PassiveAbility, IIntValueReceiver
+    [System.Serializable]
+    public class PlantMinePassive : PassiveAbility
     {
         [Header("Mine Settings")]
         [Tooltip("설치할 지뢰의 데미지")]
-        private int mineDamage = 5;
-        
+        [SerializeField] private int mineDamage = 5;
+
         [Tooltip("지뢰 지속 턴 (-1은 영구)")]
         [SerializeField] private int mineDuration = -1;
 
-        public override int Priority => 10;
-
-        public override string Description()
+        // 생성자에서 기본값 설정
+        public PlantMinePassive()
         {
-            return $"이동 종료 시 현재 타일에 {mineDamage} 데미지를 주는 지뢰를 설치합니다.";
-        }
-
-        /// <summary>
-        /// IIntValueReceiver 구현 - 지뢰 데미지 값을 설정받습니다.
-        /// </summary>
-        public void SetValue(int value)
-        {
-            mineDamage = value;
-            Debug.Log($"[PlantMine] Mine damage set to {mineDamage}");
+            passiveName = "Plant Mine";
+            description = "Place mines that deal damage";
+            priority = 10;
+            isStackable = false;
         }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
@@ -88,7 +81,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
             }
         }
 
-        public override bool AllowSameSkill(PassiveAbility incoming)
+        public override bool AllowSamePassive(PassiveAbility incoming)
         {
             // 지뢰 설치는 중복 불가 (하나만 존재)
             return false;

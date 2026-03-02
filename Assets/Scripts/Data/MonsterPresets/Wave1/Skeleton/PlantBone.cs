@@ -8,32 +8,30 @@ using UnityEngine;
 namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
 {
     /// <summary>
-    /// 지뢰 설치 패시브
-    /// 몬스터가 이동 시 일정 확률로 현재 타일에 지뢰를 설치합니다.
+    /// 뼈 설치 패시브
+    /// 몬스터가 턴 시작 시 무작위 타일에 방어도를 주는 타일을 설치합니다.
     /// </summary>
-    [CreateAssetMenu(fileName = "PlantBone", menuName = "Passives/Monster/PlantBone")]
-    public class PlantBone : PassiveAbility, IIntValueReceiver
+    [System.Serializable]
+    public class PlantBonePassive : PassiveAbility
     {
-        private int mineDamage = 10;
+        [Header("Bone Settings")]
+        [SerializeField] private int armorAmount = 10;
 
-        [Tooltip("지뢰 지속 턴 (-1은 영구)")]
-        [SerializeField] private int mineDuration = -1;
+        [Tooltip("지속 턴 (-1은 영구)")]
+        [SerializeField] private int duration = -1;
 
-        public override int Priority => 10;
-
-        public override string Description()
+        // 생성자에서 기본값 설정
+        public PlantBonePassive()
         {
-            return $"지나갈 시 방어도를 {mineDamage} 얻는 타일을 설치합니다.";
+            if (string.IsNullOrEmpty(passiveName))
+                passiveName = "Plant Bone";
+            if (string.IsNullOrEmpty(description))
+                description = $"Place tiles that grant {armorAmount} armor";
+            priority = 10;
+            isStackable = false;
         }
 
-        /// <summary>
-        /// IIntValueReceiver 구현 - 지뢰 데미지 값을 설정받습니다.
-        /// </summary>
-        public void SetValue(int value)
-        {
-            mineDamage = value;
-            Debug.Log($"Bone set to {mineDamage}");
-        }
+        public override string Description => $"지나갈 시 방어도를 {armorAmount} 얻는 타일을 설치합니다.";
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
@@ -56,26 +54,26 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
                 if (tile != null)
                 {
                     targetTiles.Add(tile);
-                    Debug.Log($"Mine Generated random index: {index}");
+                    Debug.Log($"Bone Generated at index: {index}");
                 }
             }
 
-            // 각 타일에 지뢰 속성 추가
+            // 각 타일에 뼈 속성 추가
             foreach (var tile in targetTiles)
             {
-                var mineAttribute = new BoneTile(
+                var boneAttribute = new BoneTile(
                     TileAttributeType.Bone,
-                    mineDamage,
-                    mineDuration
+                    armorAmount,
+                    duration
                 );
 
-                tile.AddAttribute(mineAttribute);
+                tile.AddAttribute(boneAttribute);
             }
         }
 
-        public override bool AllowSameSkill(PassiveAbility incoming)
+        public override bool AllowSamePassive(PassiveAbility incoming)
         {
-            // 지뢰 설치는 중복 불가 (하나만 존재)
+            // 뼈 설치는 중복 불가 (하나만 존재)
             return false;
         }
     }

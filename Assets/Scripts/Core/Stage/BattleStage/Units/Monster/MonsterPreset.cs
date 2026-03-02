@@ -20,7 +20,7 @@ namespace DiceOrbit.Data.Monsters
         
         [Header("Starting Passives")]
         [SerializeReference] // 다형성 직렬화 지원
-        public List<DiceOrbit.Data.Passives.PassiveConfig> StartingPassives = new List<DiceOrbit.Data.Passives.PassiveConfig>();
+        public List<DiceOrbit.Data.Passives.PassiveAbility> StartingPassives = new List<DiceOrbit.Data.Passives.PassiveAbility>();
         
         [Header("Visual")]
         public Sprite MonsterSprite;
@@ -49,9 +49,9 @@ namespace DiceOrbit.Data.Monsters
             return stats;
         }
 
-        public List<DiceOrbit.Data.Passives.PassiveConfig> GetStartingPassives()
+        public List<DiceOrbit.Data.Passives.PassiveAbility> GetStartingPassives()
         {
-            return StartingPassives ?? new List<DiceOrbit.Data.Passives.PassiveConfig>();
+            return StartingPassives ?? new List<DiceOrbit.Data.Passives.PassiveAbility>();
         }
     }
 }
