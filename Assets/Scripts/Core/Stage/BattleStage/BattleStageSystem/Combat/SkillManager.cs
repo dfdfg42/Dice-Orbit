@@ -87,109 +87,17 @@ namespace DiceOrbit.Core
         public void OnTargetSelected(Character source, Unit target, CharacterSkillData skill, int diceValue)
         {
             if (source == null || skill == null) return;
-            
-            ExecuteSkill(source, target, skill, diceValue);
+
+            ExecuteTargetingSkill(source, target, skill, diceValue);
         }
         
         /// <summary>
         /// 스킬 실제 실행
         /// </summary>
-        private void ExecuteSkill(Character source, Unit target, CharacterSkillData skill, int diceValue)
+        private void ExecuteTargetingSkill(Character source, Unit target, CharacterSkillData skill, int diceValue)
         {
-            var combatManager = CombatManager.Instance;
-            if (combatManager == null)
-            {
-                source?.OnSkillResolved();
-                return;
-            }
-
-            Debug.Log($"[SkillManager] Executing {skill.SkillName} via Pipeline...");
-
-            // 2. 기본 스킬 로직 -> Pipeline Action으로 변환
-            int baseDamage = skill.CalculateDamage(source.Stats.Attack, diceValue);
-            Debug.Log($"[SkillManager] BaseDamage={baseDamage}, Dice={diceValue}, Skill={skill.SkillName}");
-            
-            // 타겟 해결
-            var monsterTargets = new List<Monster>();
-            var characterTargets = new List<Character>();
-
-            ResolveTargets(target, skill.skillTargetType, monsterTargets, characterTargets);
-            Debug.Log($"[SkillManager] Targets -> Monsters:{monsterTargets.Count}, Characters:{characterTargets.Count}");
-
-            // 3. 파이프라인 실행
-            var pipeline = Pipeline.CombatPipeline.Instance;
-            if (pipeline == null)
-            {
-                Debug.LogWarning("[SkillManager] CombatPipeline not found, using fallback damage.");
-            }
-            foreach (var mTarget in monsterTargets)
-            {
-                var action = new Pipeline.CombatAction(skill.SkillName, Pipeline.ActionType.Attack, baseDamage);
-                action.IgnoreDefense = skill.IgnoreDefense;
-                action.AddTag("Skill");
-
-                // 효과 추가
-                if (skill.Effects != null)
-                {
-                    foreach (var eff in skill.Effects)
-                    {
-                        action.AddEffect(eff.Type, eff.Value, eff.Duration);
-                    }
-                }
-
-                if (pipeline != null)
-                {
-                    var context = new Pipeline.CombatContext(source, mTarget, action);
-                    pipeline.Process(context);
-                }
-                else
-                {
-                    combatManager.AttackMonster(mTarget, baseDamage, skill.IgnoreDefense);
-                }
-            }
-
-            foreach (var cTarget in characterTargets)
-            {
-                // 아군 타겟은 주로 힐 (TargetType.Ally / Self)
-                var actionType = (skill.skillTargetType == SkillTargetType.Self || skill.skillTargetType == SkillTargetType.Ally) 
-                                 ? Pipeline.ActionType.Heal 
-                                 : Pipeline.ActionType.Attack;
-
-                var action = new Pipeline.CombatAction(skill.SkillName, actionType, baseDamage);
-                action.AddTag("Skill");
-
-                // 효과 추가
-                if (skill.Effects != null)
-                {
-                    foreach (var eff in skill.Effects)
-                    {
-                        action.AddEffect(eff.Type, eff.Value, eff.Duration);
-                    }
-                }
-
-                if (pipeline != null)
-                {
-                    var context = new Pipeline.CombatContext(source, cTarget, action);
-                    pipeline.Process(context);
-                }
-                else
-                {
-                    if (actionType == Pipeline.ActionType.Heal)
-                    {
-                        cTarget.Stats.Heal(baseDamage);
-                    }
-                    else
-                    {
-                        cTarget.TakeDamage(baseDamage);
-                    }
-                }
-            }
-
-            // 4. 상태 이상 부여 (Status Effects)
-            // 추후 Effect 부착도 Action으로 만들 수 있음.
-            // Action에 포함시켜 처리했으므로 별도 호출 제거
-            // ApplyStatusEffects(source, target, skill);
-            source?.OnSkillResolved();
+            List<Unit> targets = new List<Unit> { target };
+            skill.Execute(source, targets,new List<TileData>(), diceValue);
         }
         
         private void ResolveTargets(object initialTarget, SkillTargetType type, List<Monster> mList, List<Character> cList)

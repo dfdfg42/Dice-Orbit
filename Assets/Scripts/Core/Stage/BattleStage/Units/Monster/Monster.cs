@@ -236,7 +236,7 @@ namespace DiceOrbit.Core
             PlayAttackVisual();
 
             // SkillData의 Execute 메서드에 위임
-            skill.Execute(this, intent);
+            skill.ExecuteSkillWithIntent(this, intent);
             QueueReturnToIdle(attackSpriteDuration);
         }
 

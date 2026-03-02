@@ -49,10 +49,7 @@ namespace DiceOrbit.Data
         public virtual string description { get; set; }
         [HideInInspector] public string Description => description;
 
-        /// <summary>
-        /// 스킬 실행 (BasicEffects + SpecialEffects)
-        /// </summary>
-        public void Execute(Core.Unit source, AttackIntent intent)
+        public void ExecuteSkillWithIntent(Core.Unit source, AttackIntent intent)
         {
             if (source == null || intent == null)
             {
@@ -72,9 +69,13 @@ namespace DiceOrbit.Data
             }
 
             var targetTiles = intent.TargetTiles ?? new List<TileData>();
-            ExecuteSkillEffect(source, targetUnits, targetTiles, intent);
+            Execute(source, targetUnits, targetTiles, 0);
         }
-        protected virtual void ExecuteSkillEffect(Core.Unit source, List<Core.Unit> targetUnits, List<TileData> targetTiles, AttackIntent intent)
+
+        /// <summary>
+        /// 스킬 실행 (BasicEffects + SpecialEffects)
+        /// </summary>
+        public virtual void Execute(Core.Unit source, List<Core.Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
 
         }
