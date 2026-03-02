@@ -204,14 +204,14 @@ namespace DiceOrbit.Core
             {
                 case SkillTargetType.SingleEnemy:
                 case SkillTargetType.AllEnemies:
-                    return target.GetComponent<Monster>() != null;
+                    return target.GetComponentInParent<Monster>() != null;
                     
                 case SkillTargetType.Self:
-                    return target.GetComponent<Character>() == sourceCharacter;
+                    return target.GetComponentInParent<Character>() == sourceCharacter;
                     
                 case SkillTargetType.Ally:
                 case SkillTargetType.AllAllies:
-                    var character = target.GetComponent<Character>();
+                    var character = target.GetComponentInParent<Character>();
                     return character != null && character != sourceCharacter;
                     
                 default:

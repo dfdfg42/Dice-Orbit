@@ -5,6 +5,7 @@ using DiceOrbit.Core;
 
 namespace DiceOrbit.Data
 {
+    [System.Serializable]
     public class CharacterSkillData : SkillData
     {
         [HideInInspector] public SkillTargetType skillTargetType = SkillTargetType.SingleEnemy;
@@ -107,6 +108,10 @@ namespace DiceOrbit.Data.Skills
         {
             var levelData = GetLevelData(level);
             if (levelData == null) return BaseData;
+
+            var resolvedEffects = (levelData.Effects != null && levelData.Effects.Count > 0)
+                ? levelData.Effects
+                : (BaseData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>());
             
             // BaseData 복사 후 레벨별 데이터 적용
             var skillData = new CharacterSkillData
@@ -114,7 +119,7 @@ namespace DiceOrbit.Data.Skills
                 SkillName = BaseData.SkillName,
                 description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.description : levelData.Description,
                 skillTargetType = BaseData.skillTargetType,
-                Effects = levelData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>(),
+                Effects = resolvedEffects,
             };
             
             return skillData;

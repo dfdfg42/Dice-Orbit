@@ -18,28 +18,6 @@ namespace DiceOrbit.Data
     }
 
     /// <summary>
-    /// 기본 스킬 효과 타입 (Inspector에서 설정 가능)
-    /// </summary>
-    public enum SkillEffectType
-    {
-        Damage,         // 데미지
-        Heal,           // 힐
-        GetArmor,       // 방어막 획득
-        Buff,           // 버프 (공격력 증가 등)
-        Debuff          // 디버프 (공격력 감소 등)
-    }
-
-    /// <summary>
-    /// 기본 스킬 효과 (Inspector에서 설정 가능)
-    /// </summary>
-    [System.Serializable]
-    public class SkillEffect
-    {
-        public SkillEffectType Type;
-        public int Amount;
-    }
-
-    /// <summary>
     /// 스킬 데이터
     /// </summary>
     [System.Serializable]
@@ -73,11 +51,11 @@ namespace DiceOrbit.Data
         }
 
         /// <summary>
-        /// 스킬 실행 (BasicEffects + SpecialEffects)
+        /// 스킬 실행
         /// </summary>
         public virtual void Execute(Core.Unit source, List<Core.Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-
+            
         }
 
         /// <summary>
