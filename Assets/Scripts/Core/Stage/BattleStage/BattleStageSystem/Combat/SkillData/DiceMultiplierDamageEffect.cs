@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Data.Skills.Effects
 {
@@ -16,17 +17,30 @@ namespace DiceOrbit.Data.Skills.Effects
             int damage = diceValue * multiplier;
             
             if (targets == null) return;
+
+            VfxManager.PlayCast(vfxProfile, source);
             
             foreach (var target in targets)
             {
                 if (target == null || !target.IsAlive) continue;
 
+                var action = new CombatAction("Attack", ActionType.Attack, damage);
+                if (vfxProfile != null)
+                {
+                    action.AddTag("CustomVfx");
+                }
+
                 var context = new CombatContext(
                     source,
                     target,
-                    new CombatAction("Attack", ActionType.Attack, damage)
+                    action
                 );
                 CombatPipeline.Instance?.Process(context);
+
+                if (context.IsEffected)
+                {
+                    VfxManager.PlayHit(vfxProfile, target);
+                }
             }
         }
     }

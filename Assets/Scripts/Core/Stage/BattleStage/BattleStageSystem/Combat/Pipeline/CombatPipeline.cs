@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
+using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Core.Pipeline
 {
@@ -120,11 +121,19 @@ namespace DiceOrbit.Core.Pipeline
             if (context.Action.Type == ActionType.Attack)
             {
                 if (context.Target.TakeDamage(finalValue)!=0) context.IsEffected = true;
+                if (context.IsEffected && !context.Action.HasTag("CustomVfx"))
+                {
+                    VfxManager.PlayDefaultAttackHit(context.Target);
+                }
             }
             else if (context.Action.Type == ActionType.Heal)
             {
                 // Unit.Heal을 사용하는 것이 일관성에 좋음 (오버라이드 가능성 고려)
                 context.Target.Heal(finalValue);
+                if (!context.Action.HasTag("CustomVfx"))
+                {
+                    VfxManager.PlayDefaultHeal(context.Target);
+                }
             }
 
             // 2. 추가 효과 적용 (Effects)

@@ -38,6 +38,7 @@ namespace DiceOrbit.Core
         public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
 
         [Header("Starting Passives")]
+        [SerializeReference] // 다형성 직렬화 지원
         public List<Data.Passives.PassiveAbility> StartingPassives = new List<Data.Passives.PassiveAbility>();
 
 
