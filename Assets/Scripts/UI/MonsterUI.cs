@@ -24,6 +24,13 @@ namespace DiceOrbit.UI
         [SerializeField] private Image intentBubbleBg;
         [SerializeField] private Image intentIcon;
         [SerializeField] private TextMeshProUGUI intentText;
+
+        [Header("Armor UI")]
+        [SerializeField] private RectTransform armorRoot;
+        [SerializeField] private Image armorIcon;
+        [SerializeField] private TextMeshProUGUI armorText;
+        [SerializeField] private Sprite armorIconSprite;
+        [SerializeField] private bool hideArmorWhenZero = true;
         
         [Header("Intent Colors")]
         [SerializeField] private Color attackColor = Color.red;
@@ -63,6 +70,8 @@ namespace DiceOrbit.UI
             
             mainCamera = Camera.main;
             AutoResolveIntentRefs();
+            AutoResolveArmorRefs();
+            EnsureArmorUIExists();
         }
         
         private void Start()
@@ -143,6 +152,7 @@ namespace DiceOrbit.UI
             
             // 공격 의도
             UpdateIntent();
+            UpdateArmor();
         }
         
         /// <summary>
@@ -224,6 +234,102 @@ namespace DiceOrbit.UI
                 if (intentIcon != null) intentIcon.gameObject.SetActive(visible);
                 if (intentText != null) intentText.gameObject.SetActive(visible && showIntentText);
             }
+        }
+
+        private void UpdateArmor()
+        {
+            if (monster == null) return;
+            int armor = Mathf.Max(0, monster.Stats.TempArmor);
+
+            if (armorRoot != null)
+            {
+                armorRoot.gameObject.SetActive(!hideArmorWhenZero || armor > 0);
+            }
+
+            if (armorText != null)
+            {
+                armorText.text = armor.ToString();
+            }
+        }
+
+        private void AutoResolveArmorRefs()
+        {
+            if (worldCanvas == null) return;
+
+            if (armorRoot == null)
+            {
+                var rects = worldCanvas.GetComponentsInChildren<RectTransform>(true);
+                foreach (var rect in rects)
+                {
+                    if (rect == null) continue;
+                    var n = rect.name.ToLowerInvariant();
+                    if (n.Contains("armor"))
+                    {
+                        armorRoot = rect;
+                        break;
+                    }
+                }
+            }
+
+            if (armorIcon == null && armorRoot != null)
+            {
+                armorIcon = armorRoot.GetComponent<Image>();
+                if (armorIcon == null)
+                {
+                    armorIcon = armorRoot.GetComponentInChildren<Image>(true);
+                }
+            }
+
+            if (armorText == null && armorRoot != null)
+            {
+                armorText = armorRoot.GetComponentInChildren<TextMeshProUGUI>(true);
+            }
+        }
+
+        private void EnsureArmorUIExists()
+        {
+            if (worldCanvas == null || armorRoot != null) return;
+
+            GameObject rootGo = new GameObject("ArmorBadge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            rootGo.transform.SetParent(worldCanvas.transform, false);
+            armorRoot = rootGo.GetComponent<RectTransform>();
+            armorRoot.anchorMin = new Vector2(0.5f, 0.5f);
+            armorRoot.anchorMax = new Vector2(0.5f, 0.5f);
+            armorRoot.pivot = new Vector2(0.5f, 0.5f);
+            armorRoot.anchoredPosition = new Vector2(120f, 24f);
+            armorRoot.sizeDelta = new Vector2(40f, 40f);
+            armorRoot.localScale = Vector3.one;
+
+            armorIcon = rootGo.GetComponent<Image>();
+            armorIcon.raycastTarget = false;
+            armorIcon.color = Color.white;
+            if (armorIconSprite != null)
+            {
+                armorIcon.sprite = armorIconSprite;
+                armorIcon.type = Image.Type.Simple;
+                armorIcon.preserveAspect = true;
+            }
+            else
+            {
+                // 아이콘 스프라이트가 없으면 배지 배경색으로 대체
+                armorIcon.sprite = null;
+                armorIcon.color = new Color(0.2f, 0.45f, 1f, 0.9f);
+            }
+
+            GameObject textGo = new GameObject("ArmorText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            textGo.transform.SetParent(armorRoot, false);
+            var textRect = textGo.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            armorText = textGo.GetComponent<TextMeshProUGUI>();
+            armorText.alignment = TextAlignmentOptions.Center;
+            armorText.fontSize = 18f;
+            armorText.color = Color.white;
+            armorText.raycastTarget = false;
+            armorText.text = "0";
         }
         
         private int BuildIntentVisualKey(AttackIntent intent)

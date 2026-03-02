@@ -293,7 +293,7 @@ namespace DiceOrbit.Core
             sb.AppendLine(Stats.MonsterName);
             sb.AppendLine($"HP: {Stats.CurrentHP}/{Stats.MaxHP}");
             sb.AppendLine($"Armor: {Stats.TempArmor}");
-            sb.AppendLine($"ATK: {Stats.Attack}  DEF: {Stats.Defense}");
+            sb.AppendLine($"ATK: {Stats.Attack}");
 
             if (CurrentIntent != null)
             {

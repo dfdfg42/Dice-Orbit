@@ -225,7 +225,8 @@ namespace DiceOrbit.Core
 
             int totalRaw = 0;
             int totalApplied = 0;
-            int defense = targetUnit.Stats != null ? targetUnit.Stats.Defense : 0;
+            int remainingArmor = targetUnit.Stats != null ? Mathf.Max(0, targetUnit.Stats.TempArmor) : 0;
+            int initialArmor = remainingArmor;
             int focusStacks = sourceCharacter.StatusEffects != null
                 ? sourceCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
                 : 0;
@@ -238,7 +239,9 @@ namespace DiceOrbit.Core
                 {
                     int raw = diceValue * diceEffect.multiplier;
                     totalRaw += raw;
-                    totalApplied += Mathf.Max(1, raw - defense);
+                    int absorbed = Mathf.Min(raw, remainingArmor);
+                    remainingArmor -= absorbed;
+                    totalApplied += Mathf.Max(0, raw - absorbed);
                 }
                 else if (effect is MageStackDamageEffect mageEffect)
                 {
@@ -246,12 +249,14 @@ namespace DiceOrbit.Core
                     float multiplier = 1.0f + (focusStacks * mageEffect.bonusDamageRatioPerStack);
                     int raw = Mathf.RoundToInt(baseDamage * multiplier);
                     totalRaw += raw;
-                    totalApplied += Mathf.Max(1, raw - defense);
+                    int absorbed = Mathf.Min(raw, remainingArmor);
+                    remainingArmor -= absorbed;
+                    totalApplied += Mathf.Max(0, raw - absorbed);
                 }
             }
 
             if (totalRaw <= 0) return "예상 적용 피해: -";
-            return $"예상 적용 피해: {totalApplied}\n(원본 {totalRaw} - DEF {defense})";
+            return $"예상 적용 피해: {totalApplied}\n(원본 {totalRaw} - 방어도 {initialArmor})";
         }
         
         /// <summary>

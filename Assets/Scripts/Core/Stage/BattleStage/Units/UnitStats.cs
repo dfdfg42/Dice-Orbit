@@ -11,7 +11,8 @@ namespace DiceOrbit.Data
         public int MaxHP = 50;
         public int CurrentHP = 50;
         public int Attack = 8;
-        public int Defense = 2;
+        // Legacy field: fixed defense is not used in current combat rule.
+        public int Defense = 0;
         public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)
 
         // ICombatReactor implementation
@@ -39,17 +40,21 @@ namespace DiceOrbit.Data
         /// </summary>
         public int TakeDamage(int damage)
         {
-            int actualDamage = Mathf.Max(1, damage - Defense); // 최소 1 데미지
+            // Slay-the-Spire style:
+            // 1) 고정 방어력(Defense)은 사용하지 않음
+            // 2) TempArmor가 먼저 소모되고 남은 값만 HP에 적용
+            int remainingDamage = Mathf.Max(0, damage);
 
             // 임시 방어도가 있다면 데미지를 우선 흡수
-            if (TempArmor > 0)
+            if (TempArmor > 0 && remainingDamage > 0)
             {
-                int absorbed = Mathf.Min(actualDamage, TempArmor);
+                int absorbed = Mathf.Min(remainingDamage, TempArmor);
                 TempArmor -= absorbed;
-                actualDamage -= absorbed;
+                remainingDamage -= absorbed;
                 Debug.Log($"TempArmor absorbed {absorbed} dmg");
             }
-            
+
+            int actualDamage = remainingDamage;
             CurrentHP = Mathf.Max(0, CurrentHP - actualDamage);
             Debug.Log($" took {actualDamage} damage! (HP: {CurrentHP}/{MaxHP})");
             return actualDamage;

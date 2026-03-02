@@ -36,9 +36,8 @@ namespace DiceOrbit.Data
             MaxHP += 5;
             CurrentHP = MaxHP; // 풀 회복
             Attack += 2;
-            Defense += 1;
 
-            Debug.Log($"{CharacterName} leveled up to {Level}! HP: {MaxHP}, ATK: {Attack}, DEF: {Defense}");
+            Debug.Log($"{CharacterName} leveled up to {Level}! HP: {MaxHP}, ATK: {Attack}");
         }
 
     }
