@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DiceOrbit.Core;
 using DiceOrbit.Data.MonsterPresets.Wave1.Goblin;
+using DiceOrbit.Data.Skills.Effects;
 
 namespace DiceOrbit.Data
 {
@@ -88,13 +89,24 @@ namespace DiceOrbit.Data
             }
 
             var resolvedTargetType = targetType;
-            //// MineBomb is tile-centric, so preview should always use mine-affected tiles.
-            //if (skillData.SpecialEffects != null && skillData.SpecialEffects.Any(effect => effect is MineBomb))
-            //{
-            //    targetTiles = MineBomb.CollectAffectedTiles();
-            //    resolvedTargetType = TargetType.Tiles;
-            //    selectedTargets.Clear();
-            //}
+            // 타일 프리뷰를 덮어쓰는 이펙트 탐색 (오버라이딩 로직)
+            // (MineBomb 등 특정 클래스에 종속되지 않고 다형성을 활용)
+            if (skillData is MonsterSkillData monsterSkillData && monsterSkillData.Effects != null)
+            {
+                foreach (var effect in monsterSkillData.Effects)
+                {
+                    if (effect is SkillEffectBase skillEffect)
+                    {
+                        var previewTiles = skillEffect.GetTargetTilesPreview(owner);
+                        if (previewTiles != null && previewTiles.Count > 0)
+                        {
+                            targetTiles.AddRange(previewTiles);
+                            resolvedTargetType = TargetType.Tiles;
+                            selectedTargets.Clear();
+                        }
+                    }
+                }
+            }
 
             // IntentType 결정
             IntentType type = DetermineIntentType(); // To avoid variable shadowing

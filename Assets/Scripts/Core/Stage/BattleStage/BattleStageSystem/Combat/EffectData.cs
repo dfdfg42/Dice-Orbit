@@ -14,7 +14,8 @@ namespace DiceOrbit.Data
         DebuffAttack,   // 공격력 디버프
         DebuffDefense,  // 방어력 디버프
         Dot,            // 지속 데미지
-        Shield          // 보호막
+        Shield,         // 보호막
+        Focus           // 마법사 집중 스택
     }
     
     /// <summary>
@@ -58,3 +59,4 @@ namespace DiceOrbit.Data
         }
     }
 }
+

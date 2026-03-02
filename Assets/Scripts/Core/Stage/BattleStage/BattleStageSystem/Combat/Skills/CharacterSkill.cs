@@ -9,20 +9,18 @@ namespace DiceOrbit.Data
     {
         [HideInInspector] public SkillTargetType skillTargetType = SkillTargetType.SingleEnemy;
 
-        [Header("Legacy Effects - For Compatibility")]
-        public List<EffectData> Effects = new List<EffectData>();
-
-        [Header("Legacy Damage - For Compatibility")]
-        [HideInInspector] public int DamageMultiplier = 1;
-        [HideInInspector] public int BonusDamage = 0;
-        [HideInInspector] public bool IgnoreDefense = false;
-
-        /// <summary>
-        /// 데미지 계산 (DamageMultiplier를 주사위 눈금 배수로 적용)
-        /// </summary>
-        public int CalculateDamage(int baseAttack, int diceValue)
+        [Header("Skill Effects")]
+        public List<DiceOrbit.Data.Skills.Effects.SkillEffectBase> Effects = new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>();
+        
+        public override void Execute(Core.Unit source, List<Core.Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            return baseAttack + (diceValue * DamageMultiplier) + BonusDamage;
+            if (Effects == null || Effects.Count == 0) return;
+            
+            foreach (var effect in Effects)
+            {
+                if (effect == null) continue;
+                effect.Execute(source, targetUnits, targetTiles, diceValue);
+            }
         }
     }
 }
@@ -42,12 +40,8 @@ namespace DiceOrbit.Data.Skills
         public string Description;
         
         [Header("Level-Specific Data")]
-        public int DamageMultiplier = 1;
-        public int BonusDamage = 0;
-        public bool IgnoreDefense = false;
-        
         public DiceRequirement Requirement;
-        public List<EffectData> Effects;
+        public List<DiceOrbit.Data.Skills.Effects.SkillEffectBase> Effects;
     }
 
     [CreateAssetMenu(fileName = "New Character Skill", menuName = "Dice Orbit/Skills/Character Skill")]
@@ -120,10 +114,7 @@ namespace DiceOrbit.Data.Skills
                 SkillName = BaseData.SkillName,
                 description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.description : levelData.Description,
                 skillTargetType = BaseData.skillTargetType,
-                DamageMultiplier = levelData.DamageMultiplier,
-                BonusDamage = levelData.BonusDamage,
-                IgnoreDefense = levelData.IgnoreDefense,
-                Effects = levelData.Effects ?? new List<EffectData>(),
+                Effects = levelData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>(),
             };
             
             return skillData;

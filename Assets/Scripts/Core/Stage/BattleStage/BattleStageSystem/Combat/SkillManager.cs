@@ -1,8 +1,6 @@
 using UnityEngine;
 using DiceOrbit.Data;
-using DiceOrbit.UI;
 using System.Collections.Generic;
-using DiceOrbit.Core.Pipeline; // Pipeline Namespace
 
 namespace DiceOrbit.Core
 {
@@ -96,56 +94,83 @@ namespace DiceOrbit.Core
         /// </summary>
         private void ExecuteTargetingSkill(Character source, Unit target, CharacterSkillData skill, int diceValue)
         {
-            List<Unit> targets = new List<Unit> { target };
-            skill.Execute(source, targets,new List<TileData>(), diceValue);
+            var targets = ResolveTargetsByType(source, target, skill.skillTargetType);
+            var targetTiles = ResolveTargetTiles(source, skill);
+            skill.Execute(source, targets, targetTiles, diceValue);
+            source.OnSkillResolved();
         }
-        
-        private void ResolveTargets(object initialTarget, SkillTargetType type, List<Monster> mList, List<Character> cList)
+
+        private List<Unit> ResolveTargetsByType(Character source, Unit initialTarget, SkillTargetType type)
         {
-            if (type == SkillTargetType.AllEnemies)
+            var resolved = new List<Unit>();
+
+            switch (type)
             {
-                mList.AddRange(CombatManager.Instance.GetAliveMonsters());
+                case SkillTargetType.SingleEnemy:
+                case SkillTargetType.Ally:
+                    if (initialTarget != null && initialTarget.IsAlive)
+                    {
+                        resolved.Add(initialTarget);
+                    }
+                    break;
+                case SkillTargetType.AllEnemies:
+                    var enemies = CombatManager.Instance?.GetAliveMonsters();
+                    if (enemies != null)
+                    {
+                        foreach (var enemy in enemies)
+                        {
+                            if (enemy != null && enemy.IsAlive)
+                            {
+                                resolved.Add(enemy);
+                            }
+                        }
+                    }
+                    break;
+                case SkillTargetType.Self:
+                    if (source != null && source.IsAlive)
+                    {
+                        resolved.Add(source);
+                    }
+                    break;
+                case SkillTargetType.AllAllies:
+                    var allies = PartyManager.Instance?.GetAliveCharacters();
+                    if (allies != null)
+                    {
+                        foreach (var ally in allies)
+                        {
+                            if (ally != null && ally.IsAlive && ally != source)
+                            {
+                                resolved.Add(ally);
+                            }
+                        }
+                    }
+                    break;
+                case SkillTargetType.Tiles:
+                    break;
             }
-            else if (type == SkillTargetType.AllAllies)
+
+            return resolved;
+        }
+
+        private List<TileData> ResolveTargetTiles(Character source, CharacterSkillData skill)
+        {
+            var tiles = new List<TileData>();
+            if (skill?.Effects == null) return tiles;
+
+            foreach (var effect in skill.Effects)
             {
-                cList.AddRange(PartyManager.Instance.GetAliveCharacters());
-            }
-            else
-            {
-                // Single Target
-                if (initialTarget is Monster m) mList.Add(m);
-                else if (initialTarget is Character c) cList.Add(c);
-                else if (initialTarget is GameObject go)
+                if (effect == null) continue;
+                var previewTiles = effect.GetTargetTilesPreview(source);
+                if (previewTiles == null || previewTiles.Count == 0) continue;
+
+                foreach (var tile in previewTiles)
                 {
-                    var mC = go.GetComponentInParent<Monster>();
-                    if (mC) mList.Add(mC);
-                    var cC = go.GetComponentInParent<Character>();
-                    if (cC) cList.Add(cC);
+                    if (tile == null || tiles.Contains(tile)) continue;
+                    tiles.Add(tile);
                 }
             }
-        }
-       
-        private GameObject GetTargetGameObject(object target)
-        {
-             if (target is MonoBehaviour mb) return mb.gameObject;
-             if (target is GameObject go) return go;
-             return null;
-        }
 
-        private Monster ResolveMonsterTarget(object target)
-        {
-            if (target is Monster monster) return monster;
-            if (target is GameObject go) return go.GetComponentInParent<Monster>();
-            if (target is MonoBehaviour mb) return mb.GetComponentInParent<Monster>();
-            return null;
-        }
-
-        private Character ResolveCharacterTarget(object target)
-        {
-            if (target is Character character) return character;
-            if (target is GameObject go) return go.GetComponentInParent<Character>();
-            if (target is MonoBehaviour mb) return mb.GetComponentInParent<Character>();
-            return null;
+            return tiles;
         }
     }
 }

@@ -50,6 +50,21 @@ namespace DiceOrbit.Systems.Effects
             }
         }
 
+        
+        public int GetEffectValue(EffectType type)
+        {
+            if (activeEffects.TryGetValue(type, out var effect) && effect != null)
+            {
+                return effect.Value;
+            }
+            return 0;
+        }
+
+        public bool HasEffect(EffectType type)
+        {
+            return activeEffects.ContainsKey(type);
+        }
+
         // ICombatReactor Implementation
         public void OnReact(CombatTrigger trigger, CombatContext context)
         {
@@ -98,3 +113,4 @@ namespace DiceOrbit.Systems.Effects
         }
     }
 }
+
