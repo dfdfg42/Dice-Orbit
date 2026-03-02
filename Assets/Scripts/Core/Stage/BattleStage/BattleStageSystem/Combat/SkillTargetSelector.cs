@@ -20,7 +20,7 @@ namespace DiceOrbit.Core
         
         private bool isSelectingTarget = false;
         private Character sourceCharacter;
-        private SkillData currentSkill;
+        private CharacterSkillData currentSkill;
         private int diceValue;
         private Camera mainCamera;
         
@@ -83,7 +83,7 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 타겟 선택 모드 시작
         /// </summary>
-        public void StartTargetSelection(Character character, SkillData skill, int dice)
+        public void StartTargetSelection(Character character, CharacterSkillData skill, int dice)
         {
             sourceCharacter = character;
             currentSkill = skill;
@@ -106,7 +106,7 @@ namespace DiceOrbit.Core
             
             targetLine.enabled = true;
             
-            Debug.Log($"Target selection started for {skill.SkillName} (Type: {skill.TargetType})");
+            Debug.Log($"Target selection started for {skill.SkillName} (Type: {skill.skillTargetType})");
         }
         
         /// <summary>
@@ -200,7 +200,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private bool IsValidTarget(GameObject target)
         {
-            switch (currentSkill.TargetType)
+            switch (currentSkill.skillTargetType)
             {
                 case SkillTargetType.SingleEnemy:
                 case SkillTargetType.AllEnemies:

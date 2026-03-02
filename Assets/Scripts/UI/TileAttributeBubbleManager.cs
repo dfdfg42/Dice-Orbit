@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DiceOrbit.Core;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Tile;
 using UnityEngine;
@@ -70,7 +71,7 @@ namespace DiceOrbit.UI
 
         public void RefreshAllTiles()
         {
-            var allTiles = FindObjectsOfType<TileData>();
+            var allTiles = GameManager.Instance?.GetOrbitManager().Tiles;
             foreach (var tile in allTiles)
             {
                 RefreshTile(tile);

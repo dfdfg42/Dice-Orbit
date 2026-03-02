@@ -84,7 +84,7 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 타겟 선택 완료 시 호출 (TargetSelector에서 호출)
         /// </summary>
-        public void OnTargetSelected(Character source, Unit target, SkillData skill, int diceValue)
+        public void OnTargetSelected(Character source, Unit target, CharacterSkillData skill, int diceValue)
         {
             if (source == null || skill == null) return;
             
@@ -94,7 +94,7 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 스킬 실제 실행
         /// </summary>
-        private void ExecuteSkill(Character source, Unit target, SkillData skill, int diceValue)
+        private void ExecuteSkill(Character source, Unit target, CharacterSkillData skill, int diceValue)
         {
             var combatManager = CombatManager.Instance;
             if (combatManager == null)
@@ -113,7 +113,7 @@ namespace DiceOrbit.Core
             var monsterTargets = new List<Monster>();
             var characterTargets = new List<Character>();
 
-            ResolveTargets(target, skill.TargetType, monsterTargets, characterTargets);
+            ResolveTargets(target, skill.skillTargetType, monsterTargets, characterTargets);
             Debug.Log($"[SkillManager] Targets -> Monsters:{monsterTargets.Count}, Characters:{characterTargets.Count}");
 
             // 3. 파이프라인 실행
@@ -151,7 +151,7 @@ namespace DiceOrbit.Core
             foreach (var cTarget in characterTargets)
             {
                 // 아군 타겟은 주로 힐 (TargetType.Ally / Self)
-                var actionType = (skill.TargetType == SkillTargetType.Self || skill.TargetType == SkillTargetType.Ally) 
+                var actionType = (skill.skillTargetType == SkillTargetType.Self || skill.skillTargetType == SkillTargetType.Ally) 
                                  ? Pipeline.ActionType.Heal 
                                  : Pipeline.ActionType.Attack;
 
@@ -216,71 +216,7 @@ namespace DiceOrbit.Core
                 }
             }
         }
-        
-        /// <summary>
-        /// 상태 이상 적용 로직 (모듈 처리 시 등 별도 호출용)
-        /// </summary>
-        private void ApplyStatusEffects(Character source, object target, SkillData skill)
-        {
-            if (skill.Effects == null || skill.Effects.Count == 0) return;
-
-            var monsterTargets = new List<Monster>();
-            var characterTargets = new List<Character>();
-
-            ResolveTargets(target, skill.TargetType, monsterTargets, characterTargets);
-
-            var pipeline = Pipeline.CombatPipeline.Instance;
-
-            // 몬스터 타겟
-            foreach (var mTarget in monsterTargets)
-            {
-                if (pipeline != null)
-                {
-                    var action = new Pipeline.CombatAction("Effect Applying", Pipeline.ActionType.Utility, 0);
-                    action.AddTag("Effect");
-                    foreach (var eff in skill.Effects)
-                    {
-                        action.AddEffect(eff.Type, eff.Value, eff.Duration);
-                    }
-                    var context = new Pipeline.CombatContext(source, mTarget, action);
-                    pipeline.Process(context);
-                }
-                else
-                {
-                    // Fallback: 직접 매니저 호출 (임시)
-                    if (mTarget.StatusEffects != null)
-                    {
-                         foreach (var eff in skill.Effects)
-                            mTarget.StatusEffects.AddEffect(eff.Type, eff.Value, eff.Duration);
-                    }
-                }
-            }
-
-            // 캐릭터 타겟
-            foreach (var cTarget in characterTargets)
-            {
-                if (pipeline != null)
-                {
-                    var action = new Pipeline.CombatAction("Effect Applying", Pipeline.ActionType.Utility, 0);
-                    action.AddTag("Effect");
-                    foreach (var eff in skill.Effects)
-                    {
-                        action.AddEffect(eff.Type, eff.Value, eff.Duration);
-                    }
-                    var context = new Pipeline.CombatContext(source, cTarget, action);
-                    pipeline.Process(context);
-                }
-                else
-                {
-                     if (cTarget.StatusEffects != null)
-                    {
-                         foreach (var eff in skill.Effects)
-                            cTarget.StatusEffects.AddEffect(eff.Type, eff.Value, eff.Duration);
-                    }
-                }
-            }
-        }
-
+       
         private GameObject GetTargetGameObject(object target)
         {
              if (target is MonoBehaviour mb) return mb.gameObject;

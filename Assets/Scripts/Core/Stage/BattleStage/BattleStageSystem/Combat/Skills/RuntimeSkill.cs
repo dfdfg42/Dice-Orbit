@@ -17,7 +17,7 @@ namespace DiceOrbit.Data.Skills
         /// <summary>
         /// 현재 레벨의 스킬 데이터 반환
         /// </summary>
-        public SkillData CurrentSkillData => BaseSkill?.GetSkillData(CurrentLevel);
+        public CharacterSkillData CurrentSkillData => BaseSkill?.GetSkillData(CurrentLevel);
 
         public SkillLevelData GetCurrentLevelData()
         {

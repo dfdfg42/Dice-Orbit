@@ -88,19 +88,16 @@ namespace DiceOrbit.Data
             }
 
             var resolvedTargetType = targetType;
-            // MineBomb is tile-centric, so preview should always use mine-affected tiles.
-            if (skillData.SpecialEffects != null && skillData.SpecialEffects.Any(effect => effect is MineBomb))
-            {
-                targetTiles = MineBomb.CollectAffectedTiles();
-                resolvedTargetType = TargetType.Tiles;
-                selectedTargets.Clear();
-            }
+            //// MineBomb is tile-centric, so preview should always use mine-affected tiles.
+            //if (skillData.SpecialEffects != null && skillData.SpecialEffects.Any(effect => effect is MineBomb))
+            //{
+            //    targetTiles = MineBomb.CollectAffectedTiles();
+            //    resolvedTargetType = TargetType.Tiles;
+            //    selectedTargets.Clear();
+            //}
 
             // IntentType 결정
             IntentType type = DetermineIntentType(); // To avoid variable shadowing
-
-            // Damage 계산
-            int damage = skillData.CalculateDamage(owner.Stats.Attack, 0);
 
             // AttackIntent 생성
             var intent = new AttackIntent(

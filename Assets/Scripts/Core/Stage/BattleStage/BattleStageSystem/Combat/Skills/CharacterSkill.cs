@@ -1,6 +1,31 @@
 using System.Collections.Generic;
 using UnityEngine;
 using DiceOrbit.Data;
+using DiceOrbit.Core;
+
+namespace DiceOrbit.Data
+{
+    public class CharacterSkillData : SkillData
+    {
+        [HideInInspector] public SkillTargetType skillTargetType = SkillTargetType.SingleEnemy;
+
+        [Header("Legacy Effects - For Compatibility")]
+        public List<EffectData> Effects = new List<EffectData>();
+
+        [Header("Legacy Damage - For Compatibility")]
+        [HideInInspector] public int DamageMultiplier = 1;
+        [HideInInspector] public int BonusDamage = 0;
+        [HideInInspector] public bool IgnoreDefense = false;
+
+        /// <summary>
+        /// 데미지 계산 (DamageMultiplier를 주사위 눈금 배수로 적용)
+        /// </summary>
+        public int CalculateDamage(int baseAttack, int diceValue)
+        {
+            return baseAttack + (diceValue * DamageMultiplier) + BonusDamage;
+        }
+    }
+}
 
 namespace DiceOrbit.Data.Skills
 {
@@ -29,7 +54,7 @@ namespace DiceOrbit.Data.Skills
     public class CharacterSkill : ScriptableObject
     {
         [Header("Skill Data")]
-        public SkillData BaseData = new SkillData();
+        public CharacterSkillData BaseData = new CharacterSkillData();
         
         [Header("Character Skill Info")]
         public Sprite Icon;
@@ -56,8 +81,8 @@ namespace DiceOrbit.Data.Skills
 
         public SkillTargetType TargetType
         {
-            get => BaseData.TargetType;
-            set => BaseData.TargetType = value;
+            get => BaseData.skillTargetType;
+            set => BaseData.skillTargetType = value;
         }
 
         /// <summary>
@@ -84,17 +109,17 @@ namespace DiceOrbit.Data.Skills
         /// <summary>
         /// 현재 레벨의 SkillData 반환 (레벨별 데이터 적용)
         /// </summary>
-        public SkillData GetSkillData(int level)
+        public CharacterSkillData GetSkillData(int level)
         {
             var levelData = GetLevelData(level);
             if (levelData == null) return BaseData;
             
             // BaseData 복사 후 레벨별 데이터 적용
-            var skillData = new SkillData
+            var skillData = new CharacterSkillData
             {
                 SkillName = BaseData.SkillName,
                 description = string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.description : levelData.Description,
-                TargetType = BaseData.TargetType,
+                skillTargetType = BaseData.skillTargetType,
                 DamageMultiplier = levelData.DamageMultiplier,
                 BonusDamage = levelData.BonusDamage,
                 IgnoreDefense = levelData.IgnoreDefense,

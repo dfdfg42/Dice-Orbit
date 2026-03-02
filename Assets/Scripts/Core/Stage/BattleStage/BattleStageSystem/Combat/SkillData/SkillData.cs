@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using DiceOrbit.Core;
 
 namespace DiceOrbit.Data
 {
@@ -39,88 +40,14 @@ namespace DiceOrbit.Data
     }
 
     /// <summary>
-    /// 특수 스킬 효과 기본 클래스 (소환, 분열, 자폭 등)
-    /// ScriptableObject로 만들어 드래그 앤 드롭 가능
-    /// </summary>
-    public abstract class SkillEffectBase : ScriptableObject
-    {
-        public abstract void Execute(Core.Unit source, List<Core.Unit> targetUnits, List<TileData> targetTiles);
-    }
-    
-    /// <summary>
     /// 스킬 데이터
     /// </summary>
     [System.Serializable]
     public class SkillData
     {
-        [Header("Basic Info")]
-        public string SkillName = "Basic Attack";
-        [TextArea]
-        [Tooltip("플레이스홀더 사용 가능: {damage}, {heal}, {armor}, {buff}, {debuff}")]
-        public string description = "스킬 설명";
-        [HideInInspector] public string Description=>GetFormattedDescription();
-        [HideInInspector] public SkillTargetType TargetType = SkillTargetType.SingleEnemy;
-
-        [Header("Basic Effects - Inspector Editable")]
-        public List<SkillEffect> BasicEffects = new List<SkillEffect>();
-
-        [Header("Special Effects - Optional (Drag & Drop)")]
-        public List<SkillEffectBase> SpecialEffects = new List<SkillEffectBase>();
-
-        [Header("Legacy Effects - For Compatibility")]
-        public List<EffectData> Effects = new List<EffectData>();
-
-        [Header("Attribute")]
-        public List<Tile.TileAttribute> TileAttributes = new List<Tile.TileAttribute>();
-
-        [Header("Legacy Damage - For Compatibility")]
-        [HideInInspector] public int DamageMultiplier = 1;
-        [HideInInspector] public int BonusDamage = 0;
-        [HideInInspector] public bool IgnoreDefense = false;
-        
-        /// <summary>
-        /// 데미지 계산 (DamageMultiplier를 주사위 눈금 배수로 적용)
-        /// </summary>
-        public int CalculateDamage(int baseAttack, int diceValue)
-        {
-            return baseAttack + (diceValue * DamageMultiplier) + BonusDamage;
-        }
-
-        /// <summary>
-        /// 포맷된 설명 반환 (플레이스홀더를 실제 값으로 치환)
-        /// </summary>
-        public string GetFormattedDescription()
-        {
-            string result = description;
-
-            if (string.IsNullOrEmpty(result))
-                return "";
-
-            // BasicEffects에서 각 타입별 Amount 추출
-            foreach (var effect in BasicEffects)
-            {
-                switch (effect.Type)
-                {
-                    case SkillEffectType.Damage:
-                        result = result.Replace("{damage}", effect.Amount.ToString());
-                        break;
-                    case SkillEffectType.Heal:
-                        result = result.Replace("{heal}", effect.Amount.ToString());
-                        break;
-                    case SkillEffectType.GetArmor:
-                        result = result.Replace("{armor}", effect.Amount.ToString());
-                        break;
-                    case SkillEffectType.Buff:
-                        result = result.Replace("{buff}", effect.Amount.ToString());
-                        break;
-                    case SkillEffectType.Debuff:
-                        result = result.Replace("{debuff}", effect.Amount.ToString());
-                        break;
-                }
-            }
-
-            return result;
-        }
+        public virtual string SkillName  { get; set; }
+        public virtual string description { get; set; }
+        [HideInInspector] public string Description => description;
 
         /// <summary>
         /// 스킬 실행 (BasicEffects + SpecialEffects)
@@ -145,48 +72,11 @@ namespace DiceOrbit.Data
             }
 
             var targetTiles = intent.TargetTiles ?? new List<TileData>();
-
-            // 1. BasicEffects 처리
-            foreach (var effect in BasicEffects)
-            {
-                ApplyBasicEffect(effect, source, targetUnits);
-            }
-
-            // 2. SpecialEffects 처리
-            foreach (var effect in SpecialEffects)
-            {
-                if (effect != null)
-                    effect.Execute(source, targetUnits, targetTiles);
-            }
+            ExecuteSkillEffect(source, targetUnits, targetTiles, intent);
         }
-
-        /// <summary>
-        /// 기본 효과 적용
-        /// </summary>
-        private void ApplyBasicEffect(SkillEffect effect, Core.Unit source, List<Core.Unit> targets)
+        protected virtual void ExecuteSkillEffect(Core.Unit source, List<Core.Unit> targetUnits, List<TileData> targetTiles, AttackIntent intent)
         {
-            switch (effect.Type)
-            {
-                case SkillEffectType.Damage:
-                    ApplyDamage(source, targets, effect.Amount);
-                    break;
 
-                case SkillEffectType.Heal:
-                    ApplyHeal(source, effect.Amount);
-                    break;
-
-                case SkillEffectType.GetArmor:
-                    ApplyArmor(source, effect.Amount);
-                    break;
-
-                case SkillEffectType.Buff:
-                    ApplyBuff(source, effect.Amount);
-                    break;
-
-                case SkillEffectType.Debuff:
-                    ApplyDebuff(targets, effect.Amount);
-                    break;
-            }
         }
 
         /// <summary>
