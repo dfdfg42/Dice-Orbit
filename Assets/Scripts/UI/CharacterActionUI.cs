@@ -203,7 +203,7 @@ namespace DiceOrbit.UI
 
                 var hoverPreview = go.GetComponent<SkillPreviewHoverUI>();
                 if (hoverPreview == null) hoverPreview = go.AddComponent<SkillPreviewHoverUI>();
-                hoverPreview.SetPreview(BuildDamagePreview(runtimeSkill));
+                hoverPreview.SetPreview(BuildSkillHoverText(runtimeSkill));
 
                 var btn = go.GetComponent<Button>();
                 btn?.onClick.AddListener(() => OnSpecificSkillClicked(index));
@@ -230,7 +230,7 @@ namespace DiceOrbit.UI
                 {
                     int baseDamage = dice * diceEffect.multiplier;
                     lines.Add($"예상 피해: ({dice} x {diceEffect.multiplier}) = {baseDamage}");
-                    lines.Add("실피해: max(1, 예상 피해 - 대상 DEF)");
+                    lines.Add("적용 피해: max(0, 예상 피해 - 남은 방어도)");
                 }
                 else if (effect is MageStackDamageEffect mageEffect)
                 {
@@ -245,11 +245,123 @@ namespace DiceOrbit.UI
 
                     lines.Add($"예상 피해: ({dice} x {mageEffect.baseMultiplier}) x (1 + {focusStacks} x {mageEffect.bonusDamageRatioPerStack:0.##})");
                     lines.Add($"= {baseDamage} x {bonusMultiplier:0.##} = {finalDamage} (집중 +{bonusPercent:0.#}%)");
-                    lines.Add("실피해: max(1, 예상 피해 - 대상 DEF)");
+                    lines.Add("적용 피해: max(0, 예상 피해 - 남은 방어도)");
                 }
             }
 
             return lines.Count > 0 ? string.Join("\n", lines) : "예상: -";
+        }
+
+        private string BuildSkillHoverText(RuntimeSkill runtimeSkill)
+        {
+            if (runtimeSkill == null || runtimeSkill.BaseSkill == null)
+                return "스킬 정보: -";
+
+            var baseSkill = runtimeSkill.BaseSkill;
+            var currentData = runtimeSkill.CurrentSkillData;
+            var lines = new List<string>
+            {
+                $"{baseSkill.SkillName} (Lv.{runtimeSkill.CurrentLevel})"
+            };
+
+            string description = currentData != null && !string.IsNullOrWhiteSpace(currentData.Description)
+                ? currentData.Description
+                : baseSkill.Description;
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                lines.Add(description.Trim());
+            }
+
+            lines.Add($"대상: {GetTargetTypeLabel(baseSkill.TargetType)}");
+
+            int diceValue = currentDice != null ? currentDice.Value : -1;
+            bool canUse = currentDice != null && baseSkill.CanUse(diceValue);
+            string condition = BuildRequirementText(baseSkill.Requirement);
+            if (diceValue > 0)
+            {
+                lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "사용 불가")})");
+            }
+            else
+            {
+                lines.Add($"조건: {condition}");
+            }
+
+            string damagePreview = BuildDamagePreview(runtimeSkill);
+            if (!string.IsNullOrWhiteSpace(damagePreview) && damagePreview != "예상: -")
+            {
+                lines.Add("");
+                lines.Add(damagePreview);
+            }
+
+            return string.Join("\n", lines);
+        }
+
+        private static string GetTargetTypeLabel(SkillTargetType targetType)
+        {
+            switch (targetType)
+            {
+                case SkillTargetType.SingleEnemy:
+                    return "단일 적";
+                case SkillTargetType.AllEnemies:
+                    return "모든 적";
+                case SkillTargetType.Self:
+                    return "자신";
+                case SkillTargetType.Ally:
+                    return "단일 아군";
+                case SkillTargetType.AllAllies:
+                    return "모든 아군";
+                case SkillTargetType.Tiles:
+                    return "타일";
+                default:
+                    return "기타";
+            }
+        }
+
+        private static string BuildRequirementText(DiceRequirement requirement)
+        {
+            if (requirement == null) return "제한 없음";
+
+            var parts = new List<string>();
+
+            if (requirement.ExactDiceValue.HasValue)
+            {
+                parts.Add($"눈금 {requirement.ExactDiceValue.Value}");
+            }
+            else
+            {
+                if (requirement.MinDiceValue > 1)
+                {
+                    parts.Add($"{requirement.MinDiceValue} 이상");
+                }
+
+                if (requirement.MaxDiceValue.HasValue)
+                {
+                    parts.Add($"{requirement.MaxDiceValue.Value} 이하");
+                }
+            }
+
+            switch (requirement.Pattern)
+            {
+                case DicePattern.Even:
+                    parts.Add("짝수");
+                    break;
+                case DicePattern.Odd:
+                    parts.Add("홀수");
+                    break;
+                case DicePattern.High:
+                    parts.Add("고눈금(4 이상)");
+                    break;
+                case DicePattern.Low:
+                    parts.Add("저눈금(3 이하)");
+                    break;
+            }
+
+            if (parts.Count == 0)
+            {
+                return "제한 없음";
+            }
+
+            return string.Join(", ", parts);
         }
 
         private void ExecuteSkill(int index)
