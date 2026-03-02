@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using DiceOrbit.Data;
 using System.Collections.Generic;
+using DiceOrbit.Data.Skills.Effects;
+using DiceOrbit.UI;
 
 namespace DiceOrbit.Core
 {
@@ -23,6 +25,7 @@ namespace DiceOrbit.Core
         private CharacterSkillData currentSkill;
         private int diceValue;
         private Camera mainCamera;
+        private Unit currentPreviewTarget;
         
         // Properties
         public bool IsSelectingTarget => isSelectingTarget;
@@ -66,6 +69,7 @@ namespace DiceOrbit.Core
             
             // 마우스 위치로 라인 업데이트
             UpdateTargetLine();
+            UpdateDamagePreview();
             
             // 마우스 클릭으로 타겟 선택
             if (mouse.leftButton.wasPressedThisFrame)
@@ -166,6 +170,89 @@ namespace DiceOrbit.Core
             targetLine.startColor = lineColor;
             targetLine.endColor = lineColor;
         }
+
+        private void UpdateDamagePreview()
+        {
+            if (currentSkill == null || sourceCharacter == null)
+            {
+                HoverTooltipUI.Instance?.HidePinned();
+                currentPreviewTarget = null;
+                return;
+            }
+
+            var mouse = Mouse.current;
+            if (mouse == null)
+            {
+                HoverTooltipUI.Instance?.HidePinned();
+                currentPreviewTarget = null;
+                return;
+            }
+
+            Vector2 mousePos = mouse.position.ReadValue();
+            Ray ray = mainCamera.ScreenPointToRay(mousePos);
+            if (!Physics.Raycast(ray, out RaycastHit hit))
+            {
+                HoverTooltipUI.Instance?.HidePinned();
+                currentPreviewTarget = null;
+                return;
+            }
+
+            if (!IsValidTarget(hit.collider.gameObject))
+            {
+                HoverTooltipUI.Instance?.HidePinned();
+                currentPreviewTarget = null;
+                return;
+            }
+
+            var targetUnit = hit.collider.GetComponentInParent<Unit>();
+            if (targetUnit == null || !targetUnit.IsAlive)
+            {
+                HoverTooltipUI.Instance?.HidePinned();
+                currentPreviewTarget = null;
+                return;
+            }
+
+            currentPreviewTarget = targetUnit;
+            string text = BuildAppliedDamagePreview(targetUnit);
+            HoverTooltipUI.EnsureInstance();
+            HoverTooltipUI.Instance?.ShowPinned(text);
+        }
+
+        private string BuildAppliedDamagePreview(Unit targetUnit)
+        {
+            if (currentSkill?.Effects == null || currentSkill.Effects.Count == 0 || targetUnit == null || sourceCharacter == null)
+                return "예상 적용 피해: -";
+
+            int totalRaw = 0;
+            int totalApplied = 0;
+            int defense = targetUnit.Stats != null ? targetUnit.Stats.Defense : 0;
+            int focusStacks = sourceCharacter.StatusEffects != null
+                ? sourceCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
+                : 0;
+
+            foreach (var effect in currentSkill.Effects)
+            {
+                if (effect == null) continue;
+
+                if (effect is DiceMultiplierDamageEffect diceEffect)
+                {
+                    int raw = diceValue * diceEffect.multiplier;
+                    totalRaw += raw;
+                    totalApplied += Mathf.Max(1, raw - defense);
+                }
+                else if (effect is MageStackDamageEffect mageEffect)
+                {
+                    int baseDamage = diceValue * mageEffect.baseMultiplier;
+                    float multiplier = 1.0f + (focusStacks * mageEffect.bonusDamageRatioPerStack);
+                    int raw = Mathf.RoundToInt(baseDamage * multiplier);
+                    totalRaw += raw;
+                    totalApplied += Mathf.Max(1, raw - defense);
+                }
+            }
+
+            if (totalRaw <= 0) return "예상 적용 피해: -";
+            return $"예상 적용 피해: {totalApplied}\n(원본 {totalRaw} - DEF {defense})";
+        }
         
         /// <summary>
         /// 타겟 선택 시도
@@ -204,14 +291,14 @@ namespace DiceOrbit.Core
             {
                 case SkillTargetType.SingleEnemy:
                 case SkillTargetType.AllEnemies:
-                    return target.GetComponent<Monster>() != null;
+                    return target.GetComponentInParent<Monster>() != null;
                     
                 case SkillTargetType.Self:
-                    return target.GetComponent<Character>() == sourceCharacter;
+                    return target.GetComponentInParent<Character>() == sourceCharacter;
                     
                 case SkillTargetType.Ally:
                 case SkillTargetType.AllAllies:
-                    var character = target.GetComponent<Character>();
+                    var character = target.GetComponentInParent<Character>();
                     return character != null && character != sourceCharacter;
                     
                 default:
@@ -262,6 +349,8 @@ namespace DiceOrbit.Core
             {
                 targetLine.enabled = false;
             }
+            HoverTooltipUI.Instance?.HidePinned();
+            currentPreviewTarget = null;
             
             sourceCharacter = null;
             currentSkill = null;

@@ -1,11 +1,11 @@
 using DiceOrbit.Core;
 using DiceOrbit.Data;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace DiceOrbit.Data
 {
+    [System.Serializable]
     public class CharacterSkillData : SkillData
     {
         // SkillName, Description은 부모 클래스에서 상속받음
@@ -114,12 +114,16 @@ namespace DiceOrbit.Data.Skills
         {
             var levelData = GetLevelData(level);
             if (levelData == null) return BaseData;
+            
+            var resolvedEffects = (levelData.Effects != null && levelData.Effects.Count > 0)
+                ? levelData.Effects
+                : (BaseData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>());
 
             // BaseData 복사 후 레벨별 데이터 적용
             var skillData = new CharacterSkillData
             {
                 skillTargetType = BaseData.skillTargetType,
-                Effects = levelData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>(),
+                Effects = resolvedEffects,
             };
 
             skillData.SetSkillName(BaseData.SkillName);
