@@ -24,8 +24,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         // 생성자에서 기본값 설정
         public PlantMinePassive()
         {
-            passiveName = "Plant Mine";
-            description = "Place mines that deal damage";
+            passiveName = "지뢰 설치";
+            description = "지나갈 시 {mineDamege}의 피해를 주는 지뢰 타일을 생성합니다";
             priority = 10;
             isStackable = false;
         }
@@ -33,7 +33,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
             // 턴 시작 시에만 반응하도록 설정
-            if (context.Action.Type==ActionType.OnStartTurn && context.SourceUnit == owner && trigger==CombatTrigger.OnPreAction)
+            if (context.Action.Type == ActionType.OnStartTurn && context.SourceUnit == owner && trigger==CombatTrigger.OnPreAction)
             {
                 Debug.Log($"[PlantMine] Triggered on {trigger} for unit");
                 PlantMineOnTile();
