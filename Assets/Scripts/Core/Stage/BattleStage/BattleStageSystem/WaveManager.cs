@@ -25,6 +25,8 @@ namespace DiceOrbit.Core
         public bool IsWaveActive { get; private set; } = false;
 
         private readonly List<Monster> spawnedMonsters = new List<Monster>();
+        private List<Data.Monsters.MonsterPreset> currentSpawnPlan = new List<Data.Monsters.MonsterPreset>();
+        private int currentSpawnIndex = 0;
 
         public event System.Action<int> OnWaveStart;
         public event System.Action<int> OnWaveClear;
@@ -68,7 +70,7 @@ namespace DiceOrbit.Core
 
         private void SpawnMonsters(int wave)
         {
-            Debug.Log($"[WaveManager] Spawning monsters for Wave {wave}...");
+            Debug.Log($"[WaveManager] Preparing sequential spawn for Wave {wave}...");
 
             CleanupSpawnedMonsters();
 
@@ -91,8 +93,9 @@ namespace DiceOrbit.Core
                 return;
             }
 
+            // SpawnCount는 레거시로 유지 (현재는 사용하지 않음)
             int spawnCount = Mathf.Max(1, waveDef.SpawnCount);
-            var spawnPoints = GetSpawnPoints().OrderBy(_ => Random.value).ToList();
+            Debug.Log($"[WaveManager] SpawnCount={spawnCount} (Legacy, not used for sequential spawn)");
 
             var validPresets = waveDef.MonsterPresets.Where(p => p != null).ToList();
             if (validPresets.Count == 0)
@@ -101,45 +104,99 @@ namespace DiceOrbit.Core
                 return;
             }
 
-            var spawnPlan = new List<MonsterPreset>();
-            if (spawnCount <= validPresets.Count)
+            // 스폰 계획 생성 (모든 프리셋을 순서대로)
+            currentSpawnPlan = new List<Data.Monsters.MonsterPreset>(validPresets);
+            currentSpawnIndex = 0;
+
+            // 첫 번째 몬스터만 스폰
+            SpawnNextMonster();
+        }
+
+        /// <summary>
+        /// 다음 몬스터를 스폰합니다 (순차 스폰)
+        /// </summary>
+        private void SpawnNextMonster()
+        {
+            if (currentSpawnPlan == null || currentSpawnPlan.Count == 0)
             {
-                // 리스트 순서대로 spawnCount만큼 선택
-                spawnPlan.AddRange(validPresets.Take(spawnCount));
+                Debug.LogWarning("[WaveManager] No spawn plan available.");
+                return;
+            }
+
+            if (currentSpawnIndex >= currentSpawnPlan.Count)
+            {
+                Debug.Log("[WaveManager] All monsters in spawn plan have been spawned.");
+                return;
+            }
+
+            var preset = currentSpawnPlan[currentSpawnIndex];
+            if (preset == null)
+            {
+                Debug.LogWarning($"[WaveManager] Preset at index {currentSpawnIndex} is null. Skipping.");
+                currentSpawnIndex++;
+                SpawnNextMonster(); // 다음 몬스터 시도
+                return;
+            }
+
+            var spawnPoints = GetSpawnPoints().OrderBy(_ => Random.value).ToList();
+            Vector3 spawnPos = GetSpawnPosition(spawnPoints, currentSpawnIndex);
+            Quaternion rot = Quaternion.identity;
+
+            var go = Object.Instantiate(monsterPrefab, spawnPos, rot, spawnRoot);
+            var monster = go.GetComponent<Monster>() ?? go.GetComponentInChildren<Monster>();
+
+            if (monster != null)
+            {
+                monster.InitializeFromPreset(preset);
+                spawnedMonsters.Add(monster);
+
+                // 몬스터 사망 이벤트 구독
+                monster.OnDeath += OnMonsterDeath;
+
+                var combatManager = CombatManager.Instance;
+                if (combatManager != null)
+                {
+                    combatManager.RegisterMonster(monster);
+                }
+
+                Debug.Log($"[WaveManager] Spawned monster {currentSpawnIndex + 1}/{currentSpawnPlan.Count}: {preset.name}");
+                currentSpawnIndex++;
             }
             else
             {
-                // SpawnCount가 프리셋 개수보다 많으면 순서대로 반복
-                spawnPlan.AddRange(validPresets);
-                while (spawnPlan.Count < spawnCount)
-                {
-                    int index = spawnPlan.Count % validPresets.Count;
-                    spawnPlan.Add(validPresets[index]);
-                }
+                Debug.LogWarning($"[WaveManager] Spawned object '{go.name}' has no Monster component.");
+                currentSpawnIndex++;
+                SpawnNextMonster(); // 다음 몬스터 시도
+            }
+        }
+
+        /// <summary>
+        /// 몬스터 사망 시 호출되는 이벤트 핸들러
+        /// </summary>
+        private void OnMonsterDeath(Monster deadMonster)
+        {
+            if (deadMonster != null)
+            {
+                // 이벤트 구독 해제
+                deadMonster.OnDeath -= OnMonsterDeath;
+
+                // 리스트에서 제거
+                spawnedMonsters.Remove(deadMonster);
             }
 
-            for (int i = 0; i < spawnPlan.Count; i++)
+            Debug.Log($"[WaveManager] Monster died. Remaining: {spawnedMonsters.Count}, Next spawn index: {currentSpawnIndex}/{currentSpawnPlan.Count}");
+
+            // 다음 몬스터 스폰
+            if (currentSpawnIndex < currentSpawnPlan.Count)
             {
-                MonsterPreset preset = spawnPlan[i];
-                if (preset == null) continue;
-
-                Vector3 spawnPos = GetSpawnPosition(spawnPoints, i);
-                Quaternion rot = Quaternion.identity;
-
-                var go = Object.Instantiate(monsterPrefab, spawnPos, rot, spawnRoot);
-                var monster = go.GetComponent<Monster>() ?? go.GetComponentInChildren<Monster>();
-                if (monster != null)
+                SpawnNextMonster();
+            }
+            else
+            {
+                // 모든 몬스터가 스폰되었고, 남은 몬스터도 없으면 웨이브 클리어
+                if (spawnedMonsters.Count == 0)
                 {
-                    monster.InitializeFromPreset(preset);
-                    spawnedMonsters.Add(monster);
-                    if (combatManager != null)
-                    {
-                        combatManager.RegisterMonster(monster);
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"[WaveManager] Spawned object '{go.name}' has no Monster component.");
+                    CheckWaveClear();
                 }
             }
         }
@@ -229,10 +286,14 @@ namespace DiceOrbit.Core
             {
                 if (monster != null)
                 {
+                    // 이벤트 구독 해제
+                    monster.OnDeath -= OnMonsterDeath;
                     Destroy(monster.gameObject);
                 }
             }
             spawnedMonsters.Clear();
+            currentSpawnPlan.Clear();
+            currentSpawnIndex = 0;
         }
     }
 }

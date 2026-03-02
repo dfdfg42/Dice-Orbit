@@ -28,6 +28,9 @@ namespace DiceOrbit.Core
         private Coroutine visualResetCoroutine;
         public AttackIntent CurrentIntent => nextIntent; // AttackIntent 타입으로 반환
 
+        // 사망 이벤트 (WaveManager 등에서 구독)
+        public event System.Action<Monster> OnDeath;
+
         // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
         public new MonsterStats Stats => stat;
         
@@ -248,18 +251,21 @@ namespace DiceOrbit.Core
             PlayDamageVisual();
             QueueReturnToIdle(damageSpriteDuration);
             int result=base.TakeDamage(damage);
-            if (!IsAlive) OnDeath();
+            if (!IsAlive) HandleDeath();
             return result;
         }
-        
-        private void OnDeath()
+
+        private void HandleDeath()
         {
             Debug.Log($"[Monster] {stat?.MonsterName} Died.");
+
+            // 사망 이벤트 발생 (WaveManager 등에서 감지)
+            OnDeath?.Invoke(this);
 
             // AttackIndicator에서 Intent 제거
             UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
 
-    
+
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
             Destroy(gameObject);

@@ -243,6 +243,19 @@ namespace DiceOrbit.Core
             return null;
         }
         
+        public List<Character> GetCharactersOnTile(TileData tile)
+        {
+            var characters = new List<Character>();
+            foreach (var character in PartyManager.Instance?.Party)
+            {
+                if (character.CurrentTile == tile)
+                {
+                    characters.Add(character);
+                }
+            }
+            return characters;
+        }
+
         /// <summary>
         /// 시작점으로부터 N칸 이동한 타일 가져오기
         /// </summary>

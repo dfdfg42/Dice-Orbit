@@ -19,7 +19,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
 
         [Tooltip("지속 턴 (-1은 영구)")]
         [SerializeField] private int duration = -1;
-
+        bool activated = false;
         // 생성자에서 기본값 설정
         public PlantBonePassive()
         {
@@ -38,6 +38,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
             // 턴 시작 시에만 반응하도록 설정
             if (context.Action.Type == ActionType.OnStartTurn && context.SourceUnit == owner && trigger == CombatTrigger.OnPreAction)
             {
+                if (activated) return; // 이미 활성화된 경우 중복 방지
                 Debug.Log($"[PlantMine] Triggered on {trigger} for unit");
                 PlantMineOnTile();
             }
@@ -49,7 +50,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
             if (orbitManager == null) return;
 
             var targetTiles = new List<TileData>();
-            for (int index = 4; index < 20; index+=5) {// 최대 3개의 타일에 지뢰 설치
+            for (int index = 4; index < 20; index+=5) {
                 var tile = orbitManager.GetTile(index);
                 if (tile != null)
                 {

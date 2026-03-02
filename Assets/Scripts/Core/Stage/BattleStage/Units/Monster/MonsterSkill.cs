@@ -52,6 +52,7 @@ namespace DiceOrbit.Data
         [SerializeField] private TargetSelectionStrategy targetStrategy = TargetSelectionStrategy.RandomCharacter;
         [SerializeField] private TargetType targetType = TargetType.Characters;
         [SerializeField] private int targetCount = 1; // 타겟 수
+        [SerializeField] private int targetRange = 0; // 타겟으로부터 범위 (타일 기반 타겟팅 시 사용)
         [SerializeField] private IntentType intentType=IntentType.Attack;
         [Tooltip("표시할 스킬 아이콘")]
         [SerializeField] private Sprite intentIcon;
@@ -225,13 +226,28 @@ namespace DiceOrbit.Data
             if (candidates == null || candidates.Count == 0)
                 return selectedTiles;
 
+            var orbitManager = GameManager.Instance?.GetOrbitManager();
+            if (orbitManager == null) return selectedTiles;
+
+            const int TotalTiles = 20; // 타일 총 개수
+
             foreach (var character in candidates)
-            {
+            { 
                 if (character != null && character.CurrentTile != null)
                 {
-                    if (!selectedTiles.Contains(character.CurrentTile))
+                    int centerIndex = character.CurrentTile.TileIndex;
+
+                    // (i - targetRange) ~ (i + targetRange) 범위의 타일 선정
+                    for (int offset = -targetRange; offset <= targetRange; offset++)
                     {
-                        selectedTiles.Add(character.CurrentTile);
+                        // 원형 인덱스 계산 (0~19 순환)
+                        int targetIndex = (centerIndex + offset + TotalTiles) % TotalTiles;
+
+                        var tile = orbitManager.GetTile(targetIndex);
+                        if (tile != null && !selectedTiles.Contains(tile))
+                        {
+                            selectedTiles.Add(tile);
+                        }
                     }
                 }
             }
