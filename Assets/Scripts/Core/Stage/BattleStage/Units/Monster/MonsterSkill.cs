@@ -45,6 +45,7 @@ namespace DiceOrbit.Data
     public class MonsterSkill
     {
         [Header("Skill Data")]
+        [SerializeReference] // 다형성 지원 (각 스킬 클래스 선택 가능)
         public SkillData skillData;
 
         [Header("Targeting")]
