@@ -259,6 +259,19 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"[Monster] {stat?.MonsterName} Died.");
 
+            // 사망 효과 실행 (OnDeathEffects)
+            if (preset != null && preset.OnDeathEffects != null)
+            {
+                foreach (var deathEffect in preset.OnDeathEffects)
+                {
+                    if (deathEffect != null)
+                    {
+                        Debug.Log($"[Monster] Executing death effect: {deathEffect.EffectName}");
+                        deathEffect.Execute(this);
+                    }
+                }
+            }
+
             // 사망 이벤트 발생 (WaveManager 등에서 감지)
             OnDeath?.Invoke(this);
 

@@ -21,6 +21,10 @@ namespace DiceOrbit.Data.Monsters
         [Header("Starting Passives")]
         [SerializeReference] // 다형성 직렬화 지원
         public List<DiceOrbit.Data.Passives.PassiveAbility> StartingPassives = new List<DiceOrbit.Data.Passives.PassiveAbility>();
+
+        [Header("Death Effects")]
+        [SerializeReference] // 사망 시 실행되는 효과들
+        public List<DeathEffect> OnDeathEffects = new List<DeathEffect>();
         
         [Header("Visual")]
         public Sprite MonsterSprite;

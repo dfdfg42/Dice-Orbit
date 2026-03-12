@@ -12,11 +12,13 @@ public class MonsterPresetEditor : Editor
 {
     private SerializedProperty startingPassivesProp;
     private SerializedProperty aiPatternProp;
+    private SerializedProperty onDeathEffectsProp;
 
     private void OnEnable()
     {
         startingPassivesProp = serializedObject.FindProperty("StartingPassives");
         aiPatternProp = serializedObject.FindProperty("AIPattern");
+        onDeathEffectsProp = serializedObject.FindProperty("OnDeathEffects");
     }
 
     public override void OnInspectorGUI()
@@ -58,8 +60,13 @@ public class MonsterPresetEditor : Editor
             var element = startingPassivesProp.GetArrayElementAtIndex(i);
             DrawPassiveElement(element, i, startingPassivesProp);
         }
-        
+
         EditorGUI.indentLevel--;
+
+        EditorGUILayout.Space();
+
+        // Death Effects 섹션
+        DrawDeathEffectsSection();
 
         serializedObject.ApplyModifiedProperties();
     }
@@ -552,5 +559,180 @@ public class MonsterPresetEditor : Editor
             property.managedReferenceValue = new T();
             property.serializedObject.ApplyModifiedProperties();
         });
+    }
+
+    /// <summary>
+    /// Death Effects 섹션 렌더링
+    /// </summary>
+    private void DrawDeathEffectsSection()
+    {
+        // Death Effects 헤더와 크기 조절
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Death Effects", EditorStyles.boldLabel);
+        GUILayout.FlexibleSpace();
+        if (GUILayout.Button("+", GUILayout.Width(30)))
+        {
+            onDeathEffectsProp.arraySize++;
+        }
+        EditorGUILayout.EndHorizontal();
+
+        // 리스트 크기 조절
+        int newSize = EditorGUILayout.IntField("Size", onDeathEffectsProp.arraySize);
+        if (newSize != onDeathEffectsProp.arraySize)
+        {
+            onDeathEffectsProp.arraySize = newSize;
+        }
+
+        EditorGUI.indentLevel++;
+
+        // 각 요소 렌더링
+        for (int i = 0; i < onDeathEffectsProp.arraySize; i++)
+        {
+            var element = onDeathEffectsProp.GetArrayElementAtIndex(i);
+            DrawDeathEffectElement(element, i, onDeathEffectsProp);
+        }
+
+        EditorGUI.indentLevel--;
+    }
+
+    /// <summary>
+    /// 개별 DeathEffect 렌더링 (드래그 앤 드롭 지원)
+    /// </summary>
+    private void DrawDeathEffectElement(SerializedProperty property, int index, SerializedProperty listProp)
+    {
+        EditorGUILayout.BeginVertical(GUI.skin.box);
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField($"Effect {index}", EditorStyles.boldLabel, GUILayout.Width(80));
+
+        // 현재 타입 표시
+        var currentTypeName = property.managedReferenceFullTypename;
+        var displayName = string.IsNullOrEmpty(currentTypeName) 
+            ? "(Not Assigned)" 
+            : currentTypeName.Split('.').Last();
+
+        EditorGUILayout.LabelField(displayName, EditorStyles.label);
+        GUILayout.FlexibleSpace();
+
+        // 삭제 버튼
+        if (GUILayout.Button("X", GUILayout.Width(25)))
+        {
+            listProp.DeleteArrayElementAtIndex(index);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+            return;
+        }
+
+        EditorGUILayout.EndHorizontal();
+
+        // 드래그 앤 드롭 영역
+        Rect dropArea = GUILayoutUtility.GetRect(0, 50, GUILayout.ExpandWidth(true));
+
+        // 드래그 중일 때 색상 변경
+        Event evt = Event.current;
+        bool isDragging = dropArea.Contains(evt.mousePosition) && 
+                         (evt.type == EventType.DragUpdated || evt.type == EventType.DragPerform);
+
+        Color originalColor = GUI.backgroundColor;
+        if (isDragging)
+        {
+            GUI.backgroundColor = new Color(1f, 0.8f, 0.6f); // 연한 주황색 (Passive와 구분)
+        }
+
+        GUI.Box(dropArea, "💀 Drag .cs script here to assign DeathEffect\n(or use button below)", EditorStyles.helpBox);
+        GUI.backgroundColor = originalColor;
+
+        // 드래그 앤 드롭 처리
+        if (dropArea.Contains(evt.mousePosition))
+        {
+            if (evt.type == EventType.DragUpdated)
+            {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                evt.Use();
+            }
+            else if (evt.type == EventType.DragPerform)
+            {
+                DragAndDrop.AcceptDrag();
+
+                foreach (var obj in DragAndDrop.objectReferences)
+                {
+                    if (obj is MonoScript monoScript)
+                    {
+                        var scriptType = monoScript.GetClass();
+                        if (scriptType != null && 
+                            !scriptType.IsAbstract && 
+                            scriptType.IsSubclassOf(typeof(DiceOrbit.Data.Monsters.DeathEffect)))
+                        {
+                            property.managedReferenceValue = Activator.CreateInstance(scriptType);
+                            property.serializedObject.ApplyModifiedProperties();
+                            Debug.Log($"✓ DeathEffect assigned: {scriptType.Name}");
+                            break;
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"⚠️ '{monoScript.name}' is not a valid DeathEffect class!\n" +
+                                           "Make sure it inherits from DeathEffect and is not abstract.");
+                        }
+                    }
+                }
+                evt.Use();
+            }
+        }
+
+        // 백업 옵션: 드롭다운 메뉴 버튼
+        if (GUILayout.Button("Or Select from List (Dropdown)", GUILayout.Height(25)))
+        {
+            ShowDeathEffectTypeMenu(property);
+        }
+
+        // 선택된 타입의 필드들 표시
+        if (!string.IsNullOrEmpty(currentTypeName))
+        {
+            EditorGUILayout.Space(5);
+            EditorGUILayout.LabelField("Effect Properties:", EditorStyles.miniLabel);
+            EditorGUI.indentLevel++;
+            DrawPropertyFields(property);
+            EditorGUI.indentLevel--;
+        }
+
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.Space(5);
+    }
+
+    /// <summary>
+    /// DeathEffect 타입 선택 메뉴
+    /// </summary>
+    private void ShowDeathEffectTypeMenu(SerializedProperty property)
+    {
+        var menu = new GenericMenu();
+
+        menu.AddItem(new GUIContent("None"), false, () => {
+            property.managedReferenceValue = null;
+            property.serializedObject.ApplyModifiedProperties();
+        });
+
+        menu.AddSeparator("");
+
+        // DeathEffect의 모든 서브클래스 찾기
+        var types = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(assembly => {
+                try { return assembly.GetTypes(); }
+                catch { return Type.EmptyTypes; }
+            })
+            .Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(DiceOrbit.Data.Monsters.DeathEffect)))
+            .OrderBy(t => t.Name);
+
+        foreach (var type in types)
+        {
+            var typeName = type.Name;
+            var isSelected = property.managedReferenceFullTypename == $"{type.Assembly.GetName().Name} {type.FullName}";
+
+            menu.AddItem(new GUIContent(typeName), isSelected, () => {
+                property.managedReferenceValue = Activator.CreateInstance(type);
+                property.serializedObject.ApplyModifiedProperties();
+            });
+        }
+
+        menu.ShowAsContext();
     }
 }

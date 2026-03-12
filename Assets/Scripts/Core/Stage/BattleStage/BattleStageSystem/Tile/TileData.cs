@@ -120,6 +120,16 @@ namespace DiceOrbit.Data
             }
         }
 
+        public void RemoveAttributeType(TileAttributeType attributeType)
+        {
+            if (attributes.ContainsKey(attributeType))
+            {
+                var attribute = attributes[attributeType];
+                RemoveAttribute(attribute);
+            }
+        }
+
+
         public IReadOnlyCollection<TileAttribute> GetAttributes()
         {
             return attributes.Values.ToList().AsReadOnly();
