@@ -151,11 +151,12 @@ namespace DiceOrbit.Core
             {
                 if (passive == null) continue;
 
+                var clonedPassive = passive.Clone();
                 // 패시브 초기화
-                passive.Initialize(this);
+                clonedPassive.Initialize(this);
 
                 // 매니저에 등록
-                passives.AddPassive(passive);
+                passives.AddPassive(clonedPassive);
             }
         }
 

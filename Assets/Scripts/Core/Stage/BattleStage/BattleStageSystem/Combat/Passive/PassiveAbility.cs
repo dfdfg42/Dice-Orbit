@@ -46,6 +46,14 @@ namespace DiceOrbit.Data.Passives
         }
 
         /// <summary>
+        /// 패시브 복제 (공유 상태 오염 방지)
+        /// </summary>
+        public virtual PassiveAbility Clone()
+        {
+            return (PassiveAbility)this.MemberwiseClone();
+        }
+
+        /// <summary>
         /// 전투 파이프라인 반응 로직
         /// </summary>
         public abstract void OnReact(CombatTrigger trigger, CombatContext context);

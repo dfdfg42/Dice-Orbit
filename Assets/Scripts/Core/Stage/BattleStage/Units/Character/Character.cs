@@ -104,7 +104,11 @@ namespace DiceOrbit.Core
 
             foreach (var passive in preset.GetStartingPassives())
             {
-                passives.AddPassive(passive);
+                if (passive == null) continue;
+
+                var clonedPassive = passive.Clone();
+                clonedPassive.Initialize(this);
+                passives.AddPassive(clonedPassive);
             }
         }
         
@@ -256,7 +260,7 @@ namespace DiceOrbit.Core
             // Notify pipeline about movement distance
             if (Pipeline.CombatPipeline.Instance != null)
             {
-                var moveAction = new Pipeline.CombatAction("Move", Pipeline.ActionType.Utility, stepsTraveled);
+                var moveAction = new Pipeline.CombatAction("Move", Pipeline.ActionType.Move, stepsTraveled);
                 moveAction.AddTag("Move");
                 var moveContext = new Pipeline.CombatContext(this, this, moveAction);
                 Pipeline.CombatPipeline.Instance.Process(moveContext);
