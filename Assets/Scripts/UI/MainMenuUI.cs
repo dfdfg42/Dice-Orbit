@@ -10,6 +10,7 @@ namespace DiceOrbit.UI
         [SerializeField] private GameObject panel;
         [SerializeField] private Button startButton;
         [SerializeField] private Button quitButton;
+        [SerializeField] private MainMenuCharacterDisplay characterDisplay;
 
         private void Awake()
         {
@@ -34,6 +35,8 @@ namespace DiceOrbit.UI
             {
                 gameObject.SetActive(true);
             }
+
+            characterDisplay?.PlayEntranceAnimation();
         }
 
         public void Hide()
