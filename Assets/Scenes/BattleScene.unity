@@ -1100,6 +1100,7 @@ GameObject:
   - component: {fileID: 396733014}
   - component: {fileID: 396733013}
   - component: {fileID: 396733015}
+  - component: {fileID: 396733016}
   m_Layer: 5
   m_Name: DicePanel
   m_TagString: Untagged
@@ -1182,7 +1183,32 @@ MonoBehaviour:
   diceContainer: {fileID: 1164803136}
   diceElementPrefab: {fileID: 3941900214610730029, guid: 0220f003ae4b6cf44ac05293b713b047, type: 3}
   rollButton: {fileID: 723251453}
+  rollAnimator: {fileID: 396733016}
   autoHideRollButton: 1
+  useRollAnimation: 1
+--- !u!114 &396733016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 396733011}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6dbecebcb28ffe4489044f93073bcf47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.DiceRollAnimator
+  centerYOffset: 0
+  diceSpacing: 120
+  popInDuration: 0.18
+  jumpUpDuration: 0.25
+  jumpHeight: 150
+  rotationCycles: 2
+  pauseDuration: 0.12
+  zoomInDuration: 0.22
+  delayBetweenDice: 0.12
+  bounceScale: 1.25
+  bounceDuration: 0.15
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
