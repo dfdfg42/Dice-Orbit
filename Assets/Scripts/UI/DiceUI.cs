@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
 using DiceOrbit.Data;
 
@@ -14,9 +15,11 @@ namespace DiceOrbit.UI
         [SerializeField] private Transform diceContainer;
         [SerializeField] private GameObject diceElementPrefab;
         [SerializeField] private Button rollButton;
+        [SerializeField] private DiceRollAnimator rollAnimator;
         
         [Header("Settings")]
         [SerializeField] private bool autoHideRollButton = true;
+        [SerializeField] private bool useRollAnimation = true;
         
         // Runtime
         private List<DiceElement> diceElements = new List<DiceElement>();
@@ -55,6 +58,12 @@ namespace DiceOrbit.UI
             if (autoHideRollButton && rollButton != null)
             {
                 rollButton.gameObject.SetActive(false);
+            }
+
+            // 애니메이션 실행
+            if (useRollAnimation && rollAnimator != null && diceElements.Count > 0)
+            {
+                rollAnimator.PlayRollAnimation(new List<DiceElement>(diceElements), diceContainer);
             }
         }
         
