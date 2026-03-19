@@ -135,6 +135,11 @@ namespace DiceOrbit.Data
             return attributes.Values.ToList().AsReadOnly();
         }
 
+        public bool HasAttribute(TileAttributeType attributeType)
+        {
+            return attributes.ContainsKey(attributeType);
+        }
+
         private void OnMouseEnter()
         {
             Debug.Log($"[Hover] Tile enter: {name}");

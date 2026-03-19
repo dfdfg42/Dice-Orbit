@@ -230,6 +230,12 @@ namespace DiceOrbit.UI
                     ShowTargetedAttackForMonster(monster, targets[0]);
                 }
             }         
+            else if (intent.TargetType == Data.TargetType.Self || intent.TargetType == Data.TargetType.None)
+            {
+                // 타겟이 존재하지 않는 버프/대기/특수 효과이므로 
+                // 월드 캔버스에 몬스터 머리 위 말풍선만 남기고 별도의 선(Line)/타일 이펙트(Tile)를 그리지 않음.
+                return;
+            }
             else
             {
                 Debug.LogError($"[AttackIndicator] Unknown TargetType for {monster.name}: {intent.TargetType}");

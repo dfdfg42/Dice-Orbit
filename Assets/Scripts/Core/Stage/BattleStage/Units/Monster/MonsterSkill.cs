@@ -14,6 +14,8 @@ namespace DiceOrbit.Data
     {
         Characters,     // 단일 타겟
         Tiles,          // 특정 범위 (주변 N칸)
+        Self,           // 자기 자신 (버프, 회복 등)
+        None            // 타겟 없음 (빈둥거림, 필드 전체 기믹 발동 등)
     }
 
     /// <summary>
@@ -24,6 +26,8 @@ namespace DiceOrbit.Data
         RandomCharacter,  // 무작위 선택
         AllTargets,        // 모든 타겟
         RandomTiles,
+        TilesWithAttribute, // 특정 속성이 있는 타일 중심
+        Self               // 자기 자신
     }
 
     /// <summary>
@@ -51,6 +55,10 @@ namespace DiceOrbit.Data
         [Header("Targeting")]
         [SerializeField] private TargetSelectionStrategy targetStrategy = TargetSelectionStrategy.RandomCharacter;
         [SerializeField] private TargetType targetType = TargetType.Characters;
+
+        [Tooltip("TargetStrategy가 TilesWithAttribute일 때 탐색할 타일 속성")]
+        [SerializeField] private DiceOrbit.Data.Tile.TileAttributeType targetTileAttribute = DiceOrbit.Data.Tile.TileAttributeType.None;
+
         [SerializeField] private int targetCount = 1; // 타겟 수
         [SerializeField] private int targetRange = 0; // 타겟으로부터 범위 (타일 기반 타겟팅 시 사용)
         [SerializeField] private IntentType intentType=IntentType.Attack;
@@ -72,7 +80,7 @@ namespace DiceOrbit.Data
             }
 
             // 타겟 선정
-            List<Character> selectedTargets = new();
+            List<Unit> selectedTargets = new();
 
             // TileData 선정 (필요한 경우)
             List<TileData> targetTiles = new();
@@ -85,29 +93,15 @@ namespace DiceOrbit.Data
                 case TargetType.Tiles:
                     targetTiles = SelectTiles();
                     break;
+                case TargetType.Self:
+                    selectedTargets.Add(owner);
+                    break;
+                case TargetType.None:
+                    // 타겟 없음
+                    break;
                 default:
-                    Debug.LogWarning("[MonsterSkill] Invalid TargetType specified!");
+                    Debug.LogWarning($"[MonsterSkill] Invalid TargetType specified! {targetType}");
                     return null;
-            }
-
-            var resolvedTargetType = targetType;
-            // 타일 프리뷰를 덮어쓰는 이펙트 탐색 (오버라이딩 로직)
-            // (MineBomb 등 특정 클래스에 종속되지 않고 다형성을 활용)
-            if (skillData is MonsterSkillData monsterSkillData && monsterSkillData.Effects != null)
-            {
-                foreach (var effect in monsterSkillData.Effects)
-                {
-                    if (effect is SkillEffectBase skillEffect)
-                    {
-                        var previewTiles = skillEffect.GetTargetTilesPreview(owner);
-                        if (previewTiles != null && previewTiles.Count > 0)
-                        {
-                            targetTiles.AddRange(previewTiles);
-                            resolvedTargetType = TargetType.Tiles;
-                            selectedTargets.Clear();
-                        }
-                    }
-                }
             }
 
             // IntentType 결정
@@ -116,7 +110,7 @@ namespace DiceOrbit.Data
             // AttackIntent 생성
             var intent = new AttackIntent(
                 type, 
-                resolvedTargetType,
+                targetType,
                 selectedTargets,
                 intentIcon // 아이콘 정보 전달
             );
@@ -169,7 +163,11 @@ namespace DiceOrbit.Data
                     selected.AddRange(candidates);
                     break;
                 case TargetSelectionStrategy.RandomTiles:
-                    Debug.LogError("[MonsterSkill] TargetSelectionStrategy.RandomTiles is not valid for Character TargetType!");
+                case TargetSelectionStrategy.TilesWithAttribute:
+                    Debug.LogError($"[MonsterSkill] {strategy} is not valid for Character TargetType!");
+                    break;
+                case TargetSelectionStrategy.Self:
+                    // Self 처리는 위에서 TargetType.Self로 우회하므로 여기선 할 일이 없으나, 만일을 대비해 빈 리스트 반환
                     break;
                 default:
                     selected.Add(candidates[Random.Range(0, candidates.Count)]);
@@ -212,47 +210,75 @@ namespace DiceOrbit.Data
                         selectedTiles = shuffled.GetRange(0, count);
                     }
                     break;
+                case TargetSelectionStrategy.TilesWithAttribute:
+                    if (tileList != null && tileList.Count > 0)
+                    {
+                        // 1. 해당 속성을 가진 타일들을 모두 찾기
+                        var matchedTiles = tileList.Where(t => t != null && t.HasAttribute(targetTileAttribute)).ToList();
+
+                        // 2. 찾아낸 타일들을 중심으로 지정된 targetRange 만큼 범위 확장
+                        selectedTiles = ExpandTilesRange(matchedTiles, targetRange);
+                    }
+                    break;
+                case TargetSelectionStrategy.Self:
+                    Debug.LogError("[MonsterSkill] TargetSelectionStrategy.Self is not valid for Area Tile TargetType!");
+                    break;
                 default:
                     Debug.LogWarning("has an invalid TargetSelectionStrategy, defaulting to random selection.");
                     break;
             }
+            
             return selectedTiles;
         }
 
-        private List<TileData> SelectTilesByCharacter(List<Character> candidates)
+        /// <summary>
+        /// 주어진 타일들의 양옆(range) 범위를 포함하여 중복 없이 타일 목록을 반환합니다.
+        /// </summary>
+        private List<TileData> ExpandTilesRange(List<TileData> centerTiles, int range)
         {
-            List<TileData> selectedTiles = new();
-
-            if (candidates == null || candidates.Count == 0)
-                return selectedTiles;
-
+            var expandedTiles = new HashSet<TileData>();
             var orbitManager = GameManager.Instance?.GetOrbitManager();
-            if (orbitManager == null) return selectedTiles;
+            if (orbitManager == null || centerTiles == null || centerTiles.Count == 0)
+                return expandedTiles.ToList();
 
             const int TotalTiles = 20; // 타일 총 개수
 
-            foreach (var character in candidates)
-            { 
-                if (character != null && character.CurrentTile != null)
+            foreach (var centerTile in centerTiles)
+            {
+                if (centerTile != null)
                 {
-                    int centerIndex = character.CurrentTile.TileIndex;
+                    int centerIndex = centerTile.TileIndex;
 
-                    // (i - targetRange) ~ (i + targetRange) 범위의 타일 선정
-                    for (int offset = -targetRange; offset <= targetRange; offset++)
+                    for (int offset = -range; offset <= range; offset++)
                     {
-                        // 원형 인덱스 계산 (0~19 순환)
                         int targetIndex = (centerIndex + offset + TotalTiles) % TotalTiles;
-
                         var tile = orbitManager.GetTile(targetIndex);
-                        if (tile != null && !selectedTiles.Contains(tile))
+                        if (tile != null)
                         {
-                            selectedTiles.Add(tile);
+                            expandedTiles.Add(tile);
                         }
                     }
                 }
             }
 
-            return selectedTiles;
+            return expandedTiles.ToList();
+        }
+
+        private List<TileData> SelectTilesByCharacter(List<Character> candidates)
+        {
+            if (candidates == null || candidates.Count == 0)
+                return new List<TileData>();
+
+            var centerTiles = new List<TileData>();
+            foreach(var c in candidates)
+            {
+                if(c != null && c.CurrentTile != null)
+                {
+                    centerTiles.Add(c.CurrentTile);
+                }
+            }
+
+            return ExpandTilesRange(centerTiles, targetRange);
         }
 
         /// <summary>

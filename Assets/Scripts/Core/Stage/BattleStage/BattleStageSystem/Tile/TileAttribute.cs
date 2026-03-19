@@ -10,6 +10,8 @@ namespace DiceOrbit.Data.Tile
         LevelUp,
         RandMine,
         Bone,
+        Honey,
+
     }
 
     /// <summary>
@@ -94,6 +96,7 @@ namespace DiceOrbit.Data.Tile
                 TileAttributeType.LevelUp => "레벨업 타일",
                 TileAttributeType.RandMine => "지뢰",
                 TileAttributeType.Bone => "뼈 방패",
+                TileAttributeType.Honey => "꿀",
                 _ => Type.ToString()
             };
         }

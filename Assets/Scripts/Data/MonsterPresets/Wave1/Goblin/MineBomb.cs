@@ -14,44 +14,20 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
     {
         [SerializeField] private int damage = 20;
 
-        public override List<TileData> GetTargetTilesPreview(Unit source)
-        {
-            return CollectAffectedTiles();
-        }
-
-        public static List<TileData> CollectAffectedTiles()
-        {
-            var orbitManager = GameManager.Instance?.GetOrbitManager();
-            if (orbitManager == null || orbitManager.Tiles == null) return new List<TileData>();
-
-            var mineTiles = orbitManager.Tiles
-                .Where(tile => tile != null && tile.GetAttributes().Any(attr => attr != null && attr.Type == TileAttributeType.RandMine))
-                .ToList();
-
-            var affectedTiles = new HashSet<TileData>();
-            foreach (var mineTile in mineTiles)
-            {
-                affectedTiles.Add(mineTile);
-                if (mineTile.PreviousTile != null) affectedTiles.Add(mineTile.PreviousTile);
-                if (mineTile.NextTile != null) affectedTiles.Add(mineTile.NextTile);
-            }
-
-            return affectedTiles.ToList();
-        }
-
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
             var partyManager = PartyManager.Instance;
             if (partyManager == null) return;
 
-            var affectedTiles = (targetTiles != null && targetTiles.Count > 0)
-                ? targetTiles.Where(tile => tile != null).Distinct().ToList()
-                : CollectAffectedTiles();
+            // targetTiles가 시스템(MonsterSkill)에 의해 제공되므로 신뢰하고 사용
+            var affectedTiles = targetTiles != null ? targetTiles.Where(tile => tile != null).Distinct().ToList() : new List<TileData>();
 
             var mineTiles = affectedTiles
-                .Where(tile => tile != null && tile.GetAttributes().Any(attr => attr != null && attr.Type == TileAttributeType.RandMine))
+                .Where(tile => tile.GetAttributes().Any(attr => attr != null && attr.Type == TileAttributeType.RandMine))
                 .ToList();
-            if (mineTiles.Count == 0) return;
+
+            // 대상에 지뢰나 영향받는 타일이 없으면 종료
+            if (mineTiles.Count == 0 && affectedTiles.Count == 0) return;
 
             VfxManager.PlayCast(vfxProfile, source);
 
@@ -85,7 +61,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
                 }
             }
 
-            // Remove only mine attributes from mine tiles after detonation.
+            // 폭발 후 지뢰 속성 제거
             foreach (var mineTile in mineTiles)
             {
                 var mines = mineTile.GetAttributes()
