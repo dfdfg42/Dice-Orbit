@@ -289,7 +289,7 @@ namespace DiceOrbit.UI
         /// <summary>
         /// 타겟팅 공격 시각화 (몬스터별 LineRenderer)
         /// </summary>
-        private void ShowTargetedAttackForMonster(Core.Monster monster, Core.Character target)
+        private void ShowTargetedAttackForMonster(Core.Monster monster, Core.Unit target)
         {
             if (monster == null || target == null) return;
 

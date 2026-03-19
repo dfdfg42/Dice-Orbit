@@ -220,8 +220,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
                 {
                     var honeyAttribute = new HoneyTileAttribute(
                         TileAttributeType.Honey,
-                        0, // 꿀은 데미지가 없으므로 Value는 0
-                        honeyDuration
+                        1, // 꿀은 데미지가 없으므로 Value는 0
+                        1
                     );
 
                     tile.AddAttribute(honeyAttribute);

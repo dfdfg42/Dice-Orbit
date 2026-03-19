@@ -26,7 +26,10 @@ namespace DiceOrbit.Systems.Effects
 
         public void AddStack(int value)
         {
-            Value += value;
+            if (IsStackable)
+            {
+                Value += value;
+            }
         }
 
         public void RefreshDuration(int duration)
@@ -63,6 +66,16 @@ namespace DiceOrbit.Systems.Effects
         public void SetOwner(Core.Unit owner)
         {
             Owner = owner;
+        }
+
+        public virtual void EffectApplied()
+        {
+            // 효과가 적용될 때 추가로 처리할 로직이 있다면 여기에 구현
+        }
+
+        public virtual void EffectExpired()
+        {
+            // 효과가 만료될 때 추가로 처리할 로직이 있다면 여기에 구현
         }
     }
 }

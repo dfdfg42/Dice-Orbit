@@ -21,31 +21,32 @@ namespace DiceOrbit.Systems.Effects
             owner = unit;
         }
 
-        public void AddEffect(EffectType type, int value, int duration)
+        public void AddEffect(StatusEffect newEffect)
         {
-            if (activeEffects.ContainsKey(type))
+            if (activeEffects.ContainsKey(newEffect.Type))
             {
-                var existing = activeEffects[type];
-                existing.AddStack(value); 
-                existing.RefreshDuration(duration);
+                var existing = activeEffects[newEffect.Type];
+                existing.AddStack(newEffect.Value); 
+                existing.RefreshDuration(newEffect.Duration);
+                Debug.Log($"[Status] refreshed {newEffect.Type} to {name}");
             }
             else
             {
-                var newEffect = CreateEffect(type, value, duration);
                 newEffect.SetOwner(owner); 
-                activeEffects.Add(type, newEffect);
+                activeEffects.Add(newEffect.Type, newEffect);
+                string name = "Unknown";
+                if (owner is Character c) name = c.Stats.CharacterName;
+                else if (owner is Monster m) name = m.Stats.MonsterName;
+                newEffect.EffectApplied();
+                Debug.Log($"[Status] Added {newEffect.Type} to {name}");
             }
-            string name = "Unknown";
-            if (owner is Character c) name = c.Stats.CharacterName;
-            else if (owner is Monster m) name = m.Stats.MonsterName;
-
-            Debug.Log($"[Status] Added {type} to {name}");
         }
 
         public void RemoveEffect(EffectType type)
         {
              if (activeEffects.ContainsKey(type))
             {
+                activeEffects[type].EffectExpired(); // 효과 만료 시 필요한 로직 실행
                 activeEffects.Remove(type);
             }
         }
@@ -96,7 +97,7 @@ namespace DiceOrbit.Systems.Effects
             }
         }
 
-        private StatusEffect CreateEffect(EffectType type, int value, int duration)
+        public static StatusEffect CreateEffect(EffectType type, int value, int duration)
         {
             switch (type)
             {

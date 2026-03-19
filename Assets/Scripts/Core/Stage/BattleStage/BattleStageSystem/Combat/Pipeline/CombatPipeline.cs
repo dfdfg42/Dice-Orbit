@@ -164,7 +164,7 @@ namespace DiceOrbit.Core.Pipeline
                     // 버프, 디버프, 도트 등은 StatusEffectManager로 위임
                     if (target.StatusEffects != null)
                     {
-                        target.StatusEffects.AddEffect(effectInfo.Type, effectInfo.Value, effectInfo.Duration);
+                        target.StatusEffects.AddEffect(DiceOrbit.Systems.Effects.StatusEffectManager.CreateEffect(effectInfo.Type, effectInfo.Value, effectInfo.Duration));
                     }
                     break;
             }

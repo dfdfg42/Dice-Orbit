@@ -14,7 +14,6 @@ namespace DiceOrbit.Data
         public int Level = 1;
         
         [Header("Skills")]
-        [Header("Skills")]
         
         // New System
         public List<Skills.RuntimeSkill> RuntimeActiveSkills = new List<Skills.RuntimeSkill>();
@@ -26,7 +25,9 @@ namespace DiceOrbit.Data
         [Header("Visual")]
         public Sprite CharacterSprite;
         public Color SpriteColor = Color.white;
-        
+
+        public int MoveDebuff = 0;
+
         /// <summary>
         /// 레벨업
         /// </summary>

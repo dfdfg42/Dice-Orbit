@@ -1,5 +1,6 @@
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Data;
 using UnityEngine;
 
 namespace DiceOrbit.Data.Tile
@@ -50,7 +51,8 @@ namespace DiceOrbit.Data.Tile
             if (target == null || !target.IsAlive) return;
 
             //TODO: 이동력 감소 등 디버프 로직 구현
-            Debug.Log($"[HoneyTileAttribute] {target.name} 유닛이 꿀 타일을 밟아 끈적해졌습니다! (효과 미구현)");
+            Debug.Log($"[HoneyTileAttribute] {target.name} 유닛이 꿀 타일을 밟아 끈적해졌습니다!");
+            target.StatusEffects.AddEffect(new DiceOrbit.Systems.Effects.HoneyDebuff(1,1));
             Owner.RemoveAttribute(this);
         }
 
@@ -61,6 +63,55 @@ namespace DiceOrbit.Data.Tile
         {
             string durationText = Duration < 0 ? "영구" : $"{Duration}턴";
             return $"통과시 이동량이 {Value} 감소합니다";
+        }
+    }
+}
+
+namespace DiceOrbit.Systems.Effects
+{
+    /// <summary>
+    /// 공격력 버프 (데미지 계산 시 추가)
+    /// </summary>
+    public class HoneyDebuff : StatusEffect
+    {
+        public HoneyDebuff(int value, int duration) : base(EffectType.BuffAttack, value, duration)
+        {
+            IsStackable = false;
+        }
+
+        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        {
+            base.OnReact(trigger, context);
+
+            if (Owner == null) return;
+
+            // OnCalculateOutput: 데미지 계산 시점에 개입
+            if (trigger == CombatTrigger.OnCalculateOutput)
+            {
+                // 소유자가 공격자이며, 공격 액션일 때
+                if (context.SourceUnit == Owner && context.Action.Type == ActionType.Attack)
+                {
+                    context.OutputValue += Value;
+                    // Debug.Log($"[BuffAttack] Added {Value} damage to {context.Action.Name}");
+                }
+            }
+        }
+
+
+        public override void EffectApplied()
+        {
+            if (Owner.Stats is CharacterStats c)
+            {
+                c.MoveDebuff += Value;
+            }
+        }
+
+        public override void EffectExpired()
+        {
+            if (Owner.Stats is CharacterStats c)
+            {
+                c.MoveDebuff -= Value;
+            }
         }
     }
 }

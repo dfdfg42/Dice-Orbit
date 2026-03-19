@@ -321,7 +321,7 @@ namespace DiceOrbit.Core
                 var targets = CurrentIntent.Targets;
                 if (targets != null && targets.Count > 0)
                 {
-                    sb.AppendLine($"Targets: {string.Join(", ", targets.Select(t => t.Stats.CharacterName))}");
+                    sb.AppendLine($"Targets: {string.Join(", ", targets.Select(t => t.Stats is Data.CharacterStats cs ? cs.CharacterName : (t.Stats is Data.MonsterStats ms ? ms.MonsterName : "Unknown")))}");
                 }
 
                 // 스킬 설명 (nextSkill에서 가져오기)

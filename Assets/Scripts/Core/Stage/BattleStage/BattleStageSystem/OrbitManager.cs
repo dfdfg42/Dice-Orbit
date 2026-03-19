@@ -185,6 +185,7 @@ namespace DiceOrbit.Core
         
         public void Move(Character character, int steps)
         {
+            steps = Mathf.Max(steps - character.Stats.MoveDebuff, 0);   
             var currentTile = character.CurrentTile;
             // 타일 경로 계산
             var tilePath = new List<TileData>();

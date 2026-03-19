@@ -88,7 +88,7 @@ namespace DiceOrbit.Data
             switch (targetType)
             {
                 case TargetType.Characters:
-                    selectedTargets = SelectTargets();
+                    selectedTargets.AddRange(SelectTargets());
                     break;
                 case TargetType.Tiles:
                     targetTiles = SelectTiles();
