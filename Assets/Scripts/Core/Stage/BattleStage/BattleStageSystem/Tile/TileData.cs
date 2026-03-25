@@ -226,6 +226,22 @@ namespace DiceOrbit.Data
             UI.TileAttributeBubbleManager.Instance?.RefreshTile(this);
         }
 
+        public List<Character> GetCharactersOnTile()
+        {
+            var characters = new List<Character>();
+            if (Core.PartyManager.Instance != null)
+            {
+                foreach (var ally in Core.PartyManager.Instance.Party)
+                {
+                    if (ally != null && ally.Passives is ICombatReactor allyReactor)
+                    {
+                        characters.Add(ally);
+                    }
+                }
+            }
+            return characters;
+        }
+
         public void OnArrive(Core.Character character)
         {
             TileVfxManager.PlayTileEvent(this, TileVfxTrigger.OnArrive, character);

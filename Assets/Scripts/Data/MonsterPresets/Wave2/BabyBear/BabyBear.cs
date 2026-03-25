@@ -161,10 +161,6 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
     [System.Serializable]
     public class BabyBearPassive : PassiveAbility
     {
-        [Header("Passive Settings")]
-        [Tooltip("꿀 타일 지속 턴 (-1은 영구)")]
-        [SerializeField] private int honeyDuration = -1;
-
         public BabyBearPassive()
         {
             passiveName = "아기 곰은 꿀을 좋아해";

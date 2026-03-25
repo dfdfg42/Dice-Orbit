@@ -65,7 +65,16 @@ namespace DiceOrbit.Data
         [Tooltip("표시할 스킬 아이콘")]
         [SerializeField] private Sprite intentIcon;
 
+        public TargetSelectionStrategy TargetStrategy => targetStrategy;
+        public TargetType TargetType => targetType;
+        public DiceOrbit.Data.Tile.TileAttributeType TargetTileAttribute => targetTileAttribute;
+        public int TargetCount => targetCount;
+        public int TargetRange => targetRange;
+        public IntentType IntentType => intentType;
+        public Sprite IntentIcon => intentIcon;
+
         // 런타임에 생성된 AttackIntent (캐싱용)
+        [System.NonSerialized]
         private AttackIntent cachedIntent;
 
         /// <summary>
@@ -79,214 +88,8 @@ namespace DiceOrbit.Data
                 return null;
             }
 
-            // 타겟 선정
-            List<Unit> selectedTargets = new();
-
-            // TileData 선정 (필요한 경우)
-            List<TileData> targetTiles = new();
-
-            switch (targetType)
-            {
-                case TargetType.Characters:
-                    selectedTargets.AddRange(SelectTargets());
-                    break;
-                case TargetType.Tiles:
-                    targetTiles = SelectTiles();
-                    break;
-                case TargetType.Self:
-                    selectedTargets.Add(owner);
-                    break;
-                case TargetType.None:
-                    // 타겟 없음
-                    break;
-                default:
-                    Debug.LogWarning($"[MonsterSkill] Invalid TargetType specified! {targetType}");
-                    return null;
-            }
-
-            // IntentType 결정
-            IntentType type = DetermineIntentType(); // To avoid variable shadowing
-
-            // AttackIntent 생성
-            var intent = new AttackIntent(
-                type, 
-                targetType,
-                selectedTargets,
-                intentIcon // 아이콘 정보 전달
-            );
-            intent.TargetTiles = targetTiles;
-
-            cachedIntent = intent;
-            return intent;
-        }
-
-        /// <summary>
-        /// 타겟 선정 로직
-        /// </summary>
-        private List<Character> SelectTargets()
-        {
-            // PartyManager에서 생존한 캐릭터 가져오기
-            var candidates = PartyManager.Instance?.GetAliveCharacters();
-            if (candidates == null || candidates.Count == 0)
-            {
-                Debug.LogWarning("[MonsterSkill] No alive characters found!");
-                return null;
-            }
-
-            if (candidates == null || candidates.Count == 0)
-                return new List<Character>();
-
-            return SelectCharactersByTargetStrategy(targetStrategy);
-        }
-
-        private List<Character> SelectCharactersByTargetStrategy(TargetSelectionStrategy strategy)
-        {
-            var candidates = PartyManager.Instance?.GetAliveCharacters();
-            List<Character> selected = new();
-            switch (strategy)
-            {
-                case TargetSelectionStrategy.RandomCharacter:
-                    int count = Mathf.Min(targetCount, candidates.Count);
-                    List<Character> shuffled = new List<Character>(candidates);
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        int randomIndex = Random.Range(i, shuffled.Count);
-                        Character temp = shuffled[i];
-                        shuffled[i] = shuffled[randomIndex];
-                        shuffled[randomIndex] = temp;
-                    }
-
-                    selected = shuffled.GetRange(0, count);
-                    break;
-                case TargetSelectionStrategy.AllTargets:
-                    selected.AddRange(candidates);
-                    break;
-                case TargetSelectionStrategy.RandomTiles:
-                case TargetSelectionStrategy.TilesWithAttribute:
-                    Debug.LogError($"[MonsterSkill] {strategy} is not valid for Character TargetType!");
-                    break;
-                case TargetSelectionStrategy.Self:
-                    // Self 처리는 위에서 TargetType.Self로 우회하므로 여기선 할 일이 없으나, 만일을 대비해 빈 리스트 반환
-                    break;
-                default:
-                    selected.Add(candidates[Random.Range(0, candidates.Count)]);
-                    Debug.LogWarning("has an invalid TargetSelectionStrategy, defaulting to random selection.");
-                    break;
-            }
-            return selected;
-        }
-
-        /// <summary>
-        /// 타일 기반 타겟 선정 (MonsterTileActionModule 처리)
-        /// </summary>
-        private List<TileData> SelectTiles()
-        {
-            var tileList = GameManager.Instance?.GetOrbitManager().Tiles;
-            List<TileData> selectedTiles = new();
-            List<Character> candidates = PartyManager.Instance?.GetAliveCharacters();
-            switch (targetStrategy)
-            {
-                case TargetSelectionStrategy.RandomCharacter:
-                    selectedTiles = SelectTilesByCharacter(SelectCharactersByTargetStrategy(targetStrategy));
-                    break;
-                case TargetSelectionStrategy.AllTargets:
-                    selectedTiles = SelectTilesByCharacter(SelectCharactersByTargetStrategy(targetStrategy));
-                    break;
-                case TargetSelectionStrategy.RandomTiles:
-                    if (tileList != null && tileList.Count > 0)
-                    {
-                        int count = Mathf.Min(targetCount, tileList.Count);
-                        List<TileData> shuffled = new List<TileData>(tileList);
-
-                        for (int i = 0; i < count; i++)
-                        {
-                            int randomIndex = Random.Range(i, shuffled.Count);
-                            TileData temp = shuffled[i];
-                            shuffled[i] = shuffled[randomIndex];
-                            shuffled[randomIndex] = temp;
-                        }
-
-                        selectedTiles = shuffled.GetRange(0, count);
-                    }
-                    break;
-                case TargetSelectionStrategy.TilesWithAttribute:
-                    if (tileList != null && tileList.Count > 0)
-                    {
-                        // 1. 해당 속성을 가진 타일들을 모두 찾기
-                        var matchedTiles = tileList.Where(t => t != null && t.HasAttribute(targetTileAttribute)).ToList();
-
-                        // 2. 찾아낸 타일들을 중심으로 지정된 targetRange 만큼 범위 확장
-                        selectedTiles = ExpandTilesRange(matchedTiles, targetRange);
-                    }
-                    break;
-                case TargetSelectionStrategy.Self:
-                    Debug.LogError("[MonsterSkill] TargetSelectionStrategy.Self is not valid for Area Tile TargetType!");
-                    break;
-                default:
-                    Debug.LogWarning("has an invalid TargetSelectionStrategy, defaulting to random selection.");
-                    break;
-            }
-            
-            return selectedTiles;
-        }
-
-        /// <summary>
-        /// 주어진 타일들의 양옆(range) 범위를 포함하여 중복 없이 타일 목록을 반환합니다.
-        /// </summary>
-        private List<TileData> ExpandTilesRange(List<TileData> centerTiles, int range)
-        {
-            var expandedTiles = new HashSet<TileData>();
-            var orbitManager = GameManager.Instance?.GetOrbitManager();
-            if (orbitManager == null || centerTiles == null || centerTiles.Count == 0)
-                return expandedTiles.ToList();
-
-            const int TotalTiles = 20; // 타일 총 개수
-
-            foreach (var centerTile in centerTiles)
-            {
-                if (centerTile != null)
-                {
-                    int centerIndex = centerTile.TileIndex;
-
-                    for (int offset = -range; offset <= range; offset++)
-                    {
-                        int targetIndex = (centerIndex + offset + TotalTiles) % TotalTiles;
-                        var tile = orbitManager.GetTile(targetIndex);
-                        if (tile != null)
-                        {
-                            expandedTiles.Add(tile);
-                        }
-                    }
-                }
-            }
-
-            return expandedTiles.ToList();
-        }
-
-        private List<TileData> SelectTilesByCharacter(List<Character> candidates)
-        {
-            if (candidates == null || candidates.Count == 0)
-                return new List<TileData>();
-
-            var centerTiles = new List<TileData>();
-            foreach(var c in candidates)
-            {
-                if(c != null && c.CurrentTile != null)
-                {
-                    centerTiles.Add(c.CurrentTile);
-                }
-            }
-
-            return ExpandTilesRange(centerTiles, targetRange);
-        }
-
-        /// <summary>
-        /// SkillData에서 IntentType 추론
-        /// </summary>
-        private IntentType DetermineIntentType()
-        {
-            return intentType;
+            cachedIntent = new AttackIntent(this, owner);
+            return cachedIntent;
         }
     }
 }

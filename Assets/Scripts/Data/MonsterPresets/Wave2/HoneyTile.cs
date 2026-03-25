@@ -74,7 +74,7 @@ namespace DiceOrbit.Systems.Effects
     /// </summary>
     public class HoneyDebuff : StatusEffect
     {
-        public HoneyDebuff(int value, int duration) : base(EffectType.BuffAttack, value, duration)
+        public HoneyDebuff(int value, int duration) : base(EffectType.Honey, value, duration)
         {
             IsStackable = false;
         }
