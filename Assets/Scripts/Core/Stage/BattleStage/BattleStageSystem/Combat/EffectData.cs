@@ -17,6 +17,7 @@ namespace DiceOrbit.Data
         Shield,         // 보호막
         Focus,           // 마법사 집중 스택
         Honey,           // 꿀 타일 효과
+        SlushSnow,        // 눈사람 디버프
     }
     
     /// <summary>

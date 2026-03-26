@@ -72,8 +72,9 @@ namespace DiceOrbit.Core.Pipeline
             // 기본적으로 모든 파티원들에서 수집하고, Source나 Target이 몬스터라면 몬스터에서도 수집하는 방식으로 구현.
             var reactors = new List<ICombatReactor>();
 
+            HashSet<Unit> uniqueUnits = new HashSet<Unit>();
             // A. Source의 Reactor 수집
-           CollectReactors(context.SourceUnit, reactors);
+            CollectReactors(context.SourceUnit, reactors);
 
             // B. Target의 Reactor 수집
             CollectReactors(context.Target, reactors);

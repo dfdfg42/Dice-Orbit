@@ -26,7 +26,9 @@ namespace DiceOrbit.Data
         public Sprite CharacterSprite;
         public Color SpriteColor = Color.white;
 
-        public int MoveDebuff = 0;
+        [Header("Combat Stats")]
+        public int MoveBuff = 0;
+        public int MoveOnThisTurn = 0; // 현재 턴에 이동한 거리 (디버프나 버프 계산용)
 
         /// <summary>
         /// 레벨업

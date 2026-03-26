@@ -10,7 +10,7 @@ namespace DiceOrbit.Data
         [Header("Combat Stats")]
         public int MaxHP = 50;
         public int CurrentHP = 50;
-        public int Attack = 8;
+        public int Attack = 0;
         // Legacy field: fixed defense is not used in current combat rule.
         public int Defense = 0;
         public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)

@@ -62,15 +62,11 @@ namespace DiceOrbit.Core
         /// </summary>
         public virtual void OnStartTurn()
         {
-            Debug.Log($"{Stats.MaxHP} Start Turn");
+            Debug.Log($"{name} Start Turn");
 
             var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.OnStartTurn, 0);
             var context = new Pipeline.CombatContext(this, this, action);
-
-            if (Pipeline.CombatPipeline.Instance != null)
-            {
-                Pipeline.CombatPipeline.Instance.Process(context);
-            }
+            Pipeline.CombatPipeline.Instance?.Process(context);
         }
 
 
