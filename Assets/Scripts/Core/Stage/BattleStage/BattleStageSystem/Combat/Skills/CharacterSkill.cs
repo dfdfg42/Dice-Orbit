@@ -1,5 +1,6 @@
 using DiceOrbit.Core;
 using DiceOrbit.Data;
+using DiceOrbit.Data.Passives;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -60,6 +61,13 @@ namespace DiceOrbit.Data.Skills
         [Header("Character Skill Info")]
         public Sprite Icon;
         public CharacterSkillType Type;
+
+        [Header("Passive Binding (Type=Passive)")]
+        // 런타임에서 복제되어 PassiveManager에 등록될 패시브 템플릿입니다.
+        [SerializeReference] public PassiveAbility PassiveTemplate;
+
+        [Header("Level")]
+        [Min(1)] public int MaxLevelOverride = 1;
         
         [Header("Requirements")]
         public DiceRequirement Requirement = new DiceRequirement();
@@ -105,7 +113,7 @@ namespace DiceOrbit.Data.Skills
             return null;
         }
 
-        public int MaxLevel => Levels.Count;
+        public int MaxLevel => Mathf.Max(1, MaxLevelOverride, Levels != null ? Levels.Count : 0);
         
         /// <summary>
         /// 현재 레벨의 SkillData 반환 (레벨별 데이터 적용)
@@ -115,6 +123,7 @@ namespace DiceOrbit.Data.Skills
             var levelData = GetLevelData(level);
             if (levelData == null) return BaseData;
             
+            // 레벨별 이펙트가 없으면 BaseData 이펙트를 그대로 사용합니다.
             var resolvedEffects = (levelData.Effects != null && levelData.Effects.Count > 0)
                 ? levelData.Effects
                 : (BaseData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>());

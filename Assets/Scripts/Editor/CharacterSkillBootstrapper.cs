@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.IO;
 using DiceOrbit.Core;
 using DiceOrbit.Data;
-using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.Data.Skills.Effects;
 using UnityEditor;
@@ -67,20 +66,16 @@ namespace DiceOrbit.EditorTools
                 mageEffect
             );
 
+            // 패시브 자동 생성은 비활성화합니다. 패시브는 CharacterSkill(Type=Passive) 에셋으로 직접 작성합니다.
             //var warriorPassive = GetOrCreateBattleCryPassive("Warrior_BattleCry_Passive", 1.05f);
             //var roguePassive = GetOrCreatePositioningPassive("Rogue_Positioning_Passive", 1.05f, 5);
             //var alchemistPassive = GetOrCreateStableReactionPassive("Alchemist_StableReaction_Passive", 1.10f, 0.6f);
             //var magePassive = GetOrCreateFocusPassive("Mage_Focus_Passive", 1);
 
-            PassiveAbility warriorPassive = null;
-            PassiveAbility roguePassive = null;
-            PassiveAbility alchemistPassive = null;
-            PassiveAbility magePassive = null;
-
-            ApplyPreset("Warrior", warriorSkill, warriorPassive, 600);
-            ApplyPreset("Rogue", rogueSkill, roguePassive, 600);
-            ApplyPreset("Alchemist", alchemistSkill, alchemistPassive, 600);
-            ApplyPreset("Mage", mageSkill, magePassive, 600);
+            ApplyPreset("Warrior", warriorSkill, 600);
+            ApplyPreset("Rogue", rogueSkill, 600);
+            ApplyPreset("Alchemist", alchemistSkill, 600);
+            ApplyPreset("Mage", mageSkill, 600);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -195,21 +190,12 @@ namespace DiceOrbit.EditorTools
             }
         }
 
-        private static void ApplyPreset(string presetName, CharacterSkill skill, PassiveAbility passive, int maxHp)
+        private static void ApplyPreset(string presetName, CharacterSkill skill, int maxHp)
         {
             var preset = LoadPreset(presetName);
             if (preset == null) return;
 
             AssignSkillToPreset(presetName, skill);
-
-            if (preset.StartingPassives == null)
-            {
-                preset.StartingPassives = new List<PassiveAbility>();
-            }
-            if (passive != null && !preset.StartingPassives.Contains(passive))
-            {
-                preset.StartingPassives.Add(passive);
-            }
 
             preset.MaxHP = maxHp;
             EditorUtility.SetDirty(preset);

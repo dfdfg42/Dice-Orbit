@@ -35,11 +35,8 @@ namespace DiceOrbit.Core
         
 
         [Header("Starting Skills (New System)")]
+        // 액티브/패시브 모두 CharacterSkill 에셋으로 통일해서 등록합니다.
         public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
-
-        [Header("Starting Passives")]
-        [SerializeReference] // 다형성 직렬화 지원
-        public List<Data.Passives.PassiveAbility> StartingPassives = new List<Data.Passives.PassiveAbility>();
 
 
         
@@ -64,21 +61,15 @@ namespace DiceOrbit.Core
             foreach(var skill in StartingSkills)
             {
                 if(skill == null) continue;
-                if(skill.Type == CharacterSkillType.Active)
-                    stats.RuntimeActiveSkills.Add(new RuntimeSkill(skill));
-                else
-                    stats.RuntimePassiveSkills.Add(new RuntimeSkill(skill));
+                // 런타임 래퍼에서 캐릭터별 레벨 상태를 에셋과 분리해 관리합니다.
+                stats.RuntimeAbilities.Add(new RuntimeAbility(skill));
             }
             
             // Set Source Preset reference
             stats.SourcePreset = this;
+            stats.NormalizeRuntimeAbilities();
             
             return stats;
-        }
-
-        public List<Data.Passives.PassiveAbility> GetStartingPassives()
-        {
-            return StartingPassives ?? new List<Data.Passives.PassiveAbility>();
         }
     }
 }

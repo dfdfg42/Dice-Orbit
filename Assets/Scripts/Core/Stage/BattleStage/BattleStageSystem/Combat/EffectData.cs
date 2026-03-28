@@ -17,7 +17,7 @@ namespace DiceOrbit.Data
         Shield,         // 보호막
         Focus,           // 마법사 집중 스택
         Honey,           // 꿀 타일 효과
-        SlushSnow,        // 눈사람 디버프
+        SlushSnow,      // 눈사람 진창눈 이동 디버프 (몬스터 전용 타일/상태 로직)
     }
     
     /// <summary>

@@ -23,6 +23,8 @@ namespace DiceOrbit.Core
 
         private bool pendingStartGame = false;
         private int lastWaveCleared = 0;
+        // 레벨업 타일을 밟은 캐릭터를 임시 보관합니다.
+        private Character pendingLevelUpCharacter;
         
         // Properties
         public GameState CurrentState => currentState;
@@ -113,6 +115,10 @@ namespace DiceOrbit.Core
                     if (characterSelectionUI != null) characterSelectionUI.Hide();
                     if (combatUI != null) combatUI.SetActive(false);
                     if (rewardUI != null) rewardUI.Show();
+                    break;
+
+                case GameState.LevelUp:
+                    EnterLevelUpState();
                     break;
 
                 case GameState.Victory:
@@ -262,9 +268,11 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 레벨업 트리거 (LevelUpAttribute Tile)
         /// </summary>
-        public void TriggerLevelUp(Data.CharacterStats stats)
+        public void TriggerLevelUp(Character character)
         {
-            Debug.Log($"[GameFlow] TriggerLevelUp called for {stats.CharacterName} - State Change to LevelUp");
+            if (character == null || character.Stats == null) return;
+            pendingLevelUpCharacter = character;
+            Debug.Log($"[GameFlow] TriggerLevelUp called for {character.Stats.CharacterName} - State Change to LevelUp");
             ChangeState(GameState.LevelUp);
         }
 
@@ -356,6 +364,22 @@ namespace DiceOrbit.Core
         {
             Debug.Log("[GameFlow] Game Over Screen Shown");
             // TODO: Implement UI
+        }
+
+        private void EnterLevelUpState()
+        {
+            if (pendingLevelUpCharacter == null || pendingLevelUpCharacter.Stats == null)
+            {
+                ChangeState(GameState.Combat);
+                return;
+            }
+
+            // 레벨업 타일에서는 항상 액티브 1개 + 패시브 1개를 자동 강화합니다.
+            pendingLevelUpCharacter.LevelUpCharacter();
+
+            // 레벨업 상태는 일시 상태이므로 즉시 전투 흐름으로 복귀합니다.
+            pendingLevelUpCharacter = null;
+            ChangeState(GameState.Combat);
         }
     }
 }

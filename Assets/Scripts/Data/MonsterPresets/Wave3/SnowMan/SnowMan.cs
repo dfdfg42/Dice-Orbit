@@ -24,7 +24,7 @@ namespace DiceOrbit.Systems.Effects
         {
             if (Owner.Stats is CharacterStats c)
             {
-                c.MoveBuff -= Value;
+                c.MoveDebuff += Value;
             }
         }
 
@@ -32,7 +32,7 @@ namespace DiceOrbit.Systems.Effects
         {
             if (Owner.Stats is CharacterStats c)
             {
-                c.MoveBuff += Value;
+                c.MoveDebuff -= Value;
             }
         }
     }

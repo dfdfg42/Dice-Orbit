@@ -184,38 +184,39 @@ namespace DiceOrbit.UI
 
             foreach (Transform child in skillButtonContainer) Destroy(child.gameObject);
 
-            var skills = character.Stats.RuntimeActiveSkills;
+            var skills = new List<RuntimeAbility>(character.Stats.ActiveAbilities);
             for (int i = 0; i < skills.Count; i++)
             {
                 int index = i;
-                var runtimeSkill = skills[i];
+                // UI에는 액티브 능력만 표시하고, 패시브는 리액터 체인에서 자동 처리합니다.
+                var runtimeAbility = skills[i];
                 var go    = Instantiate(skillSelectButtonPrefab, skillButtonContainer);
 
                 var txt = go.GetComponentInChildren<TextMeshProUGUI>();
                 if (txt != null)
                 {
-                    var skillName = runtimeSkill.BaseSkill != null ? runtimeSkill.BaseSkill.SkillName : "Unknown Skill";
-                    txt.text = $"{skillName} (Lv.{runtimeSkill.CurrentLevel})";
+                    var skillName = runtimeAbility.BaseSkill != null ? runtimeAbility.BaseSkill.SkillName : "Unknown Skill";
+                    txt.text = $"{skillName} (Lv.{runtimeAbility.CurrentLevel})";
                 }
 
                 var imgs = go.GetComponentsInChildren<Image>();
-                if (imgs.Length > 1 && runtimeSkill.BaseSkill != null && runtimeSkill.BaseSkill.Icon != null) imgs[1].sprite = runtimeSkill.BaseSkill.Icon;
+                if (imgs.Length > 1 && runtimeAbility.BaseSkill != null && runtimeAbility.BaseSkill.Icon != null) imgs[1].sprite = runtimeAbility.BaseSkill.Icon;
 
                 var hoverPreview = go.GetComponent<SkillPreviewHoverUI>();
                 if (hoverPreview == null) hoverPreview = go.AddComponent<SkillPreviewHoverUI>();
-                hoverPreview.SetPreview(BuildSkillHoverText(runtimeSkill));
+                hoverPreview.SetPreview(BuildSkillHoverText(runtimeAbility));
 
                 var btn = go.GetComponent<Button>();
                 btn?.onClick.AddListener(() => OnSpecificSkillClicked(index));
             }
         }
 
-        private string BuildDamagePreview(RuntimeSkill runtimeSkill)
+        private string BuildDamagePreview(RuntimeAbility runtimeAbility)
         {
-            if (runtimeSkill == null || runtimeSkill.BaseSkill == null || currentCharacter == null || currentDice == null)
+            if (runtimeAbility == null || runtimeAbility.BaseSkill == null || currentCharacter == null || currentDice == null)
                 return "예상: -";
 
-            var skillData = runtimeSkill.CurrentSkillData;
+            var skillData = runtimeAbility.CurrentSkillData;
             if (skillData == null || skillData.Effects == null || skillData.Effects.Count == 0)
                 return "예상: -";
 
@@ -252,16 +253,16 @@ namespace DiceOrbit.UI
             return lines.Count > 0 ? string.Join("\n", lines) : "예상: -";
         }
 
-        private string BuildSkillHoverText(RuntimeSkill runtimeSkill)
+        private string BuildSkillHoverText(RuntimeAbility runtimeAbility)
         {
-            if (runtimeSkill == null || runtimeSkill.BaseSkill == null)
+            if (runtimeAbility == null || runtimeAbility.BaseSkill == null)
                 return "스킬 정보: -";
 
-            var baseSkill = runtimeSkill.BaseSkill;
-            var currentData = runtimeSkill.CurrentSkillData;
+            var baseSkill = runtimeAbility.BaseSkill;
+            var currentData = runtimeAbility.CurrentSkillData;
             var lines = new List<string>
             {
-                $"{baseSkill.SkillName} (Lv.{runtimeSkill.CurrentLevel})"
+                $"{baseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})"
             };
 
             string description = currentData != null && !string.IsNullOrWhiteSpace(currentData.Description)
@@ -286,7 +287,7 @@ namespace DiceOrbit.UI
                 lines.Add($"조건: {condition}");
             }
 
-            string damagePreview = BuildDamagePreview(runtimeSkill);
+            string damagePreview = BuildDamagePreview(runtimeAbility);
             if (!string.IsNullOrWhiteSpace(damagePreview) && damagePreview != "예상: -")
             {
                 lines.Add("");
