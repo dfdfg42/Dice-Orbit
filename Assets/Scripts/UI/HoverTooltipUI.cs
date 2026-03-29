@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using System.Linq;
+using System.Collections.Generic;
+using System.Text;
 
 namespace DiceOrbit.UI
 {
@@ -268,6 +270,69 @@ namespace DiceOrbit.UI
             if (resolvedFont.atlasPopulationMode != AtlasPopulationMode.Dynamic) return;
 
             resolvedFont.TryAddCharacters(text, out _);
+        }
+    }
+}
+
+namespace DiceOrbit.UI
+{
+    public static class TooltipKeywordFormatter
+    {
+        private readonly struct KeywordEntry
+        {
+            public readonly string Key;
+            public readonly string Description;
+
+            public KeywordEntry(string key, string description)
+            {
+                Key = key;
+                Description = description;
+            }
+        }
+
+        private static readonly KeywordEntry[] Entries =
+        {
+            new KeywordEntry("집중", "액티브 발동 시 소모되며, 스택당 추가 피해를 제공합니다."),
+            new KeywordEntry("진창눈", "이동 디버프 상태입니다. 이동 가능 칸이 감소합니다."),
+            new KeywordEntry("방어도", "피해를 먼저 흡수하는 임시 수치입니다."),
+            new KeywordEntry("중독", "턴마다 피해를 입는 상태 이상입니다."),
+            new KeywordEntry("약화", "공격 피해량이 감소하는 상태 이상입니다."),
+            new KeywordEntry("취약", "받는 피해가 증가하는 상태 이상입니다."),
+            new KeywordEntry("기절", "행동이 제한되는 상태 이상입니다."),
+            new KeywordEntry("침묵", "스킬 사용이 제한되는 상태 이상입니다."),
+            new KeywordEntry("이동", "턴에 이동 가능한 칸 수를 의미합니다."),
+        };
+
+        public static string AppendKeywordSection(string rawText)
+        {
+            if (string.IsNullOrWhiteSpace(rawText))
+            {
+                return rawText;
+            }
+
+            var matched = new List<KeywordEntry>();
+            foreach (var entry in Entries)
+            {
+                if (string.IsNullOrWhiteSpace(entry.Key)) continue;
+                if (rawText.IndexOf(entry.Key, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                if (matched.Any(m => m.Key == entry.Key)) continue;
+                matched.Add(entry);
+            }
+
+            if (matched.Count == 0)
+            {
+                return rawText;
+            }
+
+            var sb = new StringBuilder(rawText.TrimEnd());
+            sb.AppendLine();
+            sb.AppendLine("--- 키워드 ---");
+            foreach (var entry in matched)
+            {
+                sb.AppendLine($"• {entry.Key}: {entry.Description}");
+            }
+
+            return sb.ToString().TrimEnd();
         }
     }
 }

@@ -3,13 +3,14 @@ using DiceOrbit.Data;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.Visuals;
 using System.Collections.Generic;
+using System.Text;
 
 namespace DiceOrbit.Core
 {
     /// <summary>
     /// 게임 캐릭터 (플레이어)
     /// </summary>
-    public class Character : Unit<CharacterStats>
+    public class Character : Unit<CharacterStats>, UI.IHoverTooltipProvider
     {
         // 타일 위 유닛 위치 offset
         protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
@@ -419,6 +420,60 @@ namespace DiceOrbit.Core
             {
                 Debug.LogError("CharacterActionUI NOT FOUND! Make sure CharacterActionUI component exists in scene.");
             }
+        }
+
+        public string GetHoverTooltipText()
+        {
+            return BuildCharacterTooltipText();
+        }
+
+        private string BuildCharacterTooltipText()
+        {
+            var sb = new StringBuilder();
+            string characterName = stat != null && !string.IsNullOrWhiteSpace(stat.CharacterName)
+                ? stat.CharacterName
+                : name;
+
+            sb.AppendLine(characterName);
+
+            if (stat != null)
+            {
+                sb.AppendLine($"Lv.{stat.Level}  HP {stat.CurrentHP}/{stat.MaxHP}  Armor {stat.TempArmor}");
+                sb.AppendLine($"Move: +{stat.MoveBuff} / -{stat.MoveDebuff}");
+            }
+
+            if (passives != null && passives.ActivePassives.Count > 0)
+            {
+                sb.AppendLine("--- Passive ---");
+                foreach (var passive in passives.ActivePassives)
+                {
+                    if (passive == null) continue;
+                    string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
+                    sb.Append($"• {passiveName}");
+                    if (passive.CurrentLevel > 0)
+                    {
+                        sb.Append($" (Lv.{passive.CurrentLevel})");
+                    }
+                    sb.AppendLine();
+                }
+            }
+
+            if (statusEffects != null)
+            {
+                var effects = statusEffects.GetActiveEffects();
+                if (effects != null && effects.Count > 0)
+                {
+                    sb.AppendLine("--- Status ---");
+                    foreach (var effect in effects)
+                    {
+                        if (effect == null) continue;
+                        string durationText = effect.Duration < 0 ? "∞" : effect.Duration.ToString();
+                        sb.AppendLine($"• {effect.Type}  x{effect.Value}  ({durationText}T)");
+                    }
+                }
+            }
+
+            return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
         }
     }
 }

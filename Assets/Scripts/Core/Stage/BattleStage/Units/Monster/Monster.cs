@@ -285,28 +285,6 @@ namespace DiceOrbit.Core
             Destroy(gameObject);
         }
 
-        // === Tooltip ===
-        protected override void OnMouseEnter()
-        {
-            base.OnMouseEnter();
-            Debug.Log($"[Hover] Monster enter: {name}");
-            UI.HoverTooltipUI.EnsureInstance();
-            if (UI.HoverTooltipUI.Instance != null)
-            {
-                UI.HoverTooltipUI.Instance.Show(BuildMonsterTooltipText());
-            }
-        }
-
-        protected override void OnMouseExit()
-        {
-            base.OnMouseExit();
-            Debug.Log($"[Hover] Monster exit: {name}");
-            if (UI.HoverTooltipUI.Instance != null)
-            {
-                UI.HoverTooltipUI.Instance.Hide();
-            }
-        }
-
         private string BuildMonsterTooltipText()
         {
             var sb = new StringBuilder();
@@ -349,7 +327,22 @@ namespace DiceOrbit.Core
                 }
             }
 
-            return sb.ToString().TrimEnd();
+            if (statusEffects != null)
+            {
+                var effects = statusEffects.GetActiveEffects();
+                if (effects != null && effects.Count > 0)
+                {
+                    sb.AppendLine("--- Status ---");
+                    foreach (var effect in effects)
+                    {
+                        if (effect == null) continue;
+                        string durationText = effect.Duration < 0 ? "∞" : effect.Duration.ToString();
+                        sb.AppendLine($"• {effect.Type}  x{effect.Value}  ({durationText}T)");
+                    }
+                }
+            }
+
+            return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
         }
 
         public string GetHoverTooltipText()

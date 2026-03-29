@@ -140,25 +140,6 @@ namespace DiceOrbit.Data
             return attributes.ContainsKey(attributeType);
         }
 
-        private void OnMouseEnter()
-        {
-            Debug.Log($"[Hover] Tile enter: {name}");
-            UI.HoverTooltipUI.EnsureInstance();
-            if (UI.HoverTooltipUI.Instance != null)
-            {
-                UI.HoverTooltipUI.Instance.Show(BuildTooltipText());
-            }
-        }
-
-        private void OnMouseExit()
-        {
-            Debug.Log($"[Hover] Tile exit: {name}");
-            if (UI.HoverTooltipUI.Instance != null)
-            {
-                UI.HoverTooltipUI.Instance.Hide();
-            }
-        }
-
         private string BuildTooltipText()
         {
             var detailLines = new List<string>();
@@ -185,7 +166,7 @@ namespace DiceOrbit.Data
                 }
             }
 
-            return sb.ToString().TrimEnd();
+            return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
         }
 
         public string GetHoverTooltipText()
