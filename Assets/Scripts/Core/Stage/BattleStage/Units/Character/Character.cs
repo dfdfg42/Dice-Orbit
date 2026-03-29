@@ -455,6 +455,11 @@ namespace DiceOrbit.Core
                         sb.Append($" (Lv.{passive.CurrentLevel})");
                     }
                     sb.AppendLine();
+
+                    if (!string.IsNullOrWhiteSpace(passive.Description))
+                    {
+                        sb.AppendLine($"  - {passive.Description.Trim()}");
+                    }
                 }
             }
 
