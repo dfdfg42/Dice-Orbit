@@ -39,7 +39,33 @@ namespace DiceOrbit.Visuals
             EnsureInstance();
 
             Transform parent = Instance != null ? Instance.vfxRoot : null;
-            var vfx = Instantiate(prefab, position, rotation, parent);
+            UnityEngine.Object spawned;
+            try
+            {
+                spawned = UnityEngine.Object.Instantiate((UnityEngine.Object)prefab, position, rotation, parent);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[VfxManager] Failed to spawn VFX prefab '{prefab.name}': {ex.Message}");
+                return null;
+            }
+
+            GameObject vfx = spawned as GameObject;
+            if (vfx == null && spawned is Component component)
+            {
+                vfx = component.gameObject;
+            }
+
+            if (vfx == null)
+            {
+                Debug.LogWarning($"[VfxManager] Spawned object is not a GameObject for prefab '{prefab.name}'.");
+                if (spawned != null)
+                {
+                    Destroy(spawned);
+                }
+                return null;
+            }
+
             if (lifetime > 0f)
             {
                 Destroy(vfx, lifetime);

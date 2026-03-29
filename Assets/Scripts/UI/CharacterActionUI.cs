@@ -238,13 +238,14 @@ namespace DiceOrbit.UI
                     int focusStacks = currentCharacter.StatusEffects != null
                         ? currentCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
                         : 0;
+                    float bonusRatio = mageEffect.GetBonusRatioForSource(currentCharacter);
 
                     int baseDamage = dice * mageEffect.baseMultiplier;
-                    float bonusMultiplier = 1.0f + (focusStacks * mageEffect.bonusDamageRatioPerStack);
+                    float bonusMultiplier = 1.0f + (focusStacks * bonusRatio);
                     int finalDamage = Mathf.RoundToInt(baseDamage * bonusMultiplier);
-                    float bonusPercent = focusStacks * mageEffect.bonusDamageRatioPerStack * 100f;
+                    float bonusPercent = focusStacks * bonusRatio * 100f;
 
-                    lines.Add($"예상 피해: ({dice} x {mageEffect.baseMultiplier}) x (1 + {focusStacks} x {mageEffect.bonusDamageRatioPerStack:0.##})");
+                    lines.Add($"예상 피해: ({dice} x {mageEffect.baseMultiplier}) x (1 + {focusStacks} x {bonusRatio:0.##})");
                     lines.Add($"= {baseDamage} x {bonusMultiplier:0.##} = {finalDamage} (집중 +{bonusPercent:0.#}%)");
                     lines.Add("적용 피해: max(0, 예상 피해 - 남은 방어도)");
                 }

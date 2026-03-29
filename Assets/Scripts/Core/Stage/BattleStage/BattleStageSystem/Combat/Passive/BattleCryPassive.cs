@@ -7,33 +7,23 @@ namespace DiceOrbit.Data.Passives
     public class BattleCryPassive : PassiveAbility
     {
         public float damageMultiplier = 1.05f;
-        private bool hasPartyAttackedThisTurn;
 
         public override int Priority => 100;
 
-        public override void Initialize(Unit Owner)
+        protected override void ApplyLevel(int level)
         {
-            base.Initialize(Owner);
-            hasPartyAttackedThisTurn = false;
+            float bonusPercent = CharacterStats.GetPassivePercentFromCurveB(level, 5f);
+            damageMultiplier = 1f + (bonusPercent / 100f);
         }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context == null || context.Action == null) return;
+            if (owner == null || context == null || context.Action == null) return;
+            if (trigger != CombatTrigger.OnCalculateOutput) return;
+            if (context.Action.Type != ActionType.Attack) return;
+            if (context.SourceUnit != owner) return;
 
-            if (trigger == CombatTrigger.OnPreAction && context.Action.Type == ActionType.OnStartTurn)
-            {
-                hasPartyAttackedThisTurn = false;
-            }
-
-            if (trigger == CombatTrigger.OnCalculateOutput &&
-                !hasPartyAttackedThisTurn &&
-                context.Action.Type == ActionType.Attack &&
-                context.SourceUnit is Character)
-            {
-                context.OutputValue *= damageMultiplier;
-                hasPartyAttackedThisTurn = true;
-            }
+            context.OutputValue *= damageMultiplier;
         }
     }
 }

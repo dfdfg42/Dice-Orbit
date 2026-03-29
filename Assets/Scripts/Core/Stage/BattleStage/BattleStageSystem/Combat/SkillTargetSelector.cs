@@ -246,7 +246,8 @@ namespace DiceOrbit.Core
                 else if (effect is MageStackDamageEffect mageEffect)
                 {
                     int baseDamage = diceValue * mageEffect.baseMultiplier;
-                    float multiplier = 1.0f + (focusStacks * mageEffect.bonusDamageRatioPerStack);
+                    float bonusRatio = mageEffect.GetBonusRatioForSource(sourceCharacter);
+                    float multiplier = 1.0f + (focusStacks * bonusRatio);
                     int raw = Mathf.RoundToInt(baseDamage * multiplier);
                     totalRaw += raw;
                     int absorbed = Mathf.Min(raw, remainingArmor);

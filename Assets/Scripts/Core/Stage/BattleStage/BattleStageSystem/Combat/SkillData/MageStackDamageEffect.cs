@@ -3,6 +3,7 @@ using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
+using DiceOrbit.Data.Passives;
 using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Data.Skills.Effects
@@ -16,6 +17,22 @@ namespace DiceOrbit.Data.Skills.Effects
         [Tooltip("스택 1개당 추가되는 피해량 비율 (예: 0.05 = 5%)")]
         public float bonusDamageRatioPerStack = 0.05f;
 
+        public float GetBonusRatioForSource(Unit source)
+        {
+            if (source?.Passives?.ActivePassives != null)
+            {
+                foreach (var passive in source.Passives.ActivePassives)
+                {
+                    if (passive is FocusPassive focusPassive)
+                    {
+                        return focusPassive.BonusDamageRatioPerStack;
+                    }
+                }
+            }
+
+            return bonusDamageRatioPerStack;
+        }
+
         public override void Execute(Unit source, List<Unit> targets, List<TileData> targetTiles, int diceValue)
         {
             if (targets == null) return;
@@ -23,8 +40,9 @@ namespace DiceOrbit.Data.Skills.Effects
             int baseDamage = diceValue * baseMultiplier;
             
             int focusStacks = source != null && source.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
+            float bonusRatio = GetBonusRatioForSource(source);
             
-            float finalDamageFloat = baseDamage * (1.0f + (focusStacks * bonusDamageRatioPerStack));
+            float finalDamageFloat = baseDamage * (1.0f + (focusStacks * bonusRatio));
             int finalDamage = Mathf.RoundToInt(finalDamageFloat);
 
             VfxManager.PlayCast(vfxProfile, source);

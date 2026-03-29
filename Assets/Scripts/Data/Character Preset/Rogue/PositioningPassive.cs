@@ -28,8 +28,8 @@ namespace DiceOrbit.Data.Passives
         protected override void ApplyLevel(int level)
         {
             int bonusLevel = Mathf.Max(0, level - 1);
-            // 런타임 수치는 기본값 + 레벨당 증감값으로 계산합니다.
-            runtimeDamageMultiplier = damageMultiplier + (damageMultiplierPerLevel * bonusLevel);
+            float bonusPercent = CharacterStats.GetPassivePercentFromCurveB(level, 5f);
+            runtimeDamageMultiplier = 1f + (bonusPercent / 100f);
             runtimeThresholdDistance = Mathf.Max(1, thresholdDistance - (thresholdDistanceReductionPerLevel * bonusLevel));
         }
 

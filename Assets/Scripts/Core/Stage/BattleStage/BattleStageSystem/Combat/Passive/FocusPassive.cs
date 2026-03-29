@@ -8,8 +8,17 @@ namespace DiceOrbit.Data.Passives
     public class FocusPassive : PassiveAbility
     {
         public int stacksPerTurn = 1;
+        private float runtimeBonusDamageRatioPerStack = 0.05f;
+
+        public float BonusDamageRatioPerStack => runtimeBonusDamageRatioPerStack;
 
         public override int Priority => 50;
+
+        protected override void ApplyLevel(int level)
+        {
+            float bonusPercent = CharacterStats.GetPassivePercentFromCurveB(level, 5f);
+            runtimeBonusDamageRatioPerStack = bonusPercent / 100f;
+        }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {

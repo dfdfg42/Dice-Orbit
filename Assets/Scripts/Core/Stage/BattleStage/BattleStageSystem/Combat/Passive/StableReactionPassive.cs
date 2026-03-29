@@ -7,8 +7,15 @@ namespace DiceOrbit.Data.Passives
     {
         public float damageMultiplier = 1.1f;
         public float healthThresholdRatio = 0.6f;
+        private float runtimeDamageMultiplier = 1.1f;
 
         public override int Priority => 98;
+
+        protected override void ApplyLevel(int level)
+        {
+            float bonusPercent = CharacterStats.GetPassivePercentFromCurveA(level, 10f);
+            runtimeDamageMultiplier = 1f + (bonusPercent / 100f);
+        }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
@@ -21,7 +28,7 @@ namespace DiceOrbit.Data.Passives
             float currentHPRatio = (float)owner.Stats.CurrentHP / owner.Stats.MaxHP;
             if (currentHPRatio >= healthThresholdRatio)
             {
-                context.OutputValue *= damageMultiplier;
+                context.OutputValue *= runtimeDamageMultiplier;
             }
         }
     }
