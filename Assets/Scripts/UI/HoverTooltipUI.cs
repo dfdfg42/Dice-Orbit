@@ -21,6 +21,8 @@ namespace DiceOrbit.UI
         private Canvas canvas;
         private RectTransform panelRect;
         private TextMeshProUGUI tooltipText;
+    private KeywordGlossaryPanelUI keywordGlossaryPanel;
+    private StatusGlossaryPanelUI statusGlossaryPanel;
     private RectTransform keywordDetailRect;
     private TextMeshProUGUI keywordDetailText;
 
@@ -77,11 +79,24 @@ namespace DiceOrbit.UI
             if (tooltipText == null) return;
             TryApplyPreferredFont();
             TryPopulateDynamicGlyphs(message);
-            tooltipText.text = message;
+            string mainText = TooltipKeywordFormatter.FormatMainTooltipText(message);
+            var statuses = TooltipKeywordFormatter.ExtractStatuses(mainText, out string strippedMainText);
+            tooltipText.text = mainText;
+            if (!string.IsNullOrWhiteSpace(strippedMainText))
+            {
+                tooltipText.text = strippedMainText;
+            }
             UpdateSize();
             visible = true;
             panelRect.gameObject.SetActive(true);
             FollowMouse();
+
+            keywordGlossaryPanel?.SetFont(resolvedFont);
+            statusGlossaryPanel?.SetFont(resolvedFont);
+
+            var matchedKeywords = TooltipKeywordFormatter.ExtractMatches(tooltipText.text);
+            keywordGlossaryPanel?.Show(matchedKeywords, panelRect.position, panelRect.sizeDelta);
+            statusGlossaryPanel?.Show(statuses, panelRect.position, panelRect.sizeDelta);
 
             if (!keywordDetailPinned)
             {
@@ -100,6 +115,8 @@ namespace DiceOrbit.UI
             keywordDetailPinned = false;
             pinnedKeywordKey = null;
             HideKeywordDetail();
+            keywordGlossaryPanel?.Hide();
+            statusGlossaryPanel?.Hide();
         }
 
         public void ShowPinned(string message)
@@ -174,6 +191,14 @@ namespace DiceOrbit.UI
             detailTextRect.offsetMin = new Vector2(detailPadding.x, detailPadding.y);
             detailTextRect.offsetMax = new Vector2(-detailPadding.x, -detailPadding.y);
 
+            var glossaryGo = new GameObject("KeywordGlossaryPanel");
+            keywordGlossaryPanel = glossaryGo.AddComponent<KeywordGlossaryPanelUI>();
+            keywordGlossaryPanel.Initialize(canvasGO.transform, resolvedFont);
+
+            var statusPanelGo = new GameObject("StatusGlossaryPanel");
+            statusGlossaryPanel = statusPanelGo.AddComponent<StatusGlossaryPanelUI>();
+            statusGlossaryPanel.Initialize(canvasGO.transform, resolvedFont);
+
             HideKeywordDetail();
         }
 
@@ -193,6 +218,8 @@ namespace DiceOrbit.UI
             pos.x = Mathf.Clamp(pos.x, 0f, maxX);
             pos.y = Mathf.Clamp(pos.y, minY, Screen.height);
             panelRect.position = pos;
+            keywordGlossaryPanel?.Reposition(panelRect.position, panelRect.sizeDelta);
+            statusGlossaryPanel?.Reposition(panelRect.position, panelRect.sizeDelta);
             RepositionKeywordDetailPanel();
         }
 
@@ -421,6 +448,40 @@ namespace DiceOrbit.UI
 {
     public static class TooltipKeywordFormatter
     {
+        public readonly struct KeywordDisplayData
+        {
+            public readonly string Key;
+            public readonly string Description;
+            public readonly Color Color;
+            public readonly Sprite Icon;
+
+            public KeywordDisplayData(string key, string description, Color color, Sprite icon)
+            {
+                Key = key;
+                Description = description;
+                Color = color;
+                Icon = icon;
+            }
+        }
+
+        public readonly struct StatusDisplayData
+        {
+            public readonly string Name;
+            public readonly string StackText;
+            public readonly string DurationText;
+            public readonly string Description;
+            public readonly Color Color;
+
+            public StatusDisplayData(string name, string stackText, string durationText, string description, Color color)
+            {
+                Name = name;
+                StackText = stackText;
+                DurationText = durationText;
+                Description = description;
+                Color = color;
+            }
+        }
+
         private const string DatabaseResourcePath = "UI/TooltipKeywordDatabase";
 
         private readonly struct KeywordEntry
@@ -443,6 +504,8 @@ namespace DiceOrbit.UI
         {
             new KeywordEntry("집중", "액티브 발동 시 소모되며, 스택당 추가 피해를 제공합니다.", new Color(1f, 0.83f, 0.42f, 1f)),
             new KeywordEntry("진창눈", "이동 디버프 상태입니다. 이동 가능 칸이 감소합니다.", new Color(0.74f, 0.88f, 1f, 1f)),
+            new KeywordEntry("꿀", "꿀 디버프 상태입니다. 이동력이 감소합니다.", new Color(1f, 0.84f, 0.35f, 1f)),
+            new KeywordEntry("Honey", "꿀 디버프 상태입니다. 이동력이 감소합니다.", new Color(1f, 0.84f, 0.35f, 1f)),
             new KeywordEntry("방어도", "피해를 먼저 흡수하는 임시 수치입니다.", new Color(0.64f, 0.86f, 1f, 1f)),
             new KeywordEntry("중독", "턴마다 피해를 입는 상태 이상입니다.", new Color(0.73f, 1f, 0.62f, 1f)),
             new KeywordEntry("약화", "공격 피해량이 감소하는 상태 이상입니다.", new Color(1f, 0.85f, 0.62f, 1f)),
@@ -450,6 +513,18 @@ namespace DiceOrbit.UI
             new KeywordEntry("기절", "행동이 제한되는 상태 이상입니다.", new Color(1f, 0.78f, 0.62f, 1f)),
             new KeywordEntry("침묵", "스킬 사용이 제한되는 상태 이상입니다.", new Color(0.9f, 0.76f, 1f, 1f)),
             new KeywordEntry("이동", "턴에 이동 가능한 칸 수를 의미합니다.", new Color(0.75f, 0.95f, 0.75f, 1f)),
+        };
+
+        private static readonly Dictionary<string, string> StatusNameAliases = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
+        {
+            { "Honey", "꿀" },
+            { "SlushSnow", "진창눈" },
+            { "Focus", "집중" },
+            { "Poison", "중독" },
+            { "Weak", "약화" },
+            { "Vulnerable", "취약" },
+            { "Stun", "기절" },
+            { "Silence", "침묵" },
         };
 
         private static TooltipKeywordDatabase cachedDatabase;
@@ -550,37 +625,137 @@ namespace DiceOrbit.UI
             return TryGetDescription(keyword, out description);
         }
 
-        public static string AppendKeywordSection(string rawText)
+        public static string FormatMainTooltipText(string rawText)
         {
+            return string.IsNullOrWhiteSpace(rawText) ? rawText : rawText.TrimEnd();
+        }
+
+        public static List<StatusDisplayData> ExtractStatuses(string rawText, out string strippedText)
+        {
+            strippedText = FormatMainTooltipText(rawText) ?? string.Empty;
+            var statuses = new List<StatusDisplayData>();
+
             if (string.IsNullOrWhiteSpace(rawText))
             {
-                return rawText;
+                return statuses;
             }
 
-            var matched = new List<KeywordEntry>();
+            var lines = rawText.Replace("\r\n", "\n").Split('\n');
+            bool inStatusSection = false;
+            var remaining = new List<string>();
+
+            foreach (var rawLine in lines)
+            {
+                string line = rawLine?.TrimEnd() ?? string.Empty;
+
+                if (line.StartsWith("--- Status", System.StringComparison.OrdinalIgnoreCase) ||
+                    line.StartsWith("--- 상태", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    inStatusSection = true;
+                    continue;
+                }
+
+                if (inStatusSection)
+                {
+                    if (line.StartsWith("--- ", System.StringComparison.Ordinal))
+                    {
+                        inStatusSection = false;
+                        remaining.Add(line);
+                        continue;
+                    }
+
+                    if (TryParseStatusLine(line, out var statusData))
+                    {
+                        statuses.Add(statusData);
+                    }
+
+                    continue;
+                }
+
+                remaining.Add(line);
+            }
+
+            strippedText = string.Join("\n", remaining).TrimEnd();
+            return statuses;
+        }
+
+        private static bool TryParseStatusLine(string line, out StatusDisplayData statusData)
+        {
+            statusData = default;
+            if (string.IsNullOrWhiteSpace(line)) return false;
+            if (!line.TrimStart().StartsWith("•")) return false;
+
+            string normalized = line.Trim().TrimStart('•').Trim();
+            if (string.IsNullOrWhiteSpace(normalized)) return false;
+
+            string[] parts = normalized.Split(new[] { "  " }, System.StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0) return false;
+
+            string rawName = parts[0].Trim();
+            string displayName = ResolveStatusDisplayName(rawName);
+
+            string stackText = string.Empty;
+            string durationText = string.Empty;
+
+            for (int i = 1; i < parts.Length; i++)
+            {
+                string token = parts[i].Trim();
+                if (token.StartsWith("x", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    stackText = token;
+                }
+                else if (token.StartsWith("(") && token.EndsWith(")"))
+                {
+                    durationText = token;
+                }
+            }
+
+            if (!TryGetDescription(displayName, out string description))
+            {
+                TryGetDescription(rawName, out description);
+            }
+
+            if (!TryGetVisuals(displayName, out Color color, out _) && !TryGetVisuals(rawName, out color, out _))
+            {
+                color = new Color(0.85f, 0.93f, 1f, 1f);
+            }
+
+            statusData = new StatusDisplayData(displayName, stackText, durationText, description, color);
+            return true;
+        }
+
+        private static string ResolveStatusDisplayName(string rawName)
+        {
+            if (string.IsNullOrWhiteSpace(rawName)) return rawName;
+            if (StatusNameAliases.TryGetValue(rawName, out string mapped) && !string.IsNullOrWhiteSpace(mapped))
+            {
+                return mapped;
+            }
+
+            return rawName;
+        }
+
+        public static List<KeywordDisplayData> ExtractMatches(string rawText)
+        {
+            var result = new List<KeywordDisplayData>();
+            if (string.IsNullOrWhiteSpace(rawText)) return result;
+
             foreach (var entry in GetEntries())
             {
                 if (string.IsNullOrWhiteSpace(entry.Key)) continue;
                 if (rawText.IndexOf(entry.Key, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
-                if (matched.Any(m => m.Key == entry.Key)) continue;
-                matched.Add(entry);
+                if (result.Any(r => string.Equals(r.Key, entry.Key, System.StringComparison.OrdinalIgnoreCase))) continue;
+
+                result.Add(new KeywordDisplayData(entry.Key, entry.Description, entry.Color, entry.Icon));
             }
 
-            if (matched.Count == 0)
-            {
-                return rawText;
-            }
+            return result;
+        }
 
-            var sb = new StringBuilder(rawText.TrimEnd());
-            sb.AppendLine();
-            sb.AppendLine("--- 키워드 ---");
-            foreach (var entry in matched)
-            {
-                string colorHex = ToColorHex(entry.Color);
-                sb.AppendLine($"• <link=\"kw:{entry.Key}\"><color=#{colorHex}>{entry.Key}</color></link>: {entry.Description}");
-            }
-
-            return sb.ToString().TrimEnd();
+        public static string AppendKeywordSection(string rawText)
+        {
+            // Backward-compatible API: separate glossary panel now handles keyword explanations.
+            return FormatMainTooltipText(rawText);
         }
     }
 }
