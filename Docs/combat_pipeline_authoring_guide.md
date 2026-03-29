@@ -12,8 +12,8 @@ It reflects current code behavior.
 
 ## 2. Data path (actual)
 
-1. `CharacterSkill` (SO, level-based) -> `RuntimeSkill`
-2. `RuntimeSkill.ToSkillData()` converts to runtime `SkillData`
+1. `CharacterSkill` (SO, level-based) -> `RuntimeAbility`
+2. `RuntimeAbility.CurrentSkillData` resolves runtime `SkillData`
 3. `SkillManager.PrepareSkill()` validates dice requirement and target
 4. `SkillManager.ExecuteSkill()` builds `CombatAction` + `CombatContext`
 5. `CombatPipeline.Process()` runs `OnPreAction -> OnCalculateOutput -> ApplyAction -> OnHit -> OnPostAction`
@@ -72,7 +72,7 @@ Impact:
 
 When adding a new skill:
 1. Define `CharacterSkill` level data (requirement/effects/modules)
-2. Verify `RuntimeSkill.ToSkillData()` mapping covers all fields
+2. Verify `RuntimeAbility.CurrentSkillData` and `GetCurrentLevelData()` mapping covers all fields
 3. If needed, implement a new `SkillActionModule`
 4. Confirm target resolution in `SkillManager.ResolveTargets()`
 5. Confirm the action type/tags expected by passive/status logic

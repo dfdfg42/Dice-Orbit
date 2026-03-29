@@ -1,6 +1,7 @@
 using UnityEngine;
 using DiceOrbit.Data;
 using System.Collections.Generic;
+using DiceOrbit.Data.Skills;
 
 namespace DiceOrbit.Core
 {
@@ -34,15 +35,16 @@ namespace DiceOrbit.Core
             if (source == null) return;
             
             // 1. 유효성 검사
-            if (skillIndex < 0 || skillIndex >= source.Stats.RuntimeActiveSkills.Count)
+            if (skillIndex < 0 || skillIndex >= source.Stats.ActiveAbilityCount)
             {
                 Debug.LogWarning($"[SkillManager] Invalid skill index: {skillIndex}");
                 source.OnSkillResolved();
                 return;
             }
             
-            var runtimeSkill = source.Stats.RuntimeActiveSkills[skillIndex];
-            var skillData = runtimeSkill.CurrentSkillData;
+            RuntimeAbility runtimeAbility = source.Stats.GetActiveAbilityByIndex(skillIndex);
+            // CurrentSkillData는 RuntimeAbility.CurrentLevel 기준으로 계산됩니다.
+            var skillData = runtimeAbility?.CurrentSkillData;
             
             if (skillData == null)
             {
@@ -57,7 +59,7 @@ namespace DiceOrbit.Core
             }
             
             // 3. 주사위 조건 확인 (CharacterSkill의 Requirement 사용)
-            if (!runtimeSkill.BaseSkill.CanUse(diceValue))
+            if (runtimeAbility.BaseSkill == null || !runtimeAbility.BaseSkill.CanUse(diceValue))
             {
                 Debug.LogWarning($"[SkillManager] Cannot use {skillData.SkillName}. Requirement not met.");
                 source.OnSkillResolved();

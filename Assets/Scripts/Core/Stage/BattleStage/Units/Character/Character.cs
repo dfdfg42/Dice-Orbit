@@ -1,5 +1,6 @@
 using UnityEngine;
 using DiceOrbit.Data;
+using DiceOrbit.Data.Skills;
 using DiceOrbit.Visuals;
 using System.Collections.Generic;
 
@@ -76,7 +77,10 @@ namespace DiceOrbit.Core
             // 스킬 재초기화
             InitializeSkills();
 
-            ApplyStartingPassives();
+            // 패시브는 템플릿 에셋이므로 캐릭터 인스턴스별로 복제/바인딩합니다.
+            ApplyRuntimePassiveSkills();
+            // 복제된 패시브 인스턴스 레벨을 런타임 능력 레벨과 동기화합니다.
+            SyncPassiveLevelsFromRuntime();
 
             Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP}, ATK: {stat.Attack})");
         }
@@ -87,29 +91,71 @@ namespace DiceOrbit.Core
         private void InitializeSkills()
         {
             if (stat == null) return;
+            stat.NormalizeRuntimeAbilities();
 
             // Preset에서 초기 스킬을 가져오지 못한 경우 (예: 구 버전 데이터)
-            if (stat.RuntimeActiveSkills.Count == 0)
+            if (stat.ActiveAbilityCount == 0)
             {
                Debug.LogWarning("No active skills initialized.");
             }
         }
 
-        private void ApplyStartingPassives()
+        private void ApplyRuntimePassiveSkills()
         {
-            if (passives == null) return;
+            if (passives == null || stat == null) return;
 
-            var preset = stat.SourcePreset;
-            if (preset == null) return;
-
-            foreach (var passive in preset.GetStartingPassives())
+            foreach (var ability in stat.PassiveAbilities)
             {
-                if (passive == null) continue;
+                if (ability?.BaseSkill == null) continue;
+                if (ability.BaseSkill.Type != CharacterSkillType.Passive) continue;
 
-                var clonedPassive = passive.Clone();
+                var template = ability.BaseSkill.PassiveTemplate;
+                if (template == null)
+                {
+                    Debug.LogWarning($"[Character] Passive skill '{ability.BaseSkill.SkillName}' has no PassiveTemplate.");
+                    continue;
+                }
+
+                var clonedPassive = template.Clone();
                 clonedPassive.Initialize(this);
+                clonedPassive.SetLevel(ability.CurrentLevel);
+                ability.RuntimePassiveInstance = clonedPassive;
+                // 복제된 패시브를 유닛 리액터 체인에 등록합니다.
                 passives.AddPassive(clonedPassive);
             }
+        }
+
+        public void SyncPassiveLevelsFromRuntime()
+        {
+            if (passives == null || stat == null) return;
+
+            // 기본 패시브는 캐릭터 레벨 동기화
+            foreach (var passive in passives.ActivePassives)
+            {
+                if (passive == null) continue;
+                passive.SetLevel(stat.Level);
+            }
+
+            // Runtime passive abilities are synced by their own levels.
+            foreach (var ability in stat.PassiveAbilities)
+            {
+                if (ability == null) continue;
+
+                if (ability.RuntimePassiveInstance != null)
+                {
+                    ability.RuntimePassiveInstance.SetLevel(ability.CurrentLevel);
+                }
+            }
+        }
+
+        public void LevelUpCharacter()
+        {
+            if (stat == null) return;
+
+            stat.LevelUp();
+            CharacterProgressionService.ApplyLevelUp(this);
+
+            Debug.Log($"[Character] {stat.CharacterName} leveled up -> Lv.{stat.Level}");
         }
         
         protected override void Awake()

@@ -8,6 +8,11 @@ namespace DiceOrbit.Data.Passives
     {
         public float damageMultiplier = 1.05f;
         public int thresholdDistance = 5;
+        public float damageMultiplierPerLevel = 0.02f;
+        public int thresholdDistanceReductionPerLevel = 0;
+
+        private float runtimeDamageMultiplier;
+        private int runtimeThresholdDistance;
 
         private int movedDistanceThisTurn;
         private bool isConditionMet;
@@ -18,6 +23,14 @@ namespace DiceOrbit.Data.Passives
         {
             base.Initialize(Owner);
             ResetTurnData();
+        }
+
+        protected override void ApplyLevel(int level)
+        {
+            int bonusLevel = Mathf.Max(0, level - 1);
+            // 런타임 수치는 기본값 + 레벨당 증감값으로 계산합니다.
+            runtimeDamageMultiplier = damageMultiplier + (damageMultiplierPerLevel * bonusLevel);
+            runtimeThresholdDistance = Mathf.Max(1, thresholdDistance - (thresholdDistanceReductionPerLevel * bonusLevel));
         }
 
         private void ResetTurnData()
@@ -42,7 +55,7 @@ namespace DiceOrbit.Data.Passives
                 int dist = Mathf.RoundToInt(context.Action.BaseValue);
                 movedDistanceThisTurn += dist;
 
-                if (movedDistanceThisTurn >= thresholdDistance && !isConditionMet)
+                if (movedDistanceThisTurn >= runtimeThresholdDistance && !isConditionMet)
                 {
                     isConditionMet = true;
                     Debug.Log("패시브 활성화");
@@ -54,7 +67,7 @@ namespace DiceOrbit.Data.Passives
                 context.Action.Type == ActionType.Attack &&
                 context.SourceUnit == owner)
             {
-                context.OutputValue *= damageMultiplier;
+                context.OutputValue *= runtimeDamageMultiplier;
                 isConditionMet = false;
             }
         }

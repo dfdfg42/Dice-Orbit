@@ -14,7 +14,15 @@ namespace DiceOrbit.Data.Tile
 
         public override void OnTraverse(Character character)
         {
-            character.Stats.LevelUp();
+            // 상태 전환 일관성을 위해 레벨업은 GameFlow를 통해 처리합니다.
+            if (GameFlowManager.Instance != null)
+            {
+                GameFlowManager.Instance.TriggerLevelUp(character);
+                return;
+            }
+
+            // GameFlowManager가 없는 씬에서는 직접 레벨업 처리합니다.
+            character.LevelUpCharacter();
         }
 
         public override string GetDescription()

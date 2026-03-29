@@ -27,6 +27,7 @@ namespace DiceOrbit.Data.Passives
         [SerializeField] protected int priority = 0;
         [SerializeField] protected Sprite icon;
         [SerializeField] protected bool isStackable = true;
+        [SerializeField] [Min(1)] protected int currentLevel = 1;
         
         protected Unit owner;
 
@@ -36,6 +37,7 @@ namespace DiceOrbit.Data.Passives
         public virtual int Priority => priority;
         public virtual Sprite Icon => icon;
         public virtual bool IsStackable => isStackable;
+        public int CurrentLevel => currentLevel;
 
         /// <summary>
         /// 초기화 (필요 시)
@@ -43,6 +45,23 @@ namespace DiceOrbit.Data.Passives
         public virtual void Initialize(Unit Owner) 
         { 
             owner = Owner;
+            ApplyLevel(currentLevel);
+        }
+
+        public void SetLevel(int level)
+        {
+            int normalized = Mathf.Max(1, level);
+            if (currentLevel == normalized) return;
+            currentLevel = normalized;
+            // 레벨이 바뀌면 런타임 수치를 다시 계산합니다.
+            ApplyLevel(currentLevel);
+        }
+
+        /// <summary>
+        /// 패시브 레벨이 변경되었을 때 수치 재계산.
+        /// </summary>
+        protected virtual void ApplyLevel(int level)
+        {
         }
 
         /// <summary>
