@@ -76,6 +76,7 @@ namespace DiceOrbit.UI
             if (panelRoot != null) panelRoot.anchoredPosition = hiddenPosition;
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             SetButtonsInteractable(false);
+            RefreshSkillButtonPreview();
         }
 
         private void Start()
@@ -100,6 +101,7 @@ namespace DiceOrbit.UI
 
             SetButtonsInteractable(false);
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
+            RefreshSkillButtonPreview();
 
             // 슬라이드 인
             StopSlide();
@@ -119,6 +121,7 @@ namespace DiceOrbit.UI
             currentCharacter = null;
             currentDice      = null;
             waitingForDice   = false;
+            RefreshSkillButtonPreview();
         }
 
         /// <summary>주사위 드롭 처리 (DiceElement에서 호출)</summary>
@@ -130,6 +133,7 @@ namespace DiceOrbit.UI
             waitingForDice = false;
 
             SetButtonsInteractable(true);
+            RefreshSkillButtonPreview();
         }
 
         public void OnDiceDeselected(DiceData dice)
@@ -140,6 +144,8 @@ namespace DiceOrbit.UI
             currentDice = null;
             waitingForDice = true;
             SetButtonsInteractable(false);
+            if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
+            RefreshSkillButtonPreview();
         }
 
         // ─────────────────────────────────────────────
@@ -170,10 +176,58 @@ namespace DiceOrbit.UI
         private void OnSkillClicked()
         {
             if (currentDice == null || currentCharacter == null) return;
+            if (GetPrimaryActiveAbility() == null) return;
 
-            PopulateSkillList(currentCharacter);
-            if (skillSelectPanel != null) skillSelectPanel.SetActive(true);
-            overlay?.Show();
+            // 현재 액티브 스킬이 1개인 구조이므로 버튼 클릭 시 즉시 사용
+            ExecuteSkill(0);
+            if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
+            overlay?.Hide();
+        }
+
+        private RuntimeAbility GetPrimaryActiveAbility()
+        {
+            if (currentCharacter?.Stats?.ActiveAbilities == null)
+                return null;
+
+            foreach (var ability in currentCharacter.Stats.ActiveAbilities)
+            {
+                if (ability != null)
+                {
+                    return ability;
+                }
+            }
+
+            return null;
+        }
+
+        private void RefreshSkillButtonPreview()
+        {
+            if (skillButton == null) return;
+
+            var runtimeAbility = GetPrimaryActiveAbility();
+            var hoverPreview = skillButton.GetComponent<SkillPreviewHoverUI>();
+            if (hoverPreview == null) hoverPreview = skillButton.gameObject.AddComponent<SkillPreviewHoverUI>();
+
+            if (runtimeAbility?.BaseSkill != null)
+            {
+                hoverPreview.SetPreview(BuildSkillHoverText(runtimeAbility));
+
+                var text = skillButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = $"{runtimeAbility.BaseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})";
+                }
+            }
+            else
+            {
+                hoverPreview.SetPreview("액티브 스킬 정보 없음");
+
+                var text = skillButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = "SKILL";
+                }
+            }
         }
 
         private void OnCancelClicked()
