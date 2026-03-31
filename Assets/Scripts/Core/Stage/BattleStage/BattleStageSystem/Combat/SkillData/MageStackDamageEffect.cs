@@ -3,7 +3,6 @@ using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
-using DiceOrbit.Data.Passives;
 using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Data.Skills.Effects
@@ -17,27 +16,38 @@ namespace DiceOrbit.Data.Skills.Effects
         [Tooltip("스택 1개당 추가되는 피해량 비율 (예: 0.05 = 5%)")]
         public float bonusDamageRatioPerStack = 0.05f;
 
+        public int GetBaseMultiplierForSource(Unit source)
+        {
+            int level = ResolveSourceActiveAbilityLevel(source);
+            return GetBaseMultiplierForLevel(level);
+        }
+
+        public int GetBaseMultiplierForLevel(int level)
+        {
+            int normalizedLevel = Mathf.Max(1, level);
+            int baseValue = Mathf.Max(1, baseMultiplier);
+            return baseValue + (normalizedLevel - 1);
+        }
+
         public float GetBonusRatioForSource(Unit source)
         {
-            if (source?.Passives?.ActivePassives != null)
-            {
-                foreach (var passive in source.Passives.ActivePassives)
-                {
-                    if (passive is FocusPassive focusPassive)
-                    {
-                        return focusPassive.BonusDamageRatioPerStack;
-                    }
-                }
-            }
+            int level = ResolveSourceActiveAbilityLevel(source);
+            return GetBonusRatioForLevel(level);
+        }
 
-            return bonusDamageRatioPerStack;
+        public float GetBonusRatioForLevel(int level)
+        {
+            int normalizedLevel = Mathf.Max(1, level);
+            float baseRatio = Mathf.Max(0f, bonusDamageRatioPerStack);
+            return baseRatio + ((normalizedLevel - 1) * 0.01f);
         }
 
         public override void Execute(Unit source, List<Unit> targets, List<TileData> targetTiles, int diceValue)
         {
             if (targets == null) return;
             
-            int baseDamage = diceValue * baseMultiplier;
+            int resolvedBaseMultiplier = GetBaseMultiplierForSource(source);
+            int baseDamage = diceValue * resolvedBaseMultiplier;
             
             int focusStacks = source != null && source.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
             float bonusRatio = GetBonusRatioForSource(source);

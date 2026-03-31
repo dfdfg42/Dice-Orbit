@@ -21,25 +21,6 @@ namespace DiceOrbit.Data
             2,2,2,2,2,
         };
 
-        private static readonly int[] PassiveCoefficientCurveA =
-        {
-            4,8,12,16,20,24,28,32,36,40,
-            44,48,52,56,60,64,68,72,76,80,
-            83,86,89,92,95,98,101,104,107,110,
-            113,116,119,122,125,
-            127,129,131,133,135,137,139,141,143,145,
-            146,147,148,149,150,
-        };
-
-        private static readonly int[] PassiveCoefficientCurveB =
-        {
-            5,10,15,20,25,30,35,40,45,50,
-            55,60,65,70,75,80,85,90,95,100,
-            104,108,112,116,120,124,128,132,136,140,
-            144,148,152,156,160,
-            163,166,169,172,175,178,181,184,187,190,
-            192,194,196,198,200,
-        };
 
         [Header("Basic Info")]
         public string CharacterName = "Hero";
@@ -110,26 +91,6 @@ namespace DiceOrbit.Data
             return GetCurveValue(MaxHpIncreaseByLevel, level);
         }
 
-        public static int GetPassiveCoefficientA(int level)
-        {
-            return GetCurveValue(PassiveCoefficientCurveA, level);
-        }
-
-        public static int GetPassiveCoefficientB(int level)
-        {
-            return GetCurveValue(PassiveCoefficientCurveB, level);
-        }
-
-        public static float GetPassivePercentFromCurveA(int level, float basePercentAtLevel1)
-        {
-            return GetNormalizedPassivePercent(PassiveCoefficientCurveA, level, basePercentAtLevel1);
-        }
-
-        public static float GetPassivePercentFromCurveB(int level, float basePercentAtLevel1)
-        {
-            return GetNormalizedPassivePercent(PassiveCoefficientCurveB, level, basePercentAtLevel1);
-        }
-
         private static int GetCurveValue(int[] curve, int level)
         {
             if (curve == null || curve.Length == 0) return 0;
@@ -137,19 +98,6 @@ namespace DiceOrbit.Data
             int normalizedLevel = Mathf.Max(1, level);
             int index = Mathf.Clamp(normalizedLevel - 1, 0, curve.Length - 1);
             return curve[index];
-        }
-
-        private static float GetNormalizedPassivePercent(int[] curve, int level, float basePercentAtLevel1)
-        {
-            if (curve == null || curve.Length == 0)
-            {
-                return Mathf.Max(0f, basePercentAtLevel1);
-            }
-
-            int levelOneValue = curve[0];
-            int currentValue = GetCurveValue(curve, level);
-            float delta = currentValue - levelOneValue;
-            return Mathf.Max(0f, basePercentAtLevel1 + delta);
         }
 
     }

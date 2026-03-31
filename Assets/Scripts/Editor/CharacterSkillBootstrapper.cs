@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using DiceOrbit.Core;
+using DiceOrbit.Data.CharacterActives;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Skills;
@@ -37,7 +38,8 @@ namespace DiceOrbit.EditorTools
                 "주사위 눈금 4 이상 시 (눈금 x 12) 피해",
                 SkillTargetType.SingleEnemy,
                 BuildRequirement(1, null, DicePattern.High),
-                warriorEffect
+                warriorEffect,
+                CreateActiveTemplate(new WarriorGreatswordActive(), warriorEffect)
             );
 
             var rogueSkill = GetOrCreateCharacterSkill(
@@ -46,7 +48,8 @@ namespace DiceOrbit.EditorTools
                 "주사위 눈금 2 이하 시 (눈금 x 20) 피해",
                 SkillTargetType.SingleEnemy,
                 BuildRequirement(1, 2, DicePattern.None),
-                rogueEffect
+                rogueEffect,
+                CreateActiveTemplate(new RogueAmbushActive(), rogueEffect)
             );
 
             var alchemistSkill = GetOrCreateCharacterSkill(
@@ -55,7 +58,8 @@ namespace DiceOrbit.EditorTools
                 "주사위 눈금 홀수 시 (눈금 x 12) 피해",
                 SkillTargetType.SingleEnemy,
                 BuildRequirement(1, null, DicePattern.Odd),
-                alchemistEffect
+                alchemistEffect,
+                CreateActiveTemplate(new AlchemistThrowActive(), alchemistEffect)
             );
 
             var mageSkill = GetOrCreateCharacterSkill(
@@ -64,7 +68,8 @@ namespace DiceOrbit.EditorTools
                 "주사위 눈금 4 이상 시 (눈금 x 12) + 집중 스택당 5% 추가 피해",
                 SkillTargetType.SingleEnemy,
                 BuildRequirement(1, null, DicePattern.High),
-                mageEffect
+                mageEffect,
+                CreateActiveTemplate(new MageEnergyBallActive(), mageEffect)
             );
 
             var warriorPassive = GetOrCreatePassiveCharacterSkill(
@@ -167,7 +172,8 @@ namespace DiceOrbit.EditorTools
             string description,
             SkillTargetType targetType,
             DiceRequirement requirement,
-            SkillEffectBase effect)
+            SkillEffectBase effect,
+            CharacterActiveTemplate activeTemplate)
         {
             var assetPath = $"{CharacterSkillDir}/{fileName}.asset";
             var skill = AssetDatabase.LoadAssetAtPath<CharacterSkill>(assetPath);
@@ -180,6 +186,7 @@ namespace DiceOrbit.EditorTools
             skill.SkillName = displayName;
             skill.Description = description;
             skill.Type = CharacterSkillType.Active;
+            skill.ActiveTemplate = activeTemplate;
             skill.TargetType = targetType;
             skill.Requirement = requirement;
             skill.MaxLevelOverride = Mathf.Max(5, skill.MaxLevelOverride);
@@ -192,6 +199,13 @@ namespace DiceOrbit.EditorTools
 
             EditorUtility.SetDirty(skill);
             return skill;
+        }
+
+        private static CharacterActiveTemplate CreateActiveTemplate(CharacterActiveTemplate template, SkillEffectBase effect)
+        {
+            if (template == null) return null;
+            template.SetVfxProfile(effect?.VfxProfile);
+            return template;
         }
 
         private static CharacterSkill GetOrCreatePassiveCharacterSkill(

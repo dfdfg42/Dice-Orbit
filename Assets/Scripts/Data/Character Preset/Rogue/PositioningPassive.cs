@@ -6,13 +6,18 @@ namespace DiceOrbit.Data.Passives
     [System.Serializable]
     public class PositioningPassive : PassiveAbility
     {
+        // 레벨 1~5 다음 공격 피해량 배율
+        private static readonly float[] DamageMultiplierByLevel = { 1.05f, 1.07f, 1.09f, 1.11f, 1.13f };
+        // 레벨 1~5 활성화 이동 거리 조건
+        private static readonly int[] ThresholdDistanceByLevel = { 5, 5, 4, 4, 3 };
+
         public float damageMultiplier = 1.05f;
         public int thresholdDistance = 5;
-        public float damageMultiplierPerLevel = 0.02f;
-        public int thresholdDistanceReductionPerLevel = 0;
 
         private float runtimeDamageMultiplier;
         private int runtimeThresholdDistance;
+    public float CurrentDamageMultiplier => runtimeDamageMultiplier;
+    public int CurrentThresholdDistance => runtimeThresholdDistance;
 
         private int movedDistanceThisTurn;
         private bool isConditionMet;
@@ -27,10 +32,11 @@ namespace DiceOrbit.Data.Passives
 
         protected override void ApplyLevel(int level)
         {
-            int bonusLevel = Mathf.Max(0, level - 1);
-            float bonusPercent = CharacterStats.GetPassivePercentFromCurveB(level, 5f);
-            runtimeDamageMultiplier = 1f + (bonusPercent / 100f);
-            runtimeThresholdDistance = Mathf.Max(1, thresholdDistance - (thresholdDistanceReductionPerLevel * bonusLevel));
+            int index = Mathf.Clamp(level - 1, 0, DamageMultiplierByLevel.Length - 1);
+            runtimeDamageMultiplier = DamageMultiplierByLevel[index];
+
+            int thresholdIndex = Mathf.Clamp(level - 1, 0, ThresholdDistanceByLevel.Length - 1);
+            runtimeThresholdDistance = Mathf.Max(1, ThresholdDistanceByLevel[thresholdIndex]);
         }
 
         private void ResetTurnData()

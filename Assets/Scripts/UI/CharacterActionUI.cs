@@ -216,6 +216,16 @@ namespace DiceOrbit.UI
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null || currentCharacter == null || currentDice == null)
                 return "예상: -";
 
+            var activeTemplate = runtimeAbility.BaseSkill.ActiveTemplate;
+            if (activeTemplate != null)
+            {
+                string coupledPreview = activeTemplate.BuildPreview(currentCharacter, runtimeAbility, currentDice.Value);
+                if (!string.IsNullOrWhiteSpace(coupledPreview))
+                {
+                    return coupledPreview;
+                }
+            }
+
             var skillData = runtimeAbility.CurrentSkillData;
             if (skillData == null || skillData.Effects == null || skillData.Effects.Count == 0)
                 return "예상: -";
@@ -229,25 +239,25 @@ namespace DiceOrbit.UI
 
                 if (effect is DiceMultiplierDamageEffect diceEffect)
                 {
-                    int baseDamage = dice * diceEffect.multiplier;
-                    lines.Add($"예상 피해: ({dice} x {diceEffect.multiplier}) = {baseDamage}");
-                    lines.Add("적용 피해: max(0, 예상 피해 - 남은 방어도)");
+                    int resolvedMultiplier = diceEffect.GetMultiplierForSource(currentCharacter);
+                    int baseDamage = dice * resolvedMultiplier;
+                    lines.Add($"예상 피해: ({dice} x {resolvedMultiplier}) = {baseDamage}");
                 }
                 else if (effect is MageStackDamageEffect mageEffect)
                 {
                     int focusStacks = currentCharacter.StatusEffects != null
                         ? currentCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
                         : 0;
+                    int resolvedBaseMultiplier = mageEffect.GetBaseMultiplierForSource(currentCharacter);
                     float bonusRatio = mageEffect.GetBonusRatioForSource(currentCharacter);
 
-                    int baseDamage = dice * mageEffect.baseMultiplier;
+                    int baseDamage = dice * resolvedBaseMultiplier;
                     float bonusMultiplier = 1.0f + (focusStacks * bonusRatio);
                     int finalDamage = Mathf.RoundToInt(baseDamage * bonusMultiplier);
                     float bonusPercent = focusStacks * bonusRatio * 100f;
 
-                    lines.Add($"예상 피해: ({dice} x {mageEffect.baseMultiplier}) x (1 + {focusStacks} x {bonusRatio:0.##})");
+                    lines.Add($"예상 피해: ({dice} x {resolvedBaseMultiplier}) x (1 + {focusStacks} x {bonusRatio:0.##})");
                     lines.Add($"= {baseDamage} x {bonusMultiplier:0.##} = {finalDamage} (집중 +{bonusPercent:0.#}%)");
-                    lines.Add("적용 피해: max(0, 예상 피해 - 남은 방어도)");
                 }
             }
 

@@ -1,5 +1,6 @@
 using UnityEngine;
 using DiceOrbit.Data;
+using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.Visuals;
 using System.Collections.Generic;
@@ -460,6 +461,12 @@ namespace DiceOrbit.Core
                     {
                         sb.AppendLine($"  - {passive.Description.Trim()}");
                     }
+
+                    string passiveCoefficientLine = BuildPassiveCoefficientLine(passive);
+                    if (!string.IsNullOrWhiteSpace(passiveCoefficientLine))
+                    {
+                        sb.AppendLine($"  - 현재 계수: {passiveCoefficientLine}");
+                    }
                 }
             }
 
@@ -479,6 +486,29 @@ namespace DiceOrbit.Core
             }
 
             return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
+        }
+
+        private static string BuildPassiveCoefficientLine(PassiveAbility passive)
+        {
+            if (passive == null) return string.Empty;
+
+            switch (passive)
+            {
+                case BattleCryPassive battleCry:
+                    return $"피해 +{(battleCry.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+
+                case StableReactionPassive stableReaction:
+                    return $"체력 {(stableReaction.healthThresholdRatio * 100f):0.#}% 이상일 때 피해 +{(stableReaction.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+
+                case PositioningPassive positioning:
+                    return $"이동 {positioning.CurrentThresholdDistance}칸 이상 시 다음 공격 피해 +{(positioning.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+
+                case FocusPassive focus:
+                    return $"집중 스택당 추가 피해 +{focus.BonusDamageRatioPerStack * 100f:0.#}%";
+
+                default:
+                    return string.Empty;
+            }
         }
     }
 }

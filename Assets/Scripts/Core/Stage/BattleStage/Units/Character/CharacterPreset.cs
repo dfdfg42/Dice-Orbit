@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.Data.Passives;
@@ -107,13 +106,6 @@ namespace DiceOrbit.Core
             {
                 return;
             }
-
-            // 완전히 비어 있는 경우(예: 알케/메이지) 기본 패시브를 보장합니다.
-            var fallbackPassive = CreateDefaultPassiveSkillByCharacterName(CharacterName);
-            if (fallbackPassive != null)
-            {
-                stats.RuntimeAbilities.Add(new RuntimeAbility(fallbackPassive));
-            }
         }
 
         private static bool HasPassiveAbility(CharacterStats stats)
@@ -147,63 +139,5 @@ namespace DiceOrbit.Core
             return skill;
         }
 
-        private static CharacterSkill CreateDefaultPassiveSkillByCharacterName(string characterName)
-        {
-            string normalized = (characterName ?? string.Empty).Trim();
-
-            if (ContainsAny(normalized, "전사", "Warrior"))
-            {
-                var passive = new BattleCryPassive { damageMultiplier = 1.05f };
-                passive.ConfigureMetadata("전우애", "공격 피해량 5% 증가");
-                return CreatePassiveSkillFromTemplate(passive);
-            }
-
-            if (ContainsAny(normalized, "연금술사", "Alchemist"))
-            {
-                var passive = new StableReactionPassive
-                {
-                    damageMultiplier = 1.10f,
-                    healthThresholdRatio = 0.6f,
-                };
-                passive.ConfigureMetadata("안정 반응", "현재 체력이 60% 이상일 경우, 피해량 10% 증가");
-                return CreatePassiveSkillFromTemplate(passive);
-            }
-
-            if (ContainsAny(normalized, "도적", "Rogue"))
-            {
-                var passive = new PositioningPassive
-                {
-                    damageMultiplier = 1.05f,
-                    thresholdDistance = 5,
-                };
-                passive.ConfigureMetadata("위치 선정", "한 턴에 5칸 이상 이동 시 다음 공격의 피해량 5% 증가");
-                return CreatePassiveSkillFromTemplate(passive);
-            }
-
-            if (ContainsAny(normalized, "마법사", "Mage"))
-            {
-                var passive = new FocusPassive { stacksPerTurn = 1 };
-                passive.ConfigureMetadata("정신 집중", "매 턴 종료 시 집중 스택 +1 획득 (액티브 발동 시 스택당 5% 추가 피해 후 소모)");
-                return CreatePassiveSkillFromTemplate(passive);
-            }
-
-            return null;
-        }
-
-        private static bool ContainsAny(string source, params string[] keywords)
-        {
-            if (string.IsNullOrWhiteSpace(source) || keywords == null) return false;
-
-            foreach (var keyword in keywords)
-            {
-                if (string.IsNullOrWhiteSpace(keyword)) continue;
-                if (source.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
     }
 }

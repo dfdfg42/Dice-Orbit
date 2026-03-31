@@ -72,7 +72,7 @@ namespace DiceOrbit.Core
             var targetSelector = SkillTargetSelector.Instance;
             if (targetSelector != null)
             {
-                targetSelector.StartTargetSelection(source, skillData, diceValue);
+                targetSelector.StartTargetSelection(source, runtimeAbility, diceValue);
             }
             else
             {
@@ -84,21 +84,33 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 타겟 선택 완료 시 호출 (TargetSelector에서 호출)
         /// </summary>
-        public void OnTargetSelected(Character source, Unit target, CharacterSkillData skill, int diceValue)
+        public void OnTargetSelected(Character source, Unit target, RuntimeAbility runtimeAbility, int diceValue)
         {
-            if (source == null || skill == null) return;
+            if (source == null || runtimeAbility == null) return;
 
-            ExecuteTargetingSkill(source, target, skill, diceValue);
+            ExecuteTargetingSkill(source, target, runtimeAbility, diceValue);
         }
         
         /// <summary>
         /// 스킬 실제 실행
         /// </summary>
-        private void ExecuteTargetingSkill(Character source, Unit target, CharacterSkillData skill, int diceValue)
+        private void ExecuteTargetingSkill(Character source, Unit target, RuntimeAbility runtimeAbility, int diceValue)
         {
+            var skill = runtimeAbility?.CurrentSkillData;
+            if (skill == null) return;
+
             var targets = ResolveTargetsByType(source, target, skill.skillTargetType);
             var targetTiles = ResolveTargetTiles(source, skill);
-            skill.Execute(source, targets, targetTiles, diceValue);
+
+            bool executedByTemplate = runtimeAbility.BaseSkill?.ActiveTemplate != null
+                && runtimeAbility.BaseSkill.ActiveTemplate.Execute(source, runtimeAbility, targets, targetTiles, diceValue);
+
+            if (!executedByTemplate)
+            {
+                // 하위 호환: ActiveTemplate 미설정 스킬은 기존 Effect 순회 경로를 유지합니다.
+                skill.Execute(source, targets, targetTiles, diceValue);
+            }
+
             source.OnSkillResolved();
         }
 
