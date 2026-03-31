@@ -132,6 +132,16 @@ namespace DiceOrbit.UI
             SetButtonsInteractable(true);
         }
 
+        public void OnDiceDeselected(DiceData dice)
+        {
+            if (dice == null) return;
+            if (currentDice != dice) return;
+
+            currentDice = null;
+            waitingForDice = true;
+            SetButtonsInteractable(false);
+        }
+
         // ─────────────────────────────────────────────
         // 버튼 핸들러
         // ─────────────────────────────────────────────
@@ -149,9 +159,12 @@ namespace DiceOrbit.UI
                     orbitManager?.Move(currentCharacter, currentDice.Value);
                     MarkDiceUsed();
                     ReturnDiceElement();
+                    Hide();
+                    return;
                 }
             }
-            Hide();
+
+            ReturnDiceElement();
         }
 
         private void OnSkillClicked()
@@ -380,6 +393,21 @@ namespace DiceOrbit.UI
         {
             if (currentDice == null || currentCharacter == null) return;
 
+            var selectedAbilities = new List<RuntimeAbility>(currentCharacter.Stats.ActiveAbilities);
+            if (index < 0 || index >= selectedAbilities.Count)
+            {
+                ReturnDiceElement();
+                return;
+            }
+
+            RuntimeAbility runtimeAbility = selectedAbilities[index];
+            if (runtimeAbility?.BaseSkill == null || !runtimeAbility.BaseSkill.CanUse(currentDice.Value))
+            {
+                Debug.LogWarning("[CharacterActionUI] Selected dice does not satisfy skill requirement. Returning dice.");
+                ReturnDiceElement();
+                return;
+            }
+
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
@@ -389,9 +417,12 @@ namespace DiceOrbit.UI
                     currentCharacter.UseSkillByIndex(index, currentDice.Value);
                     MarkDiceUsed();
                     ReturnDiceElement();
+                    Hide();
+                    return;
                 }
             }
-            Hide();
+
+            ReturnDiceElement();
         }
 
         private void MarkDiceUsed()
@@ -402,12 +433,10 @@ namespace DiceOrbit.UI
 
         private void ReturnDiceElement()
         {
-            if (currentDice == null) return;
-            var elements = FindObjectsByType<DiceElement>(FindObjectsSortMode.None);
-            foreach (var e in elements)
-            {
-                if (e.Data == currentDice) { e.ReturnToOriginalPosition(); break; }
-            }
+            DiceUI.Instance?.ClearSelectedDice();
+            currentDice = null;
+            waitingForDice = true;
+            SetButtonsInteractable(false);
         }
 
         private void SetButtonsInteractable(bool value)

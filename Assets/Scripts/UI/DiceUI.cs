@@ -11,6 +11,8 @@ namespace DiceOrbit.UI
     /// </summary>
     public class DiceUI : MonoBehaviour
     {
+        public static DiceUI Instance { get; private set; }
+
         [Header("References")]
         [SerializeField] private Transform diceContainer;
         [SerializeField] private GameObject diceElementPrefab;
@@ -23,6 +25,18 @@ namespace DiceOrbit.UI
         
         // Runtime
         private List<DiceElement> diceElements = new List<DiceElement>();
+        private DiceElement selectedElement;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+        }
         
         private void Start()
         {
@@ -93,6 +107,8 @@ namespace DiceOrbit.UI
         /// </summary>
         public void ClearDice()
         {
+            selectedElement = null;
+
             foreach (var element in diceElements)
             {
                 if (element != null)
@@ -131,10 +147,47 @@ namespace DiceOrbit.UI
             var element = diceElements.Find(e => e.Data == diceData);
             if (element != null)
             {
+                if (selectedElement == element)
+                {
+                    selectedElement = null;
+                }
+
                 element.MarkAsUsed();
                 
                 // 사용된 주사위는 1초 후 제거 (애니메이션용)
                 StartCoroutine(RemoveDiceAfterDelay(element, 0.5f));
+            }
+        }
+
+        public void HandleDiceElementClicked(DiceElement element)
+        {
+            if (element == null || element.Data == null || element.Data.IsUsed) return;
+
+            if (selectedElement != null && selectedElement != element)
+            {
+                selectedElement.SetSelected(false);
+            }
+
+            bool isSame = selectedElement == element;
+            if (isSame)
+            {
+                element.SetSelected(false);
+                selectedElement = null;
+                CharacterActionUI.Instance?.OnDiceDeselected(element.Data);
+                return;
+            }
+
+            selectedElement = element;
+            selectedElement.SetSelected(true);
+            CharacterActionUI.Instance?.OnDiceDropped(element.Data);
+        }
+
+        public void ClearSelectedDice()
+        {
+            if (selectedElement != null)
+            {
+                selectedElement.SetSelected(false);
+                selectedElement = null;
             }
         }
         
