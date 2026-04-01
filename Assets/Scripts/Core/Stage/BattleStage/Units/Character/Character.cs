@@ -84,7 +84,7 @@ namespace DiceOrbit.Core
             // 복제된 패시브 인스턴스 레벨을 런타임 능력 레벨과 동기화합니다.
             SyncPassiveLevelsFromRuntime();
 
-            Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP}, ATK: {stat.Attack})");
+            Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP})");
         }
 
         /// <summary>
@@ -214,6 +214,7 @@ namespace DiceOrbit.Core
             {
                 Debug.Log($"Using manually assigned tile: {currentTile.TileIndex}");
                 transform.position = currentTile.Position + TILE_OFFSET;
+                RefreshTileFormation(currentTile);
                 yield break;
             }
 
@@ -229,6 +230,7 @@ namespace DiceOrbit.Core
                 {
                     Debug.Log($"{stat?.CharacterName} assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
                     transform.position = currentTile.Position + TILE_OFFSET;
+                    RefreshTileFormation(currentTile);
                 }
                 else
                 {
@@ -301,6 +303,7 @@ namespace DiceOrbit.Core
 
             if (arrivalTile != null)
             {
+                RefreshTileFormation(arrivalTile);
                 Debug.Log($"{stat?.CharacterName} arrived at tile {arrivalTile.TileIndex}");
                 arrivalTile.OnArrive(this);
             }
@@ -321,6 +324,14 @@ namespace DiceOrbit.Core
             }
 
             spriteVisual?.PlayIdle();
+        }
+
+        private void RefreshTileFormation(TileData tile)
+        {
+            if (tile == null) return;
+
+            var orbitManager = Object.FindAnyObjectByType<OrbitManager>();
+            orbitManager?.RefreshCharactersOnTile(tile);
         }
 
         private void UpdateFacingByMoveDirection(Vector3 moveDirection)
@@ -437,10 +448,12 @@ namespace DiceOrbit.Core
 
             sb.AppendLine(characterName);
 
-            if (stat != null)
+            string profileDescription = stat?.SourcePreset != null
+                ? stat.SourcePreset.Description
+                : string.Empty;
+            if (!string.IsNullOrWhiteSpace(profileDescription))
             {
-                sb.AppendLine($"Lv.{stat.Level}  HP {stat.CurrentHP}/{stat.MaxHP}  Armor {stat.TempArmor}");
-                sb.AppendLine($"Move: +{stat.MoveBuff} / -{stat.MoveDebuff}");
+                sb.AppendLine(profileDescription.Trim());
             }
 
             if (passives != null && passives.ActivePassives.Count > 0)
@@ -455,17 +468,15 @@ namespace DiceOrbit.Core
                     {
                         sb.Append($" (Lv.{passive.CurrentLevel})");
                     }
-                    sb.AppendLine();
-
-                    if (!string.IsNullOrWhiteSpace(passive.Description))
-                    {
-                        sb.AppendLine($"  - {passive.Description.Trim()}");
-                    }
 
                     string passiveCoefficientLine = BuildPassiveCoefficientLine(passive);
                     if (!string.IsNullOrWhiteSpace(passiveCoefficientLine))
                     {
-                        sb.AppendLine($"  - 현재 계수: {passiveCoefficientLine}");
+                        sb.AppendLine($": {passiveCoefficientLine}");
+                    }
+                    else
+                    {
+                        sb.AppendLine();
                     }
                 }
             }
@@ -480,7 +491,7 @@ namespace DiceOrbit.Core
                     {
                         if (effect == null) continue;
                         string durationText = effect.Duration < 0 ? "∞" : effect.Duration.ToString();
-                        sb.AppendLine($"• {effect.Type}  x{effect.Value}  ({durationText}T)");
+                        sb.AppendLine($"• {effect.Type}: {effect.Value} ({durationText}T)");
                     }
                 }
             }

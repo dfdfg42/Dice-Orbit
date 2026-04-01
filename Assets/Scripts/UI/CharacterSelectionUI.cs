@@ -54,6 +54,8 @@ namespace DiceOrbit.UI
                 gameObject.SetActive(true);
             }
 
+            DiceUI.Instance?.SetPanelVisible(false);
+
             GenerateRandomChoices();
         }
 
@@ -67,6 +69,8 @@ namespace DiceOrbit.UI
             {
                 gameObject.SetActive(false);
             }
+
+            DiceUI.Instance?.SetPanelVisible(true);
         }
         
         /// <summary>
@@ -142,6 +146,8 @@ namespace DiceOrbit.UI
                 Debug.LogWarning("[CharacterSelection] Selection Canvas is null! Trying to hide parent.");
                 transform.parent.gameObject.SetActive(false);
             }
+
+            DiceUI.Instance?.SetPanelVisible(true);
             
             // GameFlowManager에 알림
             var gameFlow = Core.GameFlowManager.Instance;

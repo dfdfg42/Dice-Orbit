@@ -81,9 +81,8 @@ namespace DiceOrbit.Data
             Level++;
             MaxHP += hpIncrease;
             CurrentHP = MaxHP; // 풀 회복
-            Attack += 2;
 
-            Debug.Log($"{CharacterName} leveled up to {Level}! HP +{hpIncrease} => {MaxHP}, ATK: {Attack}");
+            Debug.Log($"{CharacterName} leveled up to {Level}! HP +{hpIncrease} => {MaxHP}");
         }
 
         public static int GetMaxHpIncreaseForLevel(int level)

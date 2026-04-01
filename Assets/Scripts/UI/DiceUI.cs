@@ -22,10 +22,12 @@ namespace DiceOrbit.UI
         [Header("Settings")]
         [SerializeField] private bool autoHideRollButton = true;
         [SerializeField] private bool useRollAnimation = true;
+    [SerializeField] private CanvasGroup panelCanvasGroup;
         
         // Runtime
         private List<DiceElement> diceElements = new List<DiceElement>();
         private DiceElement selectedElement;
+    private bool panelVisible = true;
 
         private void Awake()
         {
@@ -36,6 +38,17 @@ namespace DiceOrbit.UI
             }
 
             Instance = this;
+
+            if (panelCanvasGroup == null)
+            {
+                panelCanvasGroup = GetComponent<CanvasGroup>();
+                if (panelCanvasGroup == null)
+                {
+                    panelCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+                }
+            }
+
+            SetPanelVisible(true);
         }
         
         private void Start()
@@ -190,6 +203,22 @@ namespace DiceOrbit.UI
                 selectedElement = null;
             }
         }
+
+        public void SetPanelVisible(bool visible)
+        {
+            panelVisible = visible;
+
+            if (panelCanvasGroup == null)
+            {
+                return;
+            }
+
+            panelCanvasGroup.alpha = visible ? 1f : 0f;
+            panelCanvasGroup.interactable = visible;
+            panelCanvasGroup.blocksRaycasts = visible;
+        }
+
+        public bool IsPanelVisible => panelVisible;
         
         /// <summary>
         /// 주사위 제거 (지연)

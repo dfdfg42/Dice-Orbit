@@ -23,8 +23,6 @@ namespace DiceOrbit.Core
         
         [Header("Base Stats")]
         public int MaxHP = 30;
-        public int Attack = 5;
-        public int Defense = 0;
         public Sprite CharacterSprite;
         public Color SpriteColor = Color.white;
         public float VisualScale = 1.0f;
@@ -57,8 +55,6 @@ namespace DiceOrbit.Core
                 Level = 1,
                 MaxHP = this.MaxHP,
                 CurrentHP = this.MaxHP,
-                Attack = this.Attack,
-                Defense = this.Defense,
                 CharacterSprite = this.CharacterSprite,
                 SpriteColor = this.SpriteColor
             };

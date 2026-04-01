@@ -7,8 +7,9 @@ namespace DiceOrbit.Data.Passives
     [System.Serializable]
     public class FocusPassive : PassiveAbility
     {
-        // 레벨 1~5 스택당 추가 피해(%)
-        private static readonly float[] BonusPercentPerStackByLevel = { 5f, 6f, 7f, 8f, 10f };
+        [Header("Designer Tuning")]
+        [Tooltip("레벨별 집중 1스택당 추가 피해율(%). 예: 5는 +5%")]
+        [SerializeField] private float[] bonusPercentPerStackByLevel = { 5f, 6f, 7f, 8f, 10f };
 
         public int stacksPerTurn = 1;
         private float runtimeBonusDamageRatioPerStack = 0.05f;
@@ -23,10 +24,15 @@ namespace DiceOrbit.Data.Passives
             runtimeBonusDamageRatioPerStack = bonusPercent / 100f;
         }
 
-        private static float ResolveBonusPercent(int level)
+        private float ResolveBonusPercent(int level)
         {
-            int index = Mathf.Clamp(level - 1, 0, BonusPercentPerStackByLevel.Length - 1);
-            return BonusPercentPerStackByLevel[index];
+            if (bonusPercentPerStackByLevel == null || bonusPercentPerStackByLevel.Length == 0)
+            {
+                return runtimeBonusDamageRatioPerStack * 100f;
+            }
+
+            int index = Mathf.Clamp(level - 1, 0, bonusPercentPerStackByLevel.Length - 1);
+            return bonusPercentPerStackByLevel[index];
         }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)

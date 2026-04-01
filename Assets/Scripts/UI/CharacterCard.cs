@@ -53,7 +53,7 @@ namespace DiceOrbit.UI
             
             if (statsText != null)
             {
-                statsText.text = $"HP: {preset.MaxHP}\nATK: {preset.Attack}";
+                statsText.text = $"HP: {preset.MaxHP}";
             }
         }
         

@@ -289,17 +289,13 @@ namespace DiceOrbit.Core
         {
             var sb = new StringBuilder();
             sb.AppendLine(Stats.MonsterName);
-            sb.AppendLine($"HP: {Stats.CurrentHP}/{Stats.MaxHP}");
-            sb.AppendLine($"Armor: {Stats.TempArmor}");
-            sb.AppendLine($"ATK: {Stats.Attack}");
 
             if (CurrentIntent != null)
             {
-
                 var targets = CurrentIntent.Targets;
                 if (targets != null && targets.Count > 0)
                 {
-                    sb.AppendLine($"Targets: {string.Join(", ", targets.Select(t => t.Stats is Data.CharacterStats cs ? cs.CharacterName : (t.Stats is Data.MonsterStats ms ? ms.MonsterName : "Unknown")))}");
+                    sb.AppendLine($"대상: {string.Join(", ", targets.Select(t => t.Stats is Data.CharacterStats cs ? cs.CharacterName : (t.Stats is Data.MonsterStats ms ? ms.MonsterName : "Unknown")))}");
                 }
 
                 // 스킬 설명 (nextSkill에서 가져오기)
@@ -307,7 +303,7 @@ namespace DiceOrbit.Core
                 {
                     if (!string.IsNullOrWhiteSpace(nextSkill.skillData.Description))
                     {
-                        sb.AppendLine(nextSkill.skillData.Description.Trim());
+                        sb.AppendLine($"의도: {nextSkill.skillData.Description.Trim()}");
                     }
                 }
             }
@@ -319,10 +315,13 @@ namespace DiceOrbit.Core
                 {
                     if (passive == null) continue;
                     var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
-                    sb.AppendLine(passiveName);
-                    if (!string.IsNullOrWhiteSpace(passive.Description))
+                    if (passive.CurrentLevel > 0)
                     {
-                        sb.AppendLine(passive.Description.Trim());
+                        sb.AppendLine($"• {passiveName} (Lv.{passive.CurrentLevel})");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"• {passiveName}");
                     }
                 }
             }
@@ -337,7 +336,7 @@ namespace DiceOrbit.Core
                     {
                         if (effect == null) continue;
                         string durationText = effect.Duration < 0 ? "∞" : effect.Duration.ToString();
-                        sb.AppendLine($"• {effect.Type}  x{effect.Value}  ({durationText}T)");
+                        sb.AppendLine($"• {effect.Type}: {effect.Value} ({durationText}T)");
                     }
                 }
             }

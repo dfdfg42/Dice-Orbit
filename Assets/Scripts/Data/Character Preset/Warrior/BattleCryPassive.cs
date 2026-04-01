@@ -7,11 +7,12 @@ namespace DiceOrbit.Data.Passives
     [System.Serializable]
     public class BattleCryPassive : PassiveAbility
     {
-        // 레벨 1~5 공격 피해량 증가(%)
-        private static readonly float[] DamageBonusPercentByLevel = { 5f, 6f, 7f, 8f, 10f };
+        [Header("Designer Tuning")]
+        [Tooltip("레벨별 공격 피해 증가율(%). 예: 5는 +5%")]
+        [SerializeField] private float[] damageBonusPercentByLevel = { 5f, 6f, 7f, 8f, 10f };
 
         public float damageMultiplier = 1.05f;
-    public float CurrentDamageMultiplier => damageMultiplier;
+        public float CurrentDamageMultiplier => damageMultiplier;
 
         public override int Priority => 100;
 
@@ -21,10 +22,15 @@ namespace DiceOrbit.Data.Passives
             damageMultiplier = 1f + (bonusPercent / 100f);
         }
 
-        private static float ResolveBonusPercent(int level)
+        private float ResolveBonusPercent(int level)
         {
-            int index = Mathf.Clamp(level - 1, 0, DamageBonusPercentByLevel.Length - 1);
-            return DamageBonusPercentByLevel[index];
+            if (damageBonusPercentByLevel == null || damageBonusPercentByLevel.Length == 0)
+            {
+                return (damageMultiplier - 1f) * 100f;
+            }
+
+            int index = Mathf.Clamp(level - 1, 0, damageBonusPercentByLevel.Length - 1);
+            return damageBonusPercentByLevel[index];
         }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)

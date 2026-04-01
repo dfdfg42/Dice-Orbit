@@ -8,14 +8,20 @@ namespace DiceOrbit.Data.CharacterActives
     [System.Serializable]
     public class MageEnergyBallActive : CharacterActiveTemplate
     {
+        [Header("Designer Tuning")]
+        [Tooltip("레벨별 기본 배율 (주사위값 x 배율)")]
+        [SerializeField] private int[] baseMultiplierByLevel = { 12, 13, 14, 15, 16 };
+        [Tooltip("레벨별 집중 1스택당 추가 피해 비율. 예: 0.05 = +5%")]
+        [SerializeField] private float[] bonusRatioPerStackByLevel = { 0.05f, 0.06f, 0.07f, 0.08f, 0.09f };
+
         [SerializeField] private int baseMultiplier = 12;
         [SerializeField] private float baseBonusRatioPerStack = 0.05f;
 
         public override int CalculateRawDamage(Character source, RuntimeAbility ability, int diceValue)
         {
             int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
-            int resolvedBaseMultiplier = baseMultiplier + (level - 1);
-            float resolvedBonusRatio = baseBonusRatioPerStack + ((level - 1) * 0.01f);
+            int resolvedBaseMultiplier = ResolveBaseMultiplier(level);
+            float resolvedBonusRatio = ResolveBonusRatioPerStack(level);
             int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
 
             int baseDamage = diceValue * resolvedBaseMultiplier;
@@ -25,8 +31,8 @@ namespace DiceOrbit.Data.CharacterActives
         public override string BuildPreview(Character source, RuntimeAbility ability, int diceValue)
         {
             int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
-            int resolvedBaseMultiplier = baseMultiplier + (level - 1);
-            float resolvedBonusRatio = baseBonusRatioPerStack + ((level - 1) * 0.01f);
+            int resolvedBaseMultiplier = ResolveBaseMultiplier(level);
+            float resolvedBonusRatio = ResolveBonusRatioPerStack(level);
             int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
 
             int baseDamage = diceValue * resolvedBaseMultiplier;
@@ -44,6 +50,28 @@ namespace DiceOrbit.Data.CharacterActives
             {
                 source.StatusEffects?.RemoveEffect(EffectType.Focus);
             }
+        }
+
+        private int ResolveBaseMultiplier(int level)
+        {
+            if (baseMultiplierByLevel == null || baseMultiplierByLevel.Length == 0)
+            {
+                return Mathf.Max(1, baseMultiplier + (level - 1));
+            }
+
+            int index = Mathf.Clamp(level - 1, 0, baseMultiplierByLevel.Length - 1);
+            return Mathf.Max(1, baseMultiplierByLevel[index]);
+        }
+
+        private float ResolveBonusRatioPerStack(int level)
+        {
+            if (bonusRatioPerStackByLevel == null || bonusRatioPerStackByLevel.Length == 0)
+            {
+                return Mathf.Max(0f, baseBonusRatioPerStack + ((level - 1) * 0.01f));
+            }
+
+            int index = Mathf.Clamp(level - 1, 0, bonusRatioPerStackByLevel.Length - 1);
+            return Mathf.Max(0f, bonusRatioPerStackByLevel[index]);
         }
     }
 }

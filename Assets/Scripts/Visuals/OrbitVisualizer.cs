@@ -12,6 +12,9 @@ namespace DiceOrbit.Visuals
         [SerializeField] private Color orbitLineColor = new Color(0.5f, 0.5f, 1f, 0.5f);
         [SerializeField] private float orbitRadius = 8f;
         [SerializeField] private int lineSegments = 64;
+    [SerializeField] private float lineWidth = 0.12f;
+    [SerializeField] private float orbitLineHeight = 0.08f;
+    [SerializeField] private bool useWorldOrigin = true;
         
         [Header("Materials")]
         [SerializeField] private Material lineMaterial;
@@ -38,11 +41,11 @@ namespace DiceOrbit.Visuals
             lineRenderer = lineObj.AddComponent<LineRenderer>();
             lineRenderer.positionCount = lineSegments + 1;
             lineRenderer.loop = true;
-            lineRenderer.useWorldSpace = false;
+            lineRenderer.useWorldSpace = true;
             
             // 라인 두께
-            lineRenderer.startWidth = 0.1f;
-            lineRenderer.endWidth = 0.1f;
+            lineRenderer.startWidth = lineWidth;
+            lineRenderer.endWidth = lineWidth;
             
             // 머티리얼 설정
             if (lineMaterial != null)
@@ -63,7 +66,7 @@ namespace DiceOrbit.Visuals
                 float angle = i * 2 * Mathf.PI / lineSegments;
                 float x = Mathf.Cos(angle) * orbitRadius;
                 float z = Mathf.Sin(angle) * orbitRadius;
-                lineRenderer.SetPosition(i, new Vector3(x, 0.1f, z));
+                lineRenderer.SetPosition(i, ResolveOrbitCenter() + new Vector3(x, orbitLineHeight, z));
             }
         }
         
@@ -81,9 +84,14 @@ namespace DiceOrbit.Visuals
                     float angle = i * 2 * Mathf.PI / lineSegments;
                     float x = Mathf.Cos(angle) * orbitRadius;
                     float z = Mathf.Sin(angle) * orbitRadius;
-                    lineRenderer.SetPosition(i, new Vector3(x, 0.1f, z));
+                    lineRenderer.SetPosition(i, ResolveOrbitCenter() + new Vector3(x, orbitLineHeight, z));
                 }
             }
+        }
+
+        private Vector3 ResolveOrbitCenter()
+        {
+            return useWorldOrigin ? Vector3.zero : transform.position;
         }
         
         /// <summary>
@@ -107,14 +115,15 @@ namespace DiceOrbit.Visuals
             
             Gizmos.color = orbitLineColor;
             
-            Vector3 prevPoint = transform.position + new Vector3(orbitRadius, 0, 0);
+            Vector3 center = ResolveOrbitCenter();
+            Vector3 prevPoint = center + new Vector3(orbitRadius, orbitLineHeight, 0);
             
             for (int i = 1; i <= lineSegments; i++)
             {
                 float angle = i * 2 * Mathf.PI / lineSegments;
                 float x = Mathf.Cos(angle) * orbitRadius;
                 float z = Mathf.Sin(angle) * orbitRadius;
-                Vector3 newPoint = transform.position + new Vector3(x, 0.1f, z);
+                Vector3 newPoint = center + new Vector3(x, orbitLineHeight, z);
                 
                 Gizmos.DrawLine(prevPoint, newPoint);
                 prevPoint = newPoint;
