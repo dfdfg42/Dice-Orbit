@@ -46,6 +46,7 @@ namespace DiceOrbit.UI
         private Character    currentCharacter;
         private DiceData     currentDice;
         private bool         waitingForDice = false;
+    private bool         isPanelVisible = false;
         private OrbitManager orbitManager;
 
         private List<RectTransform> actionButtons = new List<RectTransform>();
@@ -94,6 +95,7 @@ namespace DiceOrbit.UI
             currentCharacter = character;
             currentDice      = null;
             waitingForDice   = true;
+            isPanelVisible   = true;
 
             // 초상화 설정
             if (portraitImage != null && character.Stats?.CharacterSprite != null)
@@ -121,7 +123,18 @@ namespace DiceOrbit.UI
             currentCharacter = null;
             currentDice      = null;
             waitingForDice   = false;
+            isPanelVisible   = false;
             RefreshSkillButtonPreview();
+        }
+
+        public void CancelSelection()
+        {
+            OnCancelClicked();
+        }
+
+        public bool IsShowingCharacter(Character character)
+        {
+            return isPanelVisible && currentCharacter == character;
         }
 
         /// <summary>주사위 드롭 처리 (DiceElement에서 호출)</summary>

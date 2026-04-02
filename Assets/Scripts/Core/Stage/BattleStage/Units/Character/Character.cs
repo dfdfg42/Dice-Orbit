@@ -447,6 +447,18 @@ namespace DiceOrbit.Core
 
             // CharacterActionUI 표시
             var actionUI = UI.CharacterActionUI.Instance;
+            var partyManager = PartyManager.Instance;
+
+            if (partyManager != null && partyManager.SelectedCharacter == this && actionUI != null && actionUI.IsShowingCharacter(this))
+            {
+                actionUI.CancelSelection();
+                partyManager.DeselectCharacter();
+                Debug.Log($"{stat?.CharacterName} selection cancelled by re-click.");
+                return;
+            }
+
+            partyManager?.SelectCharacter(this);
+
             if (actionUI != null)
             {
                 actionUI.Show(this);
