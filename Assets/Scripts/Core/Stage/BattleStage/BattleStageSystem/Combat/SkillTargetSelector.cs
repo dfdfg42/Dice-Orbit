@@ -93,6 +93,7 @@ namespace DiceOrbit.Core
             currentRuntimeAbility = runtimeAbility;
             diceValue = dice;
             isSelectingTarget = true;
+            sourceCharacter?.OnSkillTargetingStarted();
             
             // LineRenderer 확인 및 활성화
             if (targetLine == null)
@@ -349,6 +350,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private void EndTargetSelection()
         {
+            sourceCharacter?.OnSkillTargetingEnded();
             isSelectingTarget = false;
             
             if (targetLine != null)

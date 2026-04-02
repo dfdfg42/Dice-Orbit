@@ -32,6 +32,10 @@ namespace DiceOrbit.Core
         public Sprite MoveSprite;
         public Sprite DamageSprite;
         public Sprite SkillSprite;
+
+    [Header("Animator")]
+    [Tooltip("캐릭터 전용 Animator Controller 또는 Animator Override Controller")]
+    public RuntimeAnimatorController AnimatorController;
         
 
         [Header("Starting Skills (New System)")]

@@ -22,6 +22,7 @@ namespace DiceOrbit.UI
         
         [Header("Prefabs")]
         [SerializeField] private GameObject characterUIPrefab; // CharacterUI 프리팹
+        [SerializeField] private RuntimeAnimatorController characterAnimatorController;
         
         [Header("Settings")]
         [SerializeField] private int numberOfChoices = 4;
@@ -217,6 +218,25 @@ namespace DiceOrbit.UI
 
             // CharacterSpriteVisual 추가 (애니메이션 스프라이트는 CharacterPreset 값만 사용)
             var spriteVisual = characterObj.AddComponent<CharacterSpriteVisual>();
+            var animator = characterObj.GetComponent<Animator>();
+            if (animator == null)
+            {
+                animator = characterObj.AddComponent<Animator>();
+            }
+
+            RuntimeAnimatorController resolvedController = preset.AnimatorController != null
+                ? preset.AnimatorController
+                : characterAnimatorController;
+
+            if (resolvedController != null)
+            {
+                animator.runtimeAnimatorController = resolvedController;
+            }
+            else
+            {
+                Debug.LogWarning($"[CharacterSelection] Animator controller is not assigned for '{preset.CharacterName}'. Assign CharacterPreset.AnimatorController or fallback characterAnimatorController.");
+            }
+
             if (spriteVisual != null)
             {
                 spriteVisual.SetAnimationSprites(

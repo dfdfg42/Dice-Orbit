@@ -99,6 +99,8 @@ namespace DiceOrbit.Core
             var skill = runtimeAbility?.CurrentSkillData;
             if (skill == null) return;
 
+            source.OnSkillExecutionStarted();
+
             var targets = ResolveTargetsByType(source, target, skill.skillTargetType);
             var targetTiles = ResolveTargetTiles(source, skill);
 

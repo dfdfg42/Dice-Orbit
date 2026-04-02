@@ -387,8 +387,6 @@ namespace DiceOrbit.Core
         /// </summary>
         public void UseSkillByIndex(int skillIndex, int diceValue)
         {
-            spriteVisual?.PlaySkill();
-
             // SkillManager에게 위임
             if (SkillManager.Instance != null)
             {
@@ -402,7 +400,23 @@ namespace DiceOrbit.Core
 
         public void OnSkillResolved()
         {
+            spriteVisual?.SetAiming(false);
             spriteVisual?.PlayIdle();
+        }
+
+        public void OnSkillTargetingStarted()
+        {
+            spriteVisual?.SetAiming(true);
+        }
+
+        public void OnSkillTargetingEnded()
+        {
+            spriteVisual?.SetAiming(false);
+        }
+
+        public void OnSkillExecutionStarted()
+        {
+            spriteVisual?.PlaySkill();
         }
 
         /// <summary>
@@ -410,8 +424,18 @@ namespace DiceOrbit.Core
         /// </summary>
         public override int TakeDamage(int damage)
         {
-            spriteVisual?.PlayDamage();
-            return base.TakeDamage(damage);
+            int actual = base.TakeDamage(damage);
+
+            if (!IsAlive)
+            {
+                spriteVisual?.PlayDeath();
+            }
+            else if (actual > 0)
+            {
+                spriteVisual?.PlayDamage();
+            }
+
+            return actual;
         }
         
         /// <summary>

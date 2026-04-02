@@ -14,8 +14,12 @@ namespace DiceOrbit.Core
     public class Monster : Unit<MonsterStats>, UI.IHoverTooltipProvider
     {
         [Header("Animation")]
-        [SerializeField] private float attackSpriteDuration = 0.25f;
-        [SerializeField] private float damageSpriteDuration = 0.35f;
+        [SerializeField] private Animator animator;
+        [SerializeField] private string attackTrigger = "Attack";
+        [SerializeField] private string hitTrigger = "Hit";
+        [SerializeField] private string deathTrigger = "Death";
+        [SerializeField] private string deadBool = "IsDead";
+        [SerializeField] private float destroyDelayAfterDeath = 0.35f;
 
         [Header("Preset")]
         [SerializeField] private Data.Monsters.MonsterPreset preset;
@@ -25,7 +29,6 @@ namespace DiceOrbit.Core
         private Data.MonsterAI.MonsterAI runtimeAiPattern; // 실제 실행되는 런타임 인스턴스
         private MonsterSkill nextSkill;
         private AttackIntent nextIntent; // 다음 턴에 사용할 AttackIntent
-        private Coroutine visualResetCoroutine;
         public AttackIntent CurrentIntent => nextIntent; // AttackIntent 타입으로 반환
 
         // 사망 이벤트 (WaveManager 등에서 구독)
@@ -42,6 +45,10 @@ namespace DiceOrbit.Core
             }
             
             base.Awake();
+            if (animator == null)
+            {
+                animator = GetComponentInChildren<Animator>();
+            }
             EnsureSpriteScalingIsolation();
             
             EnsureHoverCollider();
@@ -238,7 +245,6 @@ namespace DiceOrbit.Core
 
             // SkillData의 Execute 메서드에 위임
             skill.ExecuteSkillWithIntent(this, intent);
-            QueueReturnToIdle(attackSpriteDuration);
         }
 
         // === Damage & Death ===
@@ -249,16 +255,22 @@ namespace DiceOrbit.Core
         public override int TakeDamage(int damage)
         {
             if (!IsAlive) return 0;
-            PlayDamageVisual();
-            QueueReturnToIdle(damageSpriteDuration);
             int result=base.TakeDamage(damage);
-            if (!IsAlive) HandleDeath();
+            if (!IsAlive)
+            {
+                HandleDeath();
+            }
+            else if (result > 0)
+            {
+                PlayDamageVisual();
+            }
             return result;
         }
 
         private void HandleDeath()
         {
             Debug.Log($"[Monster] {stat?.MonsterName} Died.");
+            PlayDeathVisual();
 
             // 사망 효과 실행 (OnDeathEffects)
             if (preset != null && preset.OnDeathEffects != null)
@@ -282,7 +294,7 @@ namespace DiceOrbit.Core
 
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
-            Destroy(gameObject);
+            StartCoroutine(CoDestroyAfterDeath());
         }
 
         private string BuildMonsterTooltipText()
@@ -369,46 +381,36 @@ namespace DiceOrbit.Core
 
         private void PlayAttackVisual()
         {
-            if (spriteRenderer == null || stat == null) return;
-            if (stat.AttackSprite != null)
-            {
-                spriteRenderer.sprite = stat.AttackSprite;
-            }
+            SetTriggerSafe(attackTrigger);
         }
 
         private void PlayDamageVisual()
         {
-            if (spriteRenderer == null || stat == null) return;
-            if (stat.DamageSprite != null)
-            {
-                spriteRenderer.sprite = stat.DamageSprite;
-            }
+            SetTriggerSafe(hitTrigger);
         }
 
-        private void ReturnToIdleVisual()
+        private void PlayDeathVisual()
         {
-            if (spriteRenderer == null || stat == null) return;
-            if (stat.MonsterSprite != null)
-            {
-                spriteRenderer.sprite = stat.MonsterSprite;
-            }
+            SetBoolSafe(deadBool, true);
+            SetTriggerSafe(deathTrigger);
         }
 
-        private void QueueReturnToIdle(float delay)
+        private void SetTriggerSafe(string trigger)
         {
-            if (!isActiveAndEnabled) return;
-            if (visualResetCoroutine != null)
-            {
-                StopCoroutine(visualResetCoroutine);
-            }
-            visualResetCoroutine = StartCoroutine(CoReturnToIdle(delay));
+            if (animator == null || string.IsNullOrWhiteSpace(trigger)) return;
+            animator.SetTrigger(trigger);
         }
 
-        private System.Collections.IEnumerator CoReturnToIdle(float delay)
+        private void SetBoolSafe(string param, bool value)
         {
-            yield return new WaitForSeconds(Mathf.Max(0f, delay));
-            ReturnToIdleVisual();
-            visualResetCoroutine = null;
+            if (animator == null || string.IsNullOrWhiteSpace(param)) return;
+            animator.SetBool(param, value);
+        }
+
+        private System.Collections.IEnumerator CoDestroyAfterDeath()
+        {
+            yield return new WaitForSeconds(Mathf.Max(0f, destroyDelayAfterDeath));
+            Destroy(gameObject);
         }
 
         private void EnsureSpriteScalingIsolation()
