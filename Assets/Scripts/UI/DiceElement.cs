@@ -94,6 +94,26 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
+        /// 연출용 임시 숫자 표시 (데이터 값은 변경하지 않음)
+        /// </summary>
+        public void SetDisplayValue(int value)
+        {
+            if (valueText != null)
+            {
+                valueText.text = value.ToString();
+            }
+        }
+
+        /// <summary>
+        /// 표시 숫자를 실제 주사위 데이터 값으로 동기화
+        /// </summary>
+        public void RefreshDisplayFromData()
+        {
+            if (diceData == null || valueText == null) return;
+            valueText.text = diceData.Value.ToString();
+        }
+
+        /// <summary>
         /// 기존 호출 호환: 선택 해제/원상 복귀 용도
         /// </summary>
         public void ReturnToOriginalPosition()
