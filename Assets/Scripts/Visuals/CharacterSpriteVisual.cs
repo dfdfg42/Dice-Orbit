@@ -5,24 +5,30 @@ using DiceOrbit.Data;
 namespace DiceOrbit.Visuals
 {
     /// <summary>
-    /// 2D 스프라이트 기반 캐릭터 비주얼
+    /// 캐릭터 비주얼 컨트롤러 (Animator 기반)
     /// 3D 공간에서 2D 스프라이트 표시 (Billboard 방식)
     /// </summary>
-    [RequireComponent(typeof(SpriteRenderer))]
+    [RequireComponent(typeof(SpriteRenderer), typeof(Animator))]
     public class CharacterSpriteVisual : MonoBehaviour
     {
         [Header("Sprite Settings")]
         [SerializeField] private bool billboardToCamera = true;
         [SerializeField] private Vector3 spriteOffset = Vector3.zero;
 
-        [Header("Animation Sprites")]
+        [Header("Legacy Sprite Fields (Migration)")]
         [SerializeField] private Sprite idleSprite;
         [SerializeField] private Sprite moveSprite;
         [SerializeField] private Sprite damageSprite;
         [SerializeField] private Sprite skillSprite;
 
-        [Header("Animation Settings")]
-        [SerializeField] private float damageDisplayTime = 0.4f;
+        [Header("Animator")]
+        [SerializeField] private Animator animator;
+        [SerializeField] private string movingBool = "IsMoving";
+        [SerializeField] private string aimingBool = "IsAiming";
+        [SerializeField] private string attackTrigger = "Attack";
+        [SerializeField] private string hitTrigger = "Hit";
+        [SerializeField] private string deathTrigger = "Death";
+        [SerializeField] private string deadBool = "IsDead";
 
         [Header("Highlight")]
         [SerializeField] private Color normalColor    = Color.white;
@@ -30,7 +36,6 @@ namespace DiceOrbit.Visuals
 
         private SpriteRenderer spriteRenderer;
         private Camera mainCamera;
-        private Coroutine timedReturnCoroutine;
 
         // ─────────────────────────────────────────────
         // 초기화
@@ -40,6 +45,9 @@ namespace DiceOrbit.Visuals
             spriteRenderer = GetComponent<SpriteRenderer>();
             if (spriteRenderer == null)
                 spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+
+            if (animator == null)
+                animator = GetComponent<Animator>();
         }
 
         private void Start()
@@ -62,30 +70,47 @@ namespace DiceOrbit.Visuals
         /// <summary>Idle 스프라이트로 전환</summary>
         public void PlayIdle()
         {
-            SetSprite(idleSprite);
+            SetBoolSafe(movingBool, false);
+            SetBoolSafe(aimingBool, false);
         }
 
         /// <summary>Move 스프라이트로 전환 (한 칸 이동 시작 시 호출)</summary>
         public void PlayMove()
         {
-            SetSprite(moveSprite != null ? moveSprite : idleSprite);
+            SetBoolSafe(movingBool, true);
+            SetBoolSafe(aimingBool, false);
         }
 
-        /// <summary>Damage 스프라이트 표시 후 Idle 복귀</summary>
+        /// <summary>피격 애니메이션 트리거</summary>
         public void PlayDamage()
         {
-            if (damageSprite == null) return;
-            StopTimedReturn();
-            SetSprite(damageSprite);
-            timedReturnCoroutine = StartCoroutine(ReturnToIdleAfter(damageDisplayTime));
+            SetBoolSafe(movingBool, false);
+            SetTriggerSafe(hitTrigger);
         }
 
-        /// <summary>Skill 스프라이트 표시 후 Idle 복귀</summary>
+        /// <summary>공격 애니메이션 트리거</summary>
         public void PlaySkill()
         {
-            if (skillSprite == null) return;
-            StopTimedReturn();
-            SetSprite(skillSprite);
+            SetBoolSafe(aimingBool, false);
+            SetBoolSafe(movingBool, false);
+            SetTriggerSafe(attackTrigger);
+        }
+
+        public void PlayDeath()
+        {
+            SetBoolSafe(movingBool, false);
+            SetBoolSafe(aimingBool, false);
+            SetBoolSafe(deadBool, true);
+            SetTriggerSafe(deathTrigger);
+        }
+
+        public void SetAiming(bool aiming)
+        {
+            SetBoolSafe(aimingBool, aiming);
+            if (aiming)
+            {
+                SetBoolSafe(movingBool, false);
+            }
         }
 
         // ─────────────────────────────────────────────
@@ -128,20 +153,30 @@ namespace DiceOrbit.Visuals
         // 내부
         // ─────────────────────────────────────────────
 
-        private void StopTimedReturn()
+        private void SetTriggerSafe(string trigger)
         {
-            if (timedReturnCoroutine != null)
-            {
-                StopCoroutine(timedReturnCoroutine);
-                timedReturnCoroutine = null;
-            }
+            if (animator == null || string.IsNullOrWhiteSpace(trigger)) return;
+            animator.SetTrigger(trigger);
+        }
+
+        private void SetBoolSafe(string param, bool value)
+        {
+            if (animator == null || string.IsNullOrWhiteSpace(param)) return;
+            animator.SetBool(param, value);
         }
 
         private IEnumerator ReturnToIdleAfter(float delay)
         {
             yield return new WaitForSeconds(delay);
             PlayIdle();
-            timedReturnCoroutine = null;
+        }
+
+        private void OnValidate()
+        {
+            if (animator == null)
+            {
+                animator = GetComponent<Animator>();
+            }
         }
     }
 }

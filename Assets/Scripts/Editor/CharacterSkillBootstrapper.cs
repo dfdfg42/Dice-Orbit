@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.IO;
 using DiceOrbit.Core;
+using DiceOrbit.Data.CharacterActives;
 using DiceOrbit.Data;
+using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.Data.Skills.Effects;
 using UnityEditor;
@@ -36,7 +38,8 @@ namespace DiceOrbit.EditorTools
                 "주사위 눈금 4 이상 시 (눈금 x 12) 피해",
                 SkillTargetType.SingleEnemy,
                 BuildRequirement(1, null, DicePattern.High),
-                warriorEffect
+                warriorEffect,
+                CreateActiveTemplate(new WarriorGreatswordActive(), warriorEffect)
             );
 
             var rogueSkill = GetOrCreateCharacterSkill(
@@ -45,7 +48,8 @@ namespace DiceOrbit.EditorTools
                 "주사위 눈금 2 이하 시 (눈금 x 20) 피해",
                 SkillTargetType.SingleEnemy,
                 BuildRequirement(1, 2, DicePattern.None),
-                rogueEffect
+                rogueEffect,
+                CreateActiveTemplate(new RogueAmbushActive(), rogueEffect)
             );
 
             var alchemistSkill = GetOrCreateCharacterSkill(
@@ -54,7 +58,8 @@ namespace DiceOrbit.EditorTools
                 "주사위 눈금 홀수 시 (눈금 x 12) 피해",
                 SkillTargetType.SingleEnemy,
                 BuildRequirement(1, null, DicePattern.Odd),
-                alchemistEffect
+                alchemistEffect,
+                CreateActiveTemplate(new AlchemistThrowActive(), alchemistEffect)
             );
 
             var mageSkill = GetOrCreateCharacterSkill(
@@ -63,19 +68,42 @@ namespace DiceOrbit.EditorTools
                 "주사위 눈금 4 이상 시 (눈금 x 12) + 집중 스택당 5% 추가 피해",
                 SkillTargetType.SingleEnemy,
                 BuildRequirement(1, null, DicePattern.High),
-                mageEffect
+                mageEffect,
+                CreateActiveTemplate(new MageEnergyBallActive(), mageEffect)
             );
 
-            // 패시브 자동 생성은 비활성화합니다. 패시브는 CharacterSkill(Type=Passive) 에셋으로 직접 작성합니다.
-            //var warriorPassive = GetOrCreateBattleCryPassive("Warrior_BattleCry_Passive", 1.05f);
-            //var roguePassive = GetOrCreatePositioningPassive("Rogue_Positioning_Passive", 1.05f, 5);
-            //var alchemistPassive = GetOrCreateStableReactionPassive("Alchemist_StableReaction_Passive", 1.10f, 0.6f);
-            //var magePassive = GetOrCreateFocusPassive("Mage_Focus_Passive", 1);
+            var warriorPassive = GetOrCreatePassiveCharacterSkill(
+                "Warrior_Passive_Skill",
+                "전우애",
+                "공격 피해량 5% 증가",
+                new BattleCryPassive { damageMultiplier = 1.05f }
+            );
 
-            ApplyPreset("Warrior", warriorSkill, 600);
-            ApplyPreset("Rogue", rogueSkill, 600);
-            ApplyPreset("Alchemist", alchemistSkill, 600);
-            ApplyPreset("Mage", mageSkill, 600);
+            var roguePassive = GetOrCreatePassiveCharacterSkill(
+                "Rogue_Passive_Skill",
+                "위치 선정",
+                "한 턴에 5칸 이상 이동 시 다음 공격의 피해량 5% 증가",
+                new PositioningPassive { damageMultiplier = 1.05f, thresholdDistance = 5 }
+            );
+
+            var alchemistPassive = GetOrCreatePassiveCharacterSkill(
+                "Alchemist_Passive_Skill",
+                "안정 반응",
+                "현재 체력이 60% 이상일 경우, 피해량 10% 증가",
+                new StableReactionPassive { damageMultiplier = 1.10f, healthThresholdRatio = 0.6f }
+            );
+
+            var magePassive = GetOrCreatePassiveCharacterSkill(
+                "Mage_Passive_Skill",
+                "정신 집중",
+                "매 턴 종료 시 집중 스택 +1 획득 (액티브 발동 시 스택당 5% 추가 피해 후 소모)",
+                new FocusPassive { stacksPerTurn = 1 }
+            );
+
+            ApplyPreset("Warrior", 600, warriorSkill, warriorPassive);
+            ApplyPreset("Rogue", 600, rogueSkill, roguePassive);
+            ApplyPreset("Alchemist", 600, alchemistSkill, alchemistPassive);
+            ApplyPreset("Mage", 600, mageSkill, magePassive);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -144,7 +172,8 @@ namespace DiceOrbit.EditorTools
             string description,
             SkillTargetType targetType,
             DiceRequirement requirement,
-            SkillEffectBase effect)
+            SkillEffectBase effect,
+            CharacterActiveTemplate activeTemplate)
         {
             var assetPath = $"{CharacterSkillDir}/{fileName}.asset";
             var skill = AssetDatabase.LoadAssetAtPath<CharacterSkill>(assetPath);
@@ -157,14 +186,56 @@ namespace DiceOrbit.EditorTools
             skill.SkillName = displayName;
             skill.Description = description;
             skill.Type = CharacterSkillType.Active;
+            skill.ActiveTemplate = activeTemplate;
             skill.TargetType = targetType;
             skill.Requirement = requirement;
+            skill.MaxLevelOverride = Mathf.Max(5, skill.MaxLevelOverride);
 
             skill.BaseData.SetSkillName(displayName);
             skill.BaseData.SetDescription(description);
             skill.BaseData.skillTargetType = targetType;
             skill.BaseData.Effects = new List<SkillEffectBase> { effect };
             skill.Levels = new List<SkillLevelData>();
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static CharacterActiveTemplate CreateActiveTemplate(CharacterActiveTemplate template, SkillEffectBase effect)
+        {
+            if (template == null) return null;
+            template.SetVfxProfile(effect?.VfxProfile);
+            return template;
+        }
+
+        private static CharacterSkill GetOrCreatePassiveCharacterSkill(
+            string fileName,
+            string displayName,
+            string description,
+            PassiveAbility passiveTemplate)
+        {
+            var assetPath = $"{CharacterSkillDir}/{fileName}.asset";
+            var skill = AssetDatabase.LoadAssetAtPath<CharacterSkill>(assetPath);
+            if (skill == null)
+            {
+                skill = ScriptableObject.CreateInstance<CharacterSkill>();
+                AssetDatabase.CreateAsset(skill, assetPath);
+            }
+
+            passiveTemplate.ConfigureMetadata(displayName, description);
+
+            skill.SkillName = displayName;
+            skill.Description = description;
+            skill.Type = CharacterSkillType.Passive;
+            skill.TargetType = SkillTargetType.Self;
+            skill.Requirement = new DiceRequirement();
+            skill.MaxLevelOverride = Mathf.Max(5, skill.MaxLevelOverride);
+            skill.BaseData.SetSkillName(displayName);
+            skill.BaseData.SetDescription(description);
+            skill.BaseData.skillTargetType = SkillTargetType.Self;
+            skill.BaseData.Effects = new List<SkillEffectBase>();
+            skill.Levels = new List<SkillLevelData>();
+            skill.PassiveTemplate = passiveTemplate;
 
             EditorUtility.SetDirty(skill);
             return skill;
@@ -190,12 +261,28 @@ namespace DiceOrbit.EditorTools
             }
         }
 
-        private static void ApplyPreset(string presetName, CharacterSkill skill, int maxHp)
+        private static void ApplyPreset(string presetName, int maxHp, params CharacterSkill[] skills)
         {
             var preset = LoadPreset(presetName);
             if (preset == null) return;
 
-            AssignSkillToPreset(presetName, skill);
+            if (preset.StartingSkills == null)
+            {
+                preset.StartingSkills = new List<CharacterSkill>();
+            }
+
+            preset.StartingSkills.Clear();
+            if (skills != null)
+            {
+                foreach (var skill in skills)
+                {
+                    if (skill == null) continue;
+                    if (!preset.StartingSkills.Contains(skill))
+                    {
+                        preset.StartingSkills.Add(skill);
+                    }
+                }
+            }
 
             preset.MaxHP = maxHp;
             EditorUtility.SetDirty(preset);

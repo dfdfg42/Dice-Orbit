@@ -1,15 +1,17 @@
 using UnityEngine;
 using DiceOrbit.Data;
+using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.Visuals;
 using System.Collections.Generic;
+using System.Text;
 
 namespace DiceOrbit.Core
 {
     /// <summary>
     /// 게임 캐릭터 (플레이어)
     /// </summary>
-    public class Character : Unit<CharacterStats>
+    public class Character : Unit<CharacterStats>, UI.IHoverTooltipProvider
     {
         // 타일 위 유닛 위치 offset
         protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
@@ -82,7 +84,7 @@ namespace DiceOrbit.Core
             // 복제된 패시브 인스턴스 레벨을 런타임 능력 레벨과 동기화합니다.
             SyncPassiveLevelsFromRuntime();
 
-            Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP}, ATK: {stat.Attack})");
+            Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP})");
         }
 
         /// <summary>
@@ -212,6 +214,7 @@ namespace DiceOrbit.Core
             {
                 Debug.Log($"Using manually assigned tile: {currentTile.TileIndex}");
                 transform.position = currentTile.Position + TILE_OFFSET;
+                RefreshTileFormation(currentTile);
                 yield break;
             }
 
@@ -227,6 +230,7 @@ namespace DiceOrbit.Core
                 {
                     Debug.Log($"{stat?.CharacterName} assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
                     transform.position = currentTile.Position + TILE_OFFSET;
+                    RefreshTileFormation(currentTile);
                 }
                 else
                 {
@@ -299,6 +303,7 @@ namespace DiceOrbit.Core
 
             if (arrivalTile != null)
             {
+                RefreshTileFormation(arrivalTile);
                 Debug.Log($"{stat?.CharacterName} arrived at tile {arrivalTile.TileIndex}");
                 arrivalTile.OnArrive(this);
             }
@@ -319,6 +324,14 @@ namespace DiceOrbit.Core
             }
 
             spriteVisual?.PlayIdle();
+        }
+
+        private void RefreshTileFormation(TileData tile)
+        {
+            if (tile == null) return;
+
+            var orbitManager = Object.FindAnyObjectByType<OrbitManager>();
+            orbitManager?.RefreshCharactersOnTile(tile);
         }
 
         private void UpdateFacingByMoveDirection(Vector3 moveDirection)
@@ -374,8 +387,6 @@ namespace DiceOrbit.Core
         /// </summary>
         public void UseSkillByIndex(int skillIndex, int diceValue)
         {
-            spriteVisual?.PlaySkill();
-
             // SkillManager에게 위임
             if (SkillManager.Instance != null)
             {
@@ -389,7 +400,23 @@ namespace DiceOrbit.Core
 
         public void OnSkillResolved()
         {
+            spriteVisual?.SetAiming(false);
             spriteVisual?.PlayIdle();
+        }
+
+        public void OnSkillTargetingStarted()
+        {
+            spriteVisual?.SetAiming(true);
+        }
+
+        public void OnSkillTargetingEnded()
+        {
+            spriteVisual?.SetAiming(false);
+        }
+
+        public void OnSkillExecutionStarted()
+        {
+            spriteVisual?.PlaySkill();
         }
 
         /// <summary>
@@ -397,8 +424,18 @@ namespace DiceOrbit.Core
         /// </summary>
         public override int TakeDamage(int damage)
         {
-            spriteVisual?.PlayDamage();
-            return base.TakeDamage(damage);
+            int actual = base.TakeDamage(damage);
+
+            if (!IsAlive)
+            {
+                spriteVisual?.PlayDeath();
+            }
+            else if (actual > 0)
+            {
+                spriteVisual?.PlayDamage();
+            }
+
+            return actual;
         }
         
         /// <summary>
@@ -410,6 +447,18 @@ namespace DiceOrbit.Core
 
             // CharacterActionUI 표시
             var actionUI = UI.CharacterActionUI.Instance;
+            var partyManager = PartyManager.Instance;
+
+            if (partyManager != null && partyManager.SelectedCharacter == this && actionUI != null && actionUI.IsShowingCharacter(this))
+            {
+                actionUI.CancelSelection();
+                partyManager.DeselectCharacter();
+                Debug.Log($"{stat?.CharacterName} selection cancelled by re-click.");
+                return;
+            }
+
+            partyManager?.SelectCharacter(this);
+
             if (actionUI != null)
             {
                 actionUI.Show(this);
@@ -418,6 +467,94 @@ namespace DiceOrbit.Core
             else
             {
                 Debug.LogError("CharacterActionUI NOT FOUND! Make sure CharacterActionUI component exists in scene.");
+            }
+        }
+
+        public string GetHoverTooltipText()
+        {
+            return BuildCharacterTooltipText();
+        }
+
+        private string BuildCharacterTooltipText()
+        {
+            var sb = new StringBuilder();
+            string characterName = stat != null && !string.IsNullOrWhiteSpace(stat.CharacterName)
+                ? stat.CharacterName
+                : name;
+
+            sb.AppendLine(characterName);
+
+            string profileDescription = stat?.SourcePreset != null
+                ? stat.SourcePreset.Description
+                : string.Empty;
+            if (!string.IsNullOrWhiteSpace(profileDescription))
+            {
+                sb.AppendLine(profileDescription.Trim());
+            }
+
+            if (passives != null && passives.ActivePassives.Count > 0)
+            {
+                sb.AppendLine("--- Passive ---");
+                foreach (var passive in passives.ActivePassives)
+                {
+                    if (passive == null) continue;
+                    string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
+                    sb.Append($"• {passiveName}");
+                    if (passive.CurrentLevel > 0)
+                    {
+                        sb.Append($" (Lv.{passive.CurrentLevel})");
+                    }
+
+                    string passiveCoefficientLine = BuildPassiveCoefficientLine(passive);
+                    if (!string.IsNullOrWhiteSpace(passiveCoefficientLine))
+                    {
+                        sb.AppendLine($": {passiveCoefficientLine}");
+                    }
+                    else
+                    {
+                        sb.AppendLine();
+                    }
+                }
+            }
+
+            if (statusEffects != null)
+            {
+                var effects = statusEffects.GetActiveEffects();
+                if (effects != null && effects.Count > 0)
+                {
+                    sb.AppendLine("--- Status ---");
+                    foreach (var effect in effects)
+                    {
+                        if (effect == null) continue;
+                        string durationText = effect.Duration < 0 ? "∞" : effect.Duration.ToString();
+                        sb.AppendLine($"• {effect.Type}: {effect.Value} ({durationText}T)");
+                    }
+                }
+            }
+
+            return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
+        }
+
+        private static string BuildPassiveCoefficientLine(PassiveAbility passive)
+        {
+            if (passive == null) return string.Empty;
+
+            switch (passive)
+            {
+                case BattleCryPassive battleCry:
+                    return $"피해 +{(battleCry.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+
+                case StableReactionPassive stableReaction:
+                    return $"체력 {(stableReaction.healthThresholdRatio * 100f):0.#}% 이상일 때 피해 +{(stableReaction.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+
+                case PositioningPassive positioning:
+                    return $"이동 {positioning.CurrentThresholdDistance}칸 이상 시 다음 공격 피해 +{(positioning.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+
+                case FocusPassive focus:
+                    return $"집중 스택당 추가 피해 +{focus.BonusDamageRatioPerStack * 100f:0.#}%";
+
+                default:
+                    return string.Empty;
             }
         }
     }

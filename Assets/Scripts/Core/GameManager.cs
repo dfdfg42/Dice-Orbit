@@ -13,7 +13,7 @@ namespace DiceOrbit.Core
         
         [Header("Camera")]
         [SerializeField] private Camera mainCamera;
-        [SerializeField] private float cameraHeight = 20f;
+    [SerializeField] private Vector3 cameraPosition = new Vector3(7.2f, 20f, -12f);
         [SerializeField] private float cameraAngle = 60f;
         
         private static GameManager instance;
@@ -79,7 +79,7 @@ namespace DiceOrbit.Core
             if (mainCamera != null)
             {
                 // 위에서 내려다보는 각도로 설정
-                mainCamera.transform.position = new Vector3(0, cameraHeight, -cameraHeight * 0.5f);
+                mainCamera.transform.position = cameraPosition;
                 mainCamera.transform.rotation = Quaternion.Euler(cameraAngle, 0, 0);
             }
         }

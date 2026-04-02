@@ -57,6 +57,9 @@ namespace DiceOrbit.UI
 
             Instance = this;
             CreateDashTexture();
+
+            // 임시로 1초마다 RefreshAttackIntent 호출
+            InvokeRepeating(nameof(RefreshAttackIntent), 1f, 1f);
         }
 
         private void OnDestroy()
@@ -78,13 +81,38 @@ namespace DiceOrbit.UI
             monsterTiles.Clear();
         }
 
+        /*
+         * 플레이어 및 몬스터 행동 종료 후 새로고침하는 것이 정석이지만, 행동 큐 시스템을 추가할 때 작업하는 게 좋아 보임
+         * 지금은 임시로 1초마다 갱신하도록 처리함
+         */
+        public void RefreshAttackIntent()
+        {
+            if (!isShowing) return; // Show 상태가 아닐 때는 시각화가 없으므로 갱신할 필요 없음
+
+            // hashmap 순회하며 삭제를 위해 LINQ 사용 (모든 등록된 개체 갱신)
+            var monsters = registeredIntents.Keys.ToList();
+
+            foreach (var monster in monsters)
+            {
+                if (monster == null || !registeredIntents.TryGetValue(monster, out var intent) || intent == null)
+                {
+                    RemoveAttackIntent(monster);
+                    continue;
+                }
+
+                RemoveAttackIntent(monster);
+                AddAttackIntent(monster, intent);
+            }
+        }
+
         /// <summary>
         /// 몬스터의 AttackIntent 등록
         /// </summary>
         public void AddAttackIntent(Core.Monster monster, Data.AttackIntent intent)
         {
             if (monster == null || intent == null) return;
-            
+
+            intent.RefreshTargets();
             registeredIntents[monster] = intent;
             
             // 이미 Show 상태면 즉시 시각화
@@ -133,8 +161,10 @@ namespace DiceOrbit.UI
                     {
                         tile.ClearHighlight();
                         
-                        // 이 타일 위의 플로팅 말풍선 제거 (간단하게 모든 생성된 Floating UI 중 위치가 겹치는 것을 삭제)
-                        var uisToRemove = activeFloatingUIs.Where(ui => ui != null && Vector3.Distance(ui.transform.position, tile.transform.position + new Vector3(0, 1.5f, 0)) < 0.1f).ToList();
+                        // 이 타일 위의 플로팅 말풍선 제거 (생성될 때의 위치 또는 1.5f 오프셋 적용 위치 모두 체크)
+                        var uisToRemove = activeFloatingUIs.Where(ui => ui != null && 
+                            (Vector3.Distance(ui.transform.position, tile.transform.position) < 0.1f || 
+                             Vector3.Distance(ui.transform.position, tile.transform.position + new Vector3(0, 1.5f, 0)) < 0.1f)).ToList();
                         foreach(var ui in uisToRemove)
                         {
                             activeFloatingUIs.Remove(ui);

@@ -62,6 +62,9 @@ namespace DiceOrbit.Data.Skills
         public Sprite Icon;
         public CharacterSkillType Type;
 
+        [Header("Active Binding (Type=Active)")]
+        [SerializeReference] public CharacterActiveTemplate ActiveTemplate;
+
         [Header("Passive Binding (Type=Passive)")]
         // 런타임에서 복제되어 PassiveManager에 등록될 패시브 템플릿입니다.
         [SerializeReference] public PassiveAbility PassiveTemplate;

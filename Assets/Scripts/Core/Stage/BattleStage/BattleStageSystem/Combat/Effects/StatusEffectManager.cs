@@ -66,6 +66,11 @@ namespace DiceOrbit.Systems.Effects
             return activeEffects.ContainsKey(type);
         }
 
+        public IReadOnlyCollection<StatusEffect> GetActiveEffects()
+        {
+            return activeEffects.Values.ToList().AsReadOnly();
+        }
+
         // ICombatReactor Implementation
         public void OnReact(CombatTrigger trigger, CombatContext context)
         {

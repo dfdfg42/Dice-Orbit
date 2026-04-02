@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using DiceOrbit.Data;
 using System.Collections.Generic;
-using DiceOrbit.Data.Skills.Effects;
+using DiceOrbit.Data.Skills;
 using DiceOrbit.UI;
 
 namespace DiceOrbit.Core
@@ -22,7 +22,7 @@ namespace DiceOrbit.Core
         
         private bool isSelectingTarget = false;
         private Character sourceCharacter;
-        private CharacterSkillData currentSkill;
+    private RuntimeAbility currentRuntimeAbility;
         private int diceValue;
         private Camera mainCamera;
         private Unit currentPreviewTarget;
@@ -87,12 +87,13 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 타겟 선택 모드 시작
         /// </summary>
-        public void StartTargetSelection(Character character, CharacterSkillData skill, int dice)
+        public void StartTargetSelection(Character character, RuntimeAbility runtimeAbility, int dice)
         {
             sourceCharacter = character;
-            currentSkill = skill;
+            currentRuntimeAbility = runtimeAbility;
             diceValue = dice;
             isSelectingTarget = true;
+            sourceCharacter?.OnSkillTargetingStarted();
             
             // LineRenderer 확인 및 활성화
             if (targetLine == null)
@@ -110,7 +111,8 @@ namespace DiceOrbit.Core
             
             targetLine.enabled = true;
             
-            Debug.Log($"Target selection started for {skill.SkillName} (Type: {skill.skillTargetType})");
+            var skillData = currentRuntimeAbility?.CurrentSkillData;
+            Debug.Log($"Target selection started for {skillData?.SkillName ?? "Unknown"} (Type: {skillData?.skillTargetType})");
         }
         
         /// <summary>
@@ -173,7 +175,7 @@ namespace DiceOrbit.Core
 
         private void UpdateDamagePreview()
         {
-            if (currentSkill == null || sourceCharacter == null)
+            if (currentRuntimeAbility?.CurrentSkillData == null || sourceCharacter == null)
             {
                 HoverTooltipUI.Instance?.HidePinned();
                 currentPreviewTarget = null;
@@ -220,43 +222,43 @@ namespace DiceOrbit.Core
 
         private string BuildAppliedDamagePreview(Unit targetUnit)
         {
-            if (currentSkill?.Effects == null || currentSkill.Effects.Count == 0 || targetUnit == null || sourceCharacter == null)
-                return "예상 적용 피해: -";
+            if (currentRuntimeAbility?.CurrentSkillData == null || targetUnit == null || sourceCharacter == null)
+                return "예상 피해: -";
+
+            var activeTemplate = currentRuntimeAbility.BaseSkill?.ActiveTemplate;
+            if (activeTemplate != null)
+            {
+                int coupledRaw = activeTemplate.CalculateRawDamage(sourceCharacter, currentRuntimeAbility, diceValue);
+                return coupledRaw > 0 ? $"예상 피해: {coupledRaw}" : "예상 피해: -";
+            }
+
+            var skillData = currentRuntimeAbility.CurrentSkillData;
+            if (skillData?.Effects == null || skillData.Effects.Count == 0)
+            {
+                return "예상 피해: -";
+            }
 
             int totalRaw = 0;
-            int totalApplied = 0;
-            int remainingArmor = targetUnit.Stats != null ? Mathf.Max(0, targetUnit.Stats.TempArmor) : 0;
-            int initialArmor = remainingArmor;
-            int focusStacks = sourceCharacter.StatusEffects != null
-                ? sourceCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
-                : 0;
-
-            foreach (var effect in currentSkill.Effects)
+            foreach (var effect in skillData.Effects)
             {
-                if (effect == null) continue;
-
-                if (effect is DiceMultiplierDamageEffect diceEffect)
+                if (effect is Data.Skills.Effects.DiceMultiplierDamageEffect diceEffect)
                 {
-                    int raw = diceValue * diceEffect.multiplier;
-                    totalRaw += raw;
-                    int absorbed = Mathf.Min(raw, remainingArmor);
-                    remainingArmor -= absorbed;
-                    totalApplied += Mathf.Max(0, raw - absorbed);
+                    int resolvedMultiplier = diceEffect.GetMultiplierForSource(sourceCharacter);
+                    totalRaw += diceValue * resolvedMultiplier;
                 }
-                else if (effect is MageStackDamageEffect mageEffect)
+                else if (effect is Data.Skills.Effects.MageStackDamageEffect mageEffect)
                 {
-                    int baseDamage = diceValue * mageEffect.baseMultiplier;
-                    float multiplier = 1.0f + (focusStacks * mageEffect.bonusDamageRatioPerStack);
-                    int raw = Mathf.RoundToInt(baseDamage * multiplier);
-                    totalRaw += raw;
-                    int absorbed = Mathf.Min(raw, remainingArmor);
-                    remainingArmor -= absorbed;
-                    totalApplied += Mathf.Max(0, raw - absorbed);
+                    int resolvedBaseMultiplier = mageEffect.GetBaseMultiplierForSource(sourceCharacter);
+                    int focusStacks = sourceCharacter.StatusEffects != null
+                        ? sourceCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
+                        : 0;
+                    float bonusRatio = mageEffect.GetBonusRatioForSource(sourceCharacter);
+                    int baseDamage = diceValue * resolvedBaseMultiplier;
+                    totalRaw += Mathf.RoundToInt(baseDamage * (1.0f + focusStacks * bonusRatio));
                 }
             }
 
-            if (totalRaw <= 0) return "예상 적용 피해: -";
-            return $"예상 적용 피해: {totalApplied}\n(원본 {totalRaw} - 방어도 {initialArmor})";
+            return totalRaw > 0 ? $"예상 피해: {totalRaw}" : "예상 피해: -";
         }
         
         /// <summary>
@@ -319,7 +321,7 @@ namespace DiceOrbit.Core
             if (SkillManager.Instance == null) return;
 
             var resolved = ResolveTarget(target);
-            SkillManager.Instance.OnTargetSelected(sourceCharacter, resolved, currentSkill, diceValue);
+            SkillManager.Instance.OnTargetSelected(sourceCharacter, resolved, currentRuntimeAbility, diceValue);
         }
 
         private Unit ResolveTarget(GameObject target)
@@ -348,6 +350,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private void EndTargetSelection()
         {
+            sourceCharacter?.OnSkillTargetingEnded();
             isSelectingTarget = false;
             
             if (targetLine != null)
@@ -358,7 +361,9 @@ namespace DiceOrbit.Core
             currentPreviewTarget = null;
             
             sourceCharacter = null;
-            currentSkill = null;
+            currentRuntimeAbility = null;
         }
+
+        private CharacterSkillData currentSkill => currentRuntimeAbility?.CurrentSkillData;
     }
 }

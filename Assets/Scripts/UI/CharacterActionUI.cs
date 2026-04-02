@@ -46,6 +46,7 @@ namespace DiceOrbit.UI
         private Character    currentCharacter;
         private DiceData     currentDice;
         private bool         waitingForDice = false;
+    private bool         isPanelVisible = false;
         private OrbitManager orbitManager;
 
         private List<RectTransform> actionButtons = new List<RectTransform>();
@@ -76,6 +77,7 @@ namespace DiceOrbit.UI
             if (panelRoot != null) panelRoot.anchoredPosition = hiddenPosition;
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             SetButtonsInteractable(false);
+            RefreshSkillButtonPreview();
         }
 
         private void Start()
@@ -93,6 +95,7 @@ namespace DiceOrbit.UI
             currentCharacter = character;
             currentDice      = null;
             waitingForDice   = true;
+            isPanelVisible   = true;
 
             // 초상화 설정
             if (portraitImage != null && character.Stats?.CharacterSprite != null)
@@ -100,6 +103,7 @@ namespace DiceOrbit.UI
 
             SetButtonsInteractable(false);
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
+            RefreshSkillButtonPreview();
 
             // 슬라이드 인
             StopSlide();
@@ -119,6 +123,18 @@ namespace DiceOrbit.UI
             currentCharacter = null;
             currentDice      = null;
             waitingForDice   = false;
+            isPanelVisible   = false;
+            RefreshSkillButtonPreview();
+        }
+
+        public void CancelSelection()
+        {
+            OnCancelClicked();
+        }
+
+        public bool IsShowingCharacter(Character character)
+        {
+            return isPanelVisible && currentCharacter == character;
         }
 
         /// <summary>주사위 드롭 처리 (DiceElement에서 호출)</summary>
@@ -130,6 +146,19 @@ namespace DiceOrbit.UI
             waitingForDice = false;
 
             SetButtonsInteractable(true);
+            RefreshSkillButtonPreview();
+        }
+
+        public void OnDiceDeselected(DiceData dice)
+        {
+            if (dice == null) return;
+            if (currentDice != dice) return;
+
+            currentDice = null;
+            waitingForDice = true;
+            SetButtonsInteractable(false);
+            if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
+            RefreshSkillButtonPreview();
         }
 
         // ─────────────────────────────────────────────
@@ -149,18 +178,69 @@ namespace DiceOrbit.UI
                     orbitManager?.Move(currentCharacter, currentDice.Value);
                     MarkDiceUsed();
                     ReturnDiceElement();
+                    Hide();
+                    return;
                 }
             }
-            Hide();
+
+            ReturnDiceElement();
         }
 
         private void OnSkillClicked()
         {
             if (currentDice == null || currentCharacter == null) return;
+            if (GetPrimaryActiveAbility() == null) return;
 
-            PopulateSkillList(currentCharacter);
-            if (skillSelectPanel != null) skillSelectPanel.SetActive(true);
-            overlay?.Show();
+            // 현재 액티브 스킬이 1개인 구조이므로 버튼 클릭 시 즉시 사용
+            ExecuteSkill(0);
+            if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
+            overlay?.Hide();
+        }
+
+        private RuntimeAbility GetPrimaryActiveAbility()
+        {
+            if (currentCharacter?.Stats?.ActiveAbilities == null)
+                return null;
+
+            foreach (var ability in currentCharacter.Stats.ActiveAbilities)
+            {
+                if (ability != null)
+                {
+                    return ability;
+                }
+            }
+
+            return null;
+        }
+
+        private void RefreshSkillButtonPreview()
+        {
+            if (skillButton == null) return;
+
+            var runtimeAbility = GetPrimaryActiveAbility();
+            var hoverPreview = skillButton.GetComponent<SkillPreviewHoverUI>();
+            if (hoverPreview == null) hoverPreview = skillButton.gameObject.AddComponent<SkillPreviewHoverUI>();
+
+            if (runtimeAbility?.BaseSkill != null)
+            {
+                hoverPreview.SetPreview(BuildSkillHoverText(runtimeAbility));
+
+                var text = skillButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = $"{runtimeAbility.BaseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})";
+                }
+            }
+            else
+            {
+                hoverPreview.SetPreview("액티브 스킬 정보 없음");
+
+                var text = skillButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = "SKILL";
+                }
+            }
         }
 
         private void OnCancelClicked()
@@ -216,6 +296,16 @@ namespace DiceOrbit.UI
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null || currentCharacter == null || currentDice == null)
                 return "예상: -";
 
+            var activeTemplate = runtimeAbility.BaseSkill.ActiveTemplate;
+            if (activeTemplate != null)
+            {
+                string coupledPreview = activeTemplate.BuildPreview(currentCharacter, runtimeAbility, currentDice.Value);
+                if (!string.IsNullOrWhiteSpace(coupledPreview))
+                {
+                    return coupledPreview;
+                }
+            }
+
             var skillData = runtimeAbility.CurrentSkillData;
             if (skillData == null || skillData.Effects == null || skillData.Effects.Count == 0)
                 return "예상: -";
@@ -229,24 +319,25 @@ namespace DiceOrbit.UI
 
                 if (effect is DiceMultiplierDamageEffect diceEffect)
                 {
-                    int baseDamage = dice * diceEffect.multiplier;
-                    lines.Add($"예상 피해: ({dice} x {diceEffect.multiplier}) = {baseDamage}");
-                    lines.Add("적용 피해: max(0, 예상 피해 - 남은 방어도)");
+                    int resolvedMultiplier = diceEffect.GetMultiplierForSource(currentCharacter);
+                    int baseDamage = dice * resolvedMultiplier;
+                    lines.Add($"예상 피해: ({dice} x {resolvedMultiplier}) = {baseDamage}");
                 }
                 else if (effect is MageStackDamageEffect mageEffect)
                 {
                     int focusStacks = currentCharacter.StatusEffects != null
                         ? currentCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
                         : 0;
+                    int resolvedBaseMultiplier = mageEffect.GetBaseMultiplierForSource(currentCharacter);
+                    float bonusRatio = mageEffect.GetBonusRatioForSource(currentCharacter);
 
-                    int baseDamage = dice * mageEffect.baseMultiplier;
-                    float bonusMultiplier = 1.0f + (focusStacks * mageEffect.bonusDamageRatioPerStack);
+                    int baseDamage = dice * resolvedBaseMultiplier;
+                    float bonusMultiplier = 1.0f + (focusStacks * bonusRatio);
                     int finalDamage = Mathf.RoundToInt(baseDamage * bonusMultiplier);
-                    float bonusPercent = focusStacks * mageEffect.bonusDamageRatioPerStack * 100f;
+                    float bonusPercent = focusStacks * bonusRatio * 100f;
 
-                    lines.Add($"예상 피해: ({dice} x {mageEffect.baseMultiplier}) x (1 + {focusStacks} x {mageEffect.bonusDamageRatioPerStack:0.##})");
+                    lines.Add($"예상 피해: ({dice} x {resolvedBaseMultiplier}) x (1 + {focusStacks} x {bonusRatio:0.##})");
                     lines.Add($"= {baseDamage} x {bonusMultiplier:0.##} = {finalDamage} (집중 +{bonusPercent:0.#}%)");
-                    lines.Add("적용 피해: max(0, 예상 피해 - 남은 방어도)");
                 }
             }
 
@@ -369,6 +460,21 @@ namespace DiceOrbit.UI
         {
             if (currentDice == null || currentCharacter == null) return;
 
+            var selectedAbilities = new List<RuntimeAbility>(currentCharacter.Stats.ActiveAbilities);
+            if (index < 0 || index >= selectedAbilities.Count)
+            {
+                ReturnDiceElement();
+                return;
+            }
+
+            RuntimeAbility runtimeAbility = selectedAbilities[index];
+            if (runtimeAbility?.BaseSkill == null || !runtimeAbility.BaseSkill.CanUse(currentDice.Value))
+            {
+                Debug.LogWarning("[CharacterActionUI] Selected dice does not satisfy skill requirement. Returning dice.");
+                ReturnDiceElement();
+                return;
+            }
+
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
@@ -378,9 +484,12 @@ namespace DiceOrbit.UI
                     currentCharacter.UseSkillByIndex(index, currentDice.Value);
                     MarkDiceUsed();
                     ReturnDiceElement();
+                    Hide();
+                    return;
                 }
             }
-            Hide();
+
+            ReturnDiceElement();
         }
 
         private void MarkDiceUsed()
@@ -391,12 +500,10 @@ namespace DiceOrbit.UI
 
         private void ReturnDiceElement()
         {
-            if (currentDice == null) return;
-            var elements = FindObjectsByType<DiceElement>(FindObjectsSortMode.None);
-            foreach (var e in elements)
-            {
-                if (e.Data == currentDice) { e.ReturnToOriginalPosition(); break; }
-            }
+            DiceUI.Instance?.ClearSelectedDice();
+            currentDice = null;
+            waitingForDice = true;
+            SetButtonsInteractable(false);
         }
 
         private void SetButtonsInteractable(bool value)

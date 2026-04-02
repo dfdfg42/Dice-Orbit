@@ -39,6 +39,13 @@ namespace DiceOrbit.Data.Passives
         public virtual bool IsStackable => isStackable;
         public int CurrentLevel => currentLevel;
 
+        public void ConfigureMetadata(string name, string desc, Sprite iconSprite = null)
+        {
+            if (!string.IsNullOrWhiteSpace(name)) passiveName = name;
+            if (!string.IsNullOrWhiteSpace(desc)) description = desc;
+            if (iconSprite != null) icon = iconSprite;
+        }
+
         /// <summary>
         /// 초기화 (필요 시)
         /// </summary>

@@ -91,11 +91,11 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            TileAttribute primaryAttribute = attrs.FirstOrDefault(a =>
-                a != null &&
-                (!hideLevelUpAttribute || a.Type != TileAttributeType.LevelUp));
+            var displayAttributes = attrs
+                .Where(a => a != null && (!hideLevelUpAttribute || a.Type != TileAttributeType.LevelUp))
+                .ToList();
 
-            if (primaryAttribute == null)
+            if (displayAttributes.Count == 0)
             {
                 RemoveBubble(tile);
                 return;
@@ -107,20 +107,37 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            if (!visualDatabase.TryGet(primaryAttribute.Type, out var visual))
+            var iconData = new List<TileAttributeBubbleUI.BubbleIconData>();
+            string primaryLabel = string.Empty;
+
+            for (int i = 0; i < displayAttributes.Count; i++)
             {
-                if (!missingMappingLogged.Contains(primaryAttribute.Type))
+                var attr = displayAttributes[i];
+                if (!visualDatabase.TryGet(attr.Type, out var visual))
                 {
-                    missingMappingLogged.Add(primaryAttribute.Type);
-                    Debug.LogError($"[TileAttributeBubble] Missing visual mapping for {primaryAttribute.Type}.");
+                    if (!missingMappingLogged.Contains(attr.Type))
+                    {
+                        missingMappingLogged.Add(attr.Type);
+                        Debug.LogError($"[TileAttributeBubble] Missing visual mapping for {attr.Type}.");
+                    }
+                    continue;
                 }
-                RemoveBubble(tile);
-                return;
+
+                if (visual.icon == null)
+                {
+                    Debug.LogError($"[TileAttributeBubble] Icon is not assigned for {attr.Type}.");
+                    continue;
+                }
+
+                iconData.Add(new TileAttributeBubbleUI.BubbleIconData(visual.icon, visual.iconTint));
+                if (string.IsNullOrWhiteSpace(primaryLabel))
+                {
+                    primaryLabel = visual.shortLabel;
+                }
             }
 
-            if (visual.icon == null)
+            if (iconData.Count == 0)
             {
-                Debug.LogError($"[TileAttributeBubble] Icon is not assigned for {primaryAttribute.Type}.");
                 RemoveBubble(tile);
                 return;
             }
@@ -129,9 +146,8 @@ namespace DiceOrbit.UI
             bubble.Setup(
                 tile.transform,
                 bubbleSprite,
-                visual.icon,
-                visual.iconTint,
-                visual.shortLabel
+                iconData,
+                primaryLabel
             );
         }
 

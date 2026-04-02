@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using DiceOrbit.Core;
+using DiceOrbit.Data.Skills;
 
 namespace DiceOrbit.Data.Skills.Effects
 {
@@ -18,6 +19,32 @@ namespace DiceOrbit.Data.Skills.Effects
         public virtual List<TileData> GetTargetTilesPreview(Unit source)
         {
             return new List<TileData>();
+        }
+
+        protected int ResolveSourceActiveAbilityLevel(Unit source)
+        {
+            if (source is not Character character || character.Stats == null)
+            {
+                return 1;
+            }
+
+            foreach (RuntimeAbility ability in character.Stats.ActiveAbilities)
+            {
+                if (ability == null) continue;
+
+                var data = ability.CurrentSkillData;
+                if (data?.Effects == null) continue;
+
+                foreach (var effect in data.Effects)
+                {
+                    if (ReferenceEquals(effect, this))
+                    {
+                        return Mathf.Max(1, ability.CurrentLevel);
+                    }
+                }
+            }
+
+            return 1;
         }
 
         /// <summary>

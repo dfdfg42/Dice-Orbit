@@ -12,9 +12,23 @@ namespace DiceOrbit.Data.Skills.Effects
         [Tooltip("주사위 눈금에 곱해질 배율")]
         public int multiplier = 12;
 
+        public int GetMultiplierForSource(Unit source)
+        {
+            int level = ResolveSourceActiveAbilityLevel(source);
+            return GetMultiplierForLevel(level);
+        }
+
+        public int GetMultiplierForLevel(int level)
+        {
+            int baseMultiplier = Mathf.Max(1, multiplier);
+            int normalizedLevel = Mathf.Max(1, level);
+            return baseMultiplier + (normalizedLevel - 1);
+        }
+
         public override void Execute(Unit source, List<Unit> targets, List<TileData> targetTiles, int diceValue)
         {
-            int damage = diceValue * multiplier;
+            int resolvedMultiplier = GetMultiplierForSource(source);
+            int damage = diceValue * resolvedMultiplier;
             
             if (targets == null) return;
 

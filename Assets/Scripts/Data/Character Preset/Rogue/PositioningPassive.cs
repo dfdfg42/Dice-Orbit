@@ -6,13 +6,19 @@ namespace DiceOrbit.Data.Passives
     [System.Serializable]
     public class PositioningPassive : PassiveAbility
     {
+        [Header("Designer Tuning")]
+        [Tooltip("레벨별 다음 공격 피해 배율. 예: 1.05는 +5%")]
+        [SerializeField] private float[] damageMultiplierByLevel = { 1.05f, 1.07f, 1.09f, 1.11f, 1.13f };
+        [Tooltip("레벨별 활성화 이동 거리 조건")]
+        [SerializeField] private int[] thresholdDistanceByLevel = { 5, 5, 4, 4, 3 };
+
         public float damageMultiplier = 1.05f;
         public int thresholdDistance = 5;
-        public float damageMultiplierPerLevel = 0.02f;
-        public int thresholdDistanceReductionPerLevel = 0;
 
         private float runtimeDamageMultiplier;
         private int runtimeThresholdDistance;
+        public float CurrentDamageMultiplier => runtimeDamageMultiplier;
+        public int CurrentThresholdDistance => runtimeThresholdDistance;
 
         private int movedDistanceThisTurn;
         private bool isConditionMet;
@@ -27,10 +33,30 @@ namespace DiceOrbit.Data.Passives
 
         protected override void ApplyLevel(int level)
         {
-            int bonusLevel = Mathf.Max(0, level - 1);
-            // 런타임 수치는 기본값 + 레벨당 증감값으로 계산합니다.
-            runtimeDamageMultiplier = damageMultiplier + (damageMultiplierPerLevel * bonusLevel);
-            runtimeThresholdDistance = Mathf.Max(1, thresholdDistance - (thresholdDistanceReductionPerLevel * bonusLevel));
+            runtimeDamageMultiplier = ResolveDamageMultiplier(level);
+            runtimeThresholdDistance = ResolveThresholdDistance(level);
+        }
+
+        private float ResolveDamageMultiplier(int level)
+        {
+            if (damageMultiplierByLevel == null || damageMultiplierByLevel.Length == 0)
+            {
+                return Mathf.Max(1f, damageMultiplier);
+            }
+
+            int index = Mathf.Clamp(level - 1, 0, damageMultiplierByLevel.Length - 1);
+            return Mathf.Max(1f, damageMultiplierByLevel[index]);
+        }
+
+        private int ResolveThresholdDistance(int level)
+        {
+            if (thresholdDistanceByLevel == null || thresholdDistanceByLevel.Length == 0)
+            {
+                return Mathf.Max(1, thresholdDistance);
+            }
+
+            int index = Mathf.Clamp(level - 1, 0, thresholdDistanceByLevel.Length - 1);
+            return Mathf.Max(1, thresholdDistanceByLevel[index]);
         }
 
         private void ResetTurnData()

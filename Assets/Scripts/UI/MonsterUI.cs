@@ -107,6 +107,34 @@ namespace DiceOrbit.UI
                 rectTransform.sizeDelta = new Vector2(3, 1f);
                 rectTransform.localScale = Vector3.one * 0.1f;
             }
+
+            ConfigureNonBlockingRaycasts();
+        }
+
+        private void ConfigureNonBlockingRaycasts()
+        {
+            if (worldCanvas == null) return;
+
+            var raycaster = worldCanvas.GetComponent<GraphicRaycaster>();
+            if (raycaster != null)
+            {
+                raycaster.enabled = false;
+            }
+
+            var graphics = worldCanvas.GetComponentsInChildren<Graphic>(true);
+            foreach (var graphic in graphics)
+            {
+                if (graphic == null) continue;
+                graphic.raycastTarget = false;
+            }
+
+            var canvasGroups = worldCanvas.GetComponentsInChildren<CanvasGroup>(true);
+            foreach (var group in canvasGroups)
+            {
+                if (group == null) continue;
+                group.blocksRaycasts = false;
+                group.interactable = false;
+            }
         }
         
         private void AutoResolveIntentRefs()

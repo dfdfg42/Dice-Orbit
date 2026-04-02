@@ -30,6 +30,11 @@ namespace DiceOrbit.Core
         [Header("Visual Settings")]
         [SerializeField] private float tileWidth = 1.5f;
         [SerializeField] private float tileHeight = 0.2f;
+
+    [Header("Character Formation")]
+    [SerializeField] private float formationSpacing = 0.85f;
+    [SerializeField] private float formationYOffset = 1.5f;
+    [SerializeField] private float formationForwardOffset = 1.0f;
         
         // Runtime Data
         private List<TileData> tiles = new List<TileData>();
@@ -185,7 +190,8 @@ namespace DiceOrbit.Core
         
         public void Move(Character character, int steps)
         {
-            steps = Mathf.Max(steps + character.Stats.MoveBuff, 0);   
+            int netMoveModifier = character.Stats.MoveBuff - character.Stats.MoveDebuff;
+            steps = Mathf.Max(steps + netMoveModifier, 0);
             var currentTile = character.CurrentTile;
             // 타일 경로 계산
             var tilePath = new List<TileData>();
@@ -255,6 +261,44 @@ namespace DiceOrbit.Core
                 }
             }
             return characters;
+        }
+
+        public void RefreshCharactersOnTile(TileData tile)
+        {
+            if (tile == null) return;
+
+            var characters = GetCharactersOnTile(tile);
+            if (characters == null || characters.Count == 0) return;
+
+            characters.Sort((a, b) => a.GetInstanceID().CompareTo(b.GetInstanceID()));
+
+            Vector3 sideAxis = ResolveFormationSideAxis();
+            float centerIndex = (characters.Count - 1) * 0.5f;
+            Vector3 anchor = tile.Position + new Vector3(0f, formationYOffset, formationForwardOffset);
+
+            for (int i = 0; i < characters.Count; i++)
+            {
+                var character = characters[i];
+                if (character == null) continue;
+
+                float offset = (i - centerIndex) * formationSpacing;
+                character.transform.position = anchor + sideAxis * offset;
+            }
+        }
+
+        private static Vector3 ResolveFormationSideAxis()
+        {
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                Vector3 side = Vector3.ProjectOnPlane(cam.transform.right, Vector3.up).normalized;
+                if (side.sqrMagnitude > 0.0001f)
+                {
+                    return side;
+                }
+            }
+
+            return Vector3.right;
         }
 
         /// <summary>

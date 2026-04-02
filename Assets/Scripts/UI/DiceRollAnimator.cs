@@ -38,6 +38,16 @@ namespace DiceOrbit.UI
         [Tooltip("주사위 간 출발 딜레이")]
         [SerializeField] private float delayBetweenDice = 0.12f;
 
+    [Header("Pre-Arrival Number Shuffle")]
+    [Tooltip("이동 중 숫자 랜덤 변경 연출 사용 여부")]
+    [SerializeField] private bool useTravelShuffle = true;
+    [Tooltip("랜덤 숫자 갱신 간격")]
+    [SerializeField] private float shuffleInterval = 0.03f;
+    [Tooltip("연출용 최소 눈금")]
+    [SerializeField] private int shuffleMinValue = 1;
+    [Tooltip("연출용 최대 눈금")]
+    [SerializeField] private int shuffleMaxValue = 6;
+
         [Header("Arrive Bounce")]
         [Tooltip("도착 시 bounce 스케일 최대값")]
         [SerializeField] private float bounceScale = 1.25f;
@@ -48,6 +58,7 @@ namespace DiceOrbit.UI
         public System.Action OnAnimationComplete;
 
         private Canvas rootCanvas;
+    private readonly Dictionary<DiceElement, Coroutine> activeShuffleRoutines = new Dictionary<DiceElement, Coroutine>();
 
         private void Awake()
         {
@@ -128,6 +139,9 @@ namespace DiceOrbit.UI
                 // 드래그 불가 상태 (CanvasGroup)
                 var cg = elements[i].GetComponent<CanvasGroup>();
                 if (cg != null) cg.blocksRaycasts = false;
+
+                // 처음 등장 시점부터 숫자 셔플 시작
+                StartContinuousShuffle(elements[i]);
             }
 
             // ─── 3단계: 동시에 팝인 (스케일 0 → 1, EaseOutBack) ───
@@ -157,6 +171,8 @@ namespace DiceOrbit.UI
             // 마지막 주사위가 도착할 때까지 대기
             float totalWait = (count - 1) * delayBetweenDice + jumpUpDuration + pauseDuration + zoomInDuration + bounceDuration + 0.1f;
             yield return new WaitForSeconds(totalWait);
+
+            StopAllContinuousShuffle(true);
 
             OnAnimationComplete?.Invoke();
         }
@@ -218,6 +234,7 @@ namespace DiceOrbit.UI
             Vector2 targetCanvasPos = GetCanvasLocalPosition(containerRect, localSlotPos);
 
             elapsed = 0f;
+
             while (elapsed < zoomInDuration)
             {
                 elapsed += Time.deltaTime;
@@ -234,6 +251,9 @@ namespace DiceOrbit.UI
 
             rect.anchoredPosition = targetCanvasPos;
             rect.localRotation = Quaternion.identity;
+
+            // 연출 종료: 실제 데이터 값으로 즉시 복구
+            StopContinuousShuffle(element, true);
 
             // ─── 도착 후 컨테이너로 복귀 ───
             rect.SetParent(container, false);
@@ -252,6 +272,65 @@ namespace DiceOrbit.UI
             // 드래그 활성화
             var cg = element.GetComponent<CanvasGroup>();
             if (cg != null) cg.blocksRaycasts = true;
+        }
+
+        private void StartContinuousShuffle(DiceElement element)
+        {
+            if (!useTravelShuffle || element == null)
+                return;
+
+            StopContinuousShuffle(element, false);
+            activeShuffleRoutines[element] = StartCoroutine(CoShuffleDisplay(element));
+        }
+
+        private void StopContinuousShuffle(DiceElement element, bool restoreRealValue)
+        {
+            if (element == null)
+                return;
+
+            if (activeShuffleRoutines.TryGetValue(element, out Coroutine routine) && routine != null)
+            {
+                StopCoroutine(routine);
+            }
+
+            activeShuffleRoutines.Remove(element);
+
+            if (restoreRealValue)
+            {
+                element.RefreshDisplayFromData();
+            }
+        }
+
+        private void StopAllContinuousShuffle(bool restoreRealValue)
+        {
+            if (activeShuffleRoutines.Count == 0)
+                return;
+
+            var keys = new List<DiceElement>(activeShuffleRoutines.Keys);
+            for (int i = 0; i < keys.Count; i++)
+            {
+                StopContinuousShuffle(keys[i], restoreRealValue);
+            }
+        }
+
+        private IEnumerator CoShuffleDisplay(DiceElement element)
+        {
+            int minValue = Mathf.Min(shuffleMinValue, shuffleMaxValue);
+            int maxValue = Mathf.Max(shuffleMinValue, shuffleMaxValue);
+            float safeShuffleInterval = Mathf.Max(0.01f, shuffleInterval);
+            WaitForSeconds wait = new WaitForSeconds(safeShuffleInterval);
+
+            while (element != null)
+            {
+                int randomValue = Random.Range(minValue, maxValue + 1);
+                element.SetDisplayValue(randomValue);
+                yield return wait;
+            }
+        }
+
+        private void OnDisable()
+        {
+            StopAllContinuousShuffle(true);
         }
 
         // ─── 도착 bounce ───

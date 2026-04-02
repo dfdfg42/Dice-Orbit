@@ -242,9 +242,11 @@ namespace DiceOrbit.Data
         {
             if (selectedTargets == null) return;
             selectedTargets = selectedTargets.Where(t => t != null && t.IsAlive).ToList();
+            // 임시로 타일 타입 기반 스킬일 때만 타일 새로고침 로직 추가
+            // 필요하다면 나중에 TargetType 별로 타겟 새로고침 로직을 분리할 수 있음
             if (TargetType == TargetType.Tiles && skill.TargetStrategy == TargetSelectionStrategy.TilesWithAttribute)
             {
-                SelectUnitsByTargetStrategy(skill.TargetStrategy, skill.TargetCount);
+                TargetTiles = SelectTiles(skill);
             }
         }
     }
