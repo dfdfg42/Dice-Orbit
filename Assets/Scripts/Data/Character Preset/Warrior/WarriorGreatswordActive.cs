@@ -9,7 +9,7 @@ namespace DiceOrbit.Data.CharacterActives
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 배율값 (주사위값 x 배율)")]
-        [SerializeField] private int[] multiplierByLevel = { 12, 13, 14, 15, 16 };
+        [SerializeField] private int[] multiplierByLevel = { 4, 6, 8, 10, 12 };
         [SerializeField] private int baseMultiplier = 12;
 
         public override int CalculateRawDamage(Character source, RuntimeAbility ability, int diceValue)

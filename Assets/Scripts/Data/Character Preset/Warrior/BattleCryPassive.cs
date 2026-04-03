@@ -9,7 +9,7 @@ namespace DiceOrbit.Data.Passives
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 공격 피해 증가율(%). 예: 5는 +5%")]
-        [SerializeField] private float[] damageBonusPercentByLevel = { 5f, 6f, 7f, 8f, 10f };
+        [SerializeField] private float[] damageBonusPercentByLevel = { 10f, 15f, 20f, 25f, 30f };
 
         public float damageMultiplier = 1.05f;
         public float CurrentDamageMultiplier => damageMultiplier;

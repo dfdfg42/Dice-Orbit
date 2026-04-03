@@ -8,7 +8,7 @@ namespace DiceOrbit.Data.Passives
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 피해 증가율(%). 체력 조건 충족 시 적용")]
-        [SerializeField] private float[] damageBonusPercentByLevel = { 10f, 12f, 14f, 16f, 18f };
+        [SerializeField] private float[] damageBonusPercentByLevel = { 10f, 15f, 20f, 25f, 30f };
 
         public float damageMultiplier = 1.1f;
         public float healthThresholdRatio = 0.6f;

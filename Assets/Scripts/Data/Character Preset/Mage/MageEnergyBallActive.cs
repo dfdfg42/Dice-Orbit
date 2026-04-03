@@ -10,7 +10,7 @@ namespace DiceOrbit.Data.CharacterActives
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 기본 배율 (주사위값 x 배율)")]
-        [SerializeField] private int[] baseMultiplierByLevel = { 12, 13, 14, 15, 16 };
+        [SerializeField] private int[] baseMultiplierByLevel = { 8, 10, 12, 14, 16 };
         [Tooltip("레벨별 집중 1스택당 추가 피해 비율. 예: 0.05 = +5%")]
         [SerializeField] private float[] bonusRatioPerStackByLevel = { 0.05f, 0.06f, 0.07f, 0.08f, 0.09f };
 

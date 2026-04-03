@@ -1775,8 +1775,8 @@ MonoBehaviour:
   statusEffects: {fileID: 390910235}
   stat:
     Owner: {fileID: 0}
-    MaxHP: 600
-    CurrentHP: 600
+    MaxHP: 200
+    CurrentHP: 200
     Attack: 0
     Defense: 0
     TempArmor: 0
@@ -4648,8 +4648,8 @@ MonoBehaviour:
   statusEffects: {fileID: 1043009291}
   stat:
     Owner: {fileID: 0}
-    MaxHP: 600
-    CurrentHP: 600
+    MaxHP: 200
+    CurrentHP: 200
     Attack: 0
     Defense: 0
     TempArmor: 0
@@ -4880,8 +4880,8 @@ MonoBehaviour:
   statusEffects: {fileID: 1051251523}
   stat:
     Owner: {fileID: 0}
-    MaxHP: 600
-    CurrentHP: 600
+    MaxHP: 200
+    CurrentHP: 200
     Attack: 0
     Defense: 0
     TempArmor: 0

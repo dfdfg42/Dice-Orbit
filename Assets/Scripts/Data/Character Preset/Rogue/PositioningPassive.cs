@@ -8,7 +8,7 @@ namespace DiceOrbit.Data.Passives
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 다음 공격 피해 배율. 예: 1.05는 +5%")]
-        [SerializeField] private float[] damageMultiplierByLevel = { 1.05f, 1.07f, 1.09f, 1.11f, 1.13f };
+        [SerializeField] private float[] damageMultiplierByLevel = { 1.10f, 1.15f, 1.20f, 1.25f, 1.30f };
         [Tooltip("레벨별 활성화 이동 거리 조건")]
         [SerializeField] private int[] thresholdDistanceByLevel = { 5, 5, 4, 4, 3 };
 

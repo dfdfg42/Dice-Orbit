@@ -9,7 +9,7 @@ namespace DiceOrbit.Data.Passives
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 집중 1스택당 추가 피해율(%). 예: 5는 +5%")]
-        [SerializeField] private float[] bonusPercentPerStackByLevel = { 5f, 6f, 7f, 8f, 10f };
+        [SerializeField] private float[] bonusPercentPerStackByLevel = {10f, 15f, 20f, 25f, 30f };
 
         public int stacksPerTurn = 1;
         private float runtimeBonusDamageRatioPerStack = 0.05f;
