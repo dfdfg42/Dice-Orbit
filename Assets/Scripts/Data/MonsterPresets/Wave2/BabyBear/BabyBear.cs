@@ -161,6 +161,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
     [System.Serializable]
     public class BabyBearPassive : PassiveAbility
     {
+        int tileDuration = -1, honeyDuration = 1;
+
         public BabyBearPassive()
         {
             passiveName = "아기 곰은 꿀을 좋아해";
@@ -216,8 +218,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
                 {
                     var honeyAttribute = new HoneyTileAttribute(
                         TileAttributeType.Honey,
-                        1, // 꿀은 데미지가 없으므로 Value는 0
-                        1
+                        honeyDuration, // 꿀은 데미지가 없으므로 Value는 0
+                        tileDuration
                     );
 
                     tile.AddAttribute(honeyAttribute);

@@ -11,7 +11,7 @@ namespace DiceOrbit.Data.Tile
         RandMine,
         Bone,
         Honey,
-
+        SnowPrison,
     }
 
     /// <summary>
@@ -57,7 +57,7 @@ namespace DiceOrbit.Data.Tile
             if (Owner == null) return;
 
             // 공통 로직: 턴 종료 시 지속시간 감소
-            if (context.Action.Type==ActionType.OnEndTurn && context.IsTiling == true)
+            if (context.Action.Type == ActionType.OnEndTurn && context.IsTiling == true)
             {
                 if (Duration > 0)
                 {

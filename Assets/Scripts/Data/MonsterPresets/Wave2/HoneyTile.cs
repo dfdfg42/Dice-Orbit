@@ -52,7 +52,7 @@ namespace DiceOrbit.Data.Tile
 
             //TODO: 이동력 감소 등 디버프 로직 구현
             Debug.Log($"[HoneyTileAttribute] {target.name} 유닛이 꿀 타일을 밟아 끈적해졌습니다!");
-            target.StatusEffects.AddEffect(new DiceOrbit.Systems.Effects.HoneyDebuff(1,1));
+            target.StatusEffects.AddEffect(new DiceOrbit.Systems.Effects.HoneyDebuff(1, 1));
             Owner.RemoveAttribute(this);
         }
 

@@ -172,7 +172,8 @@ namespace DiceOrbit.UI
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Move);
+                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Move) &&
+                               currentCharacter.Stats.canMove();
                 if (success)
                 {
                     orbitManager?.Move(currentCharacter, currentDice.Value);

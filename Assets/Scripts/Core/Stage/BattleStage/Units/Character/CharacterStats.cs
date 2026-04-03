@@ -40,8 +40,9 @@ namespace DiceOrbit.Data
 
         [Header("Combat Stats")]
         public int MoveBuff = 0;
-    public int MoveDebuff = 0;
+        public int MoveDebuff = 0;
         public int MoveOnThisTurn = 0; // 현재 턴에 이동한 거리 (디버프나 버프 계산용)
+        public int BindDebuff = 0;
 
         public IEnumerable<RuntimeAbility> ActiveAbilities => RuntimeAbilities.Where(a => a != null && a.AbilityType == CharacterSkillType.Active);
         public IEnumerable<RuntimeAbility> PassiveAbilities => RuntimeAbilities.Where(a => a != null && a.AbilityType == CharacterSkillType.Passive);
@@ -99,5 +100,9 @@ namespace DiceOrbit.Data
             return curve[index];
         }
 
+        public bool canMove()
+        {
+            return BindDebuff == 0;
+        }
     }
 }
