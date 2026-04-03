@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: alchemist_override_controller
+  m_Controller: {fileID: 9100000, guid: 443dba1fdf87a9540b7d32960dc410eb, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 3aa018ec19c0af847a55eaf2027af7f1, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: d8752f4fec4f710498b30fefaf8781fb, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 3f299abfcdee8f64fb820fa92a05be1c, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: c384bd1b55f7bfb44bcfd9b0b39f17f0, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 7389ed4fd3c370244b6a72a4de2a10a4, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 85fbeddda6ec1b9428b26e45fb71eedc, type: 2}
