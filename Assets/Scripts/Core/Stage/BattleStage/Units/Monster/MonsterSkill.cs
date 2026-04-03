@@ -27,7 +27,8 @@ namespace DiceOrbit.Data
         AllTargets,        // 모든 타겟
         RandomTiles,
         TilesWithAttribute, // 특정 속성이 있는 타일 중심
-        Self               // 자기 자신
+        Self,               // 자기 자신
+        Custom              // 스킬에서 직접 타겟팅 구현
     }
 
     /// <summary>

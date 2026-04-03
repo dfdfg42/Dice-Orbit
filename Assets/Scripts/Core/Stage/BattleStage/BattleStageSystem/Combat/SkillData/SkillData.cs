@@ -32,6 +32,24 @@ namespace DiceOrbit.Data
         public virtual string SkillName => skillName;
         public virtual string Description => description;
 
+        /// <summary>
+        /// TargetSelectionStrategy가 Custom일 때 호출되어 타겟 유닛들을 가져옵니다.
+        /// 파생 클래스에서 오버라이드하여 독자적인 타겟팅을 구현하세요.
+        /// </summary>
+        public virtual List<Core.Unit> GetCustomTargets(MonsterSkill skill, Core.Monster owner)
+        {
+            return new List<Core.Unit>();
+        }
+
+        /// <summary>
+        /// TargetSelectionStrategy가 Custom일 때 호출되어 타겟 타일들을 가져옵니다.
+        /// 파생 클래스에서 오버라이드하여 독자적인 타겟팅을 구현하세요.
+        /// </summary>
+        public virtual List<TileData> GetCustomTiles(MonsterSkill skill, Core.Monster owner)
+        {
+            return new List<TileData>();
+        }
+
         public void ExecuteSkillWithIntent(Core.Unit source, AttackIntent intent)
         {
             if (source == null || intent == null)

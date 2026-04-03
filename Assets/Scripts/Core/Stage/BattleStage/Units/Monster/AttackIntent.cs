@@ -26,6 +26,8 @@ namespace DiceOrbit.Data
 
         [System.NonSerialized]
         private MonsterSkill skill; // 의도를 생성한 스킬 참조 (타겟 선정에 필요할 수 있음)
+        [System.NonSerialized]
+        private Monster owner; // 의도를 생성한 몬스터 참조 (커스텀 타겟 선정에 필요)
         /// <summary>
         /// 선정된 타겟 캐릭터들
         /// </summary>
@@ -66,6 +68,7 @@ namespace DiceOrbit.Data
         public AttackIntent(MonsterSkill skill, Monster owner)
         {
             this.skill = skill;
+            this.owner = owner;
             Type = skill.IntentType;
             TargetType = skill.TargetType;
             Icon = skill.IntentIcon;
@@ -136,6 +139,9 @@ namespace DiceOrbit.Data
                 case TargetSelectionStrategy.Self:
                     // Self 처리는 위에서 TargetType.Self로 우회하므로
                     break;
+                case TargetSelectionStrategy.Custom:
+                    selected = skill.skillData?.GetCustomTargets(skill, owner) ?? new List<Unit>();
+                    break;
                 default:
                     selected.Add(candidates[Random.Range(0, candidates.Count)]);
                     Debug.LogWarning("[AttackIntent] has an invalid TargetSelectionStrategy, defaulting to random selection.");
@@ -180,6 +186,9 @@ namespace DiceOrbit.Data
                     break;
                 case TargetSelectionStrategy.Self:
                     Debug.LogError("[AttackIntent] TargetSelectionStrategy.Self is not valid for Area Tile TargetType!");
+                    break;
+                case TargetSelectionStrategy.Custom:
+                    selectedTiles = skill.skillData?.GetCustomTiles(skill, owner) ?? new List<TileData>();
                     break;
                 default:
                     Debug.LogWarning("[AttackIntent] has an invalid TargetSelectionStrategy, defaulting to random selection.");

@@ -5,9 +5,11 @@ using static UnityEngine.UI.GridLayoutGroup;
 namespace DiceOrbit.Data
 {
     [System.Serializable]
+    
     public class UnitStats : ICombatReactor
     {
         [Header("Combat Stats")]
+        public Core.Unit Owner; // 스탯 소유자 (Unit)
         public int MaxHP = 50;
         public int CurrentHP = 50;
         public int Attack = 0;
@@ -17,11 +19,11 @@ namespace DiceOrbit.Data
 
         // ICombatReactor implementation
         public virtual int Priority => 20;
-
         public virtual void OnReact(CombatTrigger trigger, CombatContext context)
         {
             //턴 시작 시 임시 방어도를 깎는다
-            if (context.Action.Type == ActionType.OnStartTurn && trigger == CombatTrigger.OnPreAction)
+            if (context.Action.Type == ActionType.OnStartTurn && 
+                trigger == CombatTrigger.OnPreAction)
             {
                 TempArmor = 0;
             }

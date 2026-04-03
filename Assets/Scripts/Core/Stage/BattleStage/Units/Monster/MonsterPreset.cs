@@ -16,8 +16,8 @@ namespace DiceOrbit.Data.Monsters
         
         [Header("AI & Skills")]
         [SerializeReference] // Inspector에서 AI 타입 선택 가능
-        public MonsterAI.MonsterAI AIPattern;
-        
+        public MonsterAI.MonsterAI AIPattern = new DiceOrbit.Data.MonsterAI.Patterns.SequentialPattern();
+
         [Header("Starting Passives")]
         [SerializeReference] // 다형성 직렬화 지원
         public List<DiceOrbit.Data.Passives.PassiveAbility> StartingPassives = new List<DiceOrbit.Data.Passives.PassiveAbility>();
@@ -57,5 +57,23 @@ namespace DiceOrbit.Data.Monsters
         {
             return StartingPassives ?? new List<DiceOrbit.Data.Passives.PassiveAbility>();
         }
+
+#if UNITY_EDITOR
+        private void Reset()
+        {
+            if (MonsterSprite == null)
+            {
+                MonsterSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/스프라이트/MonsterPreset/BasicIdle.png");
+            }
+            if (AttackSprite == null)
+            {
+                AttackSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/스프라이트/MonsterPreset/BasicAttack.png");
+            }
+            if (DamageSprite == null)
+            {
+                DamageSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/스프라이트/MonsterPreset/BasicDamaged.png");
+            }
+        }
+#endif
     }
 }

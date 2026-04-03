@@ -285,7 +285,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.WaveManager
   MaxWave: 4
-  waveDatabase: {fileID: 11400000, guid: 4761ad14af9351344a24200fbf7eab66, type: 2}
+  waveDatabase: {fileID: 11400000, guid: a474ec64b29087441bc96fc23e5a33e9, type: 2}
   spawnRoot: {fileID: 0}
   fallbackSpawnRadius: 2.5
   monsterPrefab: {fileID: 6475578849036448145, guid: 7b2cacca5b83c4d4d9b5985bd4cab01d, type: 3}
