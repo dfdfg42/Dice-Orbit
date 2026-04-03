@@ -19,7 +19,10 @@ namespace DiceOrbit.Core
         [Header("Selection")]
         [SerializeField] private Character selectedCharacter;
 
-    [Header("Turn Flags")]
+        [Header("Debug")]
+        [SerializeField] private bool autoDetectCharacters = false;
+
+        [Header("Turn Flags")]
     private bool teamFirstActionUsed = false;
         
         // Properties

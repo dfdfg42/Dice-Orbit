@@ -144,7 +144,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraPriest
         // 사용자가 외부에서 구현할 함수 뼈대
         private Unit FindSolraKnight()
         {
-            // TODO: 태양의 기사를 맵이나 보스 파티에서 탐색하여 반환하는 로직 작성
+            foreach (var monster in CombatManager.Instance?.ActiveMonsters)
+            {
+                if (monster.Stats.MonsterName == "태양의 기사") // 이름이나 태그 등으로 식별
+                {
+                    return monster;
+                }
+            }
             return null;
         }
 
@@ -163,9 +169,11 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraPriest
                 // 홀수 타일에 있는 적의 수 계산
                 int oddTileEnemyCount = aliveCharacters.Count(c => c.CurrentTile != null && c.CurrentTile.TileIndex % 2 == 1);
                 int totalShield = oddTileEnemyCount * shieldPerEnemy;
+                Debug.Log("[" + PassiveName + "] Odd tile enemy count: " + oddTileEnemyCount + ", Total shield: " + totalShield);
 
                 if (totalShield > 0)
                 {
+                    
                     // 본인 방어도 부여
                     ApplyShield(owner, totalShield);
 

@@ -327,13 +327,16 @@ namespace DiceOrbit.Core
                 {
                     if (passive == null) continue;
                     var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
+                    var passiveDescription = string.IsNullOrWhiteSpace(passive.Description) ? "" : $" - {passive.Description.Trim()}";
                     if (passive.CurrentLevel > 0)
                     {
                         sb.AppendLine($"• {passiveName} (Lv.{passive.CurrentLevel})");
+                        sb.AppendLine(passiveDescription);
                     }
                     else
                     {
                         sb.AppendLine($"• {passiveName}");
+                        sb.AppendLine(passiveDescription);
                     }
                 }
             }

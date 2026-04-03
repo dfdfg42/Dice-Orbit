@@ -82,7 +82,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaPriest
         // 사용자가 외부에서 구현할 함수 뼈대
         private Unit FindLunaKnight()
         {
-            // TODO: 달의 기사를 맵이나 보스 파티에서 탐색하여 반환하는 로직 작성
+            foreach (var monster in CombatManager.Instance?.ActiveMonsters)
+            {
+                if (monster.Stats.MonsterName == "달의 기사") // 이름이나 태그 등으로 식별
+                {
+                    return monster;
+                }
+            }
             return null;
         }
 
@@ -140,7 +146,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaPriest
         public LunaPriestPassive()
         {
             passiveName = "만월";
-            description = $"턴 시작시, 홀수 타일에 있는 적의 수 X {damageBuffPerEnemy}% 만큼 본인 및 달의 기사에게 피해량 증가 버프 부여";
+            description = $"턴 시작시, 짝수 타일에 있는 적의 수 X {damageBuffPerEnemy}% 만큼 본인 및 달의 기사에게 피해량 증가 버프 부여";
             priority = 10;
             isStackable = false;
         }
@@ -170,12 +176,12 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaPriest
                 var aliveCharacters = PartyManager.Instance?.GetAliveCharacters();
                 if (aliveCharacters == null) return;
 
-                // 홀수 타일에 있는 적의 수 계산
-                int oddTileEnemyCount = aliveCharacters.Count(c => c.CurrentTile != null && c.CurrentTile.TileIndex % 2 == 1);
+                // 짝수 타일에 있는 적의 수 계산
+                int evenTileEnemyCount = aliveCharacters.Count(c => c.CurrentTile != null && c.CurrentTile.TileIndex % 2 == 0);
 
-                if (oddTileEnemyCount > 0)
+                if (evenTileEnemyCount > 0)
                 {
-                    int totalBuffAmount = oddTileEnemyCount * damageBuffPerEnemy;
+                    int totalBuffAmount = evenTileEnemyCount * damageBuffPerEnemy;
 
                     // 본인 버프 부여
                     ApplyDamageBuff(owner, totalBuffAmount);
@@ -184,7 +190,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaPriest
                     Unit lunaKnight = FindLunaKnight();
                     if (lunaKnight != null && lunaKnight.IsAlive)
                     {
-                        ApplyDamageBuff(lunaKnight, totalBuffAmount);
+                        ApplyDamageBuff(lunaKnight, totalBuffAmount-1);
                     }
                 }
             }
@@ -211,7 +217,7 @@ namespace DiceOrbit.Systems.Effects
     /// </summary>
     public class LunaPriestBuff : StatusEffect
     {
-        public LunaPriestBuff(int value, int duration) : base(EffectType.Honey, value, duration)
+        public LunaPriestBuff(int value, int duration) : base(EffectType.BuffAttack, value, duration)
         {
             IsStackable = false;
         }

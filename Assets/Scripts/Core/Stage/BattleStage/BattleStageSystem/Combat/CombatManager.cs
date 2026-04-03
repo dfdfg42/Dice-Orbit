@@ -351,6 +351,13 @@ namespace DiceOrbit.Core
         private System.Collections.IEnumerator EndMonsterTurnRoutine()
         {
             yield return new WaitForSeconds(1.0f); // Default monster turn duration
+            foreach (var monster in activeMonsters)
+            {
+                if (monster != null && monster.IsAlive)
+                {
+                    monster.OnEndTurn();
+                }
+            }
 
             Debug.Log("=== Monster Turn End ===");
 

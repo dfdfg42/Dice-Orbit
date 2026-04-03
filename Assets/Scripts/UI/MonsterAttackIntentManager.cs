@@ -143,6 +143,19 @@ namespace DiceOrbit.UI
                 monsterLineRenderers.Remove(monster);
             }
 
+            // 플로팅 UI 제거는 이 몬스터의 것만 따로 완벽하게 제거
+            if (activeFloatingUIs.TryGetValue(monster, out var uiList))
+            {
+                if (uiList != null)
+                {
+                    foreach (var ui in uiList)
+                    {
+                        if (ui != null) Destroy(ui);
+                    }
+                }
+                activeFloatingUIs.Remove(monster);
+            }
+
             // 해당 몬스터의 타일 제거
             if (monsterTiles.TryGetValue(monster, out var tiles))
             {
@@ -154,22 +167,12 @@ namespace DiceOrbit.UI
                     .Distinct()
                     .ToHashSet();
 
-                // 해당 몬스터만 사용하던 타일만 언하이라이트 및 플로팅 풍선 파괴
+                // 해당 몬스터만 사용하던 타일만 언하이라이트
                 foreach (var tile in tiles)
                 {
                     if (tile != null && !otherMonsterTiles.Contains(tile))
                     {
                         tile.ClearHighlight();
-                        
-                        // 이 타일 위의 플로팅 말풍선 제거 (생성될 때의 위치 또는 1.5f 오프셋 적용 위치 모두 체크)
-                        var uisToRemove = activeFloatingUIs.Where(ui => ui != null && 
-                            (Vector3.Distance(ui.transform.position, tile.transform.position) < 0.1f || 
-                             Vector3.Distance(ui.transform.position, tile.transform.position + new Vector3(0, 1.5f, 0)) < 0.1f)).ToList();
-                        foreach(var ui in uisToRemove)
-                        {
-                            activeFloatingUIs.Remove(ui);
-                            Destroy(ui);
-                        }
                     }
                 }
 
@@ -282,6 +285,11 @@ namespace DiceOrbit.UI
             // 몬스터별 타일 저장
             monsterTiles[monster] = tiles;
 
+            if (!activeFloatingUIs.ContainsKey(monster))
+            {
+                activeFloatingUIs[monster] = new List<GameObject>();
+            }
+
             // highlightedTiles 재계산
             RecalculateHighlightedTiles();
 
@@ -297,7 +305,7 @@ namespace DiceOrbit.UI
                     {
                         var floatingUIObj = Instantiate(floatingIntentUIPrefab, tile.transform.position, Quaternion.identity);
                         var floatingUI = floatingUIObj.GetComponent<FloatingIntentUI>();
-                        
+
                         if (floatingUI != null)
                         {
                             // 인텐트 색상 결정 (기존 방식 유지)
@@ -306,10 +314,10 @@ namespace DiceOrbit.UI
                             {
                                 colorToUse = intent.Type == Data.IntentType.Defend ? Color.blue : tileAttackColor;
                             }
-                            
+
                             // 타깃을 Tile의 Transform으로 설정
                             floatingUI.Setup(tile.transform, intent.Icon, colorToUse);
-                            activeFloatingUIs.Add(floatingUIObj);
+                            activeFloatingUIs[monster].Add(floatingUIObj);
                         }
                     }
                 }
@@ -508,7 +516,7 @@ namespace DiceOrbit.UI
         [SerializeField] private GameObject floatingIntentUIPrefab;
         
         // 생성된 플로팅 UI 인스턴스 관리
-        private List<GameObject> activeFloatingUIs = new List<GameObject>();
+        private Dictionary<Core.Monster, List<GameObject>> activeFloatingUIs = new Dictionary<Core.Monster, List<GameObject>>();
 
         /// <summary>
         /// 시각화만 초기화 (데이터는 유지)
@@ -529,9 +537,15 @@ namespace DiceOrbit.UI
             }
 
             // 모든 플로팅 풍선 제거
-            foreach (var floatingUI in activeFloatingUIs)
+            foreach (var uiList in activeFloatingUIs.Values)
             {
-                if (floatingUI != null) Destroy(floatingUI);
+                if (uiList != null)
+                {
+                    foreach (var ui in uiList)
+                    {
+                        if (ui != null) Destroy(ui);
+                    }
+                }
             }
             activeFloatingUIs.Clear();
 
