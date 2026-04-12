@@ -428,7 +428,7 @@ namespace DiceOrbit.Core
 
             if (!IsAlive)
             {
-                spriteVisual?.PlayDeath();
+                HandleDeath();
             }
             else if (actual > 0)
             {
@@ -437,7 +437,16 @@ namespace DiceOrbit.Core
 
             return actual;
         }
-        
+
+        protected override void HandleDeath()
+        {
+            base.HandleDeath();
+            spriteVisual?.PlayDeath();
+
+            var combatManager = CombatManager.Instance;
+            if (combatManager != null) combatManager.OnCharacterDefeated(this);
+        }
+
         /// <summary>
         /// 캐릭터 선택됨 (CharacterSelector에서 호출)
         /// </summary>
