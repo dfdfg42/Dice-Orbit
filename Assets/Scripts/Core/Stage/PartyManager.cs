@@ -31,6 +31,9 @@ namespace DiceOrbit.Core
         public int PartySize => party.Count;
         public bool IsPartyFull => party.Count >= maxPartySize;
     public bool TeamFirstActionUsed => teamFirstActionUsed;
+
+        // 파티 인원 변화(추가/제거) 시 외부 시스템이 동기화할 수 있도록 알립니다.
+        public event System.Action<int> OnPartyChanged;
         
         private void Awake()
         {
@@ -95,6 +98,8 @@ namespace DiceOrbit.Core
             
             party.Add(character);
             Debug.Log($"{character.Stats.CharacterName} joined the party! Party size: {party.Count}/{maxPartySize}");
+
+            OnPartyChanged?.Invoke(party.Count);
             
             return true;
         }
@@ -112,6 +117,7 @@ namespace DiceOrbit.Core
                 }
                 
                 Debug.Log($"{character.Stats.CharacterName} left the party. Party size: {party.Count}/{maxPartySize}");
+                OnPartyChanged?.Invoke(party.Count);
                 return true;
             }
             
