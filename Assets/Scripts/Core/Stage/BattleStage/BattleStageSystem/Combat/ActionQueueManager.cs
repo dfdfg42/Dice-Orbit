@@ -66,8 +66,9 @@ public class ActionQueueManager : MonoBehaviour
             IEnumerator currentAction = actionQueue.Dequeue();
             // 현재 행동(코루틴)이 완전히 끝날 때까지 대기합니다.
             yield return StartCoroutine(currentAction);
+            yield return new WaitForSeconds(1f);
         }
-
+        
         isProcessing = false;
         processCoroutine = null;
     }

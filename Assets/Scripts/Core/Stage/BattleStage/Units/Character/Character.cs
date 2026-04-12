@@ -377,20 +377,20 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 스킬 사용 (타겟 선택 시작) - 첫 번째 Active 스킬 사용
         /// </summary>
-        public void UseSkill(int diceValue)
-        {
-            UseSkillByIndex(0, diceValue);
-        }
+        //public void UseSkill(int diceValue)
+        //{
+        //    UseSkillByIndex(0, diceValue);
+        //}
         
         /// <summary>
         /// 특정 인덱스의 스킬 사용
         /// </summary>
-        public void UseSkillByIndex(int skillIndex, int diceValue)
+        public void UseSkillByIndex(int skillIndex, DiceData dice)
         {
             // SkillManager에게 위임
             if (SkillManager.Instance != null)
             {
-                SkillManager.Instance.PrepareSkill(this, skillIndex, diceValue);
+                SkillManager.Instance.PrepareSkill(this, skillIndex, dice);
             }
             else
             {

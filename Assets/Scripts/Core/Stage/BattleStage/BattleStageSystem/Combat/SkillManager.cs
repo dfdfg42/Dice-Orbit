@@ -30,7 +30,7 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 스킬 사용 준비 (UI에서 호출)
         /// </summary>
-        public void PrepareSkill(Character source, int skillIndex, int diceValue)
+        public void PrepareSkill(Character source, int skillIndex, DiceData dice)
         {
             if (source == null) return;
             
@@ -59,7 +59,7 @@ namespace DiceOrbit.Core
             }
             
             // 3. 주사위 조건 확인 (CharacterSkill의 Requirement 사용)
-            if (runtimeAbility.BaseSkill == null || !runtimeAbility.BaseSkill.CanUse(diceValue))
+            if (runtimeAbility.BaseSkill == null || !runtimeAbility.BaseSkill.CanUse(dice.Value))
             {
                 Debug.LogWarning($"[SkillManager] Cannot use {skillData.SkillName}. Requirement not met.");
                 source.OnSkillResolved();
@@ -72,7 +72,7 @@ namespace DiceOrbit.Core
             var targetSelector = SkillTargetSelector.Instance;
             if (targetSelector != null)
             {
-                targetSelector.StartTargetSelection(source, runtimeAbility, diceValue);
+                targetSelector.StartTargetSelection(source, runtimeAbility, dice);
             }
             else
             {
@@ -101,7 +101,7 @@ namespace DiceOrbit.Core
 
             source.OnSkillExecutionStarted();
 
-            var targets = ResolveTargetsByType(source, target, skill.skillTargetType);
+            var targets = ResolveTargetsByType(source, target, runtimeAbility.TargetType);
             var targetTiles = ResolveTargetTiles(source, skill);
 
             bool executedByTemplate = runtimeAbility.BaseSkill?.ActiveTemplate != null
@@ -116,52 +116,18 @@ namespace DiceOrbit.Core
             source.OnSkillResolved();
         }
 
-        private List<Unit> ResolveTargetsByType(Character source, Unit initialTarget, SkillTargetType type)
+        private List<Unit> ResolveTargetsByType(Character source, Unit initialTarget, CharacterSkillTargetType type)
         {
             var resolved = new List<Unit>();
 
             switch (type)
             {
-                case SkillTargetType.SingleEnemy:
-                case SkillTargetType.Ally:
-                    if (initialTarget != null && initialTarget.IsAlive)
-                    {
-                        resolved.Add(initialTarget);
-                    }
+                case CharacterSkillTargetType.OneEnemy:
+                    resolved.Add(initialTarget);
                     break;
-                case SkillTargetType.AllEnemies:
-                    var enemies = CombatManager.Instance?.GetAliveMonsters();
-                    if (enemies != null)
-                    {
-                        foreach (var enemy in enemies)
-                        {
-                            if (enemy != null && enemy.IsAlive)
-                            {
-                                resolved.Add(enemy);
-                            }
-                        }
-                    }
+                case CharacterSkillTargetType.None:
                     break;
-                case SkillTargetType.Self:
-                    if (source != null && source.IsAlive)
-                    {
-                        resolved.Add(source);
-                    }
-                    break;
-                case SkillTargetType.AllAllies:
-                    var allies = PartyManager.Instance?.GetAliveCharacters();
-                    if (allies != null)
-                    {
-                        foreach (var ally in allies)
-                        {
-                            if (ally != null && ally.IsAlive && ally != source)
-                            {
-                                resolved.Add(ally);
-                            }
-                        }
-                    }
-                    break;
-                case SkillTargetType.Tiles:
+                default:
                     break;
             }
 

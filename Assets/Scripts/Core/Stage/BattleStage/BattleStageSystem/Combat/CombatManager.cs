@@ -94,7 +94,7 @@ namespace DiceOrbit.Core
                 endTurnButton.interactable = false; // 처음엔 비활성
             }
 
-            combatStatus= CombatStatus.StartCombat;
+            combatStatus = CombatStatus.StartCombat;
         }
 
         private void Start()
@@ -286,12 +286,14 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// 플레이어 턴 종료
+        /// 플레이어 턴 종료 (코루틴)
         /// </summary>
-        public void EndPlayerTurn()
+        private System.Collections.IEnumerator EndPlayerTurnRoutine()
         {
-            if (IsCombatFinished()) return;
-            if (!playerTurnActive) return;
+            if (IsCombatFinished() || !playerTurnActive)
+            {
+                yield break; // 큐에 들어왔지만 이미 조건이 안맞으면 즉시 종료
+            }
             combatStatus = CombatStatus.EndPlayerTurn;
 
             var partyManager = PartyManager.Instance;
@@ -303,26 +305,29 @@ namespace DiceOrbit.Core
                     if (character != null && character.IsAlive)
                     {
                         character.OnEndTurn();
-                        if (IsCombatFinished()) return;
+                        if (IsCombatFinished()) yield break;
                     }
                 }
             }
 
-            if (IsCombatFinished()) return;
+            if (IsCombatFinished()) yield break;
             playerTurnActive = false;
             // 턴 종료 시 예산 정보를 비워 다음 턴에 새로 구성합니다.
             playerTurnBudgets.Clear();
 
             Debug.Log("=== Player Turn End ===");
 
-            // UI Lock
+            // UI Lock (이미 OnClick에서 잠갔지만, 여기서 한번 더 확인)
             if (endTurnButton != null) endTurnButton.interactable = false;
 
             // 공격 의도 미리보기 숨기기 (몬스터 턴 시작 전)
             HideMonsterIntents();
 
-            // 몬스터 턴 실행
+            // 몬스터 턴 실행 (다음 스텝에서 이 부분도 큐 시스템에 통합 예정)
             ProgressMonsterTurn();
+
+            // 한 프레임 대기
+            yield return null;
         }
 
         /// <summary>
@@ -416,7 +421,12 @@ namespace DiceOrbit.Core
         /// </summary>
         private void OnEndTurnClicked()
         {
-            EndPlayerTurn();
+            // 즉시 버튼 비활성화하여 중복 클릭 방지
+            if (endTurnButton != null) endTurnButton.interactable = false;
+            if (rollDiceButton != null) rollDiceButton.interactable = false;
+
+            // 턴 종료 로직을 큐에 삽입
+            ActionQueueManager.Instance.EnqueueAction(EndPlayerTurnRoutine());
         }
 
         private void UpdateUI()

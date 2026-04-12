@@ -17,7 +17,8 @@ namespace DiceOrbit.Data
         Self,
         Ally,
         AllAllies,
-        Tiles
+        Tiles,
+        None
     }
 
     /// <summary>

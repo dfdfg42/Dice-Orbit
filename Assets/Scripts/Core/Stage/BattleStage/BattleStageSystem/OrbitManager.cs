@@ -188,7 +188,7 @@ namespace DiceOrbit.Core
             }
         }
         
-        public void Move(Character character, int steps)
+        public System.Collections.IEnumerator MoveRoutine(Character character, int steps)
         {
             int netMoveModifier = character.Stats.MoveBuff - character.Stats.MoveDebuff;
             steps = Mathf.Max(steps + netMoveModifier, 0);
@@ -213,12 +213,13 @@ namespace DiceOrbit.Core
                 // 마지막 타일로 currentTile 업데이트
                 currentTile = tilePath[tilePath.Count - 1];
 
-                // 타일을 하나씩 이동
-                StartCoroutine(character.MoveStepByStep(tilePath));
+                // 타일을 하나씩 이동하는 코루틴의 종료를 기다림
+                yield return character.MoveStepByStep(tilePath);
             }
             else
             {
                 Debug.LogWarning("No valid path found");
+                yield return null;
             }
         }
         /// <summary>

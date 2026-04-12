@@ -121,7 +121,7 @@ namespace DiceOrbit.UI
                 ShowIntentForMonster(monster, intent);
             }
             
-            Debug.Log($"[AttackIndicator] Intent registered for {monster.name}");
+            //Debug.Log($"[AttackIndicator] Intent registered for {monster.name}");
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace DiceOrbit.UI
                 RecalculateHighlightedTiles();
             }
 
-            Debug.Log($"[AttackIndicator] Intent removed for {monster.name}");
+            //Debug.Log($"[AttackIndicator] Intent removed for {monster.name}");
         }
 
         private void Update()

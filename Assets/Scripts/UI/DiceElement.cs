@@ -19,15 +19,16 @@ namespace DiceOrbit.UI
         [SerializeField] private Color normalColor = Color.white;
         [SerializeField] private Color selectedColor = new Color(0.65f, 0.65f, 0.65f, 1f);
         [SerializeField] private Color usedColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
-        
+        [SerializeField] private Color reservedColor = new Color(0.8f, 0.3f, 0.3f, 0.8f);
+
         // Data
         private DiceData diceData;
         private bool isSelected;
         private DiceUI parentDiceUI;
-        
+
         // Properties
         public DiceData Data => diceData;
-        
+
         private void Awake()
         {
             // backgroundImage 자동 찾기
@@ -35,7 +36,7 @@ namespace DiceOrbit.UI
             {
                 backgroundImage = GetComponent<Image>();
             }
-            
+
             // valueText 자동 찾기
             if (valueText == null)
             {
@@ -44,7 +45,7 @@ namespace DiceOrbit.UI
 
             parentDiceUI = GetComponentInParent<DiceUI>();
         }
-        
+
         /// <summary>
         /// 주사위 데이터 설정
         /// </summary>
@@ -53,43 +54,61 @@ namespace DiceOrbit.UI
             diceData = data;
             UpdateVisual();
         }
-        
+
         /// <summary>
         /// 비주얼 업데이트
         /// </summary>
-        private void UpdateVisual()
+        public void UpdateVisual()
         {
             if (diceData == null) return;
-            
+
             // 값 표시
             if (valueText != null)
             {
                 valueText.text = diceData.Value.ToString();
-                Debug.Log($"Dice UI value set to: {diceData.Value}");
             }
-            else
-            {
-                Debug.LogWarning("ValueText is null! Cannot display dice value.");
-            }
-            
-            // 배경 색상
+
+            // 배경 색상 및 상호작용
             if (backgroundImage != null)
             {
                 backgroundImage.color = ResolveCurrentColor();
+            }
+
+            var button = GetComponent<Button>();
+            if (button != null)
+            {
+                button.interactable = diceData.State == DiceState.Available;
+            }
+        }
+
+        private Color ResolveCurrentColor()
+        {
+            if (diceData == null) return normalColor;
+
+            switch (diceData.State)
+            {
+                case DiceState.Available:
+                    return isSelected ? selectedColor : normalColor;
+                case DiceState.Reserved:
+                    return reservedColor;
+                case DiceState.Used:
+                    return usedColor;
+                default:
+                    return normalColor;
             }
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (diceData == null || diceData.IsUsed) return;
+            if (diceData == null || diceData.State != DiceState.Available) return;
 
             parentDiceUI = parentDiceUI != null ? parentDiceUI : GetComponentInParent<DiceUI>();
             parentDiceUI?.HandleDiceElementClicked(this);
         }
-        
+
         public void SetSelected(bool selected)
         {
-            isSelected = selected && diceData != null && !diceData.IsUsed;
+            isSelected = selected && diceData != null && diceData.State == DiceState.Available;
             UpdateVisual();
         }
 
@@ -113,36 +132,9 @@ namespace DiceOrbit.UI
             valueText.text = diceData.Value.ToString();
         }
 
-        /// <summary>
-        /// 기존 호출 호환: 선택 해제/원상 복귀 용도
-        /// </summary>
-        public void ReturnToOriginalPosition()
-        {
-            SetSelected(false);
-        }
-
         public bool IsSelected => isSelected;
-        
-        /// <summary>
-        /// 사용됨 표시
-        /// </summary>
-        public void MarkAsUsed()
-        {
-            if (diceData != null)
-            {
-                isSelected = false;
-                UpdateVisual();
-            }
-        }
-
-        private Color ResolveCurrentColor()
-        {
-            if (diceData == null) return normalColor;
-            if (diceData.IsUsed) return usedColor;
-            return isSelected ? selectedColor : normalColor;
-        }
     }
-    
+
     /// <summary>
     /// 드롭 존 인터페이스
     /// </summary>
