@@ -445,6 +445,21 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"{stat?.CharacterName} OnSelected called!");
 
+            var combatManager = CombatManager.Instance;
+            // 플레이어 턴이 아니면 액션 패널을 열지 않습니다.
+            if (combatManager != null && (!combatManager.InCombat || !combatManager.PlayerTurnActive))
+            {
+                Debug.Log($"[Character] {stat?.CharacterName} 선택 무시: 플레이어 턴이 아닙니다.");
+                return;
+            }
+
+            // 이동/행동이 모두 소진된 캐릭터는 선택만으로 패널을 열지 않습니다.
+            if (combatManager != null && !combatManager.HasAnyTurnActionRemaining(this))
+            {
+                Debug.Log($"[Character] {stat?.CharacterName} 선택 무시: 이번 턴 행동권이 없습니다.");
+                return;
+            }
+
             // CharacterActionUI 표시
             var actionUI = UI.CharacterActionUI.Instance;
             var partyManager = PartyManager.Instance;

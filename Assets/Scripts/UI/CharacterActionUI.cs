@@ -101,7 +101,10 @@ namespace DiceOrbit.UI
             if (portraitImage != null && character.Stats?.CharacterSprite != null)
                 portraitImage.sprite = character.Stats.CharacterSprite;
 
-            SetButtonsInteractable(false);
+            RefreshActionButtonsState();
+
+            // 주사위를 먼저 선택한 뒤 캐릭터를 선택한 경우를 지원합니다.
+            TryApplyPreselectedDice();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
 
@@ -140,12 +143,14 @@ namespace DiceOrbit.UI
         /// <summary>주사위 드롭 처리 (DiceElement에서 호출)</summary>
         public void OnDiceDropped(DiceData dice)
         {
-            if (!waitingForDice || currentCharacter == null) return;
+            // 패널이 열린 상태에서는 주사위를 다시 선택해도 즉시 교체 반영되어야 합니다.
+            if (currentCharacter == null || dice == null || dice.IsUsed) return;
 
             currentDice    = dice;
             waitingForDice = false;
 
-            SetButtonsInteractable(true);
+            // 버튼 활성화는 턴 예산/상태를 함께 고려해 갱신합니다.
+            RefreshActionButtonsState();
             RefreshSkillButtonPreview();
         }
 
@@ -156,7 +161,7 @@ namespace DiceOrbit.UI
 
             currentDice = null;
             waitingForDice = true;
-            SetButtonsInteractable(false);
+            RefreshActionButtonsState();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
         }
@@ -169,13 +174,35 @@ namespace DiceOrbit.UI
         {
             if (currentDice == null || currentCharacter == null) return;
 
+            var combatManager = CombatManager.Instance;
+            if (combatManager == null || !combatManager.PlayerTurnActive || !combatManager.CanSpendMove(currentCharacter))
+            {
+                Debug.LogWarning("[CharacterActionUI] 이동 가능 횟수가 없거나 플레이어 턴이 아닙니다.");
+                ReturnDiceElement();
+                return;
+            }
+
+            if (!currentCharacter.Stats.canMove())
+            {
+                Debug.LogWarning("[CharacterActionUI] 이동 불가 상태(속박 등)입니다.");
+                ReturnDiceElement();
+                return;
+            }
+
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Move) &&
-                               currentCharacter.Stats.canMove();
+                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Move);
                 if (success)
                 {
+                    // 실제 이동 실행 직전에 이동 예산 1회를 확정 소비합니다.
+                    if (!combatManager.TrySpendMove(currentCharacter))
+                    {
+                        diceManager.UnassignDice(currentDice);
+                        ReturnDiceElement();
+                        return;
+                    }
+
                     orbitManager?.Move(currentCharacter, currentDice.Value);
                     MarkDiceUsed();
                     ReturnDiceElement();
@@ -461,6 +488,14 @@ namespace DiceOrbit.UI
         {
             if (currentDice == null || currentCharacter == null) return;
 
+            var combatManager = CombatManager.Instance;
+            if (combatManager == null || !combatManager.PlayerTurnActive || !combatManager.CanSpendAction(currentCharacter))
+            {
+                Debug.LogWarning("[CharacterActionUI] 행동 가능 횟수가 없거나 플레이어 턴이 아닙니다.");
+                ReturnDiceElement();
+                return;
+            }
+
             var selectedAbilities = new List<RuntimeAbility>(currentCharacter.Stats.ActiveAbilities);
             if (index < 0 || index >= selectedAbilities.Count)
             {
@@ -482,6 +517,14 @@ namespace DiceOrbit.UI
                 bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Skill);
                 if (success)
                 {
+                    // 실제 스킬 실행 직전에 행동 예산 1회를 확정 소비합니다.
+                    if (!combatManager.TrySpendAction(currentCharacter))
+                    {
+                        diceManager.UnassignDice(currentDice);
+                        ReturnDiceElement();
+                        return;
+                    }
+
                     currentCharacter.UseSkillByIndex(index, currentDice.Value);
                     MarkDiceUsed();
                     ReturnDiceElement();
@@ -504,13 +547,48 @@ namespace DiceOrbit.UI
             DiceUI.Instance?.ClearSelectedDice();
             currentDice = null;
             waitingForDice = true;
-            SetButtonsInteractable(false);
+            RefreshActionButtonsState();
         }
 
         private void SetButtonsInteractable(bool value)
         {
             if (moveButton  != null) moveButton.interactable  = value;
             if (skillButton != null) skillButton.interactable = value;
+        }
+
+        private void RefreshActionButtonsState()
+        {
+            // 버튼 상태는 "주사위 선택 + 플레이어 턴 + 캐릭터별 잔여 예산"을 동시에 만족해야 활성화됩니다.
+            bool hasDice = !waitingForDice && currentDice != null && currentCharacter != null;
+            var combatManager = CombatManager.Instance;
+            bool playerTurn = combatManager != null && combatManager.PlayerTurnActive;
+            bool canUseSelectedDiceForSkill = false;
+
+            var primaryAbility = GetPrimaryActiveAbility();
+            if (hasDice && primaryAbility?.BaseSkill != null)
+            {
+                // 현재 선택한 주사위 눈금이 스킬 조건을 만족할 때만 스킬 버튼을 활성화합니다.
+                canUseSelectedDiceForSkill = primaryAbility.BaseSkill.CanUse(currentDice.Value);
+            }
+
+            bool canMove = hasDice && playerTurn && currentCharacter.Stats.canMove() && combatManager.CanSpendMove(currentCharacter);
+            bool canSkill = hasDice && playerTurn && canUseSelectedDiceForSkill && combatManager.CanSpendAction(currentCharacter);
+
+            if (moveButton != null) moveButton.interactable = canMove;
+            if (skillButton != null) skillButton.interactable = canSkill;
+        }
+
+        private void TryApplyPreselectedDice()
+        {
+            var diceUI = DiceUI.Instance;
+            if (diceUI == null || currentCharacter == null) return;
+
+            var selectedDice = diceUI.GetSelectedDiceData();
+            if (selectedDice == null) return;
+
+            currentDice = selectedDice;
+            waitingForDice = false;
+            RefreshActionButtonsState();
         }
 
         // ─────────────────────────────────────────────

@@ -204,6 +204,17 @@ namespace DiceOrbit.UI
             }
         }
 
+        /// <summary>
+        /// 현재 UI에서 선택된 주사위 데이터를 반환합니다.
+        /// 캐릭터를 나중에 선택해도 기존 선택 주사위를 이어서 사용할 수 있습니다.
+        /// </summary>
+        public DiceData GetSelectedDiceData()
+        {
+            if (selectedElement == null) return null;
+            if (selectedElement.Data == null || selectedElement.Data.IsUsed) return null;
+            return selectedElement.Data;
+        }
+
         public void SetPanelVisible(bool visible)
         {
             panelVisible = visible;

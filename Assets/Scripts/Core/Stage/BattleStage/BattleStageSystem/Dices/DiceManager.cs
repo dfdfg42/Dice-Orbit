@@ -14,6 +14,8 @@ namespace DiceOrbit.Core
         [SerializeField] private int diceCountPerTurn = 4;
         [SerializeField] private int minDiceValue = 1;
         [SerializeField] private int maxDiceValue = 6;
+        [SerializeField] private bool usePartyBasedDiceCount = true;
+        [SerializeField] private int dicePerCharacter = 2;
         
         [Header("References")]
         [SerializeField] private UI.DiceUI diceUI;
@@ -46,12 +48,40 @@ namespace DiceOrbit.Core
                 Destroy(gameObject);
             }
         }
+
+        private void Start()
+        {
+            // 시작 시점에 파티 인원 기준으로 주사위 개수를 동기화합니다.
+            RefreshDiceCountFromParty();
+
+            var partyManager = PartyManager.Instance;
+            if (partyManager != null)
+            {
+                partyManager.OnPartyChanged += HandlePartyChanged;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (instance == this)
+            {
+                instance = null;
+            }
+
+            var partyManager = PartyManager.Instance;
+            if (partyManager != null)
+            {
+                partyManager.OnPartyChanged -= HandlePartyChanged;
+            }
+        }
         
         /// <summary>
         /// 주사위 굴리기
         /// </summary>
         public void RollDice()
         {
+            // 매 턴 주사위 굴림 직전에 파티 인원 기반 개수를 보정합니다.
+            RefreshDiceCountFromParty();
             RollDice(diceCountPerTurn);
         }
         
@@ -165,6 +195,27 @@ namespace DiceOrbit.Core
         public void SetDiceUI(UI.DiceUI ui)
         {
             diceUI = ui;
+        }
+
+        private void HandlePartyChanged(int partySize)
+        {
+            RefreshDiceCountFromParty();
+            Debug.Log($"[DiceManager] 파티 변경 감지: 인원 {partySize}, 턴당 주사위 {diceCountPerTurn}");
+        }
+
+        private void RefreshDiceCountFromParty()
+        {
+            if (!usePartyBasedDiceCount) return;
+
+            var partyManager = PartyManager.Instance;
+            if (partyManager == null)
+            {
+                return;
+            }
+
+            int partySize = partyManager.PartySize;
+            int resolvedDiceCount = Mathf.Max(0, partySize * Mathf.Max(1, dicePerCharacter));
+            diceCountPerTurn = resolvedDiceCount;
         }
     }
 }

@@ -23,6 +23,8 @@ namespace DiceOrbit.Core
         [Header("Turn Management")]
         [SerializeField] private int turnCount = 0;
         private bool playerTurnActive = false;
+        // 캐릭터별 턴 예산(이동/행동)을 중앙에서 강제 관리합니다.
+        private readonly Dictionary<Character, CharacterTurnBudget> playerTurnBudgets = new Dictionary<Character, CharacterTurnBudget>();
 
         [Header("UI References")]
         [SerializeField] private Button rollDiceButton;
@@ -41,6 +43,14 @@ namespace DiceOrbit.Core
         public List<Monster> ActiveMonsters => activeMonsters;
         public int TurnCount => turnCount;
         public bool PlayerTurnActive => playerTurnActive;
+
+        private sealed class CharacterTurnBudget
+        {
+            public int RemainingMove = 1;
+            public int RemainingAction = 1;
+
+            public bool HasAny => RemainingMove > 0 || RemainingAction > 0;
+        }
 
         private void Awake()
         {
@@ -155,6 +165,8 @@ namespace DiceOrbit.Core
             if (!inCombat) return;
 
             inCombat = false;
+            // 전투가 끝나면 턴 예산도 초기화합니다.
+            playerTurnBudgets.Clear();
             HideMonsterIntents(); // Clean up visuals
 
             if (victory)
@@ -215,6 +227,9 @@ namespace DiceOrbit.Core
                 }
             }
 
+            // 플레이어 턴 시작 시 캐릭터별 이동/행동 횟수를 1로 초기화합니다.
+            InitializePlayerTurnBudgets();
+
             // 주사위 자동 굴리기
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
@@ -253,6 +268,8 @@ namespace DiceOrbit.Core
             }
 
             playerTurnActive = false;
+            // 턴 종료 시 예산 정보를 비워 다음 턴에 새로 구성합니다.
+            playerTurnBudgets.Clear();
 
             Debug.Log("=== Player Turn End ===");
 
@@ -264,6 +281,77 @@ namespace DiceOrbit.Core
 
             // 몬스터 턴 실행
             ExecuteMonsterTurn();
+        }
+
+        /// <summary>
+        /// 현재 캐릭터가 이동을 수행할 수 있는지 확인합니다.
+        /// </summary>
+        public bool CanSpendMove(Character character)
+        {
+            if (!IsCharacterTurnActionValid(character)) return false;
+            if (!playerTurnBudgets.TryGetValue(character, out var budget)) return false;
+            return budget.RemainingMove > 0;
+        }
+
+        /// <summary>
+        /// 현재 캐릭터가 행동(스킬)을 수행할 수 있는지 확인합니다.
+        /// </summary>
+        public bool CanSpendAction(Character character)
+        {
+            if (!IsCharacterTurnActionValid(character)) return false;
+            if (!playerTurnBudgets.TryGetValue(character, out var budget)) return false;
+            return budget.RemainingAction > 0;
+        }
+
+        /// <summary>
+        /// 이동 예산 1회를 실제로 소모합니다.
+        /// </summary>
+        public bool TrySpendMove(Character character)
+        {
+            if (!CanSpendMove(character)) return false;
+            playerTurnBudgets[character].RemainingMove--;
+            return true;
+        }
+
+        /// <summary>
+        /// 행동(스킬) 예산 1회를 실제로 소모합니다.
+        /// </summary>
+        public bool TrySpendAction(Character character)
+        {
+            if (!CanSpendAction(character)) return false;
+            playerTurnBudgets[character].RemainingAction--;
+            return true;
+        }
+
+        /// <summary>
+        /// 해당 캐릭터가 이번 턴에 남은 행동권이 하나라도 있는지 확인합니다.
+        /// </summary>
+        public bool HasAnyTurnActionRemaining(Character character)
+        {
+            if (!IsCharacterTurnActionValid(character)) return false;
+            if (!playerTurnBudgets.TryGetValue(character, out var budget)) return false;
+            return budget.HasAny;
+        }
+
+        private bool IsCharacterTurnActionValid(Character character)
+        {
+            if (character == null || !character.IsAlive) return false;
+            if (!inCombat || !playerTurnActive) return false;
+            return true;
+        }
+
+        private void InitializePlayerTurnBudgets()
+        {
+            playerTurnBudgets.Clear();
+
+            var partyManager = PartyManager.Instance;
+            if (partyManager == null) return;
+
+            foreach (var character in partyManager.Party)
+            {
+                if (character == null || !character.IsAlive) continue;
+                playerTurnBudgets[character] = new CharacterTurnBudget();
+            }
         }
 
         /// <summary>
