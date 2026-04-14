@@ -46,7 +46,7 @@ namespace DiceOrbit.UI
         private Character    currentCharacter;
         private DiceData     currentDice;
         private bool         waitingForDice = false;
-    private bool         isPanelVisible = false;
+        private bool         isPanelVisible = false;
         private OrbitManager orbitManager;
 
         private List<RectTransform> actionButtons = new List<RectTransform>();
@@ -123,8 +123,12 @@ namespace DiceOrbit.UI
             StopSlide();
             slideCoroutine = StartCoroutine(SlideOut());
 
-            currentCharacter = null;
-            currentDice      = null;
+            // 타겟팅 중이 아닐 때만 초기화
+            if (SkillTargetSelector.Instance != null && !SkillTargetSelector.Instance.IsSelectingTarget)
+            {
+                currentCharacter = null;
+                currentDice      = null;
+            }
             waitingForDice   = false;
             isPanelVisible   = false;
             RefreshSkillButtonPreview();
@@ -144,7 +148,7 @@ namespace DiceOrbit.UI
         public void OnDiceDropped(DiceData dice)
         {
             // 패널이 열린 상태에서는 주사위를 다시 선택해도 즉시 교체 반영되어야 합니다.
-            if (currentCharacter == null || dice == null || dice.IsUsed) return;
+            if (currentCharacter == null || dice == null || dice.State == DiceState.Used) return;
 
             currentDice    = dice;
             waitingForDice = false;
@@ -203,8 +207,10 @@ namespace DiceOrbit.UI
                         return;
                     }
 
-                    orbitManager?.Move(currentCharacter, currentDice.Value);
-                    MarkDiceUsed();
+                    // 이동 코루틴을 액션 큐에 등록합니다.
+                    ActionQueueManager.Instance.EnqueueAction(orbitManager.MoveRoutine(currentCharacter, currentDice.Value));
+
+                    MarkDiceUsed(currentDice);
                     ReturnDiceElement();
                     Hide();
                     return;
@@ -273,6 +279,10 @@ namespace DiceOrbit.UI
 
         private void OnCancelClicked()
         {
+            if (SkillTargetSelector.Instance != null && SkillTargetSelector.Instance.IsSelectingTarget)
+            {
+                SkillTargetSelector.Instance.CancelTargetSelection();
+            }
             ReturnDiceElement();
             Hide();
         }
@@ -280,6 +290,40 @@ namespace DiceOrbit.UI
         private void OnSpecificSkillClicked(int index)
         {
             ExecuteSkill(index);
+        }
+
+        /// <summary>
+        /// (SkillTargetSelector에서 호출) 타겟 선택이 확정되었을 때 최종 실행
+        /// </summary>
+        public void ConfirmSkillTarget(Unit target, Character character, RuntimeAbility ability, DiceData dice)
+        {
+
+            var combatManager = CombatManager.Instance;
+            var diceManager = DiceManager.Instance;
+            var runtimeAbility = ability; // 타겟팅을 시작했던 스킬
+
+            if (dice == null || character == null || runtimeAbility == null || combatManager == null || diceManager == null)
+            {
+                ReturnDiceElement();
+                return;
+            }
+
+            // 최종적으로 행동 예산을 소모하고 주사위를 배정
+            if (!combatManager.TrySpendAction(character))
+            {
+                diceManager.UnassignDice(dice);
+                ReturnDiceElement();
+                return;
+            }
+
+            // 실제 스킬 실행 로직을 담은 코루틴을 큐에 등록
+            ActionQueueManager.Instance.EnqueueAction(
+                FinalSkillExecutionRoutine(character, runtimeAbility, target, dice)
+            );
+
+            MarkDiceUsed(dice);
+            ReturnDiceElement();
+            // Hide()는 타겟팅 시작 시 이미 호출되었으므로 여기서는 호출하지 않음
         }
 
         // ─────────────────────────────────────────────
@@ -416,26 +460,19 @@ namespace DiceOrbit.UI
             return string.Join("\n", lines);
         }
 
-        private static string GetTargetTypeLabel(SkillTargetType targetType)
+        private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
         {
             switch (targetType)
             {
-                case SkillTargetType.SingleEnemy:
+                case CharacterSkillTargetType.OneEnemy:
                     return "단일 적";
-                case SkillTargetType.AllEnemies:
-                    return "모든 적";
-                case SkillTargetType.Self:
-                    return "자신";
-                case SkillTargetType.Ally:
-                    return "단일 아군";
-                case SkillTargetType.AllAllies:
-                    return "모든 아군";
-                case SkillTargetType.Tiles:
-                    return "타일";
+                case CharacterSkillTargetType.None:
+                    return "대상 없음";
                 default:
-                    return "기타";
+                    return "CharacterActionUI.cs GetTargetTypeLabel에서 수정 필요";
             }
         }
+
 
         private static string BuildRequirementText(DiceRequirement requirement)
         {
@@ -511,35 +548,87 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            var diceManager = DiceManager.Instance;
-            if (diceManager != null)
+            // `RuntimeAbility.TargetType`을 기준으로 분기합니다.
+            if (runtimeAbility.TargetType == CharacterSkillTargetType.OneEnemy)
             {
-                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Skill);
-                if (success)
+                // 타겟 선택이 필요한 경우: 타겟 선택 시스템을 시작합니다.
+                currentDice.State = DiceState.Reserved;
+                DiceUI.Instance?.RefreshDiceVisual(currentDice);
+                SkillTargetSelector.Instance.StartTargetSelection(currentCharacter, runtimeAbility, currentDice);
+                Hide(); // CharacterActionUI는 숨깁니다.
+            }
+            else if (runtimeAbility.TargetType == CharacterSkillTargetType.None)
+            {
+                // 타겟 선택이 필요 없는 경우 (None, AllEnemies, Self 등): 즉시 큐에 등록합니다.
+                var diceManager = DiceManager.Instance;
+                if (diceManager != null)
                 {
-                    // 실제 스킬 실행 직전에 행동 예산 1회를 확정 소비합니다.
-                    if (!combatManager.TrySpendAction(currentCharacter))
+                    bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Skill);
+                    if (success)
                     {
-                        diceManager.UnassignDice(currentDice);
-                        ReturnDiceElement();
-                        return;
-                    }
+                        if (!combatManager.TrySpendAction(currentCharacter))
+                        {
+                            diceManager.UnassignDice(currentDice);
+                            ReturnDiceElement();
+                            return;
+                        }
 
-                    currentCharacter.UseSkillByIndex(index, currentDice.Value);
-                    MarkDiceUsed();
-                    ReturnDiceElement();
-                    Hide();
-                    return;
+                        ActionQueueManager.Instance.EnqueueAction(
+                            ExecuteSkillRoutine(index, currentDice)
+                        );
+
+                        MarkDiceUsed(currentDice);
+                        ReturnDiceElement();
+                        Hide();
+                    }
+                    else
+                    {
+                        ReturnDiceElement();
+                    }
                 }
             }
-
-            ReturnDiceElement();
+            else
+            {
+                Debug.LogError("신규 타겟팅 방법에 따른 수정 필요");
+            }
         }
 
-        private void MarkDiceUsed()
+        private System.Collections.IEnumerator ExecuteSkillRoutine(int skillIndex, DiceData dice)
+        {
+            // Pre-execution check (optional but good practice)
+            if (currentCharacter == null || !currentCharacter.IsAlive)
+            {
+                Debug.LogWarning($"[ActionQueue] Character {currentCharacter?.name} is no longer valid. Skipping skill action.");
+                yield break;
+            }
+
+            // 실제 스킬 로직 실행
+            currentCharacter.UseSkillByIndex(skillIndex, dice);
+
+            // 연출을 위한 임시 딜레이
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        /// <summary>
+        /// (ActionQueue에서 실행될) 최종 스킬 실행 코루틴
+        /// </summary>
+        private System.Collections.IEnumerator FinalSkillExecutionRoutine(Character character, RuntimeAbility ability, Unit target, DiceData dice)
+        {
+            // 이 코루틴이 실행될 때, CharacterActionUI의 currentCharacter는 다른 값일 수 있으므로
+            // 인자로 받은 character를 사용해야 합니다.
+            if (character != null && character.IsAlive)
+            {
+                SkillManager.Instance.OnTargetSelected(character, target, ability, dice.Value);
+            }
+
+            // 연출 대기 (임시)
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        private void MarkDiceUsed(DiceData dice)
         {
             var diceUI = FindFirstObjectByType<DiceUI>();
-            diceUI?.MarkDiceAsUsed(currentDice);
+            diceUI?.MarkDiceAsUsed(dice);
         }
 
         private void ReturnDiceElement()

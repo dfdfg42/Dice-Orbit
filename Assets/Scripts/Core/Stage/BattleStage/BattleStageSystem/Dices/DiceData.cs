@@ -2,6 +2,13 @@ using UnityEngine;
 
 namespace DiceOrbit.Data
 {
+    public enum DiceState
+    {
+        Available, // 사용 가능
+        Reserved,  // 타겟 선택 등 행동 예약을 위해 임시 선점된 상태
+        Used       // 사용 완료
+    }
+
     /// <summary>
     /// 주사위 데이터 클래스
     /// </summary>
@@ -10,7 +17,7 @@ namespace DiceOrbit.Data
     {
         [SerializeField] private int id;
         [SerializeField] private int value; // 1~6
-        [SerializeField] private bool isUsed;
+        [SerializeField] private DiceState state;
         [SerializeField] private DiceOrbit.Core.Pipeline.ActionType assignedAction;
         
         // 할당된 캐릭터 (Phase 3에서 사용)
@@ -19,7 +26,7 @@ namespace DiceOrbit.Data
         // Properties
         public int ID => id;
         public int Value => value;
-        public bool IsUsed => isUsed;
+        public DiceState State { get => state; set => state = value; }
         public DiceOrbit.Core.Pipeline.ActionType AssignedAction => assignedAction;
         public object AssignedCharacter => assignedCharacter;
         
@@ -30,7 +37,7 @@ namespace DiceOrbit.Data
         {
             this.id = id;
             this.value = Mathf.Clamp(value, 1, 6);
-            this.isUsed = false;
+            this.state = DiceState.Available;
             this.assignedAction = DiceOrbit.Core.Pipeline.ActionType.None;
             this.assignedCharacter = null;
         }
@@ -42,7 +49,7 @@ namespace DiceOrbit.Data
         {
             assignedCharacter = character;
             assignedAction = action;
-            isUsed = true;
+            state = DiceState.Reserved;
         }
         
         /// <summary>
@@ -52,7 +59,7 @@ namespace DiceOrbit.Data
         {
             assignedCharacter = null;
             assignedAction = DiceOrbit.Core.Pipeline.ActionType.None;
-            isUsed = false;
+            state = DiceState.Available;
         }
         
         /// <summary>

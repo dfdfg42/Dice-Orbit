@@ -9,13 +9,12 @@ namespace DiceOrbit.Data
     [System.Serializable]
     public class CharacterSkillData : SkillData
     {
+
         // SkillName, Description은 부모 클래스에서 상속받음
 
         // 내부에서 값을 설정할 수 있도록 public 메서드 제공
         public void SetSkillName(string name) => skillName = name;
         public void SetDescription(string desc) => description = desc;
-
-        [HideInInspector] public SkillTargetType skillTargetType = SkillTargetType.SingleEnemy;
 
         [Header("Skill Effects")]
         public List<DiceOrbit.Data.Skills.Effects.SkillEffectBase> Effects = new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>();
@@ -35,6 +34,11 @@ namespace DiceOrbit.Data
 
 namespace DiceOrbit.Data.Skills
 {
+    public enum CharacterSkillTargetType
+    {
+        OneEnemy,
+        None
+    }
     public enum CharacterSkillType
     {
         Active,
@@ -64,6 +68,7 @@ namespace DiceOrbit.Data.Skills
 
         [Header("Active Binding (Type=Active)")]
         [SerializeReference] public CharacterActiveTemplate ActiveTemplate;
+        public CharacterSkillTargetType TargetType = CharacterSkillTargetType.OneEnemy;
 
         [Header("Passive Binding (Type=Passive)")]
         // 런타임에서 복제되어 PassiveManager에 등록될 패시브 템플릿입니다.
@@ -89,12 +94,6 @@ namespace DiceOrbit.Data.Skills
         {
             get => BaseData.Description;
             set => BaseData.SetDescription(value);
-        }
-
-        public SkillTargetType TargetType
-        {
-            get => BaseData.skillTargetType;
-            set => BaseData.skillTargetType = value;
         }
 
         /// <summary>
@@ -134,7 +133,6 @@ namespace DiceOrbit.Data.Skills
             // BaseData 복사 후 레벨별 데이터 적용
             var skillData = new CharacterSkillData
             {
-                skillTargetType = BaseData.skillTargetType,
                 Effects = resolvedEffects,
             };
 

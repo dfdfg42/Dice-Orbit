@@ -117,6 +117,12 @@ namespace DiceOrbit.Core
             Stats.Heal(value);
         }
 
+        protected virtual void HandleDeath()
+        {
+            Debug.Log($"{name} has died.");
+            // 사망 처리 (애니메이션, 제거 등)
+        }
+
         /// <summary>
         /// 마우스 호버 시 하이라이트
         /// </summary>

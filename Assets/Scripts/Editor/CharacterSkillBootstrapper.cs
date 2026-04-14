@@ -36,7 +36,7 @@ namespace DiceOrbit.EditorTools
                 "Warrior_Active_Skill",
                 "대검",
                 "주사위 눈금 4 이상 시 (눈금 x 12) 피해",
-                SkillTargetType.SingleEnemy,
+                CharacterSkillTargetType.OneEnemy,
                 BuildRequirement(1, null, DicePattern.High),
                 warriorEffect,
                 CreateActiveTemplate(new WarriorGreatswordActive(), warriorEffect)
@@ -46,7 +46,7 @@ namespace DiceOrbit.EditorTools
                 "Rogue_Active_Skill",
                 "기습",
                 "주사위 눈금 2 이하 시 (눈금 x 20) 피해",
-                SkillTargetType.SingleEnemy,
+                CharacterSkillTargetType.OneEnemy,
                 BuildRequirement(1, 2, DicePattern.None),
                 rogueEffect,
                 CreateActiveTemplate(new RogueAmbushActive(), rogueEffect)
@@ -56,7 +56,7 @@ namespace DiceOrbit.EditorTools
                 "Alchemist_Active_Skill",
                 "시약 투척",
                 "주사위 눈금 홀수 시 (눈금 x 12) 피해",
-                SkillTargetType.SingleEnemy,
+                CharacterSkillTargetType.OneEnemy,
                 BuildRequirement(1, null, DicePattern.Odd),
                 alchemistEffect,
                 CreateActiveTemplate(new AlchemistThrowActive(), alchemistEffect)
@@ -66,7 +66,7 @@ namespace DiceOrbit.EditorTools
                 "Mage_Active_Skill",
                 "에너지 볼",
                 "주사위 눈금 4 이상 시 (눈금 x 12) + 집중 스택당 5% 추가 피해",
-                SkillTargetType.SingleEnemy,
+                CharacterSkillTargetType.OneEnemy,
                 BuildRequirement(1, null, DicePattern.High),
                 mageEffect,
                 CreateActiveTemplate(new MageEnergyBallActive(), mageEffect)
@@ -170,7 +170,7 @@ namespace DiceOrbit.EditorTools
             string fileName,
             string displayName,
             string description,
-            SkillTargetType targetType,
+            CharacterSkillTargetType targetType,
             DiceRequirement requirement,
             SkillEffectBase effect,
             CharacterActiveTemplate activeTemplate)
@@ -193,7 +193,6 @@ namespace DiceOrbit.EditorTools
 
             skill.BaseData.SetSkillName(displayName);
             skill.BaseData.SetDescription(description);
-            skill.BaseData.skillTargetType = targetType;
             skill.BaseData.Effects = new List<SkillEffectBase> { effect };
             skill.Levels = new List<SkillLevelData>();
 
@@ -227,12 +226,11 @@ namespace DiceOrbit.EditorTools
             skill.SkillName = displayName;
             skill.Description = description;
             skill.Type = CharacterSkillType.Passive;
-            skill.TargetType = SkillTargetType.Self;
+            skill.TargetType = CharacterSkillTargetType.None;
             skill.Requirement = new DiceRequirement();
             skill.MaxLevelOverride = Mathf.Max(5, skill.MaxLevelOverride);
             skill.BaseData.SetSkillName(displayName);
             skill.BaseData.SetDescription(description);
-            skill.BaseData.skillTargetType = SkillTargetType.Self;
             skill.BaseData.Effects = new List<SkillEffectBase>();
             skill.Levels = new List<SkillLevelData>();
             skill.PassiveTemplate = passiveTemplate;

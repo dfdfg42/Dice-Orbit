@@ -267,9 +267,9 @@ namespace DiceOrbit.Core
             return result;
         }
 
-        private void HandleDeath()
+        protected override void HandleDeath()
         {
-            Debug.Log($"[Monster] {stat?.MonsterName} Died.");
+            base.HandleDeath();
             PlayDeathVisual();
 
             // 사망 효과 실행 (OnDeathEffects)
@@ -290,7 +290,6 @@ namespace DiceOrbit.Core
 
             // AttackIndicator에서 Intent 제거
             UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
-
 
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);

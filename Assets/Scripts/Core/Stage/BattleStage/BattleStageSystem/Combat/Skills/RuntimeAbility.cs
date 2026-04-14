@@ -23,7 +23,7 @@ namespace DiceOrbit.Data.Skills
         }
 
         public CharacterSkillType AbilityType => BaseSkill != null ? BaseSkill.Type : CharacterSkillType.Active;
-
+        public CharacterSkillTargetType TargetType => BaseSkill != null ? BaseSkill.TargetType : CharacterSkillTargetType.None;
         public CharacterSkillData CurrentSkillData => BaseSkill?.GetSkillData(CurrentLevel);
 
         public SkillLevelData GetCurrentLevelData()

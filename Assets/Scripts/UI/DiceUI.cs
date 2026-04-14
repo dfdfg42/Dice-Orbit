@@ -157,6 +157,9 @@ namespace DiceOrbit.UI
         /// </summary>
         public void MarkDiceAsUsed(DiceData diceData)
         {
+            if (diceData == null) return;
+            diceData.State = DiceState.Used;
+
             var element = diceElements.Find(e => e.Data == diceData);
             if (element != null)
             {
@@ -164,9 +167,8 @@ namespace DiceOrbit.UI
                 {
                     selectedElement = null;
                 }
+                element.UpdateVisual();
 
-                element.MarkAsUsed();
-                
                 // 사용된 주사위는 1초 후 제거 (애니메이션용)
                 StartCoroutine(RemoveDiceAfterDelay(element, 0.5f));
             }
@@ -174,7 +176,7 @@ namespace DiceOrbit.UI
 
         public void HandleDiceElementClicked(DiceElement element)
         {
-            if (element == null || element.Data == null || element.Data.IsUsed) return;
+            if (element == null || element.Data == null || element.Data.State != DiceState.Available) return;
 
             if (selectedElement != null && selectedElement != element)
             {
@@ -205,13 +207,22 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
+        /// 특정 주사위의 UI 표시를 새로고침합니다.
+        /// </summary>
+        public void RefreshDiceVisual(DiceData diceData)
+        {
+            if (diceData == null) return;
+            var element = diceElements.Find(e => e.Data == diceData);
+            element?.UpdateVisual();
+        }
+
+        /// <summary>
         /// 현재 UI에서 선택된 주사위 데이터를 반환합니다.
-        /// 캐릭터를 나중에 선택해도 기존 선택 주사위를 이어서 사용할 수 있습니다.
         /// </summary>
         public DiceData GetSelectedDiceData()
         {
             if (selectedElement == null) return null;
-            if (selectedElement.Data == null || selectedElement.Data.IsUsed) return null;
+            if (selectedElement.Data == null || selectedElement.Data.State != DiceState.Available) return null;
             return selectedElement.Data;
         }
 

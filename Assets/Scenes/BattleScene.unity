@@ -194,6 +194,7 @@ Transform:
   - {fileID: 2065398298}
   - {fileID: 322938912}
   - {fileID: 1238762782}
+  - {fileID: 697266586}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &196083665
@@ -1373,6 +1374,8 @@ MonoBehaviour:
   diceCountPerTurn: 4
   minDiceValue: 1
   maxDiceValue: 6
+  usePartyBasedDiceCount: 1
+  dicePerCharacter: 2
   diceUI: {fileID: 0}
 --- !u!4 &436352731
 Transform:
@@ -2130,6 +2133,50 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!1 &697266585
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 697266586}
+  - component: {fileID: 697266587}
+  m_Layer: 0
+  m_Name: ActionQueueManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &697266586
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 697266585}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -6.3594403, y: -4.45161, z: -6.3594403}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 51532390}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &697266587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 697266585}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a1ea2cfcc296184a836de7d1a5dfdcb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ActionQueueManager
 --- !u!1 &709561678
 GameObject:
   m_ObjectHideFlags: 0
@@ -4278,7 +4325,7 @@ PrefabInstance:
     - target: {fileID: 5320227307467628175, guid: 1153ef8f27bba7840a90db34bdeb86d1, type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 3688429707017869774, guid: ab682e8a845911f43a9bdbb5943b392b, type: 2}
+      objectReference: {fileID: 2180264, guid: ab682e8a845911f43a9bdbb5943b392b, type: 2}
     - target: {fileID: 5670610398863481131, guid: 1153ef8f27bba7840a90db34bdeb86d1, type: 3}
       propertyPath: m_Name
       value: SkillButton

@@ -31,7 +31,7 @@ namespace DiceOrbit.Core
         
         // Properties
         public List<DiceData> CurrentDice => currentDice;
-        public List<DiceData> AvailableDice => currentDice.Where(d => !d.IsUsed).ToList();
+        public List<DiceData> AvailableDice => currentDice.Where(d => d.State == DiceState.Available).ToList();
         public int AvailableDiceCount => AvailableDice.Count;
         
         private static DiceManager instance;
@@ -118,9 +118,9 @@ namespace DiceOrbit.Core
         /// </summary>
         public bool AssignDice(DiceData dice, object character, DiceOrbit.Core.Pipeline.ActionType action)
         {
-            if (dice == null || dice.IsUsed)
+            if (dice == null || dice.State != DiceState.Available)
             {
-                Debug.LogWarning("Cannot assign dice: null or already used");
+                Debug.LogWarning($"Cannot assign dice: null or not available");
                 return false;
             }
             
