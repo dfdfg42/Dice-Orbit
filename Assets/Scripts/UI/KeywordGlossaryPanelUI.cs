@@ -7,12 +7,45 @@ namespace DiceOrbit.UI
 {
     public class KeywordGlossaryPanelUI : MonoBehaviour
     {
-        private RectTransform rootRect;
-        private TextMeshProUGUI bodyText;
+        [Header("UI References")]
+        [SerializeField] private RectTransform rootRect;
+        [SerializeField] private TextMeshProUGUI bodyText;
 
         private readonly Vector2 padding = new Vector2(12f, 10f);
         private readonly Vector2 offset = new Vector2(14f, 0f);
 
+        private void Awake()
+        {
+            if (rootRect == null)
+            {
+                rootRect = GetComponent<RectTransform>();
+            }
+
+            if (rootRect != null)
+            {
+                rootRect.anchorMin = new Vector2(0f, 0f);
+                rootRect.anchorMax = new Vector2(0f, 0f);
+                rootRect.pivot = new Vector2(0f, 1f);
+            }
+
+            var bg = GetComponent<Image>();
+            if (bg != null)
+            {
+                bg.raycastTarget = false;
+            }
+
+            if (bodyText == null)
+            {
+                bodyText = GetComponentInChildren<TextMeshProUGUI>(true);
+            }
+
+            if (bodyText != null)
+            {
+                bodyText.raycastTarget = false;
+            }
+        }
+
+        // 기존 코드 호환성을 위해 유지합니다. 인스펙터 참조를 쓰는 현재 구조에서는 호출하지 않아도 됩니다.
         public void Initialize(Transform parent, TMP_FontAsset font)
         {
             transform.SetParent(parent, false);
