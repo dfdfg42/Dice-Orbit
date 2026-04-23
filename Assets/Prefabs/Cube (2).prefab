@@ -59,9 +59,9 @@ MonoBehaviour:
       m_SwapUV: 0
       m_Fill: 1
       m_Scale: {x: 1, y: 1}
-      m_Offset: {x: 0, y: 0}
+      m_Offset: {x: -4.2117004, y: 1.2314917}
       m_Rotation: 0
-      m_Anchor: 0
+      m_Anchor: 9
     m_Material: {fileID: 0}
     m_SubmeshIndex: 0
     m_ManualUV: 0
@@ -75,7 +75,7 @@ MonoBehaviour:
       m_FlipV: 0
       m_SwapUV: 0
       m_Fill: 1
-      m_Scale: {x: 1, y: 1}
+      m_Scale: {x: 0.125, y: 0.125}
       m_Offset: {x: 0, y: 0}
       m_Rotation: 0
       m_Anchor: 0
@@ -93,7 +93,7 @@ MonoBehaviour:
       m_SwapUV: 0
       m_Fill: 1
       m_Scale: {x: 1, y: 1}
-      m_Offset: {x: 0, y: 0}
+      m_Offset: {x: -1.6255684, y: 1.7733479}
       m_Rotation: 0
       m_Anchor: 0
     m_Material: {fileID: 0}
@@ -110,7 +110,7 @@ MonoBehaviour:
       m_SwapUV: 0
       m_Fill: 1
       m_Scale: {x: 1, y: 1}
-      m_Offset: {x: 0, y: 0}
+      m_Offset: {x: -1.6994575, y: 0.9605634}
       m_Rotation: 0
       m_Anchor: 0
     m_Material: {fileID: 0}
@@ -142,9 +142,9 @@ MonoBehaviour:
       m_FlipU: 0
       m_FlipV: 0
       m_SwapUV: 0
-      m_Fill: 1
+      m_Fill: 0
       m_Scale: {x: 1, y: 1}
-      m_Offset: {x: 0, y: 0}
+      m_Offset: {x: 2.2478795, y: -0.0704298}
       m_Rotation: 0
       m_Anchor: 0
     m_Material: {fileID: 0}
@@ -188,30 +188,30 @@ MonoBehaviour:
   - {x: -0.7335018, y: -0.046347447, z: 1.2081167}
   - {x: 0.7335018, y: -0.046347447, z: 1.2081167}
   m_Textures0:
-  - {x: 1.4670037, y: 0.50633514}
-  - {x: 0.00000011920929, y: 0.50633514}
-  - {x: 1.4670037, y: 1}
+  - {x: 4.9452024, y: -1.2778392}
+  - {x: 3.4781985, y: -1.2778392}
+  - {x: 4.9452024, y: -0.78417426}
+  - {x: 3.4781985, y: -0.78417426}
+  - {x: 0.30202916, y: 0.9382919}
+  - {x: 0, y: 0.9382919}
+  - {x: 0.30202916, y: 1}
   - {x: 0, y: 1}
-  - {x: 2.4162333, y: 0.50633514}
-  - {x: 0, y: 0.50633514}
-  - {x: 2.4162333, y: 1}
-  - {x: 0, y: 1}
-  - {x: 1.4670036, y: 0.50633514}
-  - {x: 0, y: 0.50633514}
-  - {x: 1.4670037, y: 1}
-  - {x: 0, y: 1}
-  - {x: 2.4162333, y: 0.50633514}
-  - {x: 0, y: 0.50633514}
-  - {x: 2.4162333, y: 1}
-  - {x: 0, y: 1}
+  - {x: 3.092572, y: -1.2670127}
+  - {x: 1.6255684, y: -1.2670127}
+  - {x: 3.0925722, y: -0.77334785}
+  - {x: 1.6255684, y: -0.77334785}
+  - {x: 4.1156907, y: -0.45422828}
+  - {x: 1.6994575, y: -0.45422828}
+  - {x: 4.1156907, y: 0.03943658}
+  - {x: 1.6994575, y: 0.03943658}
   - {x: 0, y: 1}
   - {x: 1, y: 1}
   - {x: 0, y: 0}
   - {x: 1, y: 0}
-  - {x: 1.4670036, y: -1.4162333}
-  - {x: 0, y: -1.4162333}
-  - {x: 1.4670036, y: 1}
-  - {x: 0, y: 1}
+  - {x: -1.6407347, y: 0.0704298}
+  - {x: -2.2478795, y: 0.0704298}
+  - {x: -1.6407347, y: 1.0704298}
+  - {x: -2.2478795, y: 1.0704298}
   m_Textures2: []
   m_Textures3: []
   m_Tangents:
@@ -248,7 +248,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 1368
+  m_VersionIndex: 1416
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -315,7 +315,7 @@ MeshRenderer:
   m_IgnoreNormalsForChartDetection: 0
   m_ImportantGI: 0
   m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
+  m_SelectedEditorRenderState: 2
   m_MinimumChartSize: 4
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89

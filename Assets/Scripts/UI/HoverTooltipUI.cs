@@ -189,7 +189,8 @@ namespace DiceOrbit.UI
                 Debug.Log($"[HoverTooltipUI] 키워드 매칭 결과 없음: {tooltipText.text}");
 
             // 키워드 카드 + 패시브 카드 + 상태이상 카드를 한 번에 컨테이너로 전달합니다
-            glossaryContainer?.Show(matchedKeywords, data.Statuses, data.Passives, panelRect.position, panelRect.sizeDelta);
+            float scale = canvas != null ? canvas.scaleFactor : 1f;
+            glossaryContainer?.Show(matchedKeywords, data.Statuses, data.Passives, panelRect.position, panelRect.sizeDelta, scale);
 
             if (glossaryContainer == null)
                 Debug.LogWarning("[HoverTooltipUI] glossaryContainer가 없습니다.");
@@ -258,18 +259,19 @@ namespace DiceOrbit.UI
         {
             // 마우스 위치 + 오프셋으로 기본 위치를 계산합니다
             Vector2 pos  = GetMousePosition() + offset;
-            var     size = panelRect.sizeDelta;
+
+            // sizeDelta는 캔버스 로컬 단위 → 스크린 픽셀로 변환
+            float scale      = canvas != null ? canvas.scaleFactor : 1f;
+            Vector2 screenSize = panelRect.sizeDelta * scale;
 
             // 패널이 화면 오른쪽·하단 밖으로 나가지 않도록 클램프합니다
-            float maxX = Screen.width  - size.x;
-            float minY = size.y;
-            pos.x = Mathf.Clamp(pos.x, 0f, maxX);
-            pos.y = Mathf.Clamp(pos.y, minY, Screen.height);
+            pos.x = Mathf.Clamp(pos.x, 0f, Screen.width  - screenSize.x);
+            pos.y = Mathf.Clamp(pos.y, screenSize.y, Screen.height);
 
             panelRect.position = pos;
 
             // 카드 컨테이너도 메인 패널 기준으로 위치를 재조정합니다
-            glossaryContainer?.Reposition(panelRect.position, panelRect.sizeDelta);
+            glossaryContainer?.Reposition(panelRect.position, panelRect.sizeDelta, scale);
         }
 
         /// <summary>

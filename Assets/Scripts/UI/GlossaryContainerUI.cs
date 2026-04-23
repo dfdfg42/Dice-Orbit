@@ -102,7 +102,8 @@ namespace DiceOrbit.UI
             IReadOnlyList<TooltipKeywordFormatter.StatusDisplayData>  statuses,
             IReadOnlyList<TooltipKeywordFormatter.KeywordDisplayData> passives,
             Vector2 tooltipPos,
-            Vector2 tooltipSize)
+            Vector2 tooltipSize,
+            float   canvasScale = 1f)
         {
             if (_rect == null || cardPrefab == null) return;
 
@@ -166,7 +167,7 @@ namespace DiceOrbit.UI
             LayoutRebuilder.ForceRebuildLayoutImmediate(_rect);
 
             // 위치 재조정
-            Reposition(tooltipPos, tooltipSize);
+            Reposition(tooltipPos, tooltipSize, canvasScale);
         }
 
         /// <summary>
@@ -185,23 +186,25 @@ namespace DiceOrbit.UI
         /// </summary>
         /// <param name="tooltipPos">메인 툴팁 패널의 스크린 좌표</param>
         /// <param name="tooltipSize">메인 툴팁 패널의 sizeDelta</param>
-        public void Reposition(Vector2 tooltipPos, Vector2 tooltipSize)
+        public void Reposition(Vector2 tooltipPos, Vector2 tooltipSize, float canvasScale = 1f)
         {
             if (_rect == null || !gameObject.activeSelf) return;
 
-            var size = _rect.sizeDelta;
+            // sizeDelta는 캔버스 로컬 단위 → 스크린 픽셀로 변환
+            Vector2 screenSize        = _rect.sizeDelta * canvasScale;
+            float   tooltipScreenW    = tooltipSize.x   * canvasScale;
 
             // 기본 위치: 메인 패널 오른쪽에 붙여서 배치합니다
-            float x = tooltipPos.x + tooltipSize.x + sideOffset;
+            float x = tooltipPos.x + tooltipScreenW + sideOffset;
             float y = tooltipPos.y; // 메인 패널 상단과 y를 맞춥니다
 
             // 오른쪽 화면 밖으로 나가면 메인 패널 왼쪽으로 이동합니다
-            if (x + size.x > Screen.width)
-                x = tooltipPos.x - size.x - sideOffset;
+            if (x + screenSize.x > Screen.width)
+                x = tooltipPos.x - screenSize.x - sideOffset;
 
             // 화면 경계 클램프 (카드가 많아서 높이가 길어져도 클램프로 처리합니다)
-            x = Mathf.Clamp(x, 0f, Mathf.Max(0f, Screen.width  - size.x));
-            y = Mathf.Clamp(y, size.y, Screen.height);
+            x = Mathf.Clamp(x, 0f, Mathf.Max(0f, Screen.width  - screenSize.x));
+            y = Mathf.Clamp(y, screenSize.y, Screen.height);
 
             _rect.position = new Vector2(x, y);
         }
