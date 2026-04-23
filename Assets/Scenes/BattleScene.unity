@@ -779,7 +779,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0.35020736, y: 0, z: 0, w: 0.9366722}
-  m_LocalPosition: {x: 0, y: 10, z: -12}
+  m_LocalPosition: {x: 0, y: 25, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1129,8 +1129,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -458.78345, y: 0}
-  m_SizeDelta: {x: -917.5668, y: 150}
+  m_AnchoredPosition: {x: -589.0814, y: 0}
+  m_SizeDelta: {x: -1178.1627, y: 150}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &396733013
 MonoBehaviour:
@@ -1152,8 +1152,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 20d8e4f39f179774b9a55149543fb719, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 2a48715af2029e94c9cff5eb68ce8313, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -1713,7 +1713,7 @@ MonoBehaviour:
   orbitManager: {fileID: 1279481569}
   centerZone: {fileID: 0}
   mainCamera: {fileID: 330585545}
-  cameraPosition: {x: 7.2, y: 20, z: -12}
+  cameraPosition: {x: 0, y: 25, z: -20}
   cameraAngle: 60
 --- !u!224 &553955369 stripped
 RectTransform:
@@ -2852,7 +2852,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -22.4886, y: -14}
+  m_AnchoredPosition: {x: -22.488525, y: -14}
   m_SizeDelta: {x: 461.1263, y: 370.3693}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &835049233
@@ -3536,8 +3536,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db77fea15578a7040b2761459bcb3776, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.OrbitManager
-  tileCount: 20
-  orbitRadius: 8
+  tileCount: 18
+  orbitRadius: 13
   clockwise: 1
   tilePrefab: {fileID: 8557775416934186259, guid: a5adf088546d8224fadcaf987144c40a, type: 3}
   normalMaterial: {fileID: 2100000, guid: 7587bb46b3f332442bf5b566a8979acc, type: 2}
@@ -3916,7 +3916,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1675986083
 Transform:
   m_ObjectHideFlags: 0
