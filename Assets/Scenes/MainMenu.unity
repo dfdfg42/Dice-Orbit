@@ -844,7 +844,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d963da6ef866efc46b392629abfd2570, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UIButtonScale
-  hoverScale: 1.1
+  hoverScale: 0.85
   animationDuration: 0.1
 --- !u!1 &1810798520
 GameObject:
@@ -979,7 +979,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d963da6ef866efc46b392629abfd2570, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UIButtonScale
-  hoverScale: 1.1
+  hoverScale: 0.85
   animationDuration: 0.1
 --- !u!1 &1840780325
 GameObject:
