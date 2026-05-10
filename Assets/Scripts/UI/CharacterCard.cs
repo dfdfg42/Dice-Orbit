@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace DiceOrbit.UI
@@ -18,6 +19,10 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI statsText;
         [SerializeField] private Button selectButton;
 
+        [Header("Portrait Sprite")]
+        [SerializeField] private Sprite defaultPortraitOverride;
+        [SerializeField] private List<PortraitSpriteOption> portraitSprites = new List<PortraitSpriteOption>();
+
         [Header("Hover Settings")]
         [SerializeField] private float normalAlpha = 0.5f;
         [SerializeField] private float hoverAlpha = 1f;
@@ -27,13 +32,29 @@ namespace DiceOrbit.UI
         [SerializeField] private Image selectButtonImage;
         [SerializeField] private Sprite defaultSelectButtonSprite;
         [SerializeField] private List<SelectButtonSpriteOption> selectButtonSprites = new List<SelectButtonSpriteOption>();
+
+        [Header("Intro Animation")]
+        [SerializeField] private float introOffsetY = 750f; //350
+        [SerializeField] private float introDuration = 0.35f;
+        [SerializeField] private AnimationCurve introCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
         
         private Core.CharacterPreset character;
         private System.Action<Core.CharacterPreset> onSelected;
         private Sprite defaultPortraitSprite;
+        private RectTransform rectTransform;
+        private CanvasGroup canvasGroup;
+        private Vector2 introTargetPosition;
+        private bool hasCapturedIntroTarget;
 
         [System.Serializable]
         private class SelectButtonSpriteOption
+        {
+            public string characterName;
+            public Sprite sprite;
+        }
+
+        [System.Serializable]
+        private class PortraitSpriteOption
         {
             public string characterName;
             public Sprite sprite;
@@ -48,6 +69,13 @@ namespace DiceOrbit.UI
         
         private void Awake()
         {
+            rectTransform = GetComponent<RectTransform>();
+            canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
             if (selectButton != null)
             {
                 selectButton.onClick.AddListener(OnSelectClicked);
@@ -56,6 +84,77 @@ namespace DiceOrbit.UI
             // Ensure initial alpha and register pointer events so hover works
             ApplyAlphaToUI(normalAlpha);
             RegisterPointerEvents();
+        }
+
+        public void CaptureIntroTargetPosition()
+        {
+            if (rectTransform == null)
+            {
+                rectTransform = GetComponent<RectTransform>();
+            }
+
+            if (rectTransform == null)
+            {
+                return;
+            }
+
+            introTargetPosition = rectTransform.anchoredPosition;
+            hasCapturedIntroTarget = true;
+        }
+
+        public Coroutine PlayIntro(float startDelay)
+        {
+            return StartCoroutine(PlayIntroRoutine(startDelay));
+        }
+
+        private IEnumerator PlayIntroRoutine(float startDelay)
+        {
+            if (!hasCapturedIntroTarget)
+            {
+                CaptureIntroTargetPosition();
+            }
+
+            if (rectTransform == null)
+            {
+                yield break;
+            }
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 0f;
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
+
+            yield return new WaitForSecondsRealtime(startDelay);
+
+            var startPosition = introTargetPosition + new Vector2(0f, -introOffsetY);
+            rectTransform.anchoredPosition = startPosition;
+
+            var elapsed = 0f;
+            while (elapsed < introDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(elapsed / introDuration);
+                var easedT = introCurve != null ? introCurve.Evaluate(t) : t;
+                rectTransform.anchoredPosition = Vector2.LerpUnclamped(startPosition, introTargetPosition, easedT);
+
+                if (canvasGroup != null)
+                {
+                    canvasGroup.alpha = easedT;
+                }
+
+                yield return null;
+            }
+
+            rectTransform.anchoredPosition = introTargetPosition;
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 1f;
+                canvasGroup.interactable = true;
+                canvasGroup.blocksRaycasts = true;
+            }
         }
         
         /// <summary>
@@ -70,10 +169,11 @@ namespace DiceOrbit.UI
             ApplySelectButtonSprite(preset);
             
             // UI 업데이트
-            if (portraitImage != null && preset.Portrait != null)
+            var resolvedPortrait = ResolvePortraitSprite(preset);
+            if (portraitImage != null && resolvedPortrait != null)
             {
-                portraitImage.sprite = preset.Portrait;
-                defaultPortraitSprite = preset.Portrait;
+                portraitImage.sprite = resolvedPortrait;
+                defaultPortraitSprite = resolvedPortrait;
             }
             
             if (nameText != null)
@@ -176,6 +276,31 @@ namespace DiceOrbit.UI
             }
 
             return defaultPortraitSprite;
+        }
+
+        private Sprite ResolvePortraitSprite(Core.CharacterPreset preset)
+        {
+            if (preset == null)
+            {
+                return defaultPortraitOverride;
+            }
+
+            var presetName = preset.CharacterName;
+            for (int i = 0; i < portraitSprites.Count; i++)
+            {
+                var option = portraitSprites[i];
+                if (option != null && !string.IsNullOrEmpty(option.characterName) && option.characterName == presetName)
+                {
+                    return option.sprite;
+                }
+            }
+
+            if (defaultPortraitOverride != null)
+            {
+                return defaultPortraitOverride;
+            }
+
+            return preset.Portrait;
         }
 
         private void RegisterPointerEvents()
