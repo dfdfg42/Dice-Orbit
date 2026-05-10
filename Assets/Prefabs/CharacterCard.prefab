@@ -55,6 +55,28 @@ MonoBehaviour:
   descriptionText: {fileID: 0}
   statsText: {fileID: 0}
   selectButton: {fileID: 4252493913392585555}
+  normalAlpha: 0.5
+  hoverAlpha: 1
+  hoverPortraitSprites:
+  - characterName: "\uC804\uC0AC"
+    sprite: {fileID: 21300000, guid: 0dfa006f0ce270c498567e237bfd0b24, type: 3}
+  - characterName: Mage
+    sprite: {fileID: 21300000, guid: 60a464a41516d0a46a1a7f09924c9bcb, type: 3}
+  - characterName: "\uB3C4\uC801"
+    sprite: {fileID: 21300000, guid: 674c178c84a56f84cb494023a2fbe690, type: 3}
+  - characterName: "\uC5F0\uAE08\uC220\uC0AC"
+    sprite: {fileID: 21300000, guid: b569364e55c7dcd4a88bd86772e7c261, type: 3}
+  selectButtonImage: {fileID: 1797857142864226859}
+  defaultSelectButtonSprite: {fileID: 0}
+  selectButtonSprites:
+  - characterName: "\uC804\uC0AC"
+    sprite: {fileID: 21300000, guid: 9f9008327e1c9df498deaf76f6886049, type: 3}
+  - characterName: Mage
+    sprite: {fileID: 21300000, guid: 9ef678d577877c34b8602a4fa46d6812, type: 3}
+  - characterName: "\uB3C4\uC801"
+    sprite: {fileID: 21300000, guid: 74e19a81fd781a844a3f41916c4704e6, type: 3}
+  - characterName: "\uC5F0\uAE08\uC220\uC0AC"
+    sprite: {fileID: 21300000, guid: 5e7390800d10e044b84698929e82fb74, type: 3}
 --- !u!1 &5372065949835238635
 GameObject:
   m_ObjectHideFlags: 0
@@ -196,7 +218,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 5e7390800d10e044b84698929e82fb74, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9ef678d577877c34b8602a4fa46d6812, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
