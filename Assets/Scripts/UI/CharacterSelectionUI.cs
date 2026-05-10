@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DiceOrbit.Visuals;
@@ -99,21 +100,31 @@ namespace DiceOrbit.UI
             }
             
             // UI 카드 생성
+            var spawnedCards = new List<CharacterCard>();
             foreach (var character in currentChoices)
             {
-                CreateCharacterCard(character);
+                var card = CreateCharacterCard(character);
+                if (card != null)
+                {
+                    spawnedCards.Add(card);
+                }
+            }
+
+            if (spawnedCards.Count > 0)
+            {
+                StartCoroutine(PlayCharacterCardIntro(spawnedCards));
             }
         }
         
         /// <summary>
         /// 캐릭터 카드 생성
         /// </summary>
-        private void CreateCharacterCard(Core.CharacterPreset character)
+        private CharacterCard CreateCharacterCard(Core.CharacterPreset character)
         {
             if (characterCardPrefab == null)
             {
                 Debug.LogError("Character Card Prefab not assigned!");
-                return;
+                return null;
             }
             
             var cardObj = Instantiate(characterCardPrefab, cardContainer);
@@ -122,6 +133,27 @@ namespace DiceOrbit.UI
             if (card != null)
             {
                 card.Setup(character, OnCharacterSelected);
+            }
+
+            return card;
+        }
+
+        private IEnumerator PlayCharacterCardIntro(List<CharacterCard> cards)
+        {
+            yield return null;
+
+            const float staggerDelay = 0.08f;
+
+            for (int i = 0; i < cards.Count; i++)
+            {
+                var card = cards[i];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                card.CaptureIntroTargetPosition();
+                card.PlayIntro(i * staggerDelay);
             }
         }
         
