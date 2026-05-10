@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DiceOrbit.Visuals;
@@ -30,10 +29,8 @@ namespace DiceOrbit.UI
     [SerializeField] private Vector3 characterScale = new Vector3(0.3f, 0.3f, 1f);
     [SerializeField] private Vector2 colliderSizeMultiplier = new Vector2(1.6f, 1.6f);
     [SerializeField] private float colliderDepth = 0.2f;
-        [SerializeField] private float cardIntroStaggerDelay = 0.12f;
         
         private List<Core.CharacterPreset> currentChoices = new List<Core.CharacterPreset>();
-        private readonly List<CharacterCard> spawnedCards = new List<CharacterCard>();
         private Core.CharacterPreset selectedCharacter;
         
         private void Start()
@@ -44,7 +41,7 @@ namespace DiceOrbit.UI
                 selectionCanvas = GetComponentInParent<Canvas>();
             }
             
-            GenerateRandomChoices(true);
+            GenerateRandomChoices();
         }
 
         public void Show()
@@ -60,7 +57,7 @@ namespace DiceOrbit.UI
 
             DiceUI.Instance?.SetPanelVisible(false);
 
-            GenerateRandomChoices(true);
+            GenerateRandomChoices();
         }
 
         public void Hide()
@@ -80,7 +77,7 @@ namespace DiceOrbit.UI
         /// <summary>
         /// 랜덤 캐릭터 4개 생성
         /// </summary>
-        private void GenerateRandomChoices(bool playIntro)
+        private void GenerateRandomChoices()
         {
             // 기존 카드 제거
             foreach (Transform child in cardContainer)
@@ -89,7 +86,6 @@ namespace DiceOrbit.UI
             }
             
             currentChoices.Clear();
-            spawnedCards.Clear();
             
             // 랜덤 선택
             if (allCharacters.Count >= numberOfChoices)
@@ -106,11 +102,6 @@ namespace DiceOrbit.UI
             foreach (var character in currentChoices)
             {
                 CreateCharacterCard(character);
-            }
-
-            if (playIntro)
-            {
-                StartCoroutine(PlayCardIntroSequence());
             }
         }
         
@@ -131,24 +122,6 @@ namespace DiceOrbit.UI
             if (card != null)
             {
                 card.Setup(character, OnCharacterSelected);
-                spawnedCards.Add(card);
-            }
-        }
-
-        private IEnumerator PlayCardIntroSequence()
-        {
-            yield return null;
-
-            for (int i = 0; i < spawnedCards.Count; i++)
-            {
-                var card = spawnedCards[i];
-                if (card == null)
-                {
-                    continue;
-                }
-
-                card.CaptureIntroTargetPosition();
-                card.PlayIntro(i * cardIntroStaggerDelay);
             }
         }
         

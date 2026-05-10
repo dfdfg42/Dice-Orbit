@@ -141,7 +141,7 @@ namespace DiceOrbit.UI
 
                 if (canvasGroup != null)
                 {
-                    canvasGroup.alpha = easedT;
+                    canvasGroup.alpha = Mathf.Lerp(0f, 0.3f, easedT);
                 }
 
                 yield return null;
@@ -151,7 +151,7 @@ namespace DiceOrbit.UI
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha = 1f;
+                canvasGroup.alpha = 0.3f;
                 canvasGroup.interactable = true;
                 canvasGroup.blocksRaycasts = true;
             }
@@ -240,6 +240,11 @@ namespace DiceOrbit.UI
         private void SetHover(bool hover)
         {
             ApplyAlphaToUI(hover ? hoverAlpha : normalAlpha);
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = hover ? 0.8f : 0.3f;
+            }
 
             if (portraitImage != null)
             {
