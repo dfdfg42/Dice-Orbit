@@ -111,10 +111,10 @@ namespace DiceOrbit.Core
                 if (ability?.BaseSkill == null) continue;
                 if (ability.BaseSkill.Type != CharacterSkillType.Passive) continue;
 
-                var template = ability.BaseSkill.PassiveTemplate;
+                var template = ability.RuntimePassiveInstance;
                 if (template == null)
                 {
-                    Debug.LogWarning($"[Character] Passive skill '{ability.BaseSkill.SkillName}' has no PassiveTemplate.");
+                    Debug.LogWarning($"[Character] Passive skill '{ability.BaseSkill.SkillName}' has no RuntimePassiveInstance.");
                     continue;
                 }
 

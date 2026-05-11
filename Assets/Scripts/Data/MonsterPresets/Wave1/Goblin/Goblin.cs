@@ -135,7 +135,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
             }
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }

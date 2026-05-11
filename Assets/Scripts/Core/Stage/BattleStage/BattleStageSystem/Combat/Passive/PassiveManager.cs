@@ -11,35 +11,26 @@ namespace DiceOrbit.Systems.Passives
     public class PassiveManager : MonoBehaviour, ICombatReactor
     {
         private Unit owner;
-        [SerializeField] private List<PassiveAbility> activePassives = new();
-        public IReadOnlyList<PassiveAbility> ActivePassives => activePassives;
+        private List<IPassive> activePassives = new();
+        public IReadOnlyList<IPassive> ActivePassives => activePassives;
 
         public void Initialize(Unit unit)
         {
             owner = unit;
         }
 
-        public void AddPassive(PassiveAbility passive)
+        public void AddPassive(IPassive passive)
         {
             if (passive == null) return;
 
-            // 중첩 가능 여부 체크
             var existingSame = activePassives.Find(p => p.GetType() == passive.GetType());
-            if (existingSame != null)
-            {
-                // 같은 타입이 이미 존재할 때
-                if (!existingSame.AllowSamePassive(passive))
-                {
-                    // 중첩 불가능하면 추가하지 않음
-                    return;
-                }
-            }
+            if (existingSame != null && !existingSame.AllowSamePassive(passive))
+                return;
 
-            // 패시브 추가
             activePassives.Add(passive);
         }
 
-        public void RemovePassive(PassiveAbility passive)
+        public void RemovePassive(IPassive passive)
         {
             if (passive == null) return;
             activePassives.Remove(passive);
@@ -53,6 +44,7 @@ namespace DiceOrbit.Systems.Passives
         {
             // Priority 순서대로 정렬해서 실행
             var sortedPassives = activePassives.OrderByDescending(p => p.Priority).ToList();
+
             
             foreach (var passive in sortedPassives)
             {

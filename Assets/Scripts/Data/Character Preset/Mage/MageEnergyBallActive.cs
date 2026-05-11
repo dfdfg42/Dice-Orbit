@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
-    [System.Serializable]
+    [CreateAssetMenu(fileName = "MageEnergyBallActive", menuName = "Dice Orbit/Active Templates/Mage Energy Ball")]
     public class MageEnergyBallActive : CharacterActiveTemplate
     {
         [Header("Designer Tuning")]

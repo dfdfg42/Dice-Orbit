@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using DiceOrbit.Data.Passives;
+using DiceOrbit.Core;
 using UnityEngine;
 
 namespace DiceOrbit.Data.Skills
@@ -7,48 +9,90 @@ namespace DiceOrbit.Data.Skills
     [Serializable]
     public class RuntimeAbility
     {
-        // 액티브/패시브 공통으로 사용하는 원본 스킬 에셋입니다.
-        public CharacterSkill BaseSkill;
-        // 캐릭터별 런타임 성장 상태(현재 레벨)입니다.
+        public SkillAsset BaseSkill;
         public int CurrentLevel;
 
-        // 패시브 능력일 때만 채워지는 런타임 패시브 인스턴스입니다.
-        [NonSerialized] public PassiveAbility RuntimePassiveInstance;
+        [NonSerialized] public CharacterActiveTemplate RuntimeActiveInstance;
+        [NonSerialized] public IPassive RuntimePassiveInstance;
 
-        public RuntimeAbility(CharacterSkill skill, int initialLevel = 1)
+        public RuntimeAbility(SkillAsset skill, int initialLevel = 1)
         {
             BaseSkill = skill;
             int max = skill != null ? Mathf.Max(1, skill.MaxLevel) : 1;
             CurrentLevel = Mathf.Clamp(initialLevel, 1, max);
+
+            if (skill is ActiveSkillAsset activeAsset && activeAsset.ActiveTemplate != null)
+            {
+                RuntimeActiveInstance = UnityEngine.Object.Instantiate(activeAsset.ActiveTemplate);
+            }
+            else if (skill is PassiveSkillAsset passiveAsset && passiveAsset.PassiveTemplate != null)
+            {
+                RuntimePassiveInstance = UnityEngine.Object.Instantiate(passiveAsset.PassiveTemplate);
+            }
         }
 
         public CharacterSkillType AbilityType => BaseSkill != null ? BaseSkill.Type : CharacterSkillType.Active;
-        public CharacterSkillTargetType TargetType => BaseSkill != null ? BaseSkill.TargetType : CharacterSkillTargetType.None;
 
-        /// <summary>현재 레벨의 설명 반환 (레벨별 오버라이드 지원)</summary>
+        public CharacterSkillTargetType TargetType
+        {
+            get
+            {
+                if (BaseSkill is ActiveSkillAsset activeAsset)
+                    return activeAsset.TargetType;
+                return CharacterSkillTargetType.None;
+            }
+        }
+
+        public Visuals.TilePreviewStyle PreviewStyle
+        {
+            get
+            {
+                if (BaseSkill is ActiveSkillAsset activeAsset)
+                    return activeAsset.PreviewStyle;
+                return Visuals.TilePreviewStyle.Neutral;
+            }
+        }
+
         public string GetDescription() => BaseSkill?.GetDescription(CurrentLevel) ?? string.Empty;
 
-        /// <summary>현재 레벨의 DiceRequirement 반환</summary>
         public DiceRequirement GetRequirement() => BaseSkill?.GetRequirement(CurrentLevel) ?? BaseSkill?.Requirement;
 
-        public SkillLevelData GetCurrentLevelData()
-        {
-            return BaseSkill?.GetLevelData(CurrentLevel);
-        }
-
-        public SkillLevelData GetNextLevelData()
-        {
-            return BaseSkill?.GetLevelData(CurrentLevel + 1);
-        }
-
+        public SkillLevelData GetCurrentLevelData() => BaseSkill?.GetLevelData(CurrentLevel);
+        public SkillLevelData GetNextLevelData() => BaseSkill?.GetLevelData(CurrentLevel + 1);
         public bool IsMaxLevel => BaseSkill == null || CurrentLevel >= BaseSkill.MaxLevel;
 
         public bool TryUpgrade()
         {
             if (BaseSkill == null || IsMaxLevel) return false;
-            // 레벨만 올리고, 실제 동작 반영은 스킬/패시브 실행 경로에서 처리합니다.
             CurrentLevel++;
             return true;
+        }
+
+        public bool CanUse(int diceValue)
+        {
+            if (BaseSkill == null || !BaseSkill.CanUse(diceValue))
+                return false;
+            
+            // 향후 RuntimeActiveInstance 내부의 쿨타임, 스택 등 검사 추가 가능
+            return true;
+        }
+
+        public bool Execute(Character source, List<Unit> targets, List<TileData> targetTiles, int diceValue)
+        {
+            if (RuntimeActiveInstance != null)
+            {
+                return RuntimeActiveInstance.Execute(source, this, targets, targetTiles, diceValue);
+            }
+            return false;
+        }
+        
+        public string BuildPreview(Character source, int diceValue)
+        {
+            if (RuntimeActiveInstance != null)
+            {
+                return RuntimeActiveInstance.BuildPreview(source, this, diceValue);
+            }
+            return "예상: -";
         }
     }
 }

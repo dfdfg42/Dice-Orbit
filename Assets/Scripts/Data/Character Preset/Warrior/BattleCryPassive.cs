@@ -4,8 +4,8 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.Passives
 {
-    [System.Serializable]
-    public class BattleCryPassive : PassiveAbility
+    [CreateAssetMenu(fileName = "BattleCryPassive", menuName = "Dice Orbit/Passive Templates/Warrior Battle Cry")]
+    public class BattleCryPassive : CharacterPassive
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 공격 피해 증가율(%). 예: 5는 +5%")]

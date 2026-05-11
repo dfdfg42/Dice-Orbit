@@ -62,7 +62,7 @@ graph TD
         SysPassive[PassiveManager]
         SysStatus[StatusEffectManager]
         SysSkill[SkillManager]
-        DataPassive[PassiveAbility]
+        DataPassive[IPassive]
     end
 
     %% --- Connections ---
@@ -90,7 +90,7 @@ graph TD
     ActionPipe -->|Notify| SysStatus
     
     %% Reactors Internal
-    SysPassive -->|Execute| DataPassive
+    SysPassive -->|Execute| DataPassive[IPassive]
     
     %% Data Flow
     SysSkill -.->|Create| Action

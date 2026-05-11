@@ -167,7 +167,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
             }
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }

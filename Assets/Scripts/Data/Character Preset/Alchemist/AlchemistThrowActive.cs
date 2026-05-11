@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
-    [System.Serializable]
+    [CreateAssetMenu(fileName = "AlchemistThrowActive", menuName = "Dice Orbit/Active Templates/Alchemist Throw")]
     public class AlchemistThrowActive : CharacterActiveTemplate
     {
         [Header("Designer Tuning")]

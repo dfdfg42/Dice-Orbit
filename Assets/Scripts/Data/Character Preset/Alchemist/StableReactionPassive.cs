@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.Passives
 {
-    [System.Serializable]
-    public class StableReactionPassive : PassiveAbility
+    [CreateAssetMenu(fileName = "StableReactionPassive", menuName = "Dice Orbit/Passive Templates/Alchemist Stable Reaction")]
+    public class StableReactionPassive : CharacterPassive
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 피해 증가율(%). 체력 조건 충족 시 적용")]

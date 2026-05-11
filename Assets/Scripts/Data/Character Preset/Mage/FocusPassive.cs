@@ -4,8 +4,8 @@ using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data.Passives
 {
-    [System.Serializable]
-    public class FocusPassive : PassiveAbility
+    [CreateAssetMenu(fileName = "FocusPassive", menuName = "Dice Orbit/Passive Templates/Mage Focus")]
+    public class FocusPassive : CharacterPassive
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 집중 1스택당 추가 피해율(%). 예: 5는 +5%")]

@@ -7,8 +7,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.Skills
 {
-    [System.Serializable]
-    public abstract class CharacterActiveTemplate
+    public abstract class CharacterActiveTemplate : ScriptableObject
     {
         [SerializeField] protected CombatVfxProfile vfxProfile;
 
@@ -65,7 +64,7 @@ namespace DiceOrbit.Data.Skills
 
         public virtual CharacterActiveTemplate Clone()
         {
-            return (CharacterActiveTemplate)MemberwiseClone();
+            return Instantiate(this);
         }
     }
 }

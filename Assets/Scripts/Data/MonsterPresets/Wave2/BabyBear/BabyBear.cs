@@ -228,7 +228,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
             }
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }

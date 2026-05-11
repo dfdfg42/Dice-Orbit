@@ -10,7 +10,12 @@
 
 ### 1.1 Combat Domain Class Diagram (Current)
 
-아래 다이어그램은 레거시 `RuntimeSkill`/캐릭터 `StartingPassives` 제거 이후 구조를 반영합니다.
+아래 다이어그램은 ScriptableObject 기반 스킬/패시브 구조 전환 이후를 반영합니다.
+
+> **주요 설계 원칙**
+> - `CharacterActiveTemplate`, `CharacterPassive` → ScriptableObject (.asset 파일, Inspector 드래그 연결)
+> - `PassiveAbility` → `[Serializable]` 유지 (몬스터 전용 인라인 패시브)
+> - `IPassive` → 캐릭터/몬스터 패시브를 `PassiveManager`에서 통합 관리하는 공통 인터페이스
 
 ```mermaid
 classDiagram
@@ -138,42 +143,78 @@ namespace Data {
         +ExecuteSkillWithIntent(Unit, AttackIntent)
     }
 
+    class IPassive {
+        <<interface>>
+        +PassiveName:string
+        +CurrentLevel:int
+        +IsStackable:bool
+        +Initialize(Unit)
+        +SetLevel(int)
+        +Clone() IPassive
+        +AllowSamePassive(IPassive) bool
+        +OnOwnerSelected(Character)
+        +OnOwnerDeselected()
+        +GetDynamicDescription() string
+    }
+
+    class CharacterPassive {
+        <<abstract, ScriptableObject>>
+        +passiveName:string
+        +priority:int
+        +Clone() IPassive
+        +OnReact(CombatTrigger, CombatContext)
+    }
+
     class CharacterActiveTemplate {
-        <<abstract>>
+        <<abstract, ScriptableObject>>
         +Execute(Character, RuntimeAbility, List~Unit~, List~TileData~, int)
         +BuildPreview(Character, RuntimeAbility, int) string
         +CalculateRawDamage(Character, RuntimeAbility, int) int
+        +Clone() CharacterActiveTemplate
     }
 
-    class CharacterSkill {
+    class SkillAsset {
+        <<abstract, ScriptableObject>>
         +Type: CharacterSkillType
-        +ActiveTemplate: CharacterActiveTemplate
-        +PassiveTemplate: PassiveAbility
         +Levels: List~SkillLevelData~
         +GetDescription(int) string
         +GetRequirement(int) DiceRequirement
     }
 
+    class ActiveSkillAsset {
+        <<ScriptableObject>>
+        +TargetType: CharacterSkillTargetType
+        +ActiveTemplate: CharacterActiveTemplate
+    }
+
+    class PassiveSkillAsset {
+        <<ScriptableObject>>
+        +PassiveTemplate: CharacterPassive
+    }
+
     class RuntimeAbility {
-        +BaseSkill: CharacterSkill
+        +BaseSkill: SkillAsset
         +CurrentLevel:int
-        +RuntimePassiveInstance: PassiveAbility
+        +RuntimeActiveInstance: CharacterActiveTemplate
+        +RuntimePassiveInstance: IPassive
         +TryUpgrade() bool
+        +Execute(...) bool
+        +CanUse(int) bool
     }
 
     class PassiveAbility {
-        <<abstract>>
+        <<abstract, Serializable, 몬스터 전용>>
         +PassiveName:string
         +Initialize(Unit)
         +SetLevel(int)
-        +Clone() PassiveAbility
+        +Clone() IPassive
         +OnReact(CombatTrigger, CombatContext)
     }
 
     class PassiveManager {
-        +ActivePassives: IReadOnlyList~PassiveAbility~
-        +AddPassive(PassiveAbility)
-        +RemovePassive(PassiveAbility)
+        +ActivePassives: IReadOnlyList~IPassive~
+        +AddPassive(IPassive)
+        +RemovePassive(IPassive)
     }
 
     class StatusEffect {
@@ -194,6 +235,9 @@ namespace Data {
 }
 
 %% Inheritance
+SkillAsset <|-- ActiveSkillAsset
+SkillAsset <|-- PassiveSkillAsset
+
 Unit <|-- Character
 Unit <|-- Monster
 UnitStats <|-- CharacterStats
@@ -201,8 +245,14 @@ UnitStats <|-- MonsterStats
 MonsterAI <|-- RandomPattern
 MonsterAI <|-- SequentialPattern
 
+%% Inheritance
+SkillAsset <|-- ActiveSkillAsset
+SkillAsset <|-- PassiveSkillAsset
+IPassive <|.. CharacterPassive : implements
+IPassive <|.. PassiveAbility : implements
+ICombatReactor <|.. IPassive : extends
+
 %% Reactor implementation
-PassiveAbility ..|> ICombatReactor
 PassiveManager ..|> ICombatReactor
 StatusEffect ..|> ICombatReactor
 StatusEffectManager ..|> ICombatReactor
@@ -213,11 +263,11 @@ Unit o-- PassiveManager
 Unit o-- StatusEffectManager
 
 CharacterPreset ..> CharacterStats : creates
-CharacterPreset o-- CharacterSkill
+CharacterPreset o-- SkillAsset
 
 MonsterPreset ..> MonsterStats : creates
 MonsterPreset o-- MonsterAI
-MonsterPreset o-- PassiveAbility
+MonsterPreset o-- PassiveAbility : SerializeReference 인라인
 MonsterPreset o-- DeathEffect
 
 MonsterAI o-- MonsterSkill
@@ -228,14 +278,17 @@ MonsterSkill ..> AttackIntent : generates
 AttackIntent --> Unit : targets
 AttackIntent --> TileData : targetTiles
 
-CharacterSkill o-- CharacterActiveTemplate
-CharacterSkill o-- SkillLevelData
+ActiveSkillAsset o-- CharacterActiveTemplate : SO 드래그 연결
+PassiveSkillAsset o-- CharacterPassive : SO 드래그 연결
+SkillAsset o-- SkillLevelData
 CharacterStats o-- RuntimeAbility
-RuntimeAbility --> CharacterSkill
+RuntimeAbility --> SkillAsset
+RuntimeAbility o-- CharacterActiveTemplate : Instantiate 복사본
+RuntimeAbility o-- IPassive : 런타임 인스턴스
 
 Character ..> CharacterProgressionService : level-up policy
 
-PassiveManager o-- PassiveAbility
+PassiveManager o-- IPassive
 StatusEffectManager o-- StatusEffect
 
 CombatPipeline ..> CombatContext
@@ -294,7 +347,7 @@ classDiagram
     %% --- Reactive Systems (Listeners) ---
     class PassiveManager {
         +OnReact(...)
-        -List~PassiveAbility~ activePassives
+        -List~IPassive~ activePassives
     }
 
     class StatusEffectManager {
@@ -302,8 +355,10 @@ classDiagram
         -List~StatusEffect~ activeEffects
     }
     
-    class PassiveAbility {
+    class IPassive {
+        <<Interface>>
         +OnReact(...)
+        +Clone() IPassive
     }
 
     class StatusEffect {
@@ -323,10 +378,10 @@ classDiagram
     PassiveManager ..|> ICombatReactor : Implements
     StatusEffectManager ..|> ICombatReactor : Implements
     
-    PassiveManager o-- PassiveAbility : Manages
+    PassiveManager o-- IPassive : Manages
     StatusEffectManager o-- StatusEffect : Manages
     
-    PassiveAbility ..|> ICombatReactor : Logic Proxy
+    IPassive ..|> ICombatReactor : extends
     StatusEffect ..|> ICombatReactor : Logic Proxy
 ```
 
@@ -380,9 +435,41 @@ sequenceDiagram
 
 ## 3. 데이터 구조 (Data Structure)
 
-*   **SkillData**: 런타임 스킬 정보. `ActionModules`를 포함하여 파이프라인을 타기 전 동작을 정의.
-*   **PassiveAbility (SO)**: 패시브 로직 정의. `ICombatReactor`처럼 동작하며 특정 트리거에 반응.
-*   **StatusEffect (Class)**: 런타임 버프/디버프. 자신이 부착된 유닛이 Source/Target이 될 때 `OnReact`를 통해 결과에 개입.
+### 스킬 에셋 구조
+
+| 클래스 | 타입 | 역할 |
+|---|---|---|
+| `SkillAsset` | abstract ScriptableObject | 액티브/패시브 공통 베이스 (레벨, 조건) |
+| `ActiveSkillAsset` | ScriptableObject | 액티브 스킬 에셋. `CharacterActiveTemplate` SO를 드래그로 연결 |
+| `PassiveSkillAsset` | ScriptableObject | 패시브 스킬 에셋. `CharacterPassive` SO를 드래그로 연결 |
+| `CharacterActiveTemplate` | abstract ScriptableObject | 캐릭터 액티브 스킬 실행 로직. 각 스킬마다 별도 .asset 생성 |
+| `CharacterPassive` | abstract ScriptableObject | 캐릭터 패시브 로직. 각 패시브마다 별도 .asset 생성 |
+| `PassiveAbility` | abstract `[Serializable]` | 몬스터 전용 패시브. MonsterPreset 안에 인라인 저장 (`[SerializeReference]`) |
+| `IPassive` | interface | `CharacterPassive`와 `PassiveAbility` 공통 인터페이스. `PassiveManager`가 이 타입으로 관리 |
+
+### 스킬 추가 워크플로
+
+**캐릭터 액티브 스킬:**
+1. `CharacterActiveTemplate` 상속 클래스 작성 + `[CreateAssetMenu]`
+2. Project 창에서 .asset 생성 (우클릭 → Create → Dice Orbit/Active Templates/...)
+3. `ActiveSkillAsset` .asset 생성 후 `Active Template` 필드에 드래그
+4. `CharacterPreset.StartingSkills`에 드래그 추가
+
+**캐릭터 패시브 스킬:**
+1. `CharacterPassive` 상속 클래스 작성 + `[CreateAssetMenu]`
+2. Project 창에서 .asset 생성 (우클릭 → Create → Dice Orbit/Passive Templates/...)
+3. `PassiveSkillAsset` .asset 생성 후 `Passive Template` 필드에 드래그
+4. `CharacterPreset.StartingSkills`에 드래그 추가
+
+**몬스터 패시브:**
+1. `PassiveAbility` 상속 클래스 작성
+2. `MonsterPreset.StartingPassives` 리스트에서 `+` → 타입 선택 (인라인, .asset 불필요)
+
+### 런타임 구조
+
+*   **`RuntimeAbility`**: `CharacterPreset` → `CharacterStats` 생성 시 `SkillAsset`을 래핑. 액티브는 `Instantiate(ActiveTemplate)`으로 복사본 생성, 패시브는 `Instantiate(PassiveTemplate)`으로 복사본 생성.
+*   **`PassiveManager`**: `IPassive` 리스트로 캐릭터/몬스터 패시브를 통합 관리.
+*   **`StatusEffect`**: 런타임 버프/디버프. 자신이 부착된 유닛이 Source/Target이 될 때 `OnReact`를 통해 결과에 개입.
 
 ### 예시: 데미지 계산 공식
 `OutputValue` = (`BaseDamage` + `DiceBonus`)

@@ -138,7 +138,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraKnight
             }
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }
