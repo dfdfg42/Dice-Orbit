@@ -94,9 +94,19 @@ namespace DiceOrbit.Data.Passives
         public abstract void OnReact(CombatTrigger trigger, CombatContext context);
 
         /// <summary>
+        /// 캐릭터가 선택(패널 표시)되었을 때 호출됩니다.
+        /// </summary>
+        public virtual void OnOwnerSelected(Character c) { }
+
+        /// <summary>
+        /// 캐릭터 선택이 해제(패널 닫힘)되었을 때 호출됩니다.
+        /// </summary>
+        public virtual void OnOwnerDeselected() { }
+
+        /// <summary>
         /// 같은 패시브가 중첩될 때 처리 로직
         /// </summary>
-        public virtual bool AllowSamePassive(PassiveAbility incoming) 
+        public virtual bool AllowSamePassive(PassiveAbility incoming)
         {
             return IsStackable;
         }

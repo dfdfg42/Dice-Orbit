@@ -138,31 +138,27 @@ namespace Data {
         +ExecuteSkillWithIntent(Unit, AttackIntent)
     }
 
-    class CharacterSkillData {
-        +Effects: List~SkillEffectBase~
+    class CharacterActiveTemplate {
+        <<abstract>>
+        +Execute(Character, RuntimeAbility, List~Unit~, List~TileData~, int)
+        +BuildPreview(Character, RuntimeAbility, int) string
+        +CalculateRawDamage(Character, RuntimeAbility, int) int
     }
-
-    class MonsterSkillData
 
     class CharacterSkill {
         +Type: CharacterSkillType
+        +ActiveTemplate: CharacterActiveTemplate
         +PassiveTemplate: PassiveAbility
-        +BaseData: CharacterSkillData
         +Levels: List~SkillLevelData~
-        +GetSkillData(int) CharacterSkillData
+        +GetDescription(int) string
+        +GetRequirement(int) DiceRequirement
     }
 
     class RuntimeAbility {
         +BaseSkill: CharacterSkill
         +CurrentLevel:int
         +RuntimePassiveInstance: PassiveAbility
-        +CurrentSkillData: CharacterSkillData
         +TryUpgrade() bool
-    }
-
-    class SkillEffectBase {
-        <<abstract>>
-        +Execute(Unit, List~Unit~, List~TileData~, int)
     }
 
     class PassiveAbility {
@@ -204,8 +200,6 @@ UnitStats <|-- CharacterStats
 UnitStats <|-- MonsterStats
 MonsterAI <|-- RandomPattern
 MonsterAI <|-- SequentialPattern
-SkillData <|-- CharacterSkillData
-SkillData <|-- MonsterSkillData
 
 %% Reactor implementation
 PassiveAbility ..|> ICombatReactor
@@ -234,11 +228,10 @@ MonsterSkill ..> AttackIntent : generates
 AttackIntent --> Unit : targets
 AttackIntent --> TileData : targetTiles
 
-CharacterSkill o-- CharacterSkillData
+CharacterSkill o-- CharacterActiveTemplate
 CharacterSkill o-- SkillLevelData
 CharacterStats o-- RuntimeAbility
 RuntimeAbility --> CharacterSkill
-CharacterSkillData o-- SkillEffectBase
 
 Character ..> CharacterProgressionService : level-up policy
 

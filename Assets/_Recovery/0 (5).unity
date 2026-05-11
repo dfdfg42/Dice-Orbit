@@ -4317,10 +4317,19 @@ MonoBehaviour:
   panelRect: {fileID: 910316535}
   tooltipText: {fileID: 1801586755}
   glossaryContainer: {fileID: 0}
+  keywordDetailRect: {fileID: 0}
+  keywordDetailText: {fileID: 0}
   padding: {x: 14, y: 10}
   offset: {x: 16, y: -16}
   minMainPanelWidth: 180
   maxMainPanelWidth: 520
+  detailPadding: {x: 12, y: 8}
+  detailOffset: {x: 14, y: 0}
+  minDetailPanelWidth: 200
+  maxDetailPanelWidth: 380
+  maxDetailTextWidth: 360
+  forceTopMost: 1
+  topMostSortingOrder: 30000
 --- !u!114 &1890710756
 MonoBehaviour:
   m_ObjectHideFlags: 0

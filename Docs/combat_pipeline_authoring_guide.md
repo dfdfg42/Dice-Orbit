@@ -13,7 +13,7 @@ It reflects current code behavior.
 ## 2. Data path (actual)
 
 1. `CharacterSkill` (SO, level-based) -> `RuntimeAbility`
-2. `RuntimeAbility.CurrentSkillData` resolves runtime `SkillData`
+2. `RuntimeAbility.BaseSkill.ActiveTemplate` resolves runtime execution logic
 3. `SkillManager.PrepareSkill()` validates dice requirement and target
 4. `SkillManager.ExecuteSkill()` builds `CombatAction` + `CombatContext`
 5. `CombatPipeline.Process()` runs `OnPreAction -> OnCalculateOutput -> ApplyAction -> OnHit -> OnPostAction`
@@ -50,8 +50,8 @@ Impact:
 
 ### Skill
 - Authoring asset: `CharacterSkill` + `SkillLevelData`
-- Runtime execution: `SkillManager`
-- Optional behavior modules: `SkillActionModule`
+- Runtime execution: `SkillManager` via `CharacterActiveTemplate`
+- Target logic: Managed by `TargetType` in `CharacterSkill`
 
 ### Passive
 - Authoring asset: `PassiveAbility` (SO)
@@ -71,10 +71,10 @@ Impact:
 ## 6. Authoring checklist
 
 When adding a new skill:
-1. Define `CharacterSkill` level data (requirement/effects/modules)
-2. Verify `RuntimeAbility.CurrentSkillData` and `GetCurrentLevelData()` mapping covers all fields
-3. If needed, implement a new `SkillActionModule`
-4. Confirm target resolution in `SkillManager.ResolveTargets()`
+1. Define `CharacterSkill` level data (requirement/descriptions)
+2. Create or reuse a `CharacterActiveTemplate` for execution logic
+3. Assign the template via Inspector (`[SerializeReference]`)
+4. Confirm target resolution and `BuildPreview` accuracy
 5. Confirm the action type/tags expected by passive/status logic
 
 When adding a new passive:

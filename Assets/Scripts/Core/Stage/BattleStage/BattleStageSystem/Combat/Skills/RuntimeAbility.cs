@@ -24,7 +24,12 @@ namespace DiceOrbit.Data.Skills
 
         public CharacterSkillType AbilityType => BaseSkill != null ? BaseSkill.Type : CharacterSkillType.Active;
         public CharacterSkillTargetType TargetType => BaseSkill != null ? BaseSkill.TargetType : CharacterSkillTargetType.None;
-        public CharacterSkillData CurrentSkillData => BaseSkill?.GetSkillData(CurrentLevel);
+
+        /// <summary>현재 레벨의 설명 반환 (레벨별 오버라이드 지원)</summary>
+        public string GetDescription() => BaseSkill?.GetDescription(CurrentLevel) ?? string.Empty;
+
+        /// <summary>현재 레벨의 DiceRequirement 반환</summary>
+        public DiceRequirement GetRequirement() => BaseSkill?.GetRequirement(CurrentLevel) ?? BaseSkill?.Requirement;
 
         public SkillLevelData GetCurrentLevelData()
         {

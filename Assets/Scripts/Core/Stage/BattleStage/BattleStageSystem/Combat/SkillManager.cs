@@ -9,31 +9,27 @@ namespace DiceOrbit.Core
     /// 스킬 관리자 (싱글톤)
     /// - 스킬 사용 조건 확인
     /// - 타겟 선택 요청
-    /// - 스킬 실행 (파이프라인 위임)
+    /// - 스킬 실행 (ActiveTemplate 경로 단일화)
     /// </summary>
     public class SkillManager : MonoBehaviour
     {
         public static SkillManager Instance { get; private set; }
-        
+
         private void Awake()
         {
             if (Instance == null)
-            {
                 Instance = this;
-            }
             else
-            {
                 Destroy(gameObject);
-            }
         }
-        
+
         /// <summary>
         /// 스킬 사용 준비 (UI에서 호출)
         /// </summary>
         public void PrepareSkill(Character source, int skillIndex, DiceData dice)
         {
             if (source == null) return;
-            
+
             // 1. 유효성 검사
             if (skillIndex < 0 || skillIndex >= source.Stats.ActiveAbilityCount)
             {
@@ -41,34 +37,38 @@ namespace DiceOrbit.Core
                 source.OnSkillResolved();
                 return;
             }
-            
+
             RuntimeAbility runtimeAbility = source.Stats.GetActiveAbilityByIndex(skillIndex);
-            // CurrentSkillData는 RuntimeAbility.CurrentLevel 기준으로 계산됩니다.
-            var skillData = runtimeAbility?.CurrentSkillData;
-            
-            if (skillData == null)
+            if (runtimeAbility?.BaseSkill == null)
             {
                 source.OnSkillResolved();
                 return;
             }
-            
+
             // 2. 상태 이상 체크
             if (source.StatusEffects != null)
             {
                 // TODO: Check Stun/Silence
             }
-            
-            // 3. 주사위 조건 확인 (CharacterSkill의 Requirement 사용)
-            if (runtimeAbility.BaseSkill == null || !runtimeAbility.BaseSkill.CanUse(dice.Value))
+
+            // 3. 주사위 조건 확인
+            if (!runtimeAbility.BaseSkill.CanUse(dice.Value))
             {
-                Debug.LogWarning($"[SkillManager] Cannot use {skillData.SkillName}. Requirement not met.");
+                Debug.LogWarning($"[SkillManager] Cannot use {runtimeAbility.BaseSkill.SkillName}. Requirement not met.");
                 source.OnSkillResolved();
                 return;
             }
-            
-            Debug.Log($"[SkillManager] Preparing {skillData.SkillName} for {source.Stats.CharacterName}");
-            
-            // 4. 타겟 선택 시작
+
+            Debug.Log($"[SkillManager] Preparing {runtimeAbility.BaseSkill.SkillName} for {source.Stats.CharacterName}");
+
+            // 4. TargetType.None: 타겟 없이 즉시 실행
+            if (runtimeAbility.TargetType == CharacterSkillTargetType.None)
+            {
+                ExecuteNoTarget(source, runtimeAbility, dice.Value);
+                return;
+            }
+
+            // 5. 타겟 선택 시작
             var targetSelector = SkillTargetSelector.Instance;
             if (targetSelector != null)
             {
@@ -80,38 +80,41 @@ namespace DiceOrbit.Core
                 source.OnSkillResolved();
             }
         }
-        
+
+        private void ExecuteNoTarget(Character source, RuntimeAbility runtimeAbility, int diceValue)
+        {
+            source.OnSkillExecutionStarted();
+            var activeTemplate = runtimeAbility.BaseSkill?.ActiveTemplate;
+            if (activeTemplate != null)
+                activeTemplate.Execute(source, runtimeAbility, new List<Unit>(), new List<TileData>(), diceValue);
+            source.OnSkillResolved();
+        }
+
         /// <summary>
         /// 타겟 선택 완료 시 호출 (TargetSelector에서 호출)
         /// </summary>
         public void OnTargetSelected(Character source, Unit target, RuntimeAbility runtimeAbility, int diceValue)
         {
             if (source == null || runtimeAbility == null) return;
-
             ExecuteTargetingSkill(source, target, runtimeAbility, diceValue);
         }
-        
+
         /// <summary>
-        /// 스킬 실제 실행
+        /// 스킬 실제 실행 — ActiveTemplate 단일 경로
         /// </summary>
         private void ExecuteTargetingSkill(Character source, Unit target, RuntimeAbility runtimeAbility, int diceValue)
         {
-            var skill = runtimeAbility?.CurrentSkillData;
-            if (skill == null) return;
+            if (runtimeAbility?.BaseSkill?.ActiveTemplate == null)
+            {
+                Debug.LogWarning($"[SkillManager] No ActiveTemplate on skill '{runtimeAbility?.BaseSkill?.SkillName}'. Skill not executed.");
+                source.OnSkillResolved();
+                return;
+            }
 
             source.OnSkillExecutionStarted();
 
             var targets = ResolveTargetsByType(source, target, runtimeAbility.TargetType);
-            var targetTiles = ResolveTargetTiles(source, skill);
-
-            bool executedByTemplate = runtimeAbility.BaseSkill?.ActiveTemplate != null
-                && runtimeAbility.BaseSkill.ActiveTemplate.Execute(source, runtimeAbility, targets, targetTiles, diceValue);
-
-            if (!executedByTemplate)
-            {
-                // 하위 호환: ActiveTemplate 미설정 스킬은 기존 Effect 순회 경로를 유지합니다.
-                skill.Execute(source, targets, targetTiles, diceValue);
-            }
+            runtimeAbility.BaseSkill.ActiveTemplate.Execute(source, runtimeAbility, targets, new List<TileData>(), diceValue);
 
             source.OnSkillResolved();
         }
@@ -119,40 +122,17 @@ namespace DiceOrbit.Core
         private List<Unit> ResolveTargetsByType(Character source, Unit initialTarget, CharacterSkillTargetType type)
         {
             var resolved = new List<Unit>();
-
             switch (type)
             {
                 case CharacterSkillTargetType.OneEnemy:
-                    resolved.Add(initialTarget);
+                    if (initialTarget != null) resolved.Add(initialTarget);
                     break;
                 case CharacterSkillTargetType.None:
                     break;
                 default:
                     break;
             }
-
             return resolved;
-        }
-
-        private List<TileData> ResolveTargetTiles(Character source, CharacterSkillData skill)
-        {
-            var tiles = new List<TileData>();
-            if (skill?.Effects == null) return tiles;
-
-            foreach (var effect in skill.Effects)
-            {
-                if (effect == null) continue;
-                var previewTiles = effect.GetTargetTilesPreview(source);
-                if (previewTiles == null || previewTiles.Count == 0) continue;
-
-                foreach (var tile in previewTiles)
-                {
-                    if (tile == null || tiles.Contains(tile)) continue;
-                    tiles.Add(tile);
-                }
-            }
-
-            return tiles;
         }
     }
 }

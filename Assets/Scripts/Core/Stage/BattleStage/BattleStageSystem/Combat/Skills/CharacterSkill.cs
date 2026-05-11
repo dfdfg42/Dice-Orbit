@@ -1,44 +1,20 @@
 using DiceOrbit.Core;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Passives;
+using DiceOrbit.Visuals;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace DiceOrbit.Data
-{
-    [System.Serializable]
-    public class CharacterSkillData : SkillData
-    {
-
-        // SkillName, Description은 부모 클래스에서 상속받음
-
-        // 내부에서 값을 설정할 수 있도록 public 메서드 제공
-        public void SetSkillName(string name) => skillName = name;
-        public void SetDescription(string desc) => description = desc;
-
-        [Header("Skill Effects")]
-        public List<DiceOrbit.Data.Skills.Effects.SkillEffectBase> Effects = new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>();
-        
-        public override void Execute(Core.Unit source, List<Core.Unit> targetUnits, List<TileData> targetTiles, int diceValue)
-        {
-            if (Effects == null || Effects.Count == 0) return;
-            
-            foreach (var effect in Effects)
-            {
-                if (effect == null) continue;
-                effect.Execute(source, targetUnits, targetTiles, diceValue);
-            }
-        }
-    }
-}
 
 namespace DiceOrbit.Data.Skills
 {
     public enum CharacterSkillTargetType
     {
         OneEnemy,
-        None
+        None,
+        OneTile,    // 타일 하나 클릭으로 선택
+        AllTiles,   // 모든 타일 자동 선택 (확인 클릭만 필요)
     }
+
     public enum CharacterSkillType
     {
         Active,
@@ -50,18 +26,19 @@ namespace DiceOrbit.Data.Skills
     {
         public int Level;
         public string Description;
-        
-        [Header("Level-Specific Data")]
         public DiceRequirement Requirement;
-        public List<DiceOrbit.Data.Skills.Effects.SkillEffectBase> Effects;
     }
 
     [CreateAssetMenu(fileName = "New Character Skill", menuName = "Dice Orbit/Skills/Character Skill")]
     public class CharacterSkill : ScriptableObject
     {
         [Header("Skill Data")]
-        public CharacterSkillData BaseData = new CharacterSkillData();
-        
+        [SerializeField] private string skillName = "";
+        [SerializeField, TextArea(2, 4)] private string description = "";
+
+        public string SkillName => skillName;
+        public string Description => description;
+
         [Header("Character Skill Info")]
         public Sprite Icon;
         public CharacterSkillType Type;
@@ -70,31 +47,23 @@ namespace DiceOrbit.Data.Skills
         [SerializeReference] public CharacterActiveTemplate ActiveTemplate;
         public CharacterSkillTargetType TargetType = CharacterSkillTargetType.OneEnemy;
 
+        [Header("Tile Targeting Preview")]
+        public TilePreviewStyle PreviewStyle = TilePreviewStyle.Neutral;
+
         [Header("Passive Binding (Type=Passive)")]
         // 런타임에서 복제되어 PassiveManager에 등록될 패시브 템플릿입니다.
         [SerializeReference] public PassiveAbility PassiveTemplate;
 
         [Header("Level")]
         [Min(1)] public int MaxLevelOverride = 1;
-        
+
         [Header("Requirements")]
         public DiceRequirement Requirement = new DiceRequirement();
-        
+
         [Header("Progression")]
         public List<SkillLevelData> Levels = new List<SkillLevelData>();
 
-        // 편의 프로퍼티 (BaseData의 필드에 직접 접근)
-        public string SkillName
-        {
-            get => BaseData.SkillName;
-            set => BaseData.SetSkillName(value);
-        }
-
-        public string Description
-        {
-            get => BaseData.Description;
-            set => BaseData.SetDescription(value);
-        }
+        public int MaxLevel => Mathf.Max(1, MaxLevelOverride, Levels != null ? Levels.Count : 0);
 
         /// <summary>
         /// 주사위 값으로 스킬 사용 가능한지 확인
@@ -108,37 +77,32 @@ namespace DiceOrbit.Data.Skills
         {
             int index = level - 1;
             if (index >= 0 && index < Levels.Count)
-            {
                 return Levels[index];
-            }
-            if (Levels.Count > 0) return Levels[Levels.Count - 1];
+            if (Levels.Count > 0)
+                return Levels[Levels.Count - 1];
             return null;
         }
 
-        public int MaxLevel => Mathf.Max(1, MaxLevelOverride, Levels != null ? Levels.Count : 0);
-        
         /// <summary>
-        /// 현재 레벨의 SkillData 반환 (레벨별 데이터 적용)
+        /// 현재 레벨의 설명 반환 (레벨별 오버라이드 지원)
         /// </summary>
-        public CharacterSkillData GetSkillData(int level)
+        public string GetDescription(int level)
         {
             var levelData = GetLevelData(level);
-            if (levelData == null) return BaseData;
-            
-            // 레벨별 이펙트가 없으면 BaseData 이펙트를 그대로 사용합니다.
-            var resolvedEffects = (levelData.Effects != null && levelData.Effects.Count > 0)
-                ? levelData.Effects
-                : (BaseData.Effects ?? new List<DiceOrbit.Data.Skills.Effects.SkillEffectBase>());
+            if (levelData != null && !string.IsNullOrWhiteSpace(levelData.Description))
+                return levelData.Description;
+            return description;
+        }
 
-            // BaseData 복사 후 레벨별 데이터 적용
-            var skillData = new CharacterSkillData
-            {
-                Effects = resolvedEffects,
-            };
-
-            skillData.SetSkillName(BaseData.SkillName);
-            skillData.SetDescription(string.IsNullOrWhiteSpace(levelData.Description) ? BaseData.Description : levelData.Description);
-            return skillData;
+        /// <summary>
+        /// 현재 레벨의 DiceRequirement 반환 (레벨별 오버라이드 지원)
+        /// </summary>
+        public DiceRequirement GetRequirement(int level)
+        {
+            var levelData = GetLevelData(level);
+            if (levelData?.Requirement != null)
+                return levelData.Requirement;
+            return Requirement;
         }
     }
 }
