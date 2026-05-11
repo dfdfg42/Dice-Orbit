@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,23 +7,21 @@ using DiceOrbit.Data;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data.Skills;
-using DiceOrbit.Data.Skills;
-using DiceOrbit.Data.Passives;
 
 namespace DiceOrbit.UI
 {
     /// <summary>
-    /// ?�르?�나 ?��???캐릭???�션 UI
-    /// 기존 ActionPanel.cs�??�체합?�다.
+    /// 페르소나 스타일 캐릭터 액션 UI
+    /// 기존 ActionPanel.cs를 대체합니다.
     /// </summary>
     public class CharacterActionUI : MonoBehaviour
     {
         public static CharacterActionUI Instance { get; private set; }
 
-        [Header("?�널 루트 (?�라?�드 ?�??")]
+        [Header("패널 루트 (슬라이드 대상)")]
         [SerializeField] private RectTransform panelRoot;
-        [SerializeField] private Vector2 hiddenPosition = new Vector2(600f, -200f);  // ?�면 ?�른�?바깥
-        [SerializeField] private Vector2 shownPosition  = new Vector2(-20f,  -20f);  // ?�른�??�단
+        [SerializeField] private Vector2 hiddenPosition = new Vector2(600f, -200f);  // 화면 오른쪽 바깥
+        [SerializeField] private Vector2 shownPosition  = new Vector2(-20f,  -20f);  // 오른쪽 하단
         [SerializeField] private float slideInDuration  = 0.25f;
 
         [Header("초상화")]
@@ -35,15 +33,15 @@ namespace DiceOrbit.UI
         [SerializeField] private Button cancelButton;
         [SerializeField] private float buttonStaggerDelay = 0.07f;
 
-        [Header("?�킬 ?�택 ?�널")]
+        [Header("스킬 선택 패널")]
         [SerializeField] private GameObject skillSelectPanel;
         [SerializeField] private Transform skillButtonContainer;
         [SerializeField] private GameObject skillSelectButtonPrefab;
 
-        [Header("?�버?�이")]
+        [Header("오버레이")]
         [SerializeField] private TargetSelectionOverlay overlay;
 
-        // ?��????�태
+        // 런타임 상태
         private Character    currentCharacter;
         private DiceData     currentDice;
         private bool         waitingForDice = false;
@@ -54,34 +52,34 @@ namespace DiceOrbit.UI
         private List<RectTransform> actionButtons = new List<RectTransform>();
         private Coroutine slideCoroutine;
 
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
-        // 초기??
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+        // ─────────────────────────────────────────────
+        // 초기화
+        // ─────────────────────────────────────────────
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
 
-            // 버튼 ?�벤??
+            // 버튼 이벤트
             moveButton?.onClick.AddListener(OnMoveClicked);
             skillButton?.onClick.AddListener(OnSkillClicked);
             cancelButton?.onClick.AddListener(OnCancelClicked);
 
-            // ?�버?�이 취소 ?�벤??
+            // 오버레이 취소 이벤트
             if (overlay != null)
                 overlay.OnOverlayCancelled += OnCancelClicked;
 
-            // 버튼 목록 (?�태거용)
+            // 버튼 목록 (스태거용)
             if (moveButton  != null) actionButtons.Add(moveButton.GetComponent<RectTransform>());
             if (skillButton != null) actionButtons.Add(skillButton.GetComponent<RectTransform>());
 
-            // 초상???�롯??Rect 비율�??�프?�이??비율???�라???�려 보이지 ?�게 비율??고정?�니??
+            // 초상화 슬롯의 Rect 비율과 스프라이트 비율이 달라도 눌려 보이지 않게 비율을 고정합니다.
             if (portraitImage != null)
             {
                 portraitImage.preserveAspect = true;
             }
 
-            // 초기 ?�태: ?��?
+            // 초기 상태: 숨김
             if (panelRoot != null) panelRoot.anchoredPosition = hiddenPosition;
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             SetButtonsInteractable(false);
@@ -95,18 +93,18 @@ namespace DiceOrbit.UI
 
         private void LateUpdate()
         {
-            // ?�널???�려 ?�는 ?�안 ?�재 캐릭?�의 ?�니메이???�레?�을 초상?�에 미러링합?�다.
+            // 패널이 열려 있는 동안 현재 캐릭터의 애니메이션 프레임을 초상화에 미러링합니다.
             if (!isPanelVisible || currentCharacter == null || portraitImage == null)
                 return;
 
             RefreshPortraitImage();
         }
 
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+        // ─────────────────────────────────────────────
         // 공개 API
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+        // ─────────────────────────────────────────────
 
-        /// <summary>캐릭???�택 ???�널 ?�시</summary>
+        /// <summary>캐릭터 선택 시 패널 표시</summary>
         public void Show(Character character)
         {
             currentCharacter = character;
@@ -114,37 +112,25 @@ namespace DiceOrbit.UI
             waitingForDice   = true;
             isPanelVisible   = true;
 
-            if (character?.Passives != null)
-            {
-                foreach (var passive in character.Passives.ActivePassives)
-                    passive?.OnOwnerSelected(character);
-            }
-
-            // Animator 기반 캐릭?�는 ?�시�?SpriteRenderer ?�레?�을 ?�선 ?�용?�니??
+            // Animator 기반 캐릭터는 실시간 SpriteRenderer 프레임을 우선 사용합니다.
             currentPortraitSource = character != null ? character.GetComponentInChildren<SpriteRenderer>() : null;
             RefreshPortraitImage();
 
             RefreshActionButtonsState();
 
-            // 주사?��? 먼�? ?�택????캐릭?��? ?�택??경우�?지?�합?�다.
+            // 주사위를 먼저 선택한 뒤 캐릭터를 선택한 경우를 지원합니다.
             TryApplyPreselectedDice();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
 
-            // ?�라?�드 ??
+            // 슬라이드 인
             StopSlide();
             slideCoroutine = StartCoroutine(SlideIn());
         }
 
-        /// <summary>?�널 ?�기�?/summary>
+        /// <summary>패널 숨기기</summary>
         public void Hide()
         {
-            if (currentCharacter?.Passives != null)
-            {
-                foreach (var passive in currentCharacter.Passives.ActivePassives)
-                    passive?.OnOwnerDeselected();
-            }
-
             overlay?.Hide();
             HoverTooltipUI.Instance?.HidePinned();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
@@ -152,7 +138,7 @@ namespace DiceOrbit.UI
             StopSlide();
             slideCoroutine = StartCoroutine(SlideOut());
 
-            // ?�겟팅 중이 ?�닐 ?�만 초기??
+            // 타겟팅 중이 아닐 때만 초기화
             if (SkillTargetSelector.Instance != null && !SkillTargetSelector.Instance.IsSelectingTarget)
             {
                 currentCharacter = null;
@@ -174,16 +160,16 @@ namespace DiceOrbit.UI
             return isPanelVisible && currentCharacter == character;
         }
 
-        /// <summary>주사???�롭 처리 (DiceElement?�서 ?�출)</summary>
+        /// <summary>주사위 드롭 처리 (DiceElement에서 호출)</summary>
         public void OnDiceDropped(DiceData dice)
         {
-            // ?�널???�린 ?�태?�서??주사?��? ?�시 ?�택?�도 즉시 교체 반영?�어???�니??
+            // 패널이 열린 상태에서는 주사위를 다시 선택해도 즉시 교체 반영되어야 합니다.
             if (currentCharacter == null || dice == null || dice.State == DiceState.Used) return;
 
             currentDice    = dice;
             waitingForDice = false;
 
-            // 버튼 ?�성?�는 ???�산/?�태�??�께 고려??갱신?�니??
+            // 버튼 활성화는 턴 예산/상태를 함께 고려해 갱신합니다.
             RefreshActionButtonsState();
             RefreshSkillButtonPreview();
         }
@@ -200,9 +186,9 @@ namespace DiceOrbit.UI
             RefreshSkillButtonPreview();
         }
 
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
-        // 버튼 ?�들??
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+        // ─────────────────────────────────────────────
+        // 버튼 핸들러
+        // ─────────────────────────────────────────────
 
         private void OnMoveClicked()
         {
@@ -211,14 +197,14 @@ namespace DiceOrbit.UI
             var combatManager = CombatManager.Instance;
             if (combatManager == null || !combatManager.PlayerTurnActive || !combatManager.CanSpendMove(currentCharacter))
             {
-                Debug.LogWarning("[CharacterActionUI] ?�동 가???�수가 ?�거???�레?�어 ?�이 ?�닙?�다.");
+                Debug.LogWarning("[CharacterActionUI] 이동 가능 횟수가 없거나 플레이어 턴이 아닙니다.");
                 ReturnDiceElement();
                 return;
             }
 
             if (!currentCharacter.Stats.canMove())
             {
-                Debug.LogWarning("[CharacterActionUI] ?�동 불�? ?�태(?�박 ???�니??");
+                Debug.LogWarning("[CharacterActionUI] 이동 불가 상태(속박 등)입니다.");
                 ReturnDiceElement();
                 return;
             }
@@ -229,7 +215,7 @@ namespace DiceOrbit.UI
                 bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Move);
                 if (success)
                 {
-                    // ?�제 ?�동 ?�행 직전???�동 ?�산 1?��? ?�정 ?�비?�니??
+                    // 실제 이동 실행 직전에 이동 예산 1회를 확정 소비합니다.
                     if (!combatManager.TrySpendMove(currentCharacter))
                     {
                         diceManager.UnassignDice(currentDice);
@@ -237,7 +223,7 @@ namespace DiceOrbit.UI
                         return;
                     }
 
-                    // ?�동 코루?�을 ?�션 ?�에 ?�록?�니??
+                    // 이동 코루틴을 액션 큐에 등록합니다.
                     ActionQueueManager.Instance.EnqueueAction(orbitManager.MoveRoutine(currentCharacter, currentDice.Value));
 
                     MarkDiceUsed(currentDice);
@@ -255,7 +241,7 @@ namespace DiceOrbit.UI
             if (currentDice == null || currentCharacter == null) return;
             if (GetPrimaryActiveAbility() == null) return;
 
-            // ?�재 ?�티�??�킬??1개인 구조?��?�?버튼 ?�릭 ??즉시 ?�용
+            // 현재 액티브 스킬이 1개인 구조이므로 버튼 클릭 시 즉시 사용
             ExecuteSkill(0);
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             overlay?.Hide();
@@ -297,7 +283,7 @@ namespace DiceOrbit.UI
             }
             else
             {
-                hoverPreview.SetPreview("?�티�??�킬 ?�보 ?�음");
+                hoverPreview.SetPreview("액티브 스킬 정보 없음");
 
                 var text = skillButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (text != null)
@@ -323,14 +309,14 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
-        /// (SkillTargetSelector?�서 ?�출) ?��??�택???�정?�었????최종 ?�행
+        /// (SkillTargetSelector에서 호출) 타겟 선택이 확정되었을 때 최종 실행
         /// </summary>
         public void ConfirmSkillTarget(Unit target, Character character, RuntimeAbility ability, DiceData dice)
         {
 
             var combatManager = CombatManager.Instance;
             var diceManager = DiceManager.Instance;
-            var runtimeAbility = ability; // ?�겟팅???�작?�던 ?�킬
+            var runtimeAbility = ability; // 타겟팅을 시작했던 스킬
 
             if (dice == null || character == null || runtimeAbility == null || combatManager == null || diceManager == null)
             {
@@ -338,7 +324,7 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            // 최종?�으�??�동 ?�산???�모?�고 주사?��? 배정
+            // 최종적으로 행동 예산을 소모하고 주사위를 배정
             if (!combatManager.TrySpendAction(character))
             {
                 diceManager.UnassignDice(dice);
@@ -346,48 +332,19 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            // ?�제 ?�킬 ?�행 로직???��? 코루?�을 ?�에 ?�록
+            // 실제 스킬 실행 로직을 담은 코루틴을 큐에 등록
             ActionQueueManager.Instance.EnqueueAction(
                 FinalSkillExecutionRoutine(character, runtimeAbility, target, dice)
             );
 
             MarkDiceUsed(dice);
             ReturnDiceElement();
-            // Hide()???�겟팅 ?�작 ???��? ?�출?�었?��?�??�기?�는 ?�출?��? ?�음
+            // Hide()는 타겟팅 시작 시 이미 호출되었으므로 여기서는 호출하지 않음
         }
 
-        /// <summary>
-        /// (SkillTargetSelector?�서 ?�출) ?�???��??�택???�정?�었????최종 ?�행
-        /// </summary>
-        public void ConfirmTileSkillTarget(List<TileData> tiles, Character character, RuntimeAbility ability, DiceData dice)
-        {
-            var combatManager = CombatManager.Instance;
-            var diceManager   = DiceManager.Instance;
-
-            if (dice == null || character == null || ability == null || combatManager == null || diceManager == null)
-            {
-                ReturnDiceElement();
-                return;
-            }
-
-            if (!combatManager.TrySpendAction(character))
-            {
-                diceManager.UnassignDice(dice);
-                ReturnDiceElement();
-                return;
-            }
-
-            ActionQueueManager.Instance.EnqueueAction(
-                FinalTileSkillExecutionRoutine(character, ability, tiles, dice)
-            );
-
-            MarkDiceUsed(dice);
-            ReturnDiceElement();
-        }
-
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
-        // ?��? 로직
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+        // ─────────────────────────────────────────────
+        // 내부 로직
+        // ─────────────────────────────────────────────
 
         private void PopulateSkillList(Character character)
         {
@@ -399,7 +356,7 @@ namespace DiceOrbit.UI
             for (int i = 0; i < skills.Count; i++)
             {
                 int index = i;
-                // UI?�는 ?�티�??�력�??�시?�고, ?�시브는 리액??체인?�서 ?�동 처리?�니??
+                // UI에는 액티브 능력만 표시하고, 패시브는 리액터 체인에서 자동 처리합니다.
                 var runtimeAbility = skills[i];
                 var go    = Instantiate(skillSelectButtonPrefab, skillButtonContainer);
 
@@ -425,7 +382,7 @@ namespace DiceOrbit.UI
         private string BuildDamagePreview(RuntimeAbility runtimeAbility)
         {
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null || currentCharacter == null || currentDice == null)
-                return "����: -";
+                return "예상: -";
 
             var activeTemplate = runtimeAbility.BaseSkill.ActiveTemplate;
             if (activeTemplate != null)
@@ -437,16 +394,16 @@ namespace DiceOrbit.UI
                 }
             }
 
-            return "����: -";
+            return "예상: -";
         }
 
-                private string BuildSkillHoverText(RuntimeAbility runtimeAbility)
+        private string BuildSkillHoverText(RuntimeAbility runtimeAbility)
         {
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null)
                 return "스킬 정보: -";
 
             var baseSkill = runtimeAbility.BaseSkill;
-            var lines = new System.Collections.Generic.List<string>
+            var lines = new List<string>
             {
                 $"{baseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})"
             };
@@ -458,8 +415,18 @@ namespace DiceOrbit.UI
             }
 
             lines.Add($"대상: {GetTargetTypeLabel(baseSkill.TargetType)}");
-            var reqText = BuildRequirementText(runtimeAbility.GetRequirement());
-            lines.Add($"조건: {reqText}");
+
+            int diceValue = currentDice != null ? currentDice.Value : -1;
+            bool canUse = currentDice != null && baseSkill.CanUse(diceValue);
+            string condition = BuildRequirementText(baseSkill.Requirement);
+            if (diceValue > 0)
+            {
+                lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "사용 불가")})");
+            }
+            else
+            {
+                lines.Add($"조건: {condition}");
+            }
 
             string damagePreview = BuildDamagePreview(runtimeAbility);
             if (!string.IsNullOrWhiteSpace(damagePreview) && damagePreview != "예상: -")
@@ -470,15 +437,17 @@ namespace DiceOrbit.UI
 
             return string.Join("\n", lines);
         }
-private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
+
+        private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
         {
             switch (targetType)
             {
-                case CharacterSkillTargetType.OneEnemy: return "단일 적";
-                case CharacterSkillTargetType.None:     return "타겟 없음";
-                case CharacterSkillTargetType.OneTile:  return "타일 하나";
-                case CharacterSkillTargetType.AllTiles: return "모든 타일";
-                default: return targetType.ToString();
+                case CharacterSkillTargetType.OneEnemy:
+                    return "단일 적";
+                case CharacterSkillTargetType.None:
+                    return "대상 없음";
+                default:
+                    return "CharacterActionUI.cs GetTargetTypeLabel에서 수정 필요";
             }
         }
 
@@ -497,12 +466,12 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
             {
                 if (requirement.MinDiceValue > 1)
                 {
-                    parts.Add($"{requirement.MinDiceValue} ?�상");
+                    parts.Add($"{requirement.MinDiceValue} 이상");
                 }
 
                 if (requirement.MaxDiceValue.HasValue)
                 {
-                    parts.Add($"{requirement.MaxDiceValue.Value} ?�하");
+                    parts.Add($"{requirement.MaxDiceValue.Value} 이하");
                 }
             }
 
@@ -524,7 +493,7 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
 
             if (parts.Count == 0)
             {
-                return "?�한 ?�음";
+                return "제한 없음";
             }
 
             return string.Join(", ", parts);
@@ -537,7 +506,7 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
             var combatManager = CombatManager.Instance;
             if (combatManager == null || !combatManager.PlayerTurnActive || !combatManager.CanSpendAction(currentCharacter))
             {
-                Debug.LogWarning("[CharacterActionUI] ?�동 가???�수가 ?�거???�레?�어 ?�이 ?�닙?�다.");
+                Debug.LogWarning("[CharacterActionUI] 행동 가능 횟수가 없거나 플레이어 턴이 아닙니다.");
                 ReturnDiceElement();
                 return;
             }
@@ -557,20 +526,18 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
                 return;
             }
 
-            // `RuntimeAbility.TargetType`??기�??�로 분기?�니??
-            if (runtimeAbility.TargetType == CharacterSkillTargetType.OneEnemy
-             || runtimeAbility.TargetType == CharacterSkillTargetType.OneTile
-             || runtimeAbility.TargetType == CharacterSkillTargetType.AllTiles)
+            // `RuntimeAbility.TargetType`을 기준으로 분기합니다.
+            if (runtimeAbility.TargetType == CharacterSkillTargetType.OneEnemy)
             {
-                // ?��??�택???�요??경우: ?��??�택 ?�스?�을 ?�작?�니??
+                // 타겟 선택이 필요한 경우: 타겟 선택 시스템을 시작합니다.
                 currentDice.State = DiceState.Reserved;
                 DiceUI.Instance?.RefreshDiceVisual(currentDice);
                 SkillTargetSelector.Instance.StartTargetSelection(currentCharacter, runtimeAbility, currentDice);
-                Hide(); // CharacterActionUI???�깁?�다.
+                Hide(); // CharacterActionUI는 숨깁니다.
             }
             else if (runtimeAbility.TargetType == CharacterSkillTargetType.None)
             {
-                // ?��??�택???�요 ?�는 경우 (None, AllEnemies, Self ??: 즉시 ?�에 ?�록?�니??
+                // 타겟 선택이 필요 없는 경우 (None, AllEnemies, Self 등): 즉시 큐에 등록합니다.
                 var diceManager = DiceManager.Instance;
                 if (diceManager != null)
                 {
@@ -600,7 +567,7 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
             }
             else
             {
-                Debug.LogError("?�규 ?�겟팅 방법???�른 ?�정 ?�요");
+                Debug.LogError("신규 타겟팅 방법에 따른 수정 필요");
             }
         }
 
@@ -613,39 +580,26 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
                 yield break;
             }
 
-            // ?�제 ?�킬 로직 ?�행
+            // 실제 스킬 로직 실행
             currentCharacter.UseSkillByIndex(skillIndex, dice);
 
-            // ?�출???�한 ?�시 ?�레??
+            // 연출을 위한 임시 딜레이
             yield return new WaitForSeconds(0.5f);
         }
 
         /// <summary>
-        /// (ActionQueue?�서 ?�행?? 최종 ?�킬 ?�행 코루??
+        /// (ActionQueue에서 실행될) 최종 스킬 실행 코루틴
         /// </summary>
         private System.Collections.IEnumerator FinalSkillExecutionRoutine(Character character, RuntimeAbility ability, Unit target, DiceData dice)
         {
-            // ??코루?�이 ?�행???? CharacterActionUI??currentCharacter???�른 값일 ???�으므�?
-            // ?�자�?받�? character�??�용?�야 ?�니??
+            // 이 코루틴이 실행될 때, CharacterActionUI의 currentCharacter는 다른 값일 수 있으므로
+            // 인자로 받은 character를 사용해야 합니다.
             if (character != null && character.IsAlive)
             {
                 SkillManager.Instance.OnTargetSelected(character, target, ability, dice.Value);
             }
 
-            // ?�출 ?��?(?�시)
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        private System.Collections.IEnumerator FinalTileSkillExecutionRoutine(
-            Character character, RuntimeAbility ability, List<TileData> tiles, DiceData dice)
-        {
-            if (character != null && character.IsAlive)
-            {
-                var activeTemplate = ability.BaseSkill?.ActiveTemplate;
-                if (activeTemplate != null)
-                    activeTemplate.Execute(character, ability, new List<Unit>(), tiles, dice.Value);
-            }
-
+            // 연출 대기 (임시)
             yield return new WaitForSeconds(0.5f);
         }
 
@@ -671,7 +625,7 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
 
         private void RefreshActionButtonsState()
         {
-            // 버튼 ?�태??"주사???�택 + ?�레?�어 ??+ 캐릭?�별 ?�여 ?�산"???�시??만족?�야 ?�성?�됩?�다.
+            // 버튼 상태는 "주사위 선택 + 플레이어 턴 + 캐릭터별 잔여 예산"을 동시에 만족해야 활성화됩니다.
             bool hasDice = !waitingForDice && currentDice != null && currentCharacter != null;
             var combatManager = CombatManager.Instance;
             bool playerTurn = combatManager != null && combatManager.PlayerTurnActive;
@@ -680,7 +634,7 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
             var primaryAbility = GetPrimaryActiveAbility();
             if (hasDice && primaryAbility?.BaseSkill != null)
             {
-                // ?�재 ?�택??주사???�금???�킬 조건??만족???�만 ?�킬 버튼???�성?�합?�다.
+                // 현재 선택한 주사위 눈금이 스킬 조건을 만족할 때만 스킬 버튼을 활성화합니다.
                 canUseSelectedDiceForSkill = primaryAbility.BaseSkill.CanUse(currentDice.Value);
             }
 
@@ -733,9 +687,9 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
             }
         }
 
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
-        // ?�니메이??
-        // ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�
+        // ─────────────────────────────────────────────
+        // 애니메이션
+        // ─────────────────────────────────────────────
 
         private void StopSlide()
         {
@@ -744,7 +698,7 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
 
         private IEnumerator SlideIn()
         {
-            // 버튼 ?��???초기??
+            // 버튼 스케일 초기화
             foreach (var btn in actionButtons) btn.localScale = Vector3.zero;
 
             float elapsed = 0f;
@@ -760,7 +714,7 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
             }
             panelRoot.anchoredPosition = shownPosition;
 
-            // 버튼 ?�태�??�업
+            // 버튼 스태거 팝업
             for (int i = 0; i < actionButtons.Count; i++)
             {
                 StartCoroutine(PopButton(actionButtons[i], i * buttonStaggerDelay));
@@ -806,6 +760,3 @@ private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
         }
     }
 }
-
-
-
