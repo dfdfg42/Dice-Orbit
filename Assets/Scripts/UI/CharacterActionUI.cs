@@ -342,6 +342,49 @@ namespace DiceOrbit.UI
             // Hide()는 타겟팅 시작 시 이미 호출되었으므로 여기서는 호출하지 않음
         }
 
+        /// <summary>
+        /// (SkillTargetSelector에서 호출) 타일 타겟 선택이 확정되었을 때 최종 실행
+        /// </summary>
+        public void ConfirmTileSkillTarget(List<TileData> tiles, Character character, RuntimeAbility ability, DiceData dice)
+        {
+            var combatManager = CombatManager.Instance;
+            var diceManager   = DiceManager.Instance;
+
+            if (dice == null || character == null || ability == null || combatManager == null || diceManager == null)
+            {
+                ReturnDiceElement();
+                return;
+            }
+
+            if (!combatManager.TrySpendAction(character))
+            {
+                diceManager.UnassignDice(dice);
+                ReturnDiceElement();
+                return;
+            }
+
+            ActionQueueManager.Instance.EnqueueAction(
+                FinalTileSkillExecutionRoutine(character, ability, tiles, dice)
+            );
+
+            MarkDiceUsed(dice);
+            ReturnDiceElement();
+            Hide();
+        }
+
+        private System.Collections.IEnumerator FinalTileSkillExecutionRoutine(
+            Character character, RuntimeAbility ability, List<TileData> tiles, DiceData dice)
+        {
+            if (character != null && character.IsAlive)
+            {
+                var activeTemplate = ability.BaseSkill?.ActiveTemplate;
+                if (activeTemplate != null)
+                    activeTemplate.Execute(character, ability, new List<Unit>(), tiles, dice.Value);
+            }
+
+            yield return new WaitForSeconds(0.5f);
+        }
+
         // ─────────────────────────────────────────────
         // 내부 로직
         // ─────────────────────────────────────────────
