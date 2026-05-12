@@ -37,9 +37,17 @@ namespace DiceOrbit.UI
         [SerializeField] private float introOffsetY = 750f; //350
         [SerializeField] private float introDuration = 0.35f;
         [SerializeField] private AnimationCurve introCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+        [Header("Selection Animation")]
+        [SerializeField] private float selectRiseOffsetY = 40f;
+        [SerializeField] private float selectRiseDuration = 0.12f;
+        [SerializeField] private float selectExitOffsetY = 900f;
+        [SerializeField] private float selectExitDuration = 0.32f;
+        [SerializeField] private AnimationCurve selectRiseCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [SerializeField] private AnimationCurve selectExitCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
         
         private Core.CharacterPreset character;
-        private System.Action<Core.CharacterPreset> onSelected;
+        private System.Action<CharacterCard, Core.CharacterPreset> onSelected;
         private Sprite defaultPortraitSprite;
         private RectTransform rectTransform;
         private CanvasGroup canvasGroup;
@@ -160,7 +168,7 @@ namespace DiceOrbit.UI
         /// <summary>
         /// 카드 설정
         /// </summary>
-        public void Setup(Core.CharacterPreset preset, System.Action<Core.CharacterPreset> callback)
+        public void Setup(Core.CharacterPreset preset, System.Action<CharacterCard, Core.CharacterPreset> callback)
         {
             character = preset;
             //Debug.Log($"[CharacterCard] preset name = '{preset?.CharacterName}'");
@@ -347,7 +355,76 @@ namespace DiceOrbit.UI
         private void OnSelectClicked()
         {
             Debug.Log($"[CharacterCard] Select button clicked for {character?.CharacterName}");
-            onSelected?.Invoke(character);
+
+            onSelected?.Invoke(this, character);
+        }
+
+        public void SetSelectionLocked(bool locked)
+        {
+            if (selectButton != null)
+            {
+                selectButton.interactable = !locked;
+            }
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.interactable = !locked;
+                canvasGroup.blocksRaycasts = !locked;
+            }
+        }
+
+        public IEnumerator PlaySelectionExitRoutine(bool riseFirst)
+        {
+            if (!hasCapturedIntroTarget)
+            {
+                CaptureIntroTargetPosition();
+            }
+
+            if (rectTransform == null)
+            {
+                onSelected?.Invoke(this, character);
+                yield break;
+            }
+
+            var basePosition = rectTransform.anchoredPosition;
+
+            if (riseFirst)
+            {
+                var riseTarget = basePosition + new Vector2(0f, selectRiseOffsetY);
+                var riseElapsed = 0f;
+
+                while (riseElapsed < selectRiseDuration)
+                {
+                    riseElapsed += Time.unscaledDeltaTime;
+                    var t = Mathf.Clamp01(riseElapsed / selectRiseDuration);
+                    var easedT = selectRiseCurve != null ? selectRiseCurve.Evaluate(t) : t;
+                    rectTransform.anchoredPosition = Vector2.LerpUnclamped(basePosition, riseTarget, easedT);
+                    yield return null;
+                }
+
+                rectTransform.anchoredPosition = riseTarget;
+                basePosition = riseTarget;
+            }
+
+            var exitTarget = basePosition + new Vector2(0f, -selectExitOffsetY);
+            var exitElapsed = 0f;
+
+            while (exitElapsed < selectExitDuration)
+            {
+                exitElapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(exitElapsed / selectExitDuration);
+                var easedT = selectExitCurve != null ? selectExitCurve.Evaluate(t) : t;
+                rectTransform.anchoredPosition = Vector2.LerpUnclamped(basePosition, exitTarget, easedT);
+
+                if (canvasGroup != null)
+                {
+                    canvasGroup.alpha = Mathf.Lerp(0.3f, 0f, easedT);
+                }
+
+                yield return null;
+            }
+
+            rectTransform.anchoredPosition = exitTarget;
         }
     }
 }

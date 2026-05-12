@@ -20,6 +20,7 @@ namespace DiceOrbit.UI
         [SerializeField] private Transform cardContainer;
         [SerializeField] private GameObject characterCardPrefab;
         [SerializeField] private Canvas selectionCanvas; // Canvas 직접 참조
+        [SerializeField] private Button confirmButton; // 선택 확인 버튼
         
         [Header("Prefabs")]
         [SerializeField] private GameObject characterUIPrefab; // CharacterUI 프리팹
@@ -32,7 +33,9 @@ namespace DiceOrbit.UI
     [SerializeField] private float colliderDepth = 0.2f;
         
         private List<Core.CharacterPreset> currentChoices = new List<Core.CharacterPreset>();
+        private List<CharacterCard> currentCards = new List<CharacterCard>();
         private Core.CharacterPreset selectedCharacter;
+        private bool isSelectionSequencePlaying;
         
         private void Start()
         {
@@ -87,6 +90,8 @@ namespace DiceOrbit.UI
             }
             
             currentChoices.Clear();
+            currentCards.Clear();
+            isSelectionSequencePlaying = false;
             
             // 랜덤 선택
             if (allCharacters.Count >= numberOfChoices)
@@ -107,6 +112,7 @@ namespace DiceOrbit.UI
                 if (card != null)
                 {
                     spawnedCards.Add(card);
+                    currentCards.Add(card);
                 }
             }
 
@@ -132,7 +138,7 @@ namespace DiceOrbit.UI
             
             if (card != null)
             {
-                card.Setup(character, OnCharacterSelected);
+                card.Setup(character, OnCharacterSelectedRequested);
             }
 
             return card;
@@ -160,6 +166,86 @@ namespace DiceOrbit.UI
         /// <summary>
         /// 캐릭터 선택 콜백
         /// </summary>
+        private void OnCharacterSelectedRequested(CharacterCard selectedCard, Core.CharacterPreset character)
+        {
+            if (isSelectionSequencePlaying)
+            {
+                return;
+            }
+
+            StartCoroutine(PlayCharacterSelectionSequence(selectedCard, character));
+        }
+
+        private IEnumerator PlayCharacterSelectionSequence(CharacterCard selectedCard, Core.CharacterPreset character)
+        {
+            isSelectionSequencePlaying = true;
+
+            for (int i = 0; i < currentCards.Count; i++)
+            {
+                var card = currentCards[i];
+                if (card != null)
+                {
+                    card.SetSelectionLocked(true);
+                }
+            }
+
+            var selectedIndex = currentCards.IndexOf(selectedCard);
+            if (selectedIndex < 0)
+            {
+                selectedIndex = 0;
+            }
+
+            var animationOrder = BuildSelectionOrder(selectedIndex);
+            for (int i = 0; i < animationOrder.Count; i++)
+            {
+                var cardIndex = animationOrder[i];
+                if (cardIndex < 0 || cardIndex >= currentCards.Count)
+                {
+                    continue;
+                }
+
+                var card = currentCards[cardIndex];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                var isSelectedCard = cardIndex == selectedIndex;
+                StartCoroutine(card.PlaySelectionExitRoutine(isSelectedCard));
+                yield return new WaitForSeconds(0.2f);
+            }
+
+            // 모든 카드 애니메이션이 끝날 때까지 대기 (마지막 카드 애니메이션 완료)
+            // selectRiseDuration(0.12f) + selectExitDuration(0.32f) = 0.44f
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        private List<int> BuildSelectionOrder(int selectedIndex)
+        {
+            var order = new List<int>();
+            var count = currentCards.Count;
+
+            if (count <= 0)
+            {
+                return order;
+            }
+
+            selectedIndex = Mathf.Clamp(selectedIndex, 0, count - 1);
+            order.Add(selectedIndex);
+
+            for (int i = selectedIndex - 1; i >= 0; i--)
+            {
+                order.Add(i);
+            }
+
+            for (int i = selectedIndex + 1; i < count; i++)
+            {
+                order.Add(i);
+            }
+
+            return order;
+        }
+
         private void OnCharacterSelected(Core.CharacterPreset character)
         {
             selectedCharacter = character;
