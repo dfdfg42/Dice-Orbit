@@ -109,7 +109,7 @@ namespace DiceOrbit.Core
             foreach (var ability in stat.PassiveAbilities)
             {
                 if (ability?.BaseSkill == null) continue;
-                if (ability.BaseSkill.Type != CharacterSkillType.Passive) continue;
+                if (ability.BaseSkill.SkillType != CharacterSkillType.Passive) continue;
 
                 var template = ability.RuntimePassiveInstance;
                 if (template == null)

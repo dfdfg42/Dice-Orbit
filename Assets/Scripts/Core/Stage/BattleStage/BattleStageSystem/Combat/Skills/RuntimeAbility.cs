@@ -9,36 +9,32 @@ namespace DiceOrbit.Data.Skills
     [Serializable]
     public class RuntimeAbility
     {
-        public SkillAsset BaseSkill;
+        [SerializeReference] public CharacterSkillBase BaseSkill;
         public int CurrentLevel;
 
         [NonSerialized] public CharacterActiveTemplate RuntimeActiveInstance;
-        [NonSerialized] public IPassive RuntimePassiveInstance;
+        [NonSerialized] public IPassive                RuntimePassiveInstance;
 
-        public RuntimeAbility(SkillAsset skill, int initialLevel = 1)
+        public RuntimeAbility(CharacterSkillBase skill, int initialLevel = 1)
         {
-            BaseSkill = skill;
-            int max = skill != null ? Mathf.Max(1, skill.MaxLevel) : 1;
+            BaseSkill    = skill;
+            int max      = skill != null ? Mathf.Max(1, skill.MaxLevel) : 1;
             CurrentLevel = Mathf.Clamp(initialLevel, 1, max);
 
-            if (skill is ActiveSkillAsset activeAsset && activeAsset.ActiveTemplate != null)
-            {
-                RuntimeActiveInstance = UnityEngine.Object.Instantiate(activeAsset.ActiveTemplate);
-            }
-            else if (skill is PassiveSkillAsset passiveAsset && passiveAsset.PassiveTemplate != null)
-            {
-                RuntimePassiveInstance = UnityEngine.Object.Instantiate(passiveAsset.PassiveTemplate);
-            }
+            if (skill is CharacterActiveTemplate active)
+                RuntimeActiveInstance = active.Clone();
+            else if (skill is CharacterPassive passive)
+                RuntimePassiveInstance = passive.Clone() as CharacterPassive;
         }
 
-        public CharacterSkillType AbilityType => BaseSkill != null ? BaseSkill.Type : CharacterSkillType.Active;
+        public CharacterSkillType AbilityType =>
+            BaseSkill != null ? BaseSkill.SkillType : CharacterSkillType.Active;
 
         public CharacterSkillTargetType TargetType
         {
             get
             {
-                if (BaseSkill is ActiveSkillAsset activeAsset)
-                    return activeAsset.TargetType;
+                if (BaseSkill is CharacterActiveTemplate a) return a.TargetType;
                 return CharacterSkillTargetType.None;
             }
         }
@@ -47,18 +43,15 @@ namespace DiceOrbit.Data.Skills
         {
             get
             {
-                if (BaseSkill is ActiveSkillAsset activeAsset)
-                    return activeAsset.PreviewStyle;
+                if (BaseSkill is CharacterActiveTemplate a) return a.PreviewStyle;
                 return Visuals.TilePreviewStyle.Neutral;
             }
         }
 
-        public string GetDescription() => BaseSkill?.GetDescription(CurrentLevel) ?? string.Empty;
-
-        public DiceRequirement GetRequirement() => BaseSkill?.GetRequirement(CurrentLevel) ?? BaseSkill?.Requirement;
-
-        public SkillLevelData GetCurrentLevelData() => BaseSkill?.GetLevelData(CurrentLevel);
-        public SkillLevelData GetNextLevelData() => BaseSkill?.GetLevelData(CurrentLevel + 1);
+        public string GetDescription()         => BaseSkill?.GetDescription(CurrentLevel) ?? string.Empty;
+        public DiceRequirement GetRequirement() => BaseSkill?.GetRequirement(CurrentLevel) ?? BaseSkill?.requirement;
+        public SkillLevelData  GetCurrentLevelData() => BaseSkill?.GetLevelData(CurrentLevel);
+        public SkillLevelData  GetNextLevelData()    => BaseSkill?.GetLevelData(CurrentLevel + 1);
         public bool IsMaxLevel => BaseSkill == null || CurrentLevel >= BaseSkill.MaxLevel;
 
         public bool TryUpgrade()
@@ -70,28 +63,21 @@ namespace DiceOrbit.Data.Skills
 
         public bool CanUse(int diceValue)
         {
-            if (BaseSkill == null || !BaseSkill.CanUse(diceValue))
-                return false;
-            
-            // 향후 RuntimeActiveInstance 내부의 쿨타임, 스택 등 검사 추가 가능
+            if (BaseSkill == null || !BaseSkill.CanUse(diceValue)) return false;
             return true;
         }
 
         public bool Execute(Character source, List<Unit> targets, List<TileData> targetTiles, int diceValue)
         {
             if (RuntimeActiveInstance != null)
-            {
                 return RuntimeActiveInstance.Execute(source, this, targets, targetTiles, diceValue);
-            }
             return false;
         }
-        
+
         public string BuildPreview(Character source, int diceValue)
         {
             if (RuntimeActiveInstance != null)
-            {
                 return RuntimeActiveInstance.BuildPreview(source, this, diceValue);
-            }
             return "예상: -";
         }
     }

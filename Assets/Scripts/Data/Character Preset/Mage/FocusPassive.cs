@@ -4,7 +4,6 @@ using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data.Passives
 {
-    [CreateAssetMenu(fileName = "FocusPassive", menuName = "Dice Orbit/Passive Templates/Mage Focus")]
     public class FocusPassive : CharacterPassive
     {
         [Header("Designer Tuning")]

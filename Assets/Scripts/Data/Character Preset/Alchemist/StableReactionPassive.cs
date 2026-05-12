@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.Passives
 {
-    [CreateAssetMenu(fileName = "StableReactionPassive", menuName = "Dice Orbit/Passive Templates/Alchemist Stable Reaction")]
     public class StableReactionPassive : CharacterPassive
     {
         [Header("Designer Tuning")]

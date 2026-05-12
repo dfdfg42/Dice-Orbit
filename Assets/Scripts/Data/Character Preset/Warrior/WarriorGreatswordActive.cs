@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
-    [CreateAssetMenu(fileName = "WarriorGreatswordActive", menuName = "Dice Orbit/Active Templates/Warrior Greatsword")]
     public class WarriorGreatswordActive : CharacterActiveTemplate
     {
         [Header("Designer Tuning")]

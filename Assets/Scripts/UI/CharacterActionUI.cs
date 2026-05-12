@@ -334,7 +334,7 @@ namespace DiceOrbit.UI
                 }
 
                 var imgs = go.GetComponentsInChildren<Image>();
-                if (imgs.Length > 1 && runtimeAbility.BaseSkill != null && runtimeAbility.BaseSkill.Icon != null) imgs[1].sprite = runtimeAbility.BaseSkill.Icon;
+                if (imgs.Length > 1 && runtimeAbility.BaseSkill != null && runtimeAbility.BaseSkill.icon != null) imgs[1].sprite = runtimeAbility.BaseSkill.icon;
 
                 var hoverPreview = go.GetComponent<SkillPreviewHoverUI>();
                 if (hoverPreview == null) hoverPreview = go.AddComponent<SkillPreviewHoverUI>();
@@ -380,7 +380,7 @@ namespace DiceOrbit.UI
 
             int diceValue = currentDice != null ? currentDice.Value : -1;
             bool canUse = currentDice != null && baseSkill.CanUse(diceValue);
-            string condition = BuildRequirementText(baseSkill.Requirement);
+            string condition = BuildRequirementText(baseSkill.requirement);
             if (diceValue > 0)
             {
                 lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "사용 불가")})");

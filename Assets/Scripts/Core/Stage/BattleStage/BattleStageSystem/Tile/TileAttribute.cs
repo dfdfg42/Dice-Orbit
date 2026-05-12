@@ -13,6 +13,7 @@ namespace DiceOrbit.Data.Tile
         Honey,
         SnowPrison,
         Cloud,          // 구름 타일 (기상학자 패시브)
+        ScoutHeal,      // 정찰병 치유 타일
     }
 
     /// <summary>

@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
-    [CreateAssetMenu(fileName = "RogueAmbushActive", menuName = "Dice Orbit/Active Templates/Rogue Ambush")]
     public class RogueAmbushActive : CharacterActiveTemplate
     {
         [Header("Designer Tuning")]

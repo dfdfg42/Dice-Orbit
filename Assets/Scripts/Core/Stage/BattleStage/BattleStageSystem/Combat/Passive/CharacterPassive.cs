@@ -1,35 +1,28 @@
 using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Data.Skills;
 
 namespace DiceOrbit.Data.Passives
 {
-    public abstract class CharacterPassive : ScriptableObject, IPassive
+    [System.Serializable]
+    public abstract class CharacterPassive : CharacterSkillBase, IPassive
     {
-        [SerializeField] protected string passiveName = "";
-        [SerializeField, TextArea] protected string description = "패시브 설명";
-        [SerializeField] protected int priority = 0;
-        [SerializeField] protected Sprite icon;
+        [SerializeField] protected int  priority    = 0;
         [SerializeField] protected bool isStackable = true;
         [SerializeField, Min(1)] protected int currentLevel = 1;
 
         protected Unit owner;
 
-        public virtual string PassiveName => passiveName;
-        public virtual string Description => description;
-        public virtual int Priority => priority;
-        public virtual Sprite Icon => icon;
-        public virtual bool IsStackable => isStackable;
-        public int CurrentLevel => currentLevel;
+        // IPassive — description & name reuse base class fields
+        public virtual string PassiveName            => skillName;
+        public virtual string Description            => description;
+        public virtual bool   IsStackable            => isStackable;
+        public         int    CurrentLevel           => currentLevel;
+        public virtual int    Priority               => priority;
+        public override CharacterSkillType SkillType => CharacterSkillType.Passive;
 
         public virtual string GetDynamicDescription() => string.Empty;
-
-        public void ConfigureMetadata(string name, string desc, Sprite iconSprite = null)
-        {
-            if (!string.IsNullOrWhiteSpace(name)) passiveName = name;
-            if (!string.IsNullOrWhiteSpace(desc)) description = desc;
-            if (iconSprite != null) icon = iconSprite;
-        }
 
         public virtual void Initialize(Unit ownerUnit)
         {
@@ -39,23 +32,20 @@ namespace DiceOrbit.Data.Passives
 
         public void SetLevel(int level)
         {
-            int normalized = Mathf.Max(1, level);
-            if (currentLevel == normalized) return;
-            currentLevel = normalized;
+            int n = Mathf.Max(1, level);
+            if (currentLevel == n) return;
+            currentLevel = n;
             ApplyLevel(currentLevel);
         }
 
         protected virtual void ApplyLevel(int level) { }
 
-        public virtual IPassive Clone()
-        {
-            return Instantiate(this);
-        }
+        public virtual IPassive Clone() => (CharacterPassive)MemberwiseClone();
 
         public abstract void OnReact(CombatTrigger trigger, CombatContext context);
 
-        public virtual void OnOwnerSelected(Character c) { }
-        public virtual void OnOwnerDeselected() { }
+        public virtual void OnOwnerSelected(Character c)  { }
+        public virtual void OnOwnerDeselected()            { }
 
         public virtual bool AllowSamePassive(IPassive incoming) => isStackable;
     }

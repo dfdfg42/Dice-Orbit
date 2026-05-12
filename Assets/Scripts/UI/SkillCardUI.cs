@@ -17,16 +17,16 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI levelText; // "New!" or "Lv.1 -> Lv.2"
         [SerializeField] private Button button;
 
-        private SkillAsset mySkill;
-        private Action<SkillAsset> onClickCallback;
+        private CharacterSkillBase mySkill;
+        private Action<CharacterSkillBase> onClickCallback;
 
-        public void Setup(SkillAsset skill, bool isNew, int currentLevel, Action<SkillAsset> callback)
+        public void Setup(CharacterSkillBase skill, bool isNew, int currentLevel, Action<CharacterSkillBase> callback)
         {
             mySkill = skill;
             onClickCallback = callback;
             
             // Visuals
-            if (iconImage != null) iconImage.sprite = skill.Icon;
+            if (iconImage != null) iconImage.sprite = skill.icon;
             if (nameText != null) nameText.text = skill.SkillName;
             
             // Description logic
@@ -50,7 +50,7 @@ namespace DiceOrbit.UI
 
             if (descText != null) descText.text = desc;
 
-            if (typeText != null) typeText.text = skill.Type.ToString();
+            if (typeText != null) typeText.text = skill.SkillType.ToString();
 
             if (levelText != null)
             {

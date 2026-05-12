@@ -3,7 +3,6 @@ using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data.Passives
 {
-    [CreateAssetMenu(fileName = "PositioningPassive", menuName = "Dice Orbit/Passive Templates/Rogue Positioning")]
     public class PositioningPassive : CharacterPassive
     {
         [Header("Designer Tuning")]

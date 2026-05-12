@@ -36,9 +36,8 @@ namespace DiceOrbit.Core
         public RuntimeAnimatorController AnimatorController;
 
         [Header("Starting Skills")]
-        // 액티브/패시브 모두 SkillAsset 기반으로 일원화되어 등록됩니다.
-        // Inspector에서 직접 SO를 드래그앤드롭으로 추가하세요.
-        public List<SkillAsset> StartingSkills = new List<SkillAsset>();
+        [SerializeReference]
+        public List<CharacterSkillBase> StartingSkills = new List<CharacterSkillBase>();
 
         /// <summary>
         /// CharacterStats 생성
