@@ -16,6 +16,7 @@ namespace DiceOrbit.Core
         [Header("Basic Info")]
         public string CharacterName = "Hero";
         public Sprite Portrait;
+        public Sprite CharacterWindowSprite;
         
         [Header("Description")]
         [TextArea(3, 5)]

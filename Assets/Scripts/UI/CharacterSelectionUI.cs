@@ -20,6 +20,7 @@ namespace DiceOrbit.UI
         [SerializeField] private Transform cardContainer;
         [SerializeField] private GameObject characterCardPrefab;
         [SerializeField] private Canvas selectionCanvas; // Canvas 직접 참조
+        [SerializeField] private Image characterWindowImage; // 왼쪽에 표시할 창 이미지
         [SerializeField] private Button confirmButton; // 선택 확인 버튼
         
         [Header("Prefabs")]
@@ -43,6 +44,11 @@ namespace DiceOrbit.UI
             if (selectionCanvas == null)
             {
                 selectionCanvas = GetComponentInParent<Canvas>();
+            }
+
+            if (characterWindowImage != null)
+            {
+                characterWindowImage.gameObject.SetActive(false);
             }
             
             GenerateRandomChoices();
@@ -218,6 +224,8 @@ namespace DiceOrbit.UI
             // 모든 카드 애니메이션이 끝날 때까지 대기 (마지막 카드 애니메이션 완료)
             // selectRiseDuration(0.12f) + selectExitDuration(0.32f) = 0.44f
             yield return new WaitForSeconds(0.5f);
+
+            DisplayCharacterWindow(character);
         }
 
         private List<int> BuildSelectionOrder(int selectedIndex)
@@ -244,6 +252,36 @@ namespace DiceOrbit.UI
             }
 
             return order;
+        }
+
+        private void DisplayCharacterWindow(Core.CharacterPreset character)
+        {
+            if (characterWindowImage == null)
+            {
+                Debug.LogWarning("[CharacterSelection] Character window image not assigned!");
+                return;
+            }
+
+            if (character == null)
+            {
+                Debug.LogWarning("[CharacterSelection] Character preset is null!");
+                return;
+            }
+
+            var windowSprite = character.CharacterWindowSprite;
+            if (windowSprite == null)
+            {
+                Debug.LogWarning($"[CharacterSelection] No window sprite for {character.CharacterName}");
+                characterWindowImage.gameObject.SetActive(false);
+                return;
+            }
+
+            characterWindowImage.sprite = windowSprite;
+            characterWindowImage.enabled = true;
+            characterWindowImage.gameObject.SetActive(true);
+            characterWindowImage.transform.SetAsLastSibling();
+
+            Debug.Log($"[CharacterSelection] Displaying window for {character.CharacterName} using sprite '{windowSprite.name}'");
         }
 
         private void OnCharacterSelected(Core.CharacterPreset character)
