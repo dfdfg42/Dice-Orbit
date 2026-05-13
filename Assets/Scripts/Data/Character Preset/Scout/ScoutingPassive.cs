@@ -76,7 +76,7 @@ namespace DiceOrbit.Data.Characters.Scout
     // ── 정찰 패시브 ──────────────────────────────────────────────────────
 
     [System.Serializable]
-    public class ScoutingPassive : CharacterPassive
+    public class ScoutingPassive : CharacterPassiveSkill
     {
         [Header("레벨별 피해 배율 (1.0 = 100%, 2.0 = +100% 증가)")]
         [SerializeField] private float[] multiplierByLevel = { 1.05f, 1.26f, 1.48f, 1.74f, 2.00f };

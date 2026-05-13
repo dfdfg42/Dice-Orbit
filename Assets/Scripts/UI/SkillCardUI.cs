@@ -17,10 +17,10 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI levelText; // "New!" or "Lv.1 -> Lv.2"
         [SerializeField] private Button button;
 
-        private CharacterSkillBase mySkill;
-        private Action<CharacterSkillBase> onClickCallback;
+        private CharacterActiveSkill mySkill;
+        private Action<CharacterActiveSkill> onClickCallback;
 
-        public void Setup(CharacterSkillBase skill, bool isNew, int currentLevel, Action<CharacterSkillBase> callback)
+        public void Setup(CharacterActiveSkill skill, bool isNew, int currentLevel, Action<CharacterActiveSkill> callback)
         {
             mySkill = skill;
             onClickCallback = callback;
@@ -30,19 +30,8 @@ namespace DiceOrbit.UI
             if (nameText != null) nameText.text = skill.SkillName;
             
             // Description logic
-            string desc = "";
-            DiceRequirement requirement = null;
-            if (isNew)
-            {
-                desc = skill.GetDescription(1) ?? "No Description";
-                requirement = skill.GetRequirement(1);
-            }
-            else
-            {
-                desc = skill.GetDescription(currentLevel + 1) ?? "Max Level Reached!";
-                requirement = skill.GetRequirement(currentLevel + 1);
-            }
-
+            string desc = skill.Description ?? "No Description";
+            var requirement = skill.requirement;
             if (requirement != null)
             {
                 desc += $"\n<color=#9EE6FF>{requirement.GetDescription()}</color>";
@@ -50,7 +39,7 @@ namespace DiceOrbit.UI
 
             if (descText != null) descText.text = desc;
 
-            if (typeText != null) typeText.text = skill.SkillType.ToString();
+            if (typeText != null) typeText.text = "Active";
 
             if (levelText != null)
             {
@@ -66,6 +55,7 @@ namespace DiceOrbit.UI
         private void OnClick()
         {
             onClickCallback?.Invoke(mySkill);
+
         }
     }
 }

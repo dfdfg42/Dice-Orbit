@@ -1,1 +1,1 @@
-// Removed. TargetType / PreviewStyle moved into CharacterActiveTemplate.
+// Removed. TargetType / PreviewStyle moved into CharacterActiveSkill.

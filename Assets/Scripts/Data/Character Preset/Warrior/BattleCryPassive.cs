@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.Passives
 {
-    public class BattleCryPassive : CharacterPassive
+    public class BattleCryPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 공격 피해 증가율(%). 예: 5는 +5%")]

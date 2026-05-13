@@ -247,7 +247,7 @@ namespace DiceOrbit.UI
             overlay?.Hide();
         }
 
-        private RuntimeAbility GetPrimaryActiveAbility()
+        private ActiveSkillSlot GetPrimaryActiveAbility()
         {
             if (currentCharacter?.Stats?.ActiveAbilities == null)
                 return null;
@@ -318,7 +318,7 @@ namespace DiceOrbit.UI
 
             foreach (Transform child in skillButtonContainer) Destroy(child.gameObject);
 
-            var skills = new List<RuntimeAbility>(character.Stats.ActiveAbilities);
+            var skills = new List<ActiveSkillSlot>(character.Stats.ActiveAbilities);
             for (int i = 0; i < skills.Count; i++)
             {
                 int index = i;
@@ -345,7 +345,7 @@ namespace DiceOrbit.UI
             }
         }
 
-        private string BuildDamagePreview(RuntimeAbility runtimeAbility)
+        private string BuildDamagePreview(ActiveSkillSlot runtimeAbility)
         {
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null || currentCharacter == null || currentDice == null)
                 return "예상: -";
@@ -359,7 +359,7 @@ namespace DiceOrbit.UI
             return "예상: -";
         }
 
-        private string BuildSkillHoverText(RuntimeAbility runtimeAbility)
+        private string BuildSkillHoverText(ActiveSkillSlot runtimeAbility)
         {
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null)
                 return "스킬 정보: -";
@@ -370,7 +370,7 @@ namespace DiceOrbit.UI
                 $"{baseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})"
             };
 
-            string description = baseSkill.GetDescription(runtimeAbility.CurrentLevel);
+            string description = baseSkill.Description;
             if (!string.IsNullOrWhiteSpace(description))
             {
                 lines.Add(description.Trim());
@@ -379,8 +379,9 @@ namespace DiceOrbit.UI
             lines.Add($"대상: {GetTargetTypeLabel(runtimeAbility.TargetType)}");
 
             int diceValue = currentDice != null ? currentDice.Value : -1;
-            bool canUse = currentDice != null && baseSkill.CanUse(diceValue);
-            string condition = BuildRequirementText(baseSkill.requirement);
+            var activeSkill = baseSkill as CharacterActiveSkill;
+            bool canUse = currentDice != null && (activeSkill?.CanUse(diceValue) ?? false);
+            string condition = BuildRequirementText(activeSkill?.requirement);
             if (diceValue > 0)
             {
                 lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "사용 불가")})");
@@ -473,14 +474,14 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            var selectedAbilities = new List<RuntimeAbility>(currentCharacter.Stats.ActiveAbilities);
+            var selectedAbilities = new List<ActiveSkillSlot>(currentCharacter.Stats.ActiveAbilities);
             if (index < 0 || index >= selectedAbilities.Count)
             {
                 ReturnDiceElement();
                 return;
             }
 
-            RuntimeAbility runtimeAbility = selectedAbilities[index];
+            ActiveSkillSlot runtimeAbility = selectedAbilities[index];
             if (runtimeAbility?.BaseSkill == null || !runtimeAbility.CanUse(currentDice.Value))
             {
                 Debug.LogWarning("[CharacterActionUI] Selected dice does not satisfy skill requirement/cooldown. Returning dice.");

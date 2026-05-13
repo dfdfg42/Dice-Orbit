@@ -3,7 +3,7 @@ using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data.Passives
 {
-    public class PositioningPassive : CharacterPassive
+    public class PositioningPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 다음 공격 피해 배율. 예: 1.05는 +5%")]

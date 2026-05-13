@@ -1,2 +1,2 @@
-// Merged into CharacterSkillBase, CharacterActiveTemplate, CharacterPassive.
-// CharacterSkillType, CharacterSkillTargetType, SkillLevelData → CharacterSkillBase.cs
+// Removed. CharacterActiveSkill and CharacterPassiveSkill are standalone [Serializable] classes.
+// CharacterSkillTargetType → CharacterActiveSkill.cs

@@ -1,1 +1,1 @@
-// Removed. CharacterPassive now extends CharacterSkillBase directly.
+// Removed. CharacterPassiveSkill is a standalone [Serializable] class in DiceOrbit.Data.Passives.

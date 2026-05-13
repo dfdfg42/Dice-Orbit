@@ -7,9 +7,26 @@ using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Data.Skills
 {
-    [System.Serializable]
-    public abstract class CharacterActiveTemplate : CharacterSkillBase
+    public enum CharacterSkillTargetType
     {
+        OneEnemy,
+        None,
+        OneTile,
+        AllTiles,
+    }
+
+    [System.Serializable]
+    public abstract class CharacterActiveSkill
+    {
+        [Header("Info")]
+        [SerializeField] protected string skillName = "";
+        [SerializeField, TextArea(2, 4)] protected string description = "";
+        [SerializeField] public Sprite icon;
+        [SerializeField] public int maxLevel = 1;
+
+        [Header("Requirement")]
+        [SerializeField] public DiceRequirement requirement = new DiceRequirement();
+
         [Header("Targeting")]
         [SerializeField] public CharacterSkillTargetType targetType = CharacterSkillTargetType.OneEnemy;
         [SerializeField] public TilePreviewStyle previewStyle = TilePreviewStyle.Neutral;
@@ -17,19 +34,23 @@ namespace DiceOrbit.Data.Skills
         [Header("VFX")]
         [SerializeField] protected CombatVfxProfile vfxProfile;
 
+        public string SkillName   => skillName;
+        public string Description => description;
+        public virtual int MaxLevel => Mathf.Max(1, maxLevel);
+
         public CharacterSkillTargetType TargetType => targetType;
         public TilePreviewStyle PreviewStyle       => previewStyle;
         public CombatVfxProfile VfxProfile         => vfxProfile;
 
-        public override CharacterSkillType SkillType => CharacterSkillType.Active;
+        public bool CanUse(int diceValue) => requirement.CanUse(diceValue);
 
-        public virtual CharacterActiveTemplate Clone() => (CharacterActiveTemplate)MemberwiseClone();
+        public virtual CharacterActiveSkill Clone() => (CharacterActiveSkill)MemberwiseClone();
 
-        public abstract int    CalculateRawDamage(Character source, RuntimeAbility ability, int diceValue);
-        public abstract string BuildPreview(Character source, RuntimeAbility ability, int diceValue);
+        public abstract int    CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue);
+        public abstract string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue);
 
         public virtual bool Execute(
-            Character source, RuntimeAbility ability,
+            Character source, ActiveSkillSlot ability,
             List<Unit> targets, List<TileData> targetTiles, int diceValue)
         {
             if (source == null || ability == null) return false;
@@ -60,6 +81,6 @@ namespace DiceOrbit.Data.Skills
             return true;
         }
 
-        public virtual void OnAfterResolved(Character source, RuntimeAbility ability) { }
+        public virtual void OnAfterResolved(Character source, ActiveSkillSlot ability) { }
     }
 }

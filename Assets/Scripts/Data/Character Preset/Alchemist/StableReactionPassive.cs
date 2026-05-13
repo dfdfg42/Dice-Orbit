@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.Passives
 {
-    public class StableReactionPassive : CharacterPassive
+    public class StableReactionPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 피해 증가율(%). 체력 조건 충족 시 적용")]

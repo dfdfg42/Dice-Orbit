@@ -13,7 +13,7 @@ namespace DiceOrbit.Data.CharacterPassives
     /// [구름] 패시브 — 웨이브 시작 시 무작위 타일 3개에 구름 속성을 부여합니다.
     /// 기상학자 캐릭터 선택 시 구름 타일을 Buff 색상으로 강조합니다.
     /// </summary>
-    public class MeteorologistCloudPassive : CharacterPassive
+    public class MeteorologistCloudPassive : CharacterPassiveSkill
     {
         [SerializeField] private int cloudTileCount = 3;
 

@@ -28,7 +28,7 @@ namespace DiceOrbit.Core
                 return;
             }
 
-            RuntimeAbility runtimeAbility = source.Stats.GetActiveAbilityByIndex(skillIndex);
+            ActiveSkillSlot runtimeAbility = source.Stats.GetActiveAbilityByIndex(skillIndex);
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null)
             {
                 CharacterActionUI.Instance?.ReturnDiceElement();
@@ -76,7 +76,7 @@ namespace DiceOrbit.Core
             }
         }
 
-        public void ConfirmSkillExecution(Character source, RuntimeAbility ability, DiceData dice, List<Unit> targets, List<TileData> tiles)
+        public void ConfirmSkillExecution(Character source, ActiveSkillSlot ability, DiceData dice, List<Unit> targets, List<TileData> tiles)
         {
             var combatManager = CombatManager.Instance;
             var diceManager = DiceManager.Instance;
@@ -115,7 +115,7 @@ namespace DiceOrbit.Core
             CharacterActionUI.Instance?.Hide();
         }
 
-        private IEnumerator FinalExecutionRoutine(Character source, RuntimeAbility ability, List<Unit> targets, List<TileData> tiles, DiceData dice)
+        private IEnumerator FinalExecutionRoutine(Character source, ActiveSkillSlot ability, List<Unit> targets, List<TileData> tiles, DiceData dice)
         {
             if (source != null && source.IsAlive)
             {

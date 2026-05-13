@@ -4,21 +4,21 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
-    public class WarriorGreatswordActive : CharacterActiveTemplate
+    public class WarriorGreatswordActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 배율값 (주사위값 x 배율)")]
         [SerializeField] private int[] multiplierByLevel = { 4, 6, 8, 10, 12 };
         [SerializeField] private int baseMultiplier = 12;
 
-        public override int CalculateRawDamage(Character source, RuntimeAbility ability, int diceValue)
+        public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
         {
             int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
             int multiplier = ResolveMultiplier(level);
             return diceValue * multiplier;
         }
 
-        public override string BuildPreview(Character source, RuntimeAbility ability, int diceValue)
+        public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
         {
             int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
             int multiplier = ResolveMultiplier(level);

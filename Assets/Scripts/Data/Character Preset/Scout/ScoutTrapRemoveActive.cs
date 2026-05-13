@@ -43,7 +43,7 @@ namespace DiceOrbit.Data.Characters.Scout
     // ── 액티브 스킬 템플릿 ───────────────────────────────────────────────
 
     [System.Serializable]
-    public class ScoutTrapRemoveActive : CharacterActiveTemplate
+    public class ScoutTrapRemoveActive : CharacterActiveSkill
     {
         [Header("레벨별 회복량 (최대체력 %)")]
         [Tooltip("레벨 1~N 순서. 예: 0.01 = 1%, 0.30 = 30%")]
@@ -58,7 +58,7 @@ namespace DiceOrbit.Data.Characters.Scout
         };
 
         public override bool Execute(
-            Character source, RuntimeAbility ability,
+            Character source, ActiveSkillSlot ability,
             List<Unit> targets, List<TileData> targetTiles, int diceValue)
         {
             if (targetTiles == null || targetTiles.Count == 0) return false;
@@ -76,13 +76,13 @@ namespace DiceOrbit.Data.Characters.Scout
             return true;
         }
 
-        public override string BuildPreview(Character source, RuntimeAbility ability, int diceValue)
+        public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
         {
             float heal = ResolveHealPercent(ability.CurrentLevel);
             return $"치유 타일 설치 ({heal * 100f:0.#}% 회복)";
         }
 
-        public override int CalculateRawDamage(Character source, RuntimeAbility ability, int diceValue) => 0;
+        public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue) => 0;
 
         private float ResolveHealPercent(int level)
         {

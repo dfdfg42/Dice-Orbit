@@ -23,7 +23,7 @@ namespace DiceOrbit.Core
         
         private bool isSelectingTarget = false;
         private Character sourceCharacter;
-        private RuntimeAbility currentRuntimeAbility;
+        private ActiveSkillSlot currentSlot;
         private DiceData currentDice;
         private Camera mainCamera;
         private Unit currentPreviewTarget;
@@ -92,10 +92,10 @@ namespace DiceOrbit.Core
         /// <summary>
         /// ?寃??좏깮 紐⑤뱶 ?쒖옉
         /// </summary>
-        public void StartTargetSelection(Character character, RuntimeAbility runtimeAbility, DiceData dice)
+        public void StartTargetSelection(Character character, ActiveSkillSlot runtimeAbility, DiceData dice)
         {
             sourceCharacter = character;
-            currentRuntimeAbility = runtimeAbility;
+            currentSlot = runtimeAbility;
             currentDice = dice;
             isSelectingTarget = true;
             sourceCharacter?.OnSkillTargetingStarted();
@@ -116,14 +116,14 @@ namespace DiceOrbit.Core
 
             targetLine.enabled = true;
 
-            var skillName = currentRuntimeAbility?.BaseSkill?.SkillName ?? "Unknown";
-            Debug.Log($"Target selection started for {skillName} (Type: {currentRuntimeAbility.TargetType})");
+            var skillName = currentSlot?.BaseSkill?.SkillName ?? "Unknown";
+            Debug.Log($"Target selection started for {skillName} (Type: {currentSlot.TargetType})");
 
             // AllTiles: ?좏깮 ?쒖옉怨??숈떆??紐⑤뱺 ??쇱뿉 ?꾨━酉??쒖떆
-            if (currentRuntimeAbility.TargetType == CharacterSkillTargetType.AllTiles)
+            if (currentSlot.TargetType == CharacterSkillTargetType.AllTiles)
             {
                 TileSkillPreviewManager.EnsureInstance();
-                var previewStyle = currentRuntimeAbility.PreviewStyle;
+                var previewStyle = currentSlot.PreviewStyle;
                 if (_orbitManager != null)
                     TileSkillPreviewManager.Instance?.ShowPreview(_orbitManager.Tiles, previewStyle);
             }
@@ -189,7 +189,7 @@ namespace DiceOrbit.Core
 
         private void UpdateDamagePreview()
         {
-            if (currentRuntimeAbility?.BaseSkill == null || sourceCharacter == null)
+            if (currentSlot?.BaseSkill == null || sourceCharacter == null)
             {
                 HoverTooltipUI.Instance?.HidePinned();
                 currentPreviewTarget = null;
@@ -236,13 +236,13 @@ namespace DiceOrbit.Core
 
         private string BuildAppliedDamagePreview(Unit targetUnit)
         {
-            if (currentRuntimeAbility?.BaseSkill == null || targetUnit == null || sourceCharacter == null)
+            if (currentSlot?.BaseSkill == null || targetUnit == null || sourceCharacter == null)
                 return "?덉긽 ?쇳빐: -";
 
-            var activeTemplate = currentRuntimeAbility.RuntimeActiveInstance;
+            var activeTemplate = currentSlot.RuntimeInstance;
             if (activeTemplate != null)
             {
-                int coupledRaw = activeTemplate.CalculateRawDamage(sourceCharacter, currentRuntimeAbility, currentDice.Value);
+                int coupledRaw = activeTemplate.CalculateRawDamage(sourceCharacter, currentSlot, currentDice.Value);
                 return coupledRaw > 0 ? $"?덉긽 ?쇳빐: {coupledRaw}" : "?덉긽 ?쇳빐: -";
             }
 
@@ -257,7 +257,7 @@ namespace DiceOrbit.Core
             var mouse = Mouse.current;
             if (mouse == null) return;
 
-            var targetType = currentRuntimeAbility.TargetType;
+            var targetType = currentSlot.TargetType;
 
             // AllTiles: ?대뵒???대┃?섎㈃ 紐⑤뱺 ??쇰줈 ?뺤젙
             if (targetType == CharacterSkillTargetType.AllTiles)
@@ -303,7 +303,7 @@ namespace DiceOrbit.Core
         /// </summary>
         private bool IsValidTarget(GameObject target)
         {
-            switch (currentRuntimeAbility.TargetType)
+            switch (currentSlot.TargetType)
             {
                 case CharacterSkillTargetType.OneEnemy:
                     return target.GetComponentInParent<Monster>() != null;
@@ -331,7 +331,7 @@ namespace DiceOrbit.Core
             }
 
             // CharacterActionUI???寃잛씠 ?뺤젙?섏뿀?뚯쓣 ?뚮┝
-            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentRuntimeAbility, currentDice, new System.Collections.Generic.List<Unit>{resolved}, new System.Collections.Generic.List<TileData>());
+            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentSlot, currentDice, new System.Collections.Generic.List<Unit>{resolved}, new System.Collections.Generic.List<TileData>());
         }
 
         private Unit ResolveTarget(GameObject target)
@@ -379,7 +379,7 @@ namespace DiceOrbit.Core
             currentPreviewTarget = null;
             _lastPreviewTile     = null;
             sourceCharacter      = null;
-            currentRuntimeAbility = null;
+            currentSlot = null;
             currentDice          = null;
         }
 
@@ -390,14 +390,14 @@ namespace DiceOrbit.Core
         /// </summary>
         private void UpdateTilePreview()
         {
-            if (currentRuntimeAbility?.TargetType != CharacterSkillTargetType.OneTile) return;
+            if (currentSlot?.TargetType != CharacterSkillTargetType.OneTile) return;
 
             var tile = GetTileUnderMouse();
             if (tile == _lastPreviewTile) return;
 
             _lastPreviewTile = tile;
             TileSkillPreviewManager.EnsureInstance();
-            var style = currentRuntimeAbility.PreviewStyle;
+            var style = currentSlot.PreviewStyle;
 
             if (tile != null)
                 TileSkillPreviewManager.Instance?.ShowPreview(new[] { tile }, style);
@@ -418,12 +418,12 @@ namespace DiceOrbit.Core
         {
             List<TileData> targets;
 
-            if (currentRuntimeAbility.TargetType == CharacterSkillTargetType.AllTiles)
+            if (currentSlot.TargetType == CharacterSkillTargetType.AllTiles)
                 targets = _orbitManager != null ? new List<TileData>(_orbitManager.Tiles) : new List<TileData>();
             else
                 targets = singleTile != null ? new List<TileData> { singleTile } : new List<TileData>();
 
-            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentRuntimeAbility, currentDice, new System.Collections.Generic.List<Unit>(), targets);
+            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentSlot, currentDice, new System.Collections.Generic.List<Unit>(), targets);
         }
     }
 }

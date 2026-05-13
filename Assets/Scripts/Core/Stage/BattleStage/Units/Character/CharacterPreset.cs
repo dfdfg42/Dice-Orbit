@@ -2,12 +2,10 @@ using UnityEngine;
 using System.Collections.Generic;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Skills;
+using DiceOrbit.Data.Passives;
 
 namespace DiceOrbit.Core
 {
-    /// <summary>
-    /// 캐릭터 프리셋 (선택 가능한 캐릭터)
-    /// </summary>
     [CreateAssetMenu(fileName = "CharacterPreset", menuName = "DiceOrbit/Character Preset")]
     public class CharacterPreset : ScriptableObject
     {
@@ -37,34 +35,36 @@ namespace DiceOrbit.Core
 
         [Header("Starting Skills")]
         [SerializeReference]
-        public List<CharacterSkillBase> StartingSkills = new List<CharacterSkillBase>();
+        public List<CharacterActiveSkill> StartingActives = new List<CharacterActiveSkill>();
 
-        /// <summary>
-        /// CharacterStats 생성
-        /// </summary>
+        [SerializeReference]
+        public List<CharacterPassiveSkill> StartingPassives = new List<CharacterPassiveSkill>();
+
         public CharacterStats CreateStats()
         {
             var stats = new CharacterStats
             {
                 CharacterName = this.CharacterName,
-                Level = 1,
-                MaxHP = this.MaxHP,
-                CurrentHP = this.MaxHP,
+                Level         = 1,
+                MaxHP         = this.MaxHP,
+                CurrentHP     = this.MaxHP,
                 CharacterSprite = this.CharacterSprite,
-                SpriteColor = this.SpriteColor
+                SpriteColor   = this.SpriteColor
             };
 
-            // 스킬 복사
-            foreach (var skill in StartingSkills)
+            foreach (var active in StartingActives)
             {
-                if (skill == null) continue;
-                // 런타임 래퍼에서 캐릭터별 레벨 상태를 에셋과 분리해 관리합니다.
-                stats.RuntimeAbilities.Add(new RuntimeAbility(skill));
+                if (active == null) continue;
+                stats.ActiveAbilities.Add(new ActiveSkillSlot(active));
+            }
+
+            foreach (var passive in StartingPassives)
+            {
+                if (passive == null) continue;
+                stats.PassiveInstances.Add(passive.Clone() as CharacterPassiveSkill);
             }
 
             stats.SourcePreset = this;
-            stats.NormalizeRuntimeAbilities();
-
             return stats;
         }
     }
