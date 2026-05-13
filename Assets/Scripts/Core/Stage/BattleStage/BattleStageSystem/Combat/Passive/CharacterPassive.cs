@@ -1,6 +1,7 @@
 using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Data;
 
 namespace DiceOrbit.Data.Passives
 {
@@ -51,6 +52,7 @@ namespace DiceOrbit.Data.Passives
 
         public virtual void OnOwnerSelected(Character c)  { }
         public virtual void OnOwnerDeselected()            { }
+        public virtual void OnOwnerMoved(TileData newTile) { }
 
         public virtual bool AllowSamePassive(IPassive incoming) => isStackable;
     }

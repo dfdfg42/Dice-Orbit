@@ -164,6 +164,7 @@ namespace DiceOrbit.Core
                     Debug.Log($"{stat?.CharacterName} assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
                     transform.position = currentTile.Position + TILE_OFFSET;
                     RefreshTileFormation(currentTile);
+                    passives?.BroadcastOwnerMoved(currentTile);
                 }
                 else
                 {
@@ -237,6 +238,7 @@ namespace DiceOrbit.Core
             if (arrivalTile != null)
             {
                 RefreshTileFormation(arrivalTile);
+                passives?.BroadcastOwnerMoved(arrivalTile);
                 Debug.Log($"{stat?.CharacterName} arrived at tile {arrivalTile.TileIndex}");
                 arrivalTile.OnArrive(this);
             }

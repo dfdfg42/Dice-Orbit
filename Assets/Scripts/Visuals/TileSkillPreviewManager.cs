@@ -31,6 +31,7 @@ namespace DiceOrbit.Visuals
         [SerializeField] private Color neutralColor = new Color(1f,   0.95f, 0.3f, 1f);
 
         private readonly List<GameObject> _roots = new();
+        private readonly List<GameObject> _passiveRoots = new();
 
         private void Awake()
         {
@@ -74,32 +75,73 @@ namespace DiceOrbit.Visuals
             _roots.Clear();
         }
 
+        public void ShowPassiveRange(IEnumerable<TileData> tiles, TilePreviewStyle style)
+        {
+            HidePassiveRange();
+            Color color = ResolveColor(style);
+
+            foreach (var tile in tiles)
+            {
+                if (tile == null) continue;
+
+                var corners = ResolveCorners(tile);
+                float perim  = Perimeter(corners);
+                float time   = perim / trailSpeed * trailCoverage;
+
+                var root = new GameObject("_PassiveTrail");
+                _passiveRoots.Add(root);
+
+                var ctrl = root.AddComponent<TileTrailController>();
+                ctrl.Setup(corners, color, trailSpeed, time, trailWidthHead, trailWidthTail);
+            }
+        }
+
+        public void HidePassiveRange()
+        {
+            foreach (var r in _passiveRoots)
+                if (r != null) Destroy(r);
+            _passiveRoots.Clear();
+        }
+
         // ── 내부 헬퍼 ─────────────────────────────────────────────────
 
         private Vector3[] ResolveCorners(TileData tile)
         {
-            var rend = tile.GetComponentInChildren<Renderer>();
-            if (rend != null)
+            var mf = tile.GetComponentInChildren<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null)
             {
-                Bounds b = rend.bounds;
-                float  y = b.max.y + trailElevation;
-                return new[]
+                Bounds local = mf.sharedMesh.bounds;
+                Transform t  = mf.transform;
+                float topY   = local.center.y + local.extents.y;
+                float ex     = local.extents.x;
+                float ez     = local.extents.z;
+                Vector3 c    = local.center;
+
+                Vector3[] localCorners =
                 {
-                    new Vector3(b.min.x, y, b.min.z),
-                    new Vector3(b.max.x, y, b.min.z),
-                    new Vector3(b.max.x, y, b.max.z),
-                    new Vector3(b.min.x, y, b.max.z),
+                    c + new Vector3(-ex, topY - c.y,  ez),
+                    c + new Vector3( ex, topY - c.y,  ez),
+                    c + new Vector3( ex, topY - c.y, -ez),
+                    c + new Vector3(-ex, topY - c.y, -ez),
                 };
+
+                var corners = new Vector3[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    corners[i] = t.TransformPoint(localCorners[i]);
+                    corners[i] += Vector3.up * trailElevation;
+                }
+                return corners;
             }
 
-            Vector3 c = tile.Position + Vector3.up * trailElevation;
+            Vector3 center = tile.Position + Vector3.up * trailElevation;
             const float h = 0.75f;
             return new[]
             {
-                c + new Vector3(-h, 0,  h),
-                c + new Vector3( h, 0,  h),
-                c + new Vector3( h, 0, -h),
-                c + new Vector3(-h, 0, -h),
+                center + new Vector3(-h, 0,  h),
+                center + new Vector3( h, 0,  h),
+                center + new Vector3( h, 0, -h),
+                center + new Vector3(-h, 0, -h),
             };
         }
 

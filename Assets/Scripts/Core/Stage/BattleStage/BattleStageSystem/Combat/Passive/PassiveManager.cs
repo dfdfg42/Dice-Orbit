@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using DiceOrbit.Core;
+using DiceOrbit.Data;
 using DiceOrbit.Data.Passives;
 using DiceOrbit.Core.Pipeline;
 using System.Linq;
@@ -49,6 +50,15 @@ namespace DiceOrbit.Systems.Passives
             foreach (var passive in sortedPassives)
             {
                 passive.OnReact(trigger, context);
+            }
+        }
+
+        public void BroadcastOwnerMoved(TileData newTile)
+        {
+            foreach (var passive in activePassives)
+            {
+                if (passive is CharacterPassiveSkill cps)
+                    cps.OnOwnerMoved(newTile);
             }
         }
 
