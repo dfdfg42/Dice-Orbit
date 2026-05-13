@@ -172,9 +172,7 @@ namespace DiceOrbit.UI
 
                 if (portrait == null)
                 {
-                    portrait = stats.SourcePreset != null && stats.SourcePreset.Portrait != null
-                        ? stats.SourcePreset.Portrait
-                        : stats.CharacterSprite;
+                    portrait = stats.SourcePreset?.Portrait ?? stats.SourcePreset?.CharacterSprite;
                 }
 
                 if (entry.PortraitImage != null)

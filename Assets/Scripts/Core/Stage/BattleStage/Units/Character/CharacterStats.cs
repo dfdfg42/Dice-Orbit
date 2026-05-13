@@ -29,10 +29,6 @@ namespace DiceOrbit.Data
         [Header("Reference")]
         public Core.CharacterPreset SourcePreset;
 
-        [Header("Visual")]
-        public Sprite CharacterSprite;
-        public Color SpriteColor = Color.white;
-
         [Header("Combat Stats")]
         public int MoveBuff    = 0;
         public int MoveDebuff  = 0;

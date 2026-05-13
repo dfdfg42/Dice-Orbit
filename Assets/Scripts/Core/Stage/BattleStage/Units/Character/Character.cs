@@ -13,8 +13,7 @@ namespace DiceOrbit.Core
     /// </summary>
     public class Character : Unit<CharacterStats>, UI.IHoverTooltipProvider
     {
-        // 타일 위 유닛 위치 offset
-        protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
+        public static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
 
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
@@ -38,30 +37,20 @@ namespace DiceOrbit.Core
         public void InitializeStats(CharacterStats newStats)
         {
             stat = newStats;
+            var preset = stat.SourcePreset;
 
-            // 스프라이트 업데이트
-            if (spriteRenderer != null)
+            if (spriteRenderer != null && preset != null)
             {
-                if (stat.CharacterSprite != null)
-                {
-                    spriteRenderer.sprite = stat.CharacterSprite;
-                }
-                spriteRenderer.color = stat.SpriteColor;
+                if (preset.CharacterSprite != null)
+                    spriteRenderer.sprite = preset.CharacterSprite;
+                spriteRenderer.color = preset.SpriteColor;
                 originalColor = spriteRenderer.color;
 
-                // Visual Scale 적용
-                if (stat.SourcePreset != null)
-                {
-                    var visual = spriteRenderer.GetComponent<DiceOrbit.Visuals.CharacterSpriteVisual>();
-                    if (visual != null)
-                    {
-                        visual.SetScale(stat.SourcePreset.VisualScale);
-                    }
-                    else
-                    {
-                        spriteRenderer.transform.localScale = new Vector3(stat.SourcePreset.VisualScale, stat.SourcePreset.VisualScale, 1f);
-                    }
-                }
+                var visual = spriteRenderer.GetComponent<DiceOrbit.Visuals.CharacterSpriteVisual>();
+                if (visual != null)
+                    visual.SetScale(preset.VisualScale);
+                else
+                    spriteRenderer.transform.localScale = new Vector3(preset.VisualScale, preset.VisualScale, 1f);
             }
 
             // Preset의 애니메이션 스프라이트를 spriteVisual에 적용
@@ -126,24 +115,8 @@ namespace DiceOrbit.Core
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
             spriteVisual   = GetComponentInChildren<CharacterSpriteVisual>();
 
-            if (spriteRenderer != null)
-            {
-                // 스탯에서 스프라이트 설정
-                if (stat != null && stat.CharacterSprite != null)
-                {
-                    spriteRenderer.sprite = stat.CharacterSprite;
-                }
-
-                if (stat != null)
-                {
-                    spriteRenderer.color = stat.SpriteColor;
-                    originalColor = spriteRenderer.color;
-                }
-            }
-            else
-            {
+            if (spriteRenderer == null)
                 Debug.LogWarning("SpriteRenderer not found in children! Add SpriteRenderer component to a child object.");
-            }
 
             mainCamera = Camera.main;
 

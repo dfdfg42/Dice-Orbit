@@ -47,9 +47,7 @@ namespace DiceOrbit.Core
                 CharacterName = this.CharacterName,
                 Level         = 1,
                 MaxHP         = this.MaxHP,
-                CurrentHP     = this.MaxHP,
-                CharacterSprite = this.CharacterSprite,
-                SpriteColor   = this.SpriteColor
+                CurrentHP     = this.MaxHP
             };
 
             foreach (var active in StartingActives)
