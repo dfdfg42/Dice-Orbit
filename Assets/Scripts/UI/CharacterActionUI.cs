@@ -2,11 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using DiceOrbit.Data;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data.Skills;
+using DiceOrbit.Visuals;
 
 namespace DiceOrbit.UI
 {
@@ -64,6 +66,11 @@ namespace DiceOrbit.UI
             moveButton?.onClick.AddListener(OnMoveClicked);
             skillButton?.onClick.AddListener(OnSkillClicked);
             cancelButton?.onClick.AddListener(OnCancelClicked);
+
+            // 이동 버튼 hover 프리뷰
+            AddPointerEvents(moveButton,
+                () => ShowMovePreview(),
+                () => TileSkillPreviewManager.Instance?.HidePreview());
 
             // 오버레이 취소 이벤트
             if (overlay != null)
@@ -131,6 +138,7 @@ namespace DiceOrbit.UI
         /// <summary>패널 숨기기</summary>
         public void Hide()
         {
+            TileSkillPreviewManager.Instance?.HidePreview();
             overlay?.Hide();
             HoverTooltipUI.Instance?.HidePinned();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
@@ -311,6 +319,42 @@ namespace DiceOrbit.UI
         // ─────────────────────────────────────────────
         // 내부 로직
         // ─────────────────────────────────────────────
+
+        private void AddPointerEvents(Button btn, System.Action onEnter, System.Action onExit)
+        {
+            if (btn == null) return;
+            var trigger = btn.GetComponent<EventTrigger>() ?? btn.gameObject.AddComponent<EventTrigger>();
+
+            var enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enter.callback.AddListener(_ => onEnter());
+            trigger.triggers.Add(enter);
+
+            var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exit.callback.AddListener(_ => onExit());
+            trigger.triggers.Add(exit);
+        }
+
+        private void ShowMovePreview()
+        {
+            var dest = GetMoveDestination();
+            if (dest == null) return;
+            TileSkillPreviewManager.EnsureInstance();
+            TileSkillPreviewManager.Instance?.ShowPreview(new[] { dest }, TilePreviewStyle.Neutral);
+        }
+
+        private TileData GetMoveDestination()
+        {
+            if (currentCharacter?.CurrentTile == null || currentDice == null) return null;
+            int netModifier = currentCharacter.Stats.MoveBuff - currentCharacter.Stats.MoveDebuff;
+            int steps = Mathf.Max(currentDice.Value + netModifier, 0);
+            var tile = currentCharacter.CurrentTile;
+            for (int i = 0; i < steps; i++)
+            {
+                if (tile.NextTile == null) break;
+                tile = tile.NextTile;
+            }
+            return steps > 0 ? tile : null;
+        }
 
         private void PopulateSkillList(Character character)
         {

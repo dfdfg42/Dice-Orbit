@@ -43,8 +43,6 @@ namespace DiceOrbit.Core
             {
                 if (preset.CharacterSprite != null)
                     spriteRenderer.sprite = preset.CharacterSprite;
-                spriteRenderer.color = preset.SpriteColor;
-                originalColor = spriteRenderer.color;
 
                 var visual = spriteRenderer.GetComponent<DiceOrbit.Visuals.CharacterSpriteVisual>();
                 if (visual != null)
@@ -250,12 +248,6 @@ namespace DiceOrbit.Core
                 moveAction.AddTag("Move");
                 var moveContext = new Pipeline.CombatContext(this, this, moveAction);
                 Pipeline.CombatPipeline.Instance.Process(moveContext);
-            }
-
-            // 색상 복원
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.color = originalColor;
             }
 
             spriteVisual?.PlayIdle();

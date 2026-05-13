@@ -30,10 +30,6 @@ namespace DiceOrbit.Visuals
         [SerializeField] private string deathTrigger = "Death";
         [SerializeField] private string deadBool = "IsDead";
 
-        [Header("Highlight")]
-        [SerializeField] private Color normalColor    = Color.white;
-        [SerializeField] private Color highlightColor = Color.yellow;
-
         private SpriteRenderer spriteRenderer;
         private Camera mainCamera;
 
@@ -53,7 +49,6 @@ namespace DiceOrbit.Visuals
         private void Start()
         {
             mainCamera = Camera.main;
-            spriteRenderer.color = normalColor;
             PlayIdle();
         }
 
@@ -130,12 +125,6 @@ namespace DiceOrbit.Visuals
         {
             if (sprite == null || spriteRenderer == null) return;
             spriteRenderer.sprite = sprite;
-        }
-
-        public void SetHighlight(bool highlighted)
-        {
-            if (spriteRenderer != null)
-                spriteRenderer.color = highlighted ? highlightColor : normalColor;
         }
 
         public void SetColor(Color color)
