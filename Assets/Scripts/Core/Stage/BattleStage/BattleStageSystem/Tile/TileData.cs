@@ -169,9 +169,9 @@ namespace DiceOrbit.Data
             return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
         }
 
-        public string GetHoverTooltipText()
+        public UI.HoverTooltipData GetHoverTooltipData()
         {
-            return BuildTooltipText();
+            return new UI.HoverTooltipData(BuildTooltipText());
         }
 
         private string ResolveTileTypeName()

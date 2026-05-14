@@ -27,7 +27,7 @@ namespace DiceOrbit.UI
         // Runtime
         private List<DiceElement> diceElements = new List<DiceElement>();
         private DiceElement selectedElement;
-    private bool panelVisible = true;
+        private bool panelVisible = false;
 
         private void Awake()
         {
@@ -48,7 +48,7 @@ namespace DiceOrbit.UI
                 }
             }
 
-            SetPanelVisible(true);
+            SetPanelVisible(false);
         }
         
         private void Start()

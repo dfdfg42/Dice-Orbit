@@ -39,6 +39,15 @@ namespace DiceOrbit.Data.Passives
         public virtual bool IsStackable => isStackable;
         public int CurrentLevel => currentLevel;
 
+        /// <summary>
+        /// 동적 계수나 현재 상태를 문자열로 반환합니다. (예: "피해 +10%")
+        /// 표시가 필요한 서브클래스에서 오버라이드하여 구현합니다.
+        /// </summary>
+        public virtual string GetDynamicDescription()
+        {
+            return string.Empty;
+        }
+
         public void ConfigureMetadata(string name, string desc, Sprite iconSprite = null)
         {
             if (!string.IsNullOrWhiteSpace(name)) passiveName = name;

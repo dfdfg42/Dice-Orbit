@@ -299,14 +299,18 @@ namespace DiceOrbit.Core
         private string BuildMonsterTooltipText()
         {
             var sb = new StringBuilder();
-            sb.AppendLine(Stats.MonsterName);
+            
+            // 이름 강조 (크기, 굵기)
+            sb.AppendLine($"<size=115%><b>{Stats.MonsterName}</b></size>");
+            sb.AppendLine(); // 빈 줄
 
             if (CurrentIntent != null)
             {
                 var targets = CurrentIntent.Targets;
                 if (targets != null && targets.Count > 0)
                 {
-                    sb.AppendLine($"대상: {string.Join(", ", targets.Select(t => t.Stats is Data.CharacterStats cs ? cs.CharacterName : (t.Stats is Data.MonsterStats ms ? ms.MonsterName : "Unknown")))}");
+                    string targetNames = string.Join(", ", targets.Select(t => t.Stats is Data.CharacterStats cs ? cs.CharacterName : (t.Stats is Data.MonsterStats ms ? ms.MonsterName : "Unknown")));
+                    sb.AppendLine($"<color=#FF7575><b>대상:</b> {targetNames}</color>");
                 }
 
                 // 스킬 설명 (nextSkill에서 가져오기)
@@ -314,43 +318,7 @@ namespace DiceOrbit.Core
                 {
                     if (!string.IsNullOrWhiteSpace(nextSkill.skillData.Description))
                     {
-                        sb.AppendLine($"의도: {nextSkill.skillData.Description.Trim()}");
-                    }
-                }
-            }
-
-            if (passives != null && passives.ActivePassives.Count > 0)
-            {
-                sb.AppendLine("--- Passive ---");
-                foreach (var passive in passives.ActivePassives)
-                {
-                    if (passive == null) continue;
-                    var passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
-                    var passiveDescription = string.IsNullOrWhiteSpace(passive.Description) ? "" : $" - {passive.Description.Trim()}";
-                    if (passive.CurrentLevel > 0)
-                    {
-                        sb.AppendLine($"• {passiveName} (Lv.{passive.CurrentLevel})");
-                        sb.AppendLine(passiveDescription);
-                    }
-                    else
-                    {
-                        sb.AppendLine($"• {passiveName}");
-                        sb.AppendLine(passiveDescription);
-                    }
-                }
-            }
-
-            if (statusEffects != null)
-            {
-                var effects = statusEffects.GetActiveEffects();
-                if (effects != null && effects.Count > 0)
-                {
-                    sb.AppendLine("--- Status ---");
-                    foreach (var effect in effects)
-                    {
-                        if (effect == null) continue;
-                        string durationText = effect.Duration < 0 ? "∞" : effect.Duration.ToString();
-                        sb.AppendLine($"• {effect.Type}: {effect.Value} ({durationText}T)");
+                        sb.AppendLine($"<color=#FFAA75><b>의도:</b> {nextSkill.skillData.Description.Trim()}</color>");
                     }
                 }
             }
@@ -358,9 +326,53 @@ namespace DiceOrbit.Core
             return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
         }
 
-        public string GetHoverTooltipText()
+        public UI.HoverTooltipData GetHoverTooltipData()
         {
-            return BuildMonsterTooltipText();
+            return new UI.HoverTooltipData(BuildMonsterTooltipText(), BuildStatusTooltipData(), BuildPassiveTooltipData());
+        }
+
+        private List<UI.TooltipKeywordFormatter.KeywordDisplayData> BuildPassiveTooltipData()
+        {
+            var passivesList = new List<UI.TooltipKeywordFormatter.KeywordDisplayData>();
+            if (passives == null || passives.ActivePassives.Count == 0) return passivesList;
+
+            foreach (var passive in passives.ActivePassives)
+            {
+                if (passive == null) continue;
+                
+                string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
+                if (passive.CurrentLevel > 0)
+                {
+                    passiveName += $" (Lv.{passive.CurrentLevel})";
+                }
+
+                string desc = "";
+                if (!string.IsNullOrWhiteSpace(passive.Description))
+                    desc = $"<color=#B3B3B3>{passive.Description.Trim()}</color>";
+
+                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f); // 붉은빛 주황색 통일
+                
+                passivesList.Add(new UI.TooltipKeywordFormatter.KeywordDisplayData(passiveName, desc, passiveColor, null));
+            }
+
+            return passivesList;
+        }
+
+        private List<UI.TooltipKeywordFormatter.StatusDisplayData> BuildStatusTooltipData()
+        {
+            var statuses = new List<UI.TooltipKeywordFormatter.StatusDisplayData>();
+            if (statusEffects == null) return statuses;
+
+            var effects = statusEffects.GetActiveEffects();
+            if (effects == null || effects.Count == 0) return statuses;
+
+            foreach (var effect in effects)
+            {
+                if (effect == null) continue;
+                statuses.Add(UI.TooltipKeywordFormatter.BuildStatusDisplayData(effect.Type.ToString(), effect.Value, effect.Duration));
+            }
+
+            return statuses;
         }
 
         private void EnsureHoverCollider()

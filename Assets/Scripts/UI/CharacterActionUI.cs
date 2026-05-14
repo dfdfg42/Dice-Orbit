@@ -48,6 +48,7 @@ namespace DiceOrbit.UI
         private bool         waitingForDice = false;
         private bool         isPanelVisible = false;
         private OrbitManager orbitManager;
+        private SpriteRenderer currentPortraitSource;
 
         private List<RectTransform> actionButtons = new List<RectTransform>();
         private Coroutine slideCoroutine;
@@ -73,6 +74,12 @@ namespace DiceOrbit.UI
             if (moveButton  != null) actionButtons.Add(moveButton.GetComponent<RectTransform>());
             if (skillButton != null) actionButtons.Add(skillButton.GetComponent<RectTransform>());
 
+            // 초상화 슬롯의 Rect 비율과 스프라이트 비율이 달라도 눌려 보이지 않게 비율을 고정합니다.
+            if (portraitImage != null)
+            {
+                portraitImage.preserveAspect = true;
+            }
+
             // 초기 상태: 숨김
             if (panelRoot != null) panelRoot.anchoredPosition = hiddenPosition;
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
@@ -83,6 +90,15 @@ namespace DiceOrbit.UI
         private void Start()
         {
             orbitManager = FindAnyObjectByType<OrbitManager>();
+        }
+
+        private void LateUpdate()
+        {
+            // 패널이 열려 있는 동안 현재 캐릭터의 애니메이션 프레임을 초상화에 미러링합니다.
+            if (!isPanelVisible || currentCharacter == null || portraitImage == null)
+                return;
+
+            RefreshPortraitImage();
         }
 
         // ─────────────────────────────────────────────
@@ -97,9 +113,9 @@ namespace DiceOrbit.UI
             waitingForDice   = true;
             isPanelVisible   = true;
 
-            // 초상화 설정
-            if (portraitImage != null && character.Stats?.CharacterSprite != null)
-                portraitImage.sprite = character.Stats.CharacterSprite;
+            // Animator 기반 캐릭터는 실시간 SpriteRenderer 프레임을 우선 사용합니다.
+            currentPortraitSource = character != null ? character.GetComponentInChildren<SpriteRenderer>() : null;
+            RefreshPortraitImage();
 
             RefreshActionButtonsState();
 
@@ -129,6 +145,7 @@ namespace DiceOrbit.UI
                 currentCharacter = null;
                 currentDice      = null;
             }
+            currentPortraitSource = null;
             waitingForDice   = false;
             isPanelVisible   = false;
             RefreshSkillButtonPreview();
@@ -678,6 +695,35 @@ namespace DiceOrbit.UI
             currentDice = selectedDice;
             waitingForDice = false;
             RefreshActionButtonsState();
+        }
+
+        private void RefreshPortraitImage()
+        {
+            if (portraitImage == null || currentCharacter == null)
+                return;
+
+            Sprite portrait = null;
+
+            if (currentPortraitSource != null)
+            {
+                portrait = currentPortraitSource.sprite;
+            }
+
+            if (portrait == null)
+            {
+                var stats = currentCharacter.Stats;
+                if (stats != null)
+                {
+                    portrait = stats.SourcePreset != null && stats.SourcePreset.Portrait != null
+                        ? stats.SourcePreset.Portrait
+                        : stats.CharacterSprite;
+                }
+            }
+
+            if (portrait != null)
+            {
+                portraitImage.sprite = portrait;
+            }
         }
 
         // ─────────────────────────────────────────────

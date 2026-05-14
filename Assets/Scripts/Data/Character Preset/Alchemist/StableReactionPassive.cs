@@ -17,6 +17,11 @@ namespace DiceOrbit.Data.Passives
 
         public override int Priority => 98;
 
+        public override string GetDynamicDescription()
+        {
+            return $"체력 {(healthThresholdRatio * 100f):0.#}% 이상일 때 피해 +{(CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+        }
+
         protected override void ApplyLevel(int level)
         {
             float bonusPercent = ResolveBonusPercent(level);

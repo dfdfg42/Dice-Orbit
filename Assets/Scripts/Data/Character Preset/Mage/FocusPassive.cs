@@ -18,6 +18,11 @@ namespace DiceOrbit.Data.Passives
 
         public override int Priority => 50;
 
+        public override string GetDynamicDescription()
+        {
+            return $"집중 스택당 추가 피해 +{BonusDamageRatioPerStack * 100f:0.#}%";
+        }
+
         protected override void ApplyLevel(int level)
         {
             float bonusPercent = ResolveBonusPercent(level);

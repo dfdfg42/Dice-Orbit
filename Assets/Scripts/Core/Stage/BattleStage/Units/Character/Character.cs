@@ -494,92 +494,81 @@ namespace DiceOrbit.Core
             }
         }
 
-        public string GetHoverTooltipText()
+        public UI.HoverTooltipData GetHoverTooltipData()
         {
-            return BuildCharacterTooltipText();
+            return new UI.HoverTooltipData(BuildCharacterTooltipText(), BuildStatusTooltipData(), BuildPassiveTooltipData());
         }
 
         private string BuildCharacterTooltipText()
         {
             var sb = new StringBuilder();
+            
+            // 이름 강조 (크기, 굵기)
             string characterName = stat != null && !string.IsNullOrWhiteSpace(stat.CharacterName)
                 ? stat.CharacterName
                 : name;
 
-            sb.AppendLine(characterName);
+            sb.AppendLine($"<size=115%><b>{characterName}</b></size>");
+            sb.AppendLine(); // 빈 줄로 구분
 
+            // 프로필 설명 추가
             string profileDescription = stat?.SourcePreset != null
                 ? stat.SourcePreset.Description
                 : string.Empty;
             if (!string.IsNullOrWhiteSpace(profileDescription))
             {
-                sb.AppendLine(profileDescription.Trim());
-            }
-
-            if (passives != null && passives.ActivePassives.Count > 0)
-            {
-                sb.AppendLine("--- Passive ---");
-                foreach (var passive in passives.ActivePassives)
-                {
-                    if (passive == null) continue;
-                    string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
-                    sb.Append($"• {passiveName}");
-                    if (passive.CurrentLevel > 0)
-                    {
-                        sb.Append($" (Lv.{passive.CurrentLevel})");
-                    }
-
-                    string passiveCoefficientLine = BuildPassiveCoefficientLine(passive);
-                    if (!string.IsNullOrWhiteSpace(passiveCoefficientLine))
-                    {
-                        sb.AppendLine($": {passiveCoefficientLine}");
-                    }
-                    else
-                    {
-                        sb.AppendLine();
-                    }
-                }
-            }
-
-            if (statusEffects != null)
-            {
-                var effects = statusEffects.GetActiveEffects();
-                if (effects != null && effects.Count > 0)
-                {
-                    sb.AppendLine("--- Status ---");
-                    foreach (var effect in effects)
-                    {
-                        if (effect == null) continue;
-                        string durationText = effect.Duration < 0 ? "∞" : effect.Duration.ToString();
-                        sb.AppendLine($"• {effect.Type}: {effect.Value} ({durationText}T)");
-                    }
-                }
+                sb.AppendLine($"<color=#D4D4D4>{profileDescription.Trim()}</color>");
             }
 
             return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
         }
 
-        private static string BuildPassiveCoefficientLine(PassiveAbility passive)
+        private List<UI.TooltipKeywordFormatter.KeywordDisplayData> BuildPassiveTooltipData()
         {
-            if (passive == null) return string.Empty;
+            var passivesList = new List<UI.TooltipKeywordFormatter.KeywordDisplayData>();
+            if (passives == null || passives.ActivePassives.Count == 0) return passivesList;
 
-            switch (passive)
+            foreach (var passive in passives.ActivePassives)
             {
-                case BattleCryPassive battleCry:
-                    return $"피해 +{(battleCry.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+                if (passive == null) continue;
+                
+                string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
+                if (passive.CurrentLevel > 0)
+                {
+                    passiveName += $" (Lv.{passive.CurrentLevel})";
+                }
 
-                case StableReactionPassive stableReaction:
-                    return $"체력 {(stableReaction.healthThresholdRatio * 100f):0.#}% 이상일 때 피해 +{(stableReaction.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+                // 패시브 효과 수치 텍스트 빌드 (다형성 활용)
+                string effText = passive.GetDynamicDescription();
+                // 추가 설명이 있다면 합침
+                string desc = effText;
+                if (!string.IsNullOrWhiteSpace(passive.Description))
+                    desc = $"{effText}\n<color=#B3B3B3>{passive.Description}</color>";
 
-                case PositioningPassive positioning:
-                    return $"이동 {positioning.CurrentThresholdDistance}칸 이상 시 다음 공격 피해 +{(positioning.CurrentDamageMultiplier - 1f) * 100f:0.#}%";
-
-                case FocusPassive focus:
-                    return $"집중 스택당 추가 피해 +{focus.BonusDamageRatioPerStack * 100f:0.#}%";
-
-                default:
-                    return string.Empty;
+                // 패시브 카드는 약간 붉은빛 주황색 기본 제공 (Inspector에서 색을 지정 안했으므로 코드로 하드코딩)
+                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f); 
+                
+                passivesList.Add(new UI.TooltipKeywordFormatter.KeywordDisplayData(passiveName, desc.Trim(), passiveColor, null));
             }
+
+            return passivesList;
+        }
+
+        private List<UI.TooltipKeywordFormatter.StatusDisplayData> BuildStatusTooltipData()
+        {
+            var statuses = new List<UI.TooltipKeywordFormatter.StatusDisplayData>();
+            if (statusEffects == null) return statuses;
+
+            var effects = statusEffects.GetActiveEffects();
+            if (effects == null || effects.Count == 0) return statuses;
+
+            foreach (var effect in effects)
+            {
+                if (effect == null) continue;
+                statuses.Add(UI.TooltipKeywordFormatter.BuildStatusDisplayData(effect.Type.ToString(), effect.Value, effect.Duration));
+            }
+
+            return statuses;
         }
     }
 }
