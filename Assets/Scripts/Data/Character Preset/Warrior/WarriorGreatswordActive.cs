@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
+    [System.Serializable]
     public class WarriorGreatswordActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]

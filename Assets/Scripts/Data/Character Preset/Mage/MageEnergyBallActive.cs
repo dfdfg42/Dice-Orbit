@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
+    [System.Serializable]
     public class MageEnergyBallActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]

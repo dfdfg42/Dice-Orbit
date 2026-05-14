@@ -103,7 +103,12 @@ namespace DiceOrbit.UI
             
             for (int i = 0; i < count; i++)
             {
-                // 각 element의 현재 상태 저장 (레이아웃 그룹 등에 의해 결정된 최종 상태)
+                // ClearDice()가 애니메이션 도중 호출되면 element가 파괴될 수 있음
+                if (rects[i] == null)
+                {
+                    OnAnimationComplete?.Invoke();
+                    yield break;
+                }
                 slotPositions[i] = rects[i].anchoredPosition;
                 originalAnchorMins[i] = rects[i].anchorMin;
                 originalAnchorMaxs[i] = rects[i].anchorMax;

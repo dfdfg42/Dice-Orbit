@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
+    [System.Serializable]
     public class RogueAmbushActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]

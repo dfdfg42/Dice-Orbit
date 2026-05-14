@@ -10,6 +10,7 @@ namespace DiceOrbit.Data.CharacterActives
     /// [일기예보] 액티브 — 주사위 눈금 2 이하 사용.
     /// 다음 2턴 동안 낮은 주사위 눈금이 나올 확률을 5% 높입니다.
     /// </summary>
+    [System.Serializable]
     public class WeatherForecastActive : CharacterActiveSkill
     {
         [SerializeField] private int biasDurationTurns = 2;

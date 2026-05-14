@@ -4,6 +4,7 @@ using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data.Passives
 {
+    [System.Serializable]
     public class FocusPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]

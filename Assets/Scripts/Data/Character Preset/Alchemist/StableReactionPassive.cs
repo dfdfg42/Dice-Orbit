@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Data.Passives
 {
+    [System.Serializable]
     public class StableReactionPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]

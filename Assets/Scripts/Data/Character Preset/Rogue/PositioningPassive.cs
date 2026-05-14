@@ -3,6 +3,7 @@ using DiceOrbit.Core.Pipeline;
 
 namespace DiceOrbit.Data.Passives
 {
+    [System.Serializable]
     public class PositioningPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
