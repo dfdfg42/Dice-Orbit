@@ -37,14 +37,27 @@ namespace DiceOrbit.UI
         [Header("UI 참조")]
         [SerializeField] private Canvas canvas;                               // 툴팁을 감싸는 캔버스
         [SerializeField] private RectTransform panelRect;                     // 메인 툴팁 패널
-        [SerializeField] private TextMeshProUGUI tooltipText;                 // 메인 설명 텍스트
+        [SerializeField] private TextMeshProUGUI tooltipText;                         // 메인 툴팁 본문 텍스트
         [SerializeField] private GlossaryContainerUI glossaryContainer;       // 키워드 + 상태이상 카드 컨테이너
+        [SerializeField] private RectTransform keywordDetailRect;             // 키워드 상세 팝업 패널
+        [SerializeField] private TextMeshProUGUI keywordDetailText;           // 키워드 상세 텍스트
 
         [Header("메인 패널 레이아웃")]
         [SerializeField] private Vector2 padding = new Vector2(14f, 10f);     // 텍스트와 패널 가장자리 사이 내부 여백
         [SerializeField] private Vector2 offset  = new Vector2(16f, -16f);   // 마우스 커서 기준 패널 오프셋
         [SerializeField] private float minMainPanelWidth = 180f;              // 메인 패널 최소 너비
         [SerializeField] private float maxMainPanelWidth = 520f;              // 메인 패널 최대 너비
+
+        [Header("키워드 상세 패널 레이아웃")]
+        [SerializeField] private Vector2 detailPadding = new Vector2(12f, 8f); // 상세 패널 내부 여백
+        [SerializeField] private Vector2 detailOffset  = new Vector2(14f, 0f); // 메인 패널 오른쪽 기준 오프셋
+        [SerializeField] private float minDetailPanelWidth = 200f;             // 키워드 상세 패널 최소 너비
+        [SerializeField] private float maxDetailPanelWidth = 380f;             // 키워드 상세 패널 최대 너비
+        [SerializeField] private float maxDetailTextWidth  = 360f;             // 상세 패널 내 텍스트 최대 너비
+
+        [Header("렌더링 정렬")]
+        [SerializeField] private bool forceTopMost = true;                      // true면 툴팁 캔버스를 항상 최상단 정렬로 강제
+        [SerializeField] private int topMostSortingOrder = 30000;               // 다른 UI보다 크게 설정
 
         // ═══════════════════════════════════════════════════════
         // 런타임 상태 변수
@@ -62,6 +75,12 @@ namespace DiceOrbit.UI
 
         // 매 프레임 Camera.main 호출을 피하기 위한 카메라 캐시
         private Camera _cachedCamera;
+
+        // 키워드 상세 팝업이 좌클릭으로 고정되어 있는지 여부
+        private bool _keywordDetailPinned;
+
+        // 현재 고정된 키워드 이름 — 같은 키워드를 다시 클릭하면 토글하기 위해 저장합니다
+        private string _pinnedKeywordKey;
 
         // ═══════════════════════════════════════════════════════
         // [1] 싱글톤 초기화
@@ -82,6 +101,7 @@ namespace DiceOrbit.UI
             // 참조 자동 탐색 및 레이아웃 초기화
             ValidateReferences();
             SetupLayout();
+            EnsureTopMostOrder();
 
             // 게임 시작 시 툴팁은 숨겨진 상태로 시작합니다
             Hide();
@@ -116,6 +136,9 @@ namespace DiceOrbit.UI
 
             // 메인 패널(및 보조 패널)을 현재 마우스 위치로 이동합니다
             FollowMouse();
+
+            // 본문 텍스트의 키워드 링크 위에 마우스가 있으면 상세 팝업을 처리합니다
+            UpdateKeywordDetailInteraction();
         }
 
         /// <summary>
@@ -178,6 +201,9 @@ namespace DiceOrbit.UI
             // 텍스트 내용에 맞게 메인 패널 크기를 조정합니다
             UpdateSize();
 
+            // 표시 직전에 정렬 우선순위를 재적용해 가려짐을 방지합니다
+            EnsureTopMostOrder();
+
             // 패널을 활성화하고 현재 마우스 위치로 이동합니다
             _visible = true;
             panelRect.gameObject.SetActive(true);
@@ -188,12 +214,16 @@ namespace DiceOrbit.UI
             if (matchedKeywords.Count == 0 && !string.IsNullOrWhiteSpace(tooltipText.text))
                 Debug.Log($"[HoverTooltipUI] 키워드 매칭 결과 없음: {tooltipText.text}");
 
-            // 키워드 카드 + 패시브 카드 + 상태이상 카드를 한 번에 컨테이너로 전달합니다
+            // 키워드 카드 + 상태이상 카드를 한 번에 컨테이너로 전달합니다
             float scale = canvas != null ? canvas.scaleFactor : 1f;
             glossaryContainer?.Show(matchedKeywords, data.Statuses, data.Passives, panelRect.position, panelRect.sizeDelta, scale);
 
             if (glossaryContainer == null)
                 Debug.LogWarning("[HoverTooltipUI] glossaryContainer가 없습니다.");
+
+            // 키워드 상세 팝업은 고정 중이 아니라면 닫아둡니다
+            if (!_keywordDetailPinned)
+                HideKeywordDetail();
         }
 
         /// <summary>
@@ -214,6 +244,11 @@ namespace DiceOrbit.UI
             if (panelRect != null)
                 panelRect.gameObject.SetActive(false);
 
+            // 키워드 상세 팝업 고정 상태를 초기화합니다
+            _keywordDetailPinned = false;
+            _pinnedKeywordKey    = null;
+
+            HideKeywordDetail();
             glossaryContainer?.Hide(); // 키워드 + 상태이상 카드를 함께 숨깁니다
         }
 
@@ -248,7 +283,121 @@ namespace DiceOrbit.UI
         }
 
         // ═══════════════════════════════════════════════════════
-        // [4] 위치 & 크기 계산
+        // [4] 키워드 상세 팝업 — 마우스 호버 & 클릭 처리
+        // ═══════════════════════════════════════════════════════
+
+        /// <summary>
+        /// 본문 텍스트 위의 TMP 링크(키워드) 위에 마우스가 있으면 상세 팝업을 처리합니다.
+        ///
+        /// 상호작용 규칙:
+        ///   - 마우스를 키워드 위에 올리면 상세 팝업이 나타납니다.
+        ///   - 좌클릭: 같은 키워드 → 고정 토글 / 다른 키워드 → 새로 고정합니다.
+        ///   - 우클릭: 고정 상태를 즉시 해제합니다.
+        /// </summary>
+        private void UpdateKeywordDetailInteraction()
+        {
+            if (tooltipText == null || keywordDetailText == null || !_visible) return;
+
+            // 우클릭으로 키워드 상세 고정을 즉시 해제합니다
+            if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+            {
+                _keywordDetailPinned = false;
+                _pinnedKeywordKey    = null;
+            }
+
+            // 현재 마우스 위치에서 TMP 링크 인덱스를 찾습니다
+            int linkIndex = TMP_TextUtilities.FindIntersectingLink(tooltipText, GetMousePosition(), null);
+
+            // 링크 위에 마우스가 없는 경우
+            if (linkIndex < 0)
+            {
+                // 고정 중이 아니라면 상세 팝업을 닫습니다
+                if (!_keywordDetailPinned)
+                    HideKeywordDetail();
+                return;
+            }
+
+            // 링크 ID에서 키워드 이름과 설명을 추출합니다 (링크 ID 형식: "kw:키워드이름")
+            TMP_LinkInfo linkInfo = tooltipText.textInfo.linkInfo[linkIndex];
+            string       linkId   = linkInfo.GetLinkID();
+
+            if (!TooltipKeywordFormatter.TryGetDescriptionByLinkId(linkId, out string keyword, out string description))
+            {
+                // 링크 ID가 유효하지 않거나 DB에 없는 키워드이면 팝업을 닫습니다
+                if (!_keywordDetailPinned)
+                    HideKeywordDetail();
+                return;
+            }
+
+            // 유효한 키워드 링크 위에 마우스가 있음 → 상세 팝업을 표시합니다
+            ShowKeywordDetail(keyword, description);
+
+            // 좌클릭 처리
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                bool isSameKeyword =
+                    _keywordDetailPinned &&
+                    string.Equals(_pinnedKeywordKey, keyword, System.StringComparison.OrdinalIgnoreCase);
+
+                if (isSameKeyword)
+                {
+                    // 이미 고정된 같은 키워드를 재클릭 → 고정을 해제합니다
+                    _keywordDetailPinned = false;
+                    _pinnedKeywordKey    = null;
+                    HideKeywordDetail();
+                }
+                else
+                {
+                    // 새 키워드를 클릭 → 고정합니다
+                    _keywordDetailPinned = true;
+                    _pinnedKeywordKey    = keyword;
+                    ShowKeywordDetail(keyword, description);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 키워드 상세 팝업에 내용을 채우고 표시합니다.
+        /// 패널 크기를 텍스트 내용에 맞게 자동 계산합니다.
+        /// </summary>
+        private void ShowKeywordDetail(string keyword, string description)
+        {
+            if (keywordDetailRect == null || keywordDetailText == null) return;
+
+            // 키워드 색상을 DB에서 가져와 텍스트 색상으로 적용합니다
+            if (TooltipKeywordFormatter.TryGetVisuals(keyword, out Color keywordColor, out _))
+                keywordDetailText.color = keywordColor;
+            else
+                keywordDetailText.color = new Color(1f, 0.93f, 0.66f, 1f); // DB에 없는 경우 기본 노란색
+
+            // 상세 팝업 본문: [키워드 이름] + 설명 + 조작 안내
+            keywordDetailText.text =
+                $"[{keyword}]\n{description}\n\n(좌클릭: 고정 / 우클릭: 해제)";
+
+            // 텍스트 크기에 맞는 패널 크기를 계산합니다
+            float clampedMaxWidth  = Mathf.Max(minDetailPanelWidth, maxDetailPanelWidth);
+            float preferredWidth   = Mathf.Min(maxDetailTextWidth, clampedMaxWidth - detailPadding.x * 2f);
+            Vector2 preferred      = keywordDetailText.GetPreferredValues(keywordDetailText.text, preferredWidth, 0f);
+            float width            = Mathf.Clamp(preferred.x + detailPadding.x * 2f, minDetailPanelWidth, clampedMaxWidth);
+            float height           = preferred.y + detailPadding.y * 2f;
+            keywordDetailRect.sizeDelta = new Vector2(width, height);
+
+            // 패널 활성화 및 위치 재조정
+            keywordDetailRect.gameObject.SetActive(true);
+            RepositionKeywordDetailPanel();
+        }
+
+        /// <summary>
+        /// 키워드 상세 팝업을 숨깁니다.
+        /// </summary>
+        private void HideKeywordDetail()
+        {
+            if (keywordDetailRect != null)
+                keywordDetailRect.gameObject.SetActive(false);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // [5] 위치 & 크기 계산
         // ═══════════════════════════════════════════════════════
 
         /// <summary>
@@ -257,21 +406,48 @@ namespace DiceOrbit.UI
         /// </summary>
         private void FollowMouse()
         {
-            // 마우스 위치 + 오프셋으로 기본 위치를 계산합니다
-            Vector2 pos  = GetMousePosition() + offset;
-
-            // sizeDelta는 캔버스 로컬 단위 → 스크린 픽셀로 변환
-            float scale      = canvas != null ? canvas.scaleFactor : 1f;
+            // sizeDelta는 캔버스 유닛이므로 scaleFactor를 곱해 스크린 픽셀로 변환합니다
+            float   scale      = canvas != null ? canvas.scaleFactor : 1f;
+            Vector2 pos        = GetMousePosition() + offset;
             Vector2 screenSize = panelRect.sizeDelta * scale;
 
             // 패널이 화면 오른쪽·하단 밖으로 나가지 않도록 클램프합니다
             pos.x = Mathf.Clamp(pos.x, 0f, Screen.width  - screenSize.x);
-            pos.y = Mathf.Clamp(pos.y, screenSize.y, Screen.height);
+            pos.y = Mathf.Clamp(pos.y, screenSize.y,      Screen.height);
 
             panelRect.position = pos;
 
             // 카드 컨테이너도 메인 패널 기준으로 위치를 재조정합니다
             glossaryContainer?.Reposition(panelRect.position, panelRect.sizeDelta, scale);
+            RepositionKeywordDetailPanel();
+        }
+
+        /// <summary>
+        /// 키워드 상세 팝업을 메인 패널 오른쪽에 배치합니다.
+        /// 오른쪽 화면 공간이 부족하면 메인 패널 왼쪽으로 자동 전환합니다.
+        /// </summary>
+        private void RepositionKeywordDetailPanel()
+        {
+            if (keywordDetailRect == null || !keywordDetailRect.gameObject.activeSelf || panelRect == null) return;
+
+            float   scale          = canvas != null ? canvas.scaleFactor : 1f;
+            Vector2 basePos        = panelRect.position;
+            Vector2 detailScreen   = keywordDetailRect.sizeDelta * scale;
+            float   mainWidthPx    = panelRect.sizeDelta.x * scale;
+
+            // 기본 위치: 메인 패널의 오른쪽
+            float x = basePos.x + mainWidthPx + detailOffset.x;
+            float y = basePos.y;
+
+            // 오른쪽 화면 밖으로 나가면 메인 패널의 왼쪽으로 이동합니다
+            if (x + detailScreen.x > Screen.width)
+                x = basePos.x - detailScreen.x - detailOffset.x;
+
+            // 화면 경계 클램프
+            x = Mathf.Clamp(x, 0f, Mathf.Max(0f, Screen.width  - detailScreen.x));
+            y = Mathf.Clamp(y, detailScreen.y, Screen.height);
+
+            keywordDetailRect.position = new Vector2(x, y);
         }
 
         /// <summary>
@@ -294,7 +470,7 @@ namespace DiceOrbit.UI
         }
 
         // ═══════════════════════════════════════════════════════
-        // [5] Raycast — 3D Provider 탐색
+        // [6] Raycast — 3D Provider 탐색
         // ═══════════════════════════════════════════════════════
 
         /// <summary>
@@ -361,7 +537,7 @@ namespace DiceOrbit.UI
         }
 
         // ═══════════════════════════════════════════════════════
-        // [6] 초기화 헬퍼 — 참조 검증 & 레이아웃 설정
+        // [7] 초기화 헬퍼 — 참조 검증 & 레이아웃 설정
         // ═══════════════════════════════════════════════════════
 
         /// <summary>
@@ -386,6 +562,11 @@ namespace DiceOrbit.UI
 
             // 필수 참조 누락 경고
             if (panelRect == null || tooltipText == null)
+                Debug.LogWarning("[HoverTooltipUI] panelRect 또는 tooltipText 참조가 없습니다. Inspector에서 설정해주세요.");
+
+            if (keywordDetailRect == null || keywordDetailText == null)
+                Debug.LogWarning("[HoverTooltipUI] 키워드 상세 패널 참조가 없습니다.");
+
             if (glossaryContainer == null)
                 Debug.LogWarning("[HoverTooltipUI] glossaryContainer가 없습니다.");
         }
@@ -397,6 +578,7 @@ namespace DiceOrbit.UI
         {
             // 패널이 앵커 설정 때문에 화면 전체로 늘어나지 않도록 표준화합니다
             NormalizeFloatingRect(panelRect);
+            NormalizeFloatingRect(keywordDetailRect);
 
             // 텍스트 RectTransform을 패딩 기준으로 설정합니다
             // 이렇게 해야 텍스트와 배경 Image가 올바르게 정렬됩니다
@@ -405,12 +587,37 @@ namespace DiceOrbit.UI
             // 툴팁 패널이 Raycast를 막으면 마우스가 패널에 가려져 Hover가 끊기고 깜빡입니다
             // 패널 내 모든 Graphic의 raycastTarget을 false로 설정합니다
             DisableRaycastForUI(panelRect);
+            DisableRaycastForUI(keywordDetailRect);
 
             // TMP 텍스트 컴포넌트도 별도로 차단합니다
             if (tooltipText    != null) tooltipText.raycastTarget    = false;
+            if (keywordDetailText != null) keywordDetailText.raycastTarget = false;
 
-            // 카드 컨테이너는 초기에 숨겨둡니다
+            EnsureTopMostOrder();
+
+            // 카드 컨테이너와 키워드 상세 패널은 초기에 숨겨둡니다
             glossaryContainer?.Hide();
+            HideKeywordDetail();
+        }
+
+        /// <summary>
+        /// 툴팁 캔버스를 항상 최상단으로 렌더링되도록 정렬 우선순위를 강제합니다.
+        /// </summary>
+        private void EnsureTopMostOrder()
+        {
+            if (canvas == null) return;
+
+            if (forceTopMost)
+            {
+                canvas.overrideSorting = true;
+                canvas.sortingOrder = topMostSortingOrder;
+            }
+
+            // 같은 Canvas 안에서도 마지막 형제로 올려 가려질 확률을 줄입니다.
+            canvas.transform.SetAsLastSibling();
+            if (panelRect != null)         panelRect.SetAsLastSibling();
+            if (keywordDetailRect != null) keywordDetailRect.SetAsLastSibling();
+            if (glossaryContainer != null) glossaryContainer.transform.SetAsLastSibling();
         }
 
         /// <summary>
@@ -456,6 +663,16 @@ namespace DiceOrbit.UI
                 r.anchorMax = Vector2.one;
                 r.offsetMin = new Vector2( padding.x,  padding.y);
                 r.offsetMax = new Vector2(-padding.x, -padding.y);
+            }
+
+            // 키워드 상세 패널 텍스트: 동일하게 detailPadding 기준으로 배치합니다
+            if (keywordDetailText != null)
+            {
+                var r = keywordDetailText.rectTransform;
+                r.anchorMin = Vector2.zero;
+                r.anchorMax = Vector2.one;
+                r.offsetMin = new Vector2( detailPadding.x,  detailPadding.y);
+                r.offsetMax = new Vector2(-detailPadding.x, -detailPadding.y);
             }
         }
 

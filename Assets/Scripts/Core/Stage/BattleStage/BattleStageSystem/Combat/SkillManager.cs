@@ -2,157 +2,144 @@ using UnityEngine;
 using DiceOrbit.Data;
 using System.Collections.Generic;
 using DiceOrbit.Data.Skills;
+using DiceOrbit.UI;
+using System.Collections;
 
 namespace DiceOrbit.Core
 {
-    /// <summary>
-    /// 스킬 관리자 (싱글톤)
-    /// - 스킬 사용 조건 확인
-    /// - 타겟 선택 요청
-    /// - 스킬 실행 (파이프라인 위임)
-    /// </summary>
     public class SkillManager : MonoBehaviour
     {
         public static SkillManager Instance { get; private set; }
-        
+
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            if (Instance == null) Instance = this;
+            else Destroy(gameObject);
         }
-        
-        /// <summary>
-        /// 스킬 사용 준비 (UI에서 호출)
-        /// </summary>
+
         public void PrepareSkill(Character source, int skillIndex, DiceData dice)
         {
-            if (source == null) return;
-            
-            // 1. 유효성 검사
+            if (source == null || dice == null) return;
+
             if (skillIndex < 0 || skillIndex >= source.Stats.ActiveAbilityCount)
             {
                 Debug.LogWarning($"[SkillManager] Invalid skill index: {skillIndex}");
-                source.OnSkillResolved();
+                CharacterActionUI.Instance?.ReturnDiceElement();
                 return;
             }
-            
-            RuntimeAbility runtimeAbility = source.Stats.GetActiveAbilityByIndex(skillIndex);
-            // CurrentSkillData는 RuntimeAbility.CurrentLevel 기준으로 계산됩니다.
-            var skillData = runtimeAbility?.CurrentSkillData;
-            
-            if (skillData == null)
+
+            ActiveSkillSlot runtimeAbility = source.Stats.GetActiveAbilityByIndex(skillIndex);
+            if (runtimeAbility == null || runtimeAbility.BaseSkill == null)
             {
-                source.OnSkillResolved();
+                CharacterActionUI.Instance?.ReturnDiceElement();
                 return;
             }
-            
-            // 2. 상태 이상 체크
-            if (source.StatusEffects != null)
+
+            if (!runtimeAbility.CanUse(dice.Value))
             {
-                // TODO: Check Stun/Silence
-            }
-            
-            // 3. 주사위 조건 확인 (CharacterSkill의 Requirement 사용)
-            if (runtimeAbility.BaseSkill == null || !runtimeAbility.BaseSkill.CanUse(dice.Value))
-            {
-                Debug.LogWarning($"[SkillManager] Cannot use {skillData.SkillName}. Requirement not met.");
-                source.OnSkillResolved();
+                Debug.LogWarning($"[SkillManager] Cannot use {runtimeAbility.BaseSkill.SkillName}. Requirement/Cooldown not met.");
+                CharacterActionUI.Instance?.ReturnDiceElement();
                 return;
             }
-            
-            Debug.Log($"[SkillManager] Preparing {skillData.SkillName} for {source.Stats.CharacterName}");
-            
-            // 4. 타겟 선택 시작
-            var targetSelector = SkillTargetSelector.Instance;
-            if (targetSelector != null)
+
+            Debug.Log($"[SkillManager] Preparing {runtimeAbility.BaseSkill.SkillName} for {source.Stats.CharacterName}");
+
+            CharacterSkillTargetType targetType = runtimeAbility.TargetType;
+
+            if (targetType == CharacterSkillTargetType.None || targetType == CharacterSkillTargetType.AllTiles)
             {
-                targetSelector.StartTargetSelection(source, runtimeAbility, dice);
+                var targetTiles = new List<TileData>();
+                if (targetType == CharacterSkillTargetType.AllTiles)
+                {
+                    var orbitManager = FindAnyObjectByType<OrbitManager>();
+                    if (orbitManager != null) targetTiles.AddRange(orbitManager.Tiles);
+                }
+
+                ConfirmSkillExecution(source, runtimeAbility, dice, new List<Unit>(), targetTiles);
             }
             else
             {
-                Debug.LogError("[SkillManager] SkillTargetSelector not found!");
-                source.OnSkillResolved();
-            }
-        }
-        
-        /// <summary>
-        /// 타겟 선택 완료 시 호출 (TargetSelector에서 호출)
-        /// </summary>
-        public void OnTargetSelected(Character source, Unit target, RuntimeAbility runtimeAbility, int diceValue)
-        {
-            if (source == null || runtimeAbility == null) return;
-
-            ExecuteTargetingSkill(source, target, runtimeAbility, diceValue);
-        }
-        
-        /// <summary>
-        /// 스킬 실제 실행
-        /// </summary>
-        private void ExecuteTargetingSkill(Character source, Unit target, RuntimeAbility runtimeAbility, int diceValue)
-        {
-            var skill = runtimeAbility?.CurrentSkillData;
-            if (skill == null) return;
-
-            source.OnSkillExecutionStarted();
-
-            var targets = ResolveTargetsByType(source, target, runtimeAbility.TargetType);
-            var targetTiles = ResolveTargetTiles(source, skill);
-
-            bool executedByTemplate = runtimeAbility.BaseSkill?.ActiveTemplate != null
-                && runtimeAbility.BaseSkill.ActiveTemplate.Execute(source, runtimeAbility, targets, targetTiles, diceValue);
-
-            if (!executedByTemplate)
-            {
-                // 하위 호환: ActiveTemplate 미설정 스킬은 기존 Effect 순회 경로를 유지합니다.
-                skill.Execute(source, targets, targetTiles, diceValue);
-            }
-
-            source.OnSkillResolved();
-        }
-
-        private List<Unit> ResolveTargetsByType(Character source, Unit initialTarget, CharacterSkillTargetType type)
-        {
-            var resolved = new List<Unit>();
-
-            switch (type)
-            {
-                case CharacterSkillTargetType.OneEnemy:
-                    resolved.Add(initialTarget);
-                    break;
-                case CharacterSkillTargetType.None:
-                    break;
-                default:
-                    break;
-            }
-
-            return resolved;
-        }
-
-        private List<TileData> ResolveTargetTiles(Character source, CharacterSkillData skill)
-        {
-            var tiles = new List<TileData>();
-            if (skill?.Effects == null) return tiles;
-
-            foreach (var effect in skill.Effects)
-            {
-                if (effect == null) continue;
-                var previewTiles = effect.GetTargetTilesPreview(source);
-                if (previewTiles == null || previewTiles.Count == 0) continue;
-
-                foreach (var tile in previewTiles)
+                dice.State = DiceState.Reserved;
+                DiceUI.Instance?.RefreshDiceVisual(dice);
+                
+                var targetSelector = SkillTargetSelector.Instance;
+                if (targetSelector != null)
                 {
-                    if (tile == null || tiles.Contains(tile)) continue;
-                    tiles.Add(tile);
+                    targetSelector.StartTargetSelection(source, runtimeAbility, dice);
+                    CharacterActionUI.Instance?.Hide();
+                }
+                else
+                {
+                    Debug.LogError("[SkillManager] SkillTargetSelector not found!");
+                    CharacterActionUI.Instance?.ReturnDiceElement();
+                }
+            }
+        }
+
+        public void ConfirmSkillExecution(Character source, ActiveSkillSlot ability, DiceData dice, List<Unit> targets, List<TileData> tiles)
+        {
+            var combatManager = CombatManager.Instance;
+            var diceManager = DiceManager.Instance;
+
+            if (dice == null || source == null || ability == null || combatManager == null || diceManager == null)
+            {
+                CharacterActionUI.Instance?.ReturnDiceElement();
+                return;
+            }
+
+            // TargetType이 None이나 AllTiles일 때는 여기서 처음 AssignDice를 호출함.
+            // OneEnemy나 OneTile일 때는 이미 StartTargetSelection에서 락(Reserved)을 걸어두었음.
+            if (dice.State != DiceState.Reserved)
+            {
+                bool success = diceManager.AssignDice(dice, source, DiceOrbit.Core.Pipeline.ActionType.Skill);
+                if (!success)
+                {
+                    CharacterActionUI.Instance?.ReturnDiceElement();
+                    return;
                 }
             }
 
-            return tiles;
+            if (!combatManager.TrySpendAction(source))
+            {
+                diceManager.UnassignDice(dice);
+                CharacterActionUI.Instance?.ReturnDiceElement();
+                return;
+            }
+
+            ActionQueueManager.Instance.EnqueueAction(
+                FinalExecutionRoutine(source, ability, targets, tiles, dice)
+            );
+
+            DiceUI.Instance?.MarkDiceAsUsed(dice);
+            CharacterActionUI.Instance?.ReturnDiceElement();
+            CharacterActionUI.Instance?.Hide();
+        }
+
+        private IEnumerator FinalExecutionRoutine(Character source, ActiveSkillSlot ability, List<Unit> targets, List<TileData> tiles, DiceData dice)
+        {
+            if (source != null && source.IsAlive)
+            {
+                source.OnSkillExecutionStarted();
+                
+                if (ability.TargetType == CharacterSkillTargetType.OneEnemy)
+                {
+                    // 기존 ResolveTargetsByType(OneEnemy) 호환 로직 (필요 시 확장)
+                    var resolvedTargets = new List<Unit>();
+                    if (targets != null && targets.Count > 0)
+                    {
+                        foreach(var t in targets) if (t != null) resolvedTargets.Add(t);
+                    }
+                    ability.Execute(source, resolvedTargets, tiles, dice.Value);
+                }
+                else
+                {
+                    ability.Execute(source, targets, tiles, dice.Value);
+                }
+
+                source.OnSkillResolved();
+            }
+
+            yield return new WaitForSeconds(0.5f);
         }
     }
 }

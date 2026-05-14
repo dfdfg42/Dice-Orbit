@@ -44,7 +44,19 @@ namespace DiceOrbit.Core.Pipeline
         private bool HandlePreAction(CombatContext context)
         {
             NotifyReactors(context, CombatTrigger.OnPreAction);
-            return !context.IsCancelled;
+            if (context.IsCancelled) return false;
+
+            if (context.Action.Type == ActionType.Attack && context.Target?.Stats?.DodgeChance > 0f)
+            {
+                if (UnityEngine.Random.value < context.Target.Stats.DodgeChance / 100f)
+                {
+                    context.IsCancelled = true;
+                    Debug.Log($"{context.Target.name} 회피! (회피율 {context.Target.Stats.DodgeChance}%)");
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void HandleCalculate(CombatContext context)

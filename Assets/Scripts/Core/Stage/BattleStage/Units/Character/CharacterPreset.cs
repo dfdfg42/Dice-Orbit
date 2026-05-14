@@ -3,13 +3,9 @@ using System.Collections.Generic;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.Data.Passives;
-using UnityEngine.Serialization;
 
 namespace DiceOrbit.Core
 {
-    /// <summary>
-    /// 캐릭터 프리셋 (선택 가능한 캐릭터)
-    /// </summary>
     [CreateAssetMenu(fileName = "CharacterPreset", menuName = "DiceOrbit/Character Preset")]
     public class CharacterPreset : ScriptableObject
     {
@@ -17,15 +13,14 @@ namespace DiceOrbit.Core
         public string CharacterName = "Hero";
         public Sprite Portrait;
         public Sprite CharacterWindowSprite;
-        
+
         [Header("Description")]
         [TextArea(3, 5)]
         public string Description;
-        
+
         [Header("Base Stats")]
         public int MaxHP = 30;
         public Sprite CharacterSprite;
-        public Color SpriteColor = Color.white;
         public float VisualScale = 1.0f;
 
         [Header("Animation Sprites")]
@@ -34,111 +29,41 @@ namespace DiceOrbit.Core
         public Sprite DamageSprite;
         public Sprite SkillSprite;
 
-    [Header("Animator")]
-    [Tooltip("캐릭터 전용 Animator Controller 또는 Animator Override Controller")]
-    public RuntimeAnimatorController AnimatorController;
-        
+        [Header("Animator")]
+        [Tooltip("캐릭터 전용 Animator Controller 또는 Animator Override Controller")]
+        public RuntimeAnimatorController AnimatorController;
 
-        [Header("Starting Skills (New System)")]
-        // 액티브/패시브 모두 CharacterSkill 에셋으로 통일해서 등록합니다.
-        public List<CharacterSkill> StartingSkills = new List<CharacterSkill>();
+        [Header("Starting Skills")]
+        [SerializeReference]
+        public List<CharacterActiveSkill> StartingActives = new List<CharacterActiveSkill>();
 
-    [FormerlySerializedAs("StartingPassives")]
-    [SerializeReference, HideInInspector]
-    private List<PassiveAbility> legacyStartingPassives = new List<PassiveAbility>();
+        [SerializeReference]
+        public List<CharacterPassiveSkill> StartingPassives = new List<CharacterPassiveSkill>();
 
-
-        
-        /// <summary>
-        /// CharacterStats 생성
-        /// </summary>
         public CharacterStats CreateStats()
         {
             var stats = new CharacterStats
             {
                 CharacterName = this.CharacterName,
-                Level = 1,
-                MaxHP = this.MaxHP,
-                CurrentHP = this.MaxHP,
-                CharacterSprite = this.CharacterSprite,
-                SpriteColor = this.SpriteColor
+                Level         = 1,
+                MaxHP         = this.MaxHP,
+                CurrentHP     = this.MaxHP
             };
-            
-            // 스킬 복사 (New System)
-            foreach(var skill in StartingSkills)
+
+            foreach (var active in StartingActives)
             {
-                if(skill == null) continue;
-                // 런타임 래퍼에서 캐릭터별 레벨 상태를 에셋과 분리해 관리합니다.
-                stats.RuntimeAbilities.Add(new RuntimeAbility(skill));
+                if (active == null) continue;
+                stats.ActiveAbilities.Add(new ActiveSkillSlot(active));
             }
 
-            EnsurePassiveAbilityConfigured(stats);
-            
-            // Set Source Preset reference
+            foreach (var passive in StartingPassives)
+            {
+                if (passive == null) continue;
+                stats.PassiveInstances.Add(passive.Clone() as CharacterPassiveSkill);
+            }
+
             stats.SourcePreset = this;
-            stats.NormalizeRuntimeAbilities();
-            
             return stats;
         }
-
-        private void EnsurePassiveAbilityConfigured(CharacterStats stats)
-        {
-            if (stats == null)
-            {
-                return;
-            }
-
-            if (HasPassiveAbility(stats))
-            {
-                return;
-            }
-
-            // 구 프리셋의 StartingPassives 직렬화 데이터를 신규 RuntimeAbility 구조로 마이그레이션합니다.
-            if (legacyStartingPassives != null)
-            {
-                foreach (var legacyPassive in legacyStartingPassives)
-                {
-                    if (legacyPassive == null) continue;
-                    stats.RuntimeAbilities.Add(new RuntimeAbility(CreatePassiveSkillFromTemplate(legacyPassive)));
-                }
-            }
-
-            if (HasPassiveAbility(stats))
-            {
-                return;
-            }
-        }
-
-        private static bool HasPassiveAbility(CharacterStats stats)
-        {
-            if (stats?.RuntimeAbilities == null) return false;
-
-            foreach (var ability in stats.RuntimeAbilities)
-            {
-                if (ability != null && ability.AbilityType == CharacterSkillType.Passive)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static CharacterSkill CreatePassiveSkillFromTemplate(PassiveAbility template)
-        {
-            var skill = ScriptableObject.CreateInstance<CharacterSkill>();
-            string passiveName = string.IsNullOrWhiteSpace(template?.PassiveName) ? "Passive" : template.PassiveName;
-            string passiveDescription = template?.Description ?? string.Empty;
-
-            skill.SkillName = passiveName;
-            skill.Description = passiveDescription;
-            skill.Type = CharacterSkillType.Passive;
-            skill.PassiveTemplate = template?.Clone();
-            skill.MaxLevelOverride = 5;
-            skill.Requirement = new DiceRequirement();
-            skill.Levels = new List<SkillLevelData>();
-            return skill;
-        }
-
     }
 }

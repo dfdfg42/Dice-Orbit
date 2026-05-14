@@ -6,7 +6,7 @@ using UnityEngine;
 namespace DiceOrbit.Data.CharacterActives
 {
     [System.Serializable]
-    public class MageEnergyBallActive : CharacterActiveTemplate
+    public class MageEnergyBallActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 기본 배율 (주사위값 x 배율)")]
@@ -17,7 +17,7 @@ namespace DiceOrbit.Data.CharacterActives
         [SerializeField] private int baseMultiplier = 12;
         [SerializeField] private float baseBonusRatioPerStack = 0.05f;
 
-        public override int CalculateRawDamage(Character source, RuntimeAbility ability, int diceValue)
+        public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
         {
             int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
             int resolvedBaseMultiplier = ResolveBaseMultiplier(level);
@@ -28,7 +28,7 @@ namespace DiceOrbit.Data.CharacterActives
             return Mathf.RoundToInt(baseDamage * (1.0f + (focusStacks * resolvedBonusRatio)));
         }
 
-        public override string BuildPreview(Character source, RuntimeAbility ability, int diceValue)
+        public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
         {
             int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
             int resolvedBaseMultiplier = ResolveBaseMultiplier(level);
@@ -43,7 +43,7 @@ namespace DiceOrbit.Data.CharacterActives
             return $"예상 피해: ({diceValue} x {resolvedBaseMultiplier}) x (1 + {focusStacks} x {resolvedBonusRatio:0.##})\n= {baseDamage} x {totalMultiplier:0.##} = {finalDamage} (집중 +{bonusPercent:0.#}%)";
         }
 
-        public override void OnAfterResolved(Character source, RuntimeAbility ability)
+        public override void OnAfterResolved(Character source, ActiveSkillSlot ability)
         {
             int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
             if (focusStacks > 0)

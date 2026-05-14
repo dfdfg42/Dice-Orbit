@@ -13,8 +13,7 @@ namespace DiceOrbit.Core
     /// </summary>
     public class Character : Unit<CharacterStats>, UI.IHoverTooltipProvider
     {
-        // 타일 위 유닛 위치 offset
-        protected static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
+        public static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
 
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
@@ -38,30 +37,18 @@ namespace DiceOrbit.Core
         public void InitializeStats(CharacterStats newStats)
         {
             stat = newStats;
+            var preset = stat.SourcePreset;
 
-            // 스프라이트 업데이트
-            if (spriteRenderer != null)
+            if (spriteRenderer != null && preset != null)
             {
-                if (stat.CharacterSprite != null)
-                {
-                    spriteRenderer.sprite = stat.CharacterSprite;
-                }
-                spriteRenderer.color = stat.SpriteColor;
-                originalColor = spriteRenderer.color;
+                if (preset.CharacterSprite != null)
+                    spriteRenderer.sprite = preset.CharacterSprite;
 
-                // Visual Scale 적용
-                if (stat.SourcePreset != null)
-                {
-                    var visual = spriteRenderer.GetComponent<DiceOrbit.Visuals.CharacterSpriteVisual>();
-                    if (visual != null)
-                    {
-                        visual.SetScale(stat.SourcePreset.VisualScale);
-                    }
-                    else
-                    {
-                        spriteRenderer.transform.localScale = new Vector3(stat.SourcePreset.VisualScale, stat.SourcePreset.VisualScale, 1f);
-                    }
-                }
+                var visual = spriteRenderer.GetComponent<DiceOrbit.Visuals.CharacterSpriteVisual>();
+                if (visual != null)
+                    visual.SetScale(preset.VisualScale);
+                else
+                    spriteRenderer.transform.localScale = new Vector3(preset.VisualScale, preset.VisualScale, 1f);
             }
 
             // Preset의 애니메이션 스프라이트를 spriteVisual에 적용
@@ -78,76 +65,36 @@ namespace DiceOrbit.Core
 
             // 스킬 재초기화
             InitializeSkills();
-
-            // 패시브는 템플릿 에셋이므로 캐릭터 인스턴스별로 복제/바인딩합니다.
-            ApplyRuntimePassiveSkills();
-            // 복제된 패시브 인스턴스 레벨을 런타임 능력 레벨과 동기화합니다.
-            SyncPassiveLevelsFromRuntime();
+            InitializePassives();
 
             Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP})");
         }
 
-        /// <summary>
-        /// 스킬 초기화
-        /// </summary>
         private void InitializeSkills()
         {
             if (stat == null) return;
-            stat.NormalizeRuntimeAbilities();
-
-            // Preset에서 초기 스킬을 가져오지 못한 경우 (예: 구 버전 데이터)
             if (stat.ActiveAbilityCount == 0)
-            {
-               Debug.LogWarning("No active skills initialized.");
-            }
+                Debug.LogWarning($"[Character] {stat.CharacterName}: no active skills.");
         }
 
-        private void ApplyRuntimePassiveSkills()
+        private void InitializePassives()
         {
             if (passives == null || stat == null) return;
 
-            foreach (var ability in stat.PassiveAbilities)
+            foreach (var passive in stat.PassiveInstances)
             {
-                if (ability?.BaseSkill == null) continue;
-                if (ability.BaseSkill.Type != CharacterSkillType.Passive) continue;
-
-                var template = ability.BaseSkill.PassiveTemplate;
-                if (template == null)
-                {
-                    Debug.LogWarning($"[Character] Passive skill '{ability.BaseSkill.SkillName}' has no PassiveTemplate.");
-                    continue;
-                }
-
-                var clonedPassive = template.Clone();
-                clonedPassive.Initialize(this);
-                clonedPassive.SetLevel(ability.CurrentLevel);
-                ability.RuntimePassiveInstance = clonedPassive;
-                // 복제된 패시브를 유닛 리액터 체인에 등록합니다.
-                passives.AddPassive(clonedPassive);
+                if (passive == null) continue;
+                passive.Initialize(this);
+                passives.AddPassive(passive);
             }
         }
 
         public void SyncPassiveLevelsFromRuntime()
         {
-            if (passives == null || stat == null) return;
+            if (stat == null) return;
 
-            // 기본 패시브는 캐릭터 레벨 동기화
-            foreach (var passive in passives.ActivePassives)
-            {
-                if (passive == null) continue;
-                passive.SetLevel(stat.Level);
-            }
-
-            // Runtime passive abilities are synced by their own levels.
-            foreach (var ability in stat.PassiveAbilities)
-            {
-                if (ability == null) continue;
-
-                if (ability.RuntimePassiveInstance != null)
-                {
-                    ability.RuntimePassiveInstance.SetLevel(ability.CurrentLevel);
-                }
-            }
+            foreach (var passive in stat.PassiveInstances)
+                passive?.SetLevel(passive.CurrentLevel);
         }
 
         public void LevelUpCharacter()
@@ -166,24 +113,8 @@ namespace DiceOrbit.Core
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
             spriteVisual   = GetComponentInChildren<CharacterSpriteVisual>();
 
-            if (spriteRenderer != null)
-            {
-                // 스탯에서 스프라이트 설정
-                if (stat != null && stat.CharacterSprite != null)
-                {
-                    spriteRenderer.sprite = stat.CharacterSprite;
-                }
-
-                if (stat != null)
-                {
-                    spriteRenderer.color = stat.SpriteColor;
-                    originalColor = spriteRenderer.color;
-                }
-            }
-            else
-            {
+            if (spriteRenderer == null)
                 Debug.LogWarning("SpriteRenderer not found in children! Add SpriteRenderer component to a child object.");
-            }
 
             mainCamera = Camera.main;
 
@@ -231,6 +162,7 @@ namespace DiceOrbit.Core
                     Debug.Log($"{stat?.CharacterName} assigned to tile {currentTile.TileIndex} at position {currentTile.Position}");
                     transform.position = currentTile.Position + TILE_OFFSET;
                     RefreshTileFormation(currentTile);
+                    passives?.BroadcastOwnerMoved(currentTile);
                 }
                 else
                 {
@@ -304,6 +236,7 @@ namespace DiceOrbit.Core
             if (arrivalTile != null)
             {
                 RefreshTileFormation(arrivalTile);
+                passives?.BroadcastOwnerMoved(arrivalTile);
                 Debug.Log($"{stat?.CharacterName} arrived at tile {arrivalTile.TileIndex}");
                 arrivalTile.OnArrive(this);
             }
@@ -315,12 +248,6 @@ namespace DiceOrbit.Core
                 moveAction.AddTag("Move");
                 var moveContext = new Pipeline.CombatContext(this, this, moveAction);
                 Pipeline.CombatPipeline.Instance.Process(moveContext);
-            }
-
-            // 색상 복원
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.color = originalColor;
             }
 
             spriteVisual?.PlayIdle();

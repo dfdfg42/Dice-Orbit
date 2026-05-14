@@ -2,7 +2,6 @@ using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data.Passives;
-using DiceOrbit.Data.Skills.Effects;
 using DiceOrbit.Data.Tile;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,7 +52,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public GoblinDeath()
         {
             effectName = "Goblin Death";
-            description = "°íºí¸°ÀÌ Á×À» ¶§ ¹ßµ¿ÇÏ´Â È¿°ú";
+            description = "ê³ ë¸”ë¦°ì´ ì£½ì„ ë•Œ ë°œë™í•˜ëŠ” íš¨ê³¼";
         }
 
         public override void Execute(Monster deadMonster)
@@ -75,16 +74,16 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
     public class PlantMinePassive : PassiveAbility
     {
         [Header("Mine Settings")]
-        [Tooltip("¼³Ä¡ÇÒ Áö·ÚÀÇ µ¥¹ÌÁö")]
+        [Tooltip("ì„¤ì¹˜í•  ì§€ë¢°ì˜ ë°ë¯¸ì§€")]
         [SerializeField] private int mineDamage = 5;
 
-        [Tooltip("Áö·Ú Áö¼Ó ÅÏ (-1Àº ¿µ±¸)")]
+        [Tooltip("ì§€ë¢° ì§€ì† í„´ (-1ì€ ì˜êµ¬)")]
         [SerializeField] private int mineDuration = -1;
 
         public PlantMinePassive()
         {
-            passiveName = "Áö·Ú ¼³Ä¡";
-            description = "Áö³ª°¥ ½Ã Áö·Ú ÇÇÇØ¸¦ ÁÖ´Â Å¸ÀÏÀ» »ı¼ºÇÕ´Ï´Ù";
+            passiveName = "ì§€ë¢° ì„¤ì¹˜";
+            description = "ì§€ë‚˜ê°ˆ ì‹œ ì§€ë¢° í”¼í•´ë¥¼ ì£¼ëŠ” íƒ€ì¼ì„ ìƒì„±í•©ë‹ˆë‹¤";
             priority = 10;
             isStackable = false;
         }
@@ -136,27 +135,75 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
             }
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }
     }
 
     // ==========================================
-    // 4. Mine Bomb Skill (MonsterSkillData)
+    // 4. Mine Bomb Skill
     // ==========================================
     [System.Serializable]
-    public class MineBombSkill : MonsterSkillData
+    public class MineBombSkill : SkillData
     {
+        [SerializeField] private int damage = 20;
+        [SerializeField] private DiceOrbit.Visuals.CombatVfxProfile vfxProfile;
+
         public MineBombSkill()
         {
-            skillName = "Áö·Ú ÆøÆÄ";
-            description = "¸Ê¿¡ ÀÖ´Â ¸ğµç Áö·Ú¸¦ ÆøÆÄ½ÃÄÑ µ¥¹ÌÁö¸¦ Áİ´Ï´Ù.";
+            skillName = "ì§€ë¢° í­ë°œ";
+            description = "í•„ë“œì— ìˆëŠ” ì§€ë¢° ìë¦¬ë¥¼ í­íŒŒì‹œì¼œ í”¼í•´ë¥¼ ì¤ë‹ˆë‹¤.";
         }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            base.Execute(source, targetUnits, targetTiles, diceValue);
+            var partyManager = PartyManager.Instance;
+            if (partyManager == null) return;
+
+            var affectedTiles = targetTiles != null
+                ? targetTiles.Where(tile => tile != null).Distinct().ToList()
+                : new List<TileData>();
+
+            var mineTiles = affectedTiles
+                .Where(tile => tile.GetAttributes().Any(attr => attr != null && attr.Type == TileAttributeType.RandMine))
+                .ToList();
+
+            if (mineTiles.Count == 0 && affectedTiles.Count == 0) return;
+
+            VfxManager.PlayCast(vfxProfile, source);
+
+            foreach (var tile in affectedTiles)
+            {
+                VfxManager.PlayTile(vfxProfile, tile);
+            }
+
+            var aliveCharacters = partyManager.GetAliveCharacters();
+            foreach (var character in aliveCharacters)
+            {
+                if (character == null || !character.IsAlive) continue;
+                if (character.CurrentTile == null || !affectedTiles.Contains(character.CurrentTile)) continue;
+
+                var action = new CombatAction("Mine Bomb", ActionType.Attack, damage);
+                if (vfxProfile != null)
+                    action.AddTag("CustomVfx");
+
+                var context = new CombatContext(source, character, action);
+                CombatPipeline.Instance?.Process(context);
+
+                if (context.IsEffected)
+                    VfxManager.PlayHit(vfxProfile, character);
+            }
+
+            // í­ë°œ í›„ ì§€ë¢° ì†ì„± ì œê±°
+            foreach (var mineTile in mineTiles)
+            {
+                var mines = mineTile.GetAttributes()
+                    .Where(attr => attr != null && attr.Type == TileAttributeType.RandMine)
+                    .ToList();
+                foreach (var mine in mines)
+                    mineTile.RemoveAttribute(mine);
+            }
         }
     }
 }

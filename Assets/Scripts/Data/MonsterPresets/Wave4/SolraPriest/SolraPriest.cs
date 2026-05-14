@@ -194,7 +194,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraPriest
             Debug.Log($"[{PassiveName}] Applied {shieldAmount} shield to {target.name}");
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }

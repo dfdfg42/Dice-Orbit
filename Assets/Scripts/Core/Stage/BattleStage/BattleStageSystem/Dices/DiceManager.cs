@@ -23,6 +23,10 @@ namespace DiceOrbit.Core
         // Runtime data
         private List<DiceData> currentDice = new List<DiceData>();
         private int diceIdCounter = 0;
+
+        // Forecast bias (일기예보 스킬)
+        private int _forecastBiasPercent = 0;
+        private int _forecastBiasTurnsLeft = 0;
         
         // Events
         public System.Action<List<DiceData>> OnDiceRolled;
@@ -101,8 +105,20 @@ namespace DiceOrbit.Core
                 currentDice.Add(dice);
             }
             
+            // 일기예보 바이어스 적용
+            if (_forecastBiasTurnsLeft > 0 && _forecastBiasPercent > 0)
+            {
+                foreach (var die in currentDice)
+                {
+                    if (die.Value > 3 && Random.value < _forecastBiasPercent / 100f)
+                        die.SetValue(Random.Range(1, 4));
+                }
+                _forecastBiasTurnsLeft--;
+                Debug.Log($"[ForecastBias] 적용됨 ({_forecastBiasPercent}%). 남은 턴: {_forecastBiasTurnsLeft}");
+            }
+
             Debug.Log($"Rolled {count} dice: {string.Join(", ", currentDice.Select(d => d.Value))}");
-            
+
             // UI 업데이트
             if (diceUI != null)
             {
@@ -189,6 +205,16 @@ namespace DiceOrbit.Core
             return currentDice.FirstOrDefault(d => d.ID == id);
         }
         
+        /// <summary>
+        /// 일기예보 바이어스 적용 (다음 N턴 동안 낮은 눈금 확률 +percent%)
+        /// </summary>
+        public void ApplyForecastBias(int percent, int turns)
+        {
+            _forecastBiasPercent = percent;
+            _forecastBiasTurnsLeft = turns;
+            Debug.Log($"[ForecastBias] 설정: {percent}%, {turns}턴");
+        }
+
         /// <summary>
         /// DiceUI 참조 설정
         /// </summary>

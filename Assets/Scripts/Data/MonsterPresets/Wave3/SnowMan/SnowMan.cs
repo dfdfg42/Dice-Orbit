@@ -134,7 +134,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
             }
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }

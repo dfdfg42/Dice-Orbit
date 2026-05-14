@@ -203,7 +203,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaPriest
             Debug.Log($"[{PassiveName}] Applied {(buffAmount * 100)}% damage increase buff to {target.name}");
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }

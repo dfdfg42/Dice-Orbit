@@ -2,12 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using DiceOrbit.Data;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data.Skills;
-using DiceOrbit.Data.Skills.Effects;
+using DiceOrbit.Visuals;
 
 namespace DiceOrbit.UI
 {
@@ -65,6 +66,11 @@ namespace DiceOrbit.UI
             moveButton?.onClick.AddListener(OnMoveClicked);
             skillButton?.onClick.AddListener(OnSkillClicked);
             cancelButton?.onClick.AddListener(OnCancelClicked);
+
+            // 이동 버튼 hover 프리뷰
+            AddPointerEvents(moveButton,
+                () => ShowMovePreview(),
+                () => TileSkillPreviewManager.Instance?.HidePreview());
 
             // 오버레이 취소 이벤트
             if (overlay != null)
@@ -132,6 +138,7 @@ namespace DiceOrbit.UI
         /// <summary>패널 숨기기</summary>
         public void Hide()
         {
+            TileSkillPreviewManager.Instance?.HidePreview();
             overlay?.Hide();
             HoverTooltipUI.Instance?.HidePinned();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
@@ -248,7 +255,7 @@ namespace DiceOrbit.UI
             overlay?.Hide();
         }
 
-        private RuntimeAbility GetPrimaryActiveAbility()
+        private ActiveSkillSlot GetPrimaryActiveAbility()
         {
             if (currentCharacter?.Stats?.ActiveAbilities == null)
                 return null;
@@ -309,43 +316,45 @@ namespace DiceOrbit.UI
             ExecuteSkill(index);
         }
 
-        /// <summary>
-        /// (SkillTargetSelector에서 호출) 타겟 선택이 확정되었을 때 최종 실행
-        /// </summary>
-        public void ConfirmSkillTarget(Unit target, Character character, RuntimeAbility ability, DiceData dice)
-        {
-
-            var combatManager = CombatManager.Instance;
-            var diceManager = DiceManager.Instance;
-            var runtimeAbility = ability; // 타겟팅을 시작했던 스킬
-
-            if (dice == null || character == null || runtimeAbility == null || combatManager == null || diceManager == null)
-            {
-                ReturnDiceElement();
-                return;
-            }
-
-            // 최종적으로 행동 예산을 소모하고 주사위를 배정
-            if (!combatManager.TrySpendAction(character))
-            {
-                diceManager.UnassignDice(dice);
-                ReturnDiceElement();
-                return;
-            }
-
-            // 실제 스킬 실행 로직을 담은 코루틴을 큐에 등록
-            ActionQueueManager.Instance.EnqueueAction(
-                FinalSkillExecutionRoutine(character, runtimeAbility, target, dice)
-            );
-
-            MarkDiceUsed(dice);
-            ReturnDiceElement();
-            // Hide()는 타겟팅 시작 시 이미 호출되었으므로 여기서는 호출하지 않음
-        }
-
         // ─────────────────────────────────────────────
         // 내부 로직
         // ─────────────────────────────────────────────
+
+        private void AddPointerEvents(Button btn, System.Action onEnter, System.Action onExit)
+        {
+            if (btn == null) return;
+            var trigger = btn.GetComponent<EventTrigger>() ?? btn.gameObject.AddComponent<EventTrigger>();
+
+            var enter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            enter.callback.AddListener(_ => onEnter());
+            trigger.triggers.Add(enter);
+
+            var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
+            exit.callback.AddListener(_ => onExit());
+            trigger.triggers.Add(exit);
+        }
+
+        private void ShowMovePreview()
+        {
+            var dest = GetMoveDestination();
+            if (dest == null) return;
+            TileSkillPreviewManager.EnsureInstance();
+            TileSkillPreviewManager.Instance?.ShowPreview(new[] { dest }, TilePreviewStyle.Neutral);
+        }
+
+        private TileData GetMoveDestination()
+        {
+            if (currentCharacter?.CurrentTile == null || currentDice == null) return null;
+            int netModifier = currentCharacter.Stats.MoveBuff - currentCharacter.Stats.MoveDebuff;
+            int steps = Mathf.Max(currentDice.Value + netModifier, 0);
+            var tile = currentCharacter.CurrentTile;
+            for (int i = 0; i < steps; i++)
+            {
+                if (tile.NextTile == null) break;
+                tile = tile.NextTile;
+            }
+            return steps > 0 ? tile : null;
+        }
 
         private void PopulateSkillList(Character character)
         {
@@ -353,7 +362,7 @@ namespace DiceOrbit.UI
 
             foreach (Transform child in skillButtonContainer) Destroy(child.gameObject);
 
-            var skills = new List<RuntimeAbility>(character.Stats.ActiveAbilities);
+            var skills = new List<ActiveSkillSlot>(character.Stats.ActiveAbilities);
             for (int i = 0; i < skills.Count; i++)
             {
                 int index = i;
@@ -369,7 +378,7 @@ namespace DiceOrbit.UI
                 }
 
                 var imgs = go.GetComponentsInChildren<Image>();
-                if (imgs.Length > 1 && runtimeAbility.BaseSkill != null && runtimeAbility.BaseSkill.Icon != null) imgs[1].sprite = runtimeAbility.BaseSkill.Icon;
+                if (imgs.Length > 1 && runtimeAbility.BaseSkill != null && runtimeAbility.BaseSkill.icon != null) imgs[1].sprite = runtimeAbility.BaseSkill.icon;
 
                 var hoverPreview = go.GetComponent<SkillPreviewHoverUI>();
                 if (hoverPreview == null) hoverPreview = go.AddComponent<SkillPreviewHoverUI>();
@@ -380,84 +389,43 @@ namespace DiceOrbit.UI
             }
         }
 
-        private string BuildDamagePreview(RuntimeAbility runtimeAbility)
+        private string BuildDamagePreview(ActiveSkillSlot runtimeAbility)
         {
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null || currentCharacter == null || currentDice == null)
                 return "예상: -";
 
-            var activeTemplate = runtimeAbility.BaseSkill.ActiveTemplate;
-            if (activeTemplate != null)
+            string coupledPreview = runtimeAbility.BuildPreview(currentCharacter, currentDice.Value);
+            if (!string.IsNullOrWhiteSpace(coupledPreview))
             {
-                string coupledPreview = activeTemplate.BuildPreview(currentCharacter, runtimeAbility, currentDice.Value);
-                if (!string.IsNullOrWhiteSpace(coupledPreview))
-                {
-                    return coupledPreview;
-                }
+                return coupledPreview;
             }
 
-            var skillData = runtimeAbility.CurrentSkillData;
-            if (skillData == null || skillData.Effects == null || skillData.Effects.Count == 0)
-                return "예상: -";
-
-            int dice = currentDice.Value;
-            var lines = new List<string>();
-
-            foreach (var effect in skillData.Effects)
-            {
-                if (effect == null) continue;
-
-                if (effect is DiceMultiplierDamageEffect diceEffect)
-                {
-                    int resolvedMultiplier = diceEffect.GetMultiplierForSource(currentCharacter);
-                    int baseDamage = dice * resolvedMultiplier;
-                    lines.Add($"예상 피해: ({dice} x {resolvedMultiplier}) = {baseDamage}");
-                }
-                else if (effect is MageStackDamageEffect mageEffect)
-                {
-                    int focusStacks = currentCharacter.StatusEffects != null
-                        ? currentCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
-                        : 0;
-                    int resolvedBaseMultiplier = mageEffect.GetBaseMultiplierForSource(currentCharacter);
-                    float bonusRatio = mageEffect.GetBonusRatioForSource(currentCharacter);
-
-                    int baseDamage = dice * resolvedBaseMultiplier;
-                    float bonusMultiplier = 1.0f + (focusStacks * bonusRatio);
-                    int finalDamage = Mathf.RoundToInt(baseDamage * bonusMultiplier);
-                    float bonusPercent = focusStacks * bonusRatio * 100f;
-
-                    lines.Add($"예상 피해: ({dice} x {resolvedBaseMultiplier}) x (1 + {focusStacks} x {bonusRatio:0.##})");
-                    lines.Add($"= {baseDamage} x {bonusMultiplier:0.##} = {finalDamage} (집중 +{bonusPercent:0.#}%)");
-                }
-            }
-
-            return lines.Count > 0 ? string.Join("\n", lines) : "예상: -";
+            return "예상: -";
         }
 
-        private string BuildSkillHoverText(RuntimeAbility runtimeAbility)
+        private string BuildSkillHoverText(ActiveSkillSlot runtimeAbility)
         {
             if (runtimeAbility == null || runtimeAbility.BaseSkill == null)
                 return "스킬 정보: -";
 
             var baseSkill = runtimeAbility.BaseSkill;
-            var currentData = runtimeAbility.CurrentSkillData;
             var lines = new List<string>
             {
                 $"{baseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})"
             };
 
-            string description = currentData != null && !string.IsNullOrWhiteSpace(currentData.Description)
-                ? currentData.Description
-                : baseSkill.Description;
+            string description = baseSkill.Description;
             if (!string.IsNullOrWhiteSpace(description))
             {
                 lines.Add(description.Trim());
             }
 
-            lines.Add($"대상: {GetTargetTypeLabel(baseSkill.TargetType)}");
+            lines.Add($"대상: {GetTargetTypeLabel(runtimeAbility.TargetType)}");
 
             int diceValue = currentDice != null ? currentDice.Value : -1;
-            bool canUse = currentDice != null && baseSkill.CanUse(diceValue);
-            string condition = BuildRequirementText(baseSkill.Requirement);
+            var activeSkill = baseSkill as CharacterActiveSkill;
+            bool canUse = currentDice != null && (activeSkill?.CanUse(diceValue) ?? false);
+            string condition = BuildRequirementText(activeSkill?.requirement);
             if (diceValue > 0)
             {
                 lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "사용 불가")})");
@@ -550,96 +518,22 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            var selectedAbilities = new List<RuntimeAbility>(currentCharacter.Stats.ActiveAbilities);
+            var selectedAbilities = new List<ActiveSkillSlot>(currentCharacter.Stats.ActiveAbilities);
             if (index < 0 || index >= selectedAbilities.Count)
             {
                 ReturnDiceElement();
                 return;
             }
 
-            RuntimeAbility runtimeAbility = selectedAbilities[index];
-            if (runtimeAbility?.BaseSkill == null || !runtimeAbility.BaseSkill.CanUse(currentDice.Value))
+            ActiveSkillSlot runtimeAbility = selectedAbilities[index];
+            if (runtimeAbility?.BaseSkill == null || !runtimeAbility.CanUse(currentDice.Value))
             {
-                Debug.LogWarning("[CharacterActionUI] Selected dice does not satisfy skill requirement. Returning dice.");
+                Debug.LogWarning("[CharacterActionUI] Selected dice does not satisfy skill requirement/cooldown. Returning dice.");
                 ReturnDiceElement();
                 return;
             }
 
-            // `RuntimeAbility.TargetType`을 기준으로 분기합니다.
-            if (runtimeAbility.TargetType == CharacterSkillTargetType.OneEnemy)
-            {
-                // 타겟 선택이 필요한 경우: 타겟 선택 시스템을 시작합니다.
-                currentDice.State = DiceState.Reserved;
-                DiceUI.Instance?.RefreshDiceVisual(currentDice);
-                SkillTargetSelector.Instance.StartTargetSelection(currentCharacter, runtimeAbility, currentDice);
-                Hide(); // CharacterActionUI는 숨깁니다.
-            }
-            else if (runtimeAbility.TargetType == CharacterSkillTargetType.None)
-            {
-                // 타겟 선택이 필요 없는 경우 (None, AllEnemies, Self 등): 즉시 큐에 등록합니다.
-                var diceManager = DiceManager.Instance;
-                if (diceManager != null)
-                {
-                    bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Skill);
-                    if (success)
-                    {
-                        if (!combatManager.TrySpendAction(currentCharacter))
-                        {
-                            diceManager.UnassignDice(currentDice);
-                            ReturnDiceElement();
-                            return;
-                        }
-
-                        ActionQueueManager.Instance.EnqueueAction(
-                            ExecuteSkillRoutine(index, currentDice)
-                        );
-
-                        MarkDiceUsed(currentDice);
-                        ReturnDiceElement();
-                        Hide();
-                    }
-                    else
-                    {
-                        ReturnDiceElement();
-                    }
-                }
-            }
-            else
-            {
-                Debug.LogError("신규 타겟팅 방법에 따른 수정 필요");
-            }
-        }
-
-        private System.Collections.IEnumerator ExecuteSkillRoutine(int skillIndex, DiceData dice)
-        {
-            // Pre-execution check (optional but good practice)
-            if (currentCharacter == null || !currentCharacter.IsAlive)
-            {
-                Debug.LogWarning($"[ActionQueue] Character {currentCharacter?.name} is no longer valid. Skipping skill action.");
-                yield break;
-            }
-
-            // 실제 스킬 로직 실행
-            currentCharacter.UseSkillByIndex(skillIndex, dice);
-
-            // 연출을 위한 임시 딜레이
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        /// <summary>
-        /// (ActionQueue에서 실행될) 최종 스킬 실행 코루틴
-        /// </summary>
-        private System.Collections.IEnumerator FinalSkillExecutionRoutine(Character character, RuntimeAbility ability, Unit target, DiceData dice)
-        {
-            // 이 코루틴이 실행될 때, CharacterActionUI의 currentCharacter는 다른 값일 수 있으므로
-            // 인자로 받은 character를 사용해야 합니다.
-            if (character != null && character.IsAlive)
-            {
-                SkillManager.Instance.OnTargetSelected(character, target, ability, dice.Value);
-            }
-
-            // 연출 대기 (임시)
-            yield return new WaitForSeconds(0.5f);
+            SkillManager.Instance.PrepareSkill(currentCharacter, index, currentDice);
         }
 
         private void MarkDiceUsed(DiceData dice)
@@ -648,7 +542,7 @@ namespace DiceOrbit.UI
             diceUI?.MarkDiceAsUsed(dice);
         }
 
-        private void ReturnDiceElement()
+        public void ReturnDiceElement()
         {
             DiceUI.Instance?.ClearSelectedDice();
             currentDice = null;
@@ -674,7 +568,7 @@ namespace DiceOrbit.UI
             if (hasDice && primaryAbility?.BaseSkill != null)
             {
                 // 현재 선택한 주사위 눈금이 스킬 조건을 만족할 때만 스킬 버튼을 활성화합니다.
-                canUseSelectedDiceForSkill = primaryAbility.BaseSkill.CanUse(currentDice.Value);
+                canUseSelectedDiceForSkill = primaryAbility.CanUse(currentDice.Value);
             }
 
             bool canMove = hasDice && playerTurn && currentCharacter.Stats.canMove() && combatManager.CanSpendMove(currentCharacter);
@@ -711,13 +605,9 @@ namespace DiceOrbit.UI
 
             if (portrait == null)
             {
-                var stats = currentCharacter.Stats;
-                if (stats != null)
-                {
-                    portrait = stats.SourcePreset != null && stats.SourcePreset.Portrait != null
-                        ? stats.SourcePreset.Portrait
-                        : stats.CharacterSprite;
-                }
+                var preset = currentCharacter.Stats?.SourcePreset;
+                if (preset != null)
+                    portrait = preset.Portrait ?? preset.CharacterSprite;
             }
 
             if (portrait != null)

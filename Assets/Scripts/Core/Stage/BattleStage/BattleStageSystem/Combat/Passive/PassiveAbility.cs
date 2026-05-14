@@ -20,7 +20,7 @@ namespace DiceOrbit.Data.Passives
     /// SkillData와 동일한 패턴을 따릅니다.
     /// </summary>
     [System.Serializable]
-    public abstract class PassiveAbility : ICombatReactor
+    public abstract class PassiveAbility : IPassive
     {
         [SerializeField] protected string passiveName = "";
         [SerializeField] [TextArea] protected string description = "패시브 설명";
@@ -83,7 +83,7 @@ namespace DiceOrbit.Data.Passives
         /// <summary>
         /// 패시브 복제 (공유 상태 오염 방지)
         /// </summary>
-        public virtual PassiveAbility Clone()
+        public virtual IPassive Clone()
         {
             return (PassiveAbility)this.MemberwiseClone();
         }
@@ -94,9 +94,19 @@ namespace DiceOrbit.Data.Passives
         public abstract void OnReact(CombatTrigger trigger, CombatContext context);
 
         /// <summary>
+        /// 캐릭터가 선택(패널 표시)되었을 때 호출됩니다.
+        /// </summary>
+        public virtual void OnOwnerSelected(Character c) { }
+
+        /// <summary>
+        /// 캐릭터 선택이 해제(패널 닫힘)되었을 때 호출됩니다.
+        /// </summary>
+        public virtual void OnOwnerDeselected() { }
+
+        /// <summary>
         /// 같은 패시브가 중첩될 때 처리 로직
         /// </summary>
-        public virtual bool AllowSamePassive(PassiveAbility incoming) 
+        public virtual bool AllowSamePassive(IPassive incoming)
         {
             return IsStackable;
         }

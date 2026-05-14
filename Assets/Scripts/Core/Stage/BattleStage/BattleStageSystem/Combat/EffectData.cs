@@ -19,8 +19,9 @@ namespace DiceOrbit.Data
         Honey,           // 꿀 타일 효과
         SlushSnow,      // 눈사람 진창눈 이동 디버프 (몬스터 전용 타일/상태 로직)
         Frozen,          // 빙결 상태이상
+        Dodge,           // 회피율 (%)
     }
-    
+
     /// <summary>
     /// 효과 데이터
     /// </summary>
