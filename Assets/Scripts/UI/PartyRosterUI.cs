@@ -20,7 +20,7 @@ namespace DiceOrbit.UI
 
         [Header("Bindings")]
         [SerializeField] private Transform listRoot;
-        [SerializeField] private PartyRosterEntryUI entryPrefab;
+        [SerializeField] private GameObject entryPrefab;
 
         private readonly Dictionary<Core.Character, PartyRosterEntryUI> entryByCharacter = new Dictionary<Core.Character, PartyRosterEntryUI>();
         private readonly List<Core.Character> orderedCharacters = new List<Core.Character>();
@@ -187,8 +187,9 @@ namespace DiceOrbit.UI
 
         private PartyRosterEntryUI CreateEntry(Core.Character character)
         {
-            var entry = Instantiate(entryPrefab, listRoot);
-            entry.name = $"Entry_{character.name}";
+            var go = Instantiate(entryPrefab, listRoot);
+            var entry = go.GetComponent<PartyRosterEntryUI>();
+            go.name = $"Entry_{character.name}";
             entry.Bind(character);
 
             var hoverProxy = entry.GetComponent<PartyRosterEntryHoverProxy>();

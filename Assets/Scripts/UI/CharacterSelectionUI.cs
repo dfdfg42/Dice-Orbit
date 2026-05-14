@@ -213,19 +213,34 @@ namespace DiceOrbit.UI
 
         private void DisplayCharacterWindow(Core.CharacterPreset character)
         {
-            if (characterWindowImage == null || character == null) return;
+            if (character == null) return;
 
-            var windowSprite = character.CharacterWindowSprite;
-            if (windowSprite == null)
+            if (characterWindowImage != null)
             {
-                characterWindowImage.gameObject.SetActive(false);
-                return;
+                var windowSprite = character.CharacterWindowSprite;
+                if (windowSprite != null)
+                {
+                    characterWindowImage.sprite = windowSprite;
+                    characterWindowImage.enabled = true;
+                    characterWindowImage.gameObject.SetActive(true);
+                    characterWindowImage.transform.SetAsLastSibling();
+                }
+                else
+                {
+                    characterWindowImage.gameObject.SetActive(false);
+                }
             }
 
-            characterWindowImage.sprite = windowSprite;
-            characterWindowImage.enabled = true;
-            characterWindowImage.gameObject.SetActive(true);
-            characterWindowImage.transform.SetAsLastSibling();
+            if (confirmButton != null)
+            {
+                confirmButton.gameObject.SetActive(true);
+                confirmButton.onClick.RemoveAllListeners();
+                confirmButton.onClick.AddListener(() => OnCharacterSelected(character));
+            }
+            else
+            {
+                OnCharacterSelected(character);
+            }
         }
 
         private void OnCharacterSelected(Core.CharacterPreset preset)
