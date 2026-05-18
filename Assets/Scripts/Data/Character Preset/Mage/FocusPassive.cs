@@ -49,6 +49,7 @@ namespace DiceOrbit.Data.Passives
             if (context.Action.Type != ActionType.OnEndTurn) return;
 
             owner.StatusEffects?.AddEffect(DiceOrbit.Systems.Effects.StatusEffectManager.CreateEffect(DiceOrbit.Data.EffectType.Focus, stacksPerTurn, -1));
+            Notify();
         }
     }
 }

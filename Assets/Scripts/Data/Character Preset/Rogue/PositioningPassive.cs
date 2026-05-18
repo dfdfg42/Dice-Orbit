@@ -89,7 +89,7 @@ namespace DiceOrbit.Data.Passives
                 if (movedDistanceThisTurn >= runtimeThresholdDistance && !isConditionMet)
                 {
                     isConditionMet = true;
-                    Debug.Log("패시브 활성화");
+                    Notify();
                 }
             }
 

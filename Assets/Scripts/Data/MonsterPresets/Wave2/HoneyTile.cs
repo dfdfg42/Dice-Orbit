@@ -1,68 +1,72 @@
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
+using DiceOrbit.UI;
 using UnityEngine;
 
 namespace DiceOrbit.Data.Tile
 {
     /// <summary>
-    /// Å¸ÀÏ¿¡ ºÎ¿©µÇ´Â Æ¯¼öÇÑ ¼Ó¼º(ÇÔÁ¤, ¹öÇÁ, ±â¹Í µî)À» ±¸ÇöÇÏ´Â »À´ë Å¬·¡½ºÀÔ´Ï´Ù.
-    /// TileAttribute¸¦ »ó¼Ó¹ÞÀ¸¸ç, Ä³¸¯ÅÍ°¡ Å¸ÀÏÀ» ¹â°Å³ª Áö³ª°¥ ¶§ÀÇ ÀÌº¥Æ®¸¦ Ã³¸®ÇÕ´Ï´Ù.
+    /// Å¸ï¿½Ï¿ï¿½ ï¿½Î¿ï¿½ï¿½Ç´ï¿½ Æ¯ï¿½ï¿½ï¿½ï¿½ ï¿½Ó¼ï¿½(ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ ï¿½ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.
+    /// TileAttributeï¿½ï¿½ ï¿½ï¿½Ó¹ï¿½ï¿½ï¿½ï¿½ï¿½, Ä³ï¿½ï¿½ï¿½Í°ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ®ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
     /// </summary>
     public class HoneyTileAttribute : TileAttribute
     {
         /// <summary>
-        /// ¼Ó¼º »ý¼ºÀÚ. (º¸Åë ÆÐ½Ãºê³ª ½ºÅ³À» ÅëÇØ Å¸ÀÏ¿¡ ºÎÂøµÉ ¶§ È£ÃâµË´Ï´Ù)
+        /// ï¿½Ó¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½. (ï¿½ï¿½ï¿½ï¿½ ï¿½Ð½Ãºê³ª ï¿½ï¿½Å³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½Ë´Ï´ï¿½)
         /// </summary>
-        /// <param name="type">¼Ó¼ºÀÇ Å¸ÀÔ(enum)</param>
-        /// <param name="value">µ¥¹ÌÁö³ª ¹æ¾îµµ µîÀÇ ¼öÄ¡ (±âº»°ª ¼³Á¤ °¡´É)</param>
-        /// <param name="duration">±â¹ÍÀÌ Áö¼ÓµÇ´Â ÅÏ ¼ö (-1ÀÌ¸é ¹«ÇÑ)</param>
-        /// <param name="isStackable">°°Àº Å¸ÀÏ¿¡ ¿©·¯ °³ Áßº¹ ¼³Ä¡ °¡´ÉÇÑÁö</param>
+        /// <param name="type">ï¿½Ó¼ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½(enum)</param>
+        /// <param name="value">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½îµµ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ (ï¿½âº»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)</param>
+        /// <param name="duration">ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ÓµÇ´ï¿½ ï¿½ï¿½ ï¿½ï¿½ (-1ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½)</param>
+        /// <param name="isStackable">ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ßºï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</param>
         public HoneyTileAttribute(TileAttributeType type, int value, int duration, bool isStackable = false) 
             : base(type, value, duration, isStackable)
         {
         }
 
         /// <summary>
-        /// Ä³¸¯ÅÍ°¡ ÀÌ Å¸ÀÏÀ» Áö³ª°¥ ¶§ ¹ßµ¿ÇÕ´Ï´Ù. (µµÂø ½ÃÁ¡ Æ÷ÇÔ)
+        /// Ä³ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ßµï¿½ï¿½Õ´Ï´ï¿½. (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
         /// </summary>
-        /// <param name="character">ÀÌ Å¸ÀÏÀ» ¹âÀº Ä³¸¯ÅÍ °´Ã¼</param>
+        /// <param name="character">ï¿½ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼</param>
         public override void OnTraverse(Character character)
         {
-            // ¿¹½Ã: ¹â´Â ¼ø°£ È¿°ú ¹ßµ¿À» À§ÇØ Activate È£Ãâ
+            // ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ ï¿½ßµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Activate È£ï¿½ï¿½
             Activate(character);
         }
 
         /// <summary>
-        /// Ä³¸¯ÅÍ°¡ ÀÌµ¿À» ¸¶Ä¡°í ÀÌ Å¸ÀÏ À§¿¡¼­ ÅÏÀ» Á¾·áÇÒ ¶§ ¹ßµ¿ÇÕ´Ï´Ù.
+        /// Ä³ï¿½ï¿½ï¿½Í°ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ßµï¿½ï¿½Õ´Ï´ï¿½.
         /// </summary>
         public override void OnEndTurn(Character character)
         {
-            // ¿¹½Ã: ÅÏÀ» ¸¶ÃÆÀ» ¶§µµ ÇÑ ¹ø ´õ ¹ßµ¿ÇÒ °æ¿ì »ç¿ë
+            // ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ßµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
             Activate(character);
         }
 
         /// <summary>
-        /// ½ÇÁ¦ È¿°ú¸¦ Ã³¸®ÇÏ´Â Ä¿½ºÅÒ ·ÎÁ÷ (ÇÇÇØ ÁÖ±â, »óÅÂ ºÎ¿© µî)
+        /// ï¿½ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Ï´ï¿½ Ä¿ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½Ö±ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½Î¿ï¿½ ï¿½ï¿½)
         /// </summary>
         public void Activate(Character target)
         {
-            // Å¸°ÙÀÌ Á×Àº »óÅÂÀÌ°Å³ª ¾øÀ¸¸é ¹«½Ã
+            // Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             if (target == null || !target.IsAlive) return;
 
-            //TODO: ÀÌµ¿·Â °¨¼Ò µî µð¹öÇÁ ·ÎÁ÷ ±¸Çö
-            Debug.Log($"[HoneyTileAttribute] {target.name} À¯´ÖÀÌ ²Ü Å¸ÀÏÀ» ¹â¾Æ ²öÀûÇØÁ³½À´Ï´Ù!");
+            //TODO: ï¿½Ìµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+            Debug.Log($"[HoneyTileAttribute] {target.name} ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½!");
             target.StatusEffects.AddEffect(new DiceOrbit.Systems.Effects.HoneyDebuff(1, 1));
+            var statusData = TooltipKeywordFormatter.BuildStatusDisplayData(
+                DiceOrbit.Data.EffectType.Honey.ToString(), 1, 1);
+            CombatNotifier.NotifyStatus(target, statusData.Name, statusData.Color);
             Owner.RemoveAttribute(this);
         }
 
         /// <summary>
-        /// UI³ª ÅøÆÁ¿¡¼­ Å¸ÀÏÀÇ ¼³¸íÀ» º¸¿©ÁÙ ¶§ È£ÃâµÇ´Â ¹®ÀÚ¿­ÀÔ´Ï´Ù.
+        /// UIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½Ô´Ï´ï¿½.
         /// </summary>
         public override string GetDescription()
         {
-            string durationText = Duration < 0 ? "¿µ±¸" : $"{Duration}ÅÏ";
-            return $"Åë°ú½Ã ÀÌµ¿·®ÀÌ {Value} °¨¼ÒÇÕ´Ï´Ù";
+            string durationText = Duration < 0 ? "ï¿½ï¿½ï¿½ï¿½" : $"{Duration}ï¿½ï¿½";
+            return $"ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ï¿½ï¿½ {Value} ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½";
         }
     }
 }
@@ -70,7 +74,7 @@ namespace DiceOrbit.Data.Tile
 namespace DiceOrbit.Systems.Effects
 {
     /// <summary>
-    /// °ø°Ý·Â ¹öÇÁ (µ¥¹ÌÁö °è»ê ½Ã Ãß°¡)
+    /// ï¿½ï¿½ï¿½Ý·ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ß°ï¿½)
     /// </summary>
     public class HoneyDebuff : StatusEffect
     {

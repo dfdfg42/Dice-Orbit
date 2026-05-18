@@ -31,7 +31,8 @@ namespace DiceOrbit.Visuals
         [SerializeField] private Color neutralColor = new Color(1f,   0.95f, 0.3f, 1f);
 
         private readonly List<GameObject> _roots = new();
-        private readonly List<GameObject> _passiveRoots = new();
+        private readonly Dictionary<object, List<GameObject>> _passiveRootsByOwner = new();
+        private static readonly object _globalPassiveKey = new();
 
         private void Awake()
         {
@@ -75,11 +76,20 @@ namespace DiceOrbit.Visuals
             _roots.Clear();
         }
 
+        // 키 없이 호출 시 전역 키 사용 (하위 호환)
         public void ShowPassiveRange(IEnumerable<TileData> tiles, TilePreviewStyle style)
+            => ShowPassiveRange(_globalPassiveKey, tiles, style);
+
+        // 소유자 키를 지정하면 해당 소유자 프리뷰만 갱신, 다른 소유자 프리뷰는 유지
+        public void ShowPassiveRange(object ownerKey, IEnumerable<TileData> tiles, TilePreviewStyle style)
         {
-            HidePassiveRange();
+            ClearPassiveRangeForKey(ownerKey);
             Color color = ResolveColor(style);
 
+            if (!_passiveRootsByOwner.ContainsKey(ownerKey))
+                _passiveRootsByOwner[ownerKey] = new List<GameObject>();
+
+            var roots = _passiveRootsByOwner[ownerKey];
             foreach (var tile in tiles)
             {
                 if (tile == null) continue;
@@ -89,7 +99,7 @@ namespace DiceOrbit.Visuals
                 float time   = perim / trailSpeed * trailCoverage;
 
                 var root = new GameObject("_PassiveTrail");
-                _passiveRoots.Add(root);
+                roots.Add(root);
 
                 var ctrl = root.AddComponent<TileTrailController>();
                 ctrl.Setup(corners, color, trailSpeed, time, trailWidthHead, trailWidthTail);
@@ -98,9 +108,26 @@ namespace DiceOrbit.Visuals
 
         public void HidePassiveRange()
         {
-            foreach (var r in _passiveRoots)
-                if (r != null) Destroy(r);
-            _passiveRoots.Clear();
+            foreach (var list in _passiveRootsByOwner.Values)
+                foreach (var r in list)
+                    if (r != null) Destroy(r);
+            _passiveRootsByOwner.Clear();
+        }
+
+        public void HidePassiveRange(object ownerKey)
+        {
+            ClearPassiveRangeForKey(ownerKey);
+            _passiveRootsByOwner.Remove(ownerKey);
+        }
+
+        private void ClearPassiveRangeForKey(object key)
+        {
+            if (_passiveRootsByOwner.TryGetValue(key, out var list))
+            {
+                foreach (var r in list)
+                    if (r != null) Destroy(r);
+                list.Clear();
+            }
         }
 
         // ── 내부 헬퍼 ─────────────────────────────────────────────────
