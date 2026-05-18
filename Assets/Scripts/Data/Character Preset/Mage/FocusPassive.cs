@@ -5,7 +5,7 @@ using DiceOrbit.Core.Pipeline;
 namespace DiceOrbit.Data.Passives
 {
     [System.Serializable]
-    public class FocusPassive : PassiveAbility
+    public class FocusPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 집중 1스택당 추가 피해율(%). 예: 5는 +5%")]
@@ -17,6 +17,11 @@ namespace DiceOrbit.Data.Passives
         public float BonusDamageRatioPerStack => runtimeBonusDamageRatioPerStack;
 
         public override int Priority => 50;
+
+        public override string GetDynamicDescription()
+        {
+            return $"집중 스택당 추가 피해 +{BonusDamageRatioPerStack * 100f:0.#}%";
+        }
 
         protected override void ApplyLevel(int level)
         {

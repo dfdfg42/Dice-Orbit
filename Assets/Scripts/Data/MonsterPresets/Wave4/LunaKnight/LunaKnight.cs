@@ -110,7 +110,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaKnight
             }
         }
 
-        public override bool AllowSamePassive(PassiveAbility incoming)
+        public override bool AllowSamePassive(IPassive incoming)
         {
             return false;
         }

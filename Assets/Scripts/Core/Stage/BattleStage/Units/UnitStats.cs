@@ -17,6 +17,7 @@ namespace DiceOrbit.Data
         // Legacy field: fixed defense is not used in current combat rule.
         public int Defense = 0;
         public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)
+        public float DodgeChance = 0f; // 회피율 (0~100, %)
 
         // ICombatReactor implementation
         public virtual int Priority => 20;

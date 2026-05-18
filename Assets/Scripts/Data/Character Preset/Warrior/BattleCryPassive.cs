@@ -1,11 +1,14 @@
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Data;
+using DiceOrbit.Visuals;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceOrbit.Data.Passives
 {
     [System.Serializable]
-    public class BattleCryPassive : PassiveAbility
+    public class BattleCryPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 공격 피해 증가율(%). 예: 5는 +5%")]
@@ -15,6 +18,23 @@ namespace DiceOrbit.Data.Passives
         public float CurrentDamageMultiplier => damageMultiplier;
 
         public override int Priority => 100;
+
+        public override string GetDynamicDescription()
+        {
+            return $"피해 +{(CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+        }
+
+        public override void Initialize(Unit ownerUnit)
+        {
+            base.Initialize(ownerUnit);
+            if (owner is Character character && character.CurrentTile != null)
+                RefreshRangePreview(character.CurrentTile);
+        }
+
+        public override void OnOwnerMoved(TileData newTile)
+        {
+            RefreshRangePreview(newTile);
+        }
 
         protected override void ApplyLevel(int level)
         {
@@ -41,6 +61,19 @@ namespace DiceOrbit.Data.Passives
             if (context.SourceUnit != owner) return;
 
             context.OutputValue *= damageMultiplier;
+        }
+
+        private void RefreshRangePreview(TileData centerTile)
+        {
+            TileSkillPreviewManager.EnsureInstance();
+            var manager = TileSkillPreviewManager.Instance;
+            if (manager == null || centerTile == null) return;
+
+            var tiles = new List<TileData>();
+            if (centerTile.PreviousTile != null) tiles.Add(centerTile.PreviousTile);
+            if (centerTile.NextTile != null) tiles.Add(centerTile.NextTile);
+
+            manager.ShowPassiveRange(tiles, TilePreviewStyle.Buff);
         }
     }
 }

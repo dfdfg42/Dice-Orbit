@@ -4,7 +4,7 @@ using DiceOrbit.Core.Pipeline;
 namespace DiceOrbit.Data.Passives
 {
     [System.Serializable]
-    public class PositioningPassive : PassiveAbility
+    public class PositioningPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 다음 공격 피해 배율. 예: 1.05는 +5%")]
@@ -25,7 +25,12 @@ namespace DiceOrbit.Data.Passives
 
         public override int Priority => 99;
 
-        public override void Initialize(Core.Unit Owner)
+        public override string GetDynamicDescription()
+        {
+            return $"이동 {CurrentThresholdDistance}칸 이상 시 다음 공격 피해 +{(CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+        }
+
+        public override void Initialize(DiceOrbit.Core.Unit Owner)
         {
             base.Initialize(Owner);
             ResetTurnData();

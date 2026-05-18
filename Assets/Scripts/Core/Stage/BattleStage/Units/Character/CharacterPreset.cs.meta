@@ -1,2 +1,19 @@
 fileFormatVersion: 2
 guid: c15595559fc69394782045259f55f893
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - Portrait: {instanceID: 0}
+  - CharacterWindowSprite: {fileID: 21300000, guid: 08e2f4de730cfda4d8f02817e747a0ec, type: 3}
+  - CharacterSprite: {instanceID: 0}
+  - IdleSprite: {instanceID: 0}
+  - MoveSprite: {instanceID: 0}
+  - DamageSprite: {instanceID: 0}
+  - SkillSprite: {instanceID: 0}
+  - AnimatorController: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

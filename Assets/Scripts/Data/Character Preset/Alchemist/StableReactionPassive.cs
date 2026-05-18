@@ -4,7 +4,7 @@ using UnityEngine;
 namespace DiceOrbit.Data.Passives
 {
     [System.Serializable]
-    public class StableReactionPassive : PassiveAbility
+    public class StableReactionPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
         [Tooltip("레벨별 피해 증가율(%). 체력 조건 충족 시 적용")]
@@ -16,6 +16,11 @@ namespace DiceOrbit.Data.Passives
         public float CurrentDamageMultiplier => runtimeDamageMultiplier;
 
         public override int Priority => 98;
+
+        public override string GetDynamicDescription()
+        {
+            return $"체력 {(healthThresholdRatio * 100f):0.#}% 이상일 때 피해 +{(CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+        }
 
         protected override void ApplyLevel(int level)
         {

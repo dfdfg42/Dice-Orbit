@@ -1,14 +1,15 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using DiceOrbit.Data;
 using System.Collections.Generic;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.UI;
+using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Core
 {
     /// <summary>
-    /// 스킬 타겟 선택 시스템
+    /// ?ㅽ궗 ?寃??좏깮 ?쒖뒪??
     /// </summary>
     public class SkillTargetSelector : MonoBehaviour
     {
@@ -22,10 +23,12 @@ namespace DiceOrbit.Core
         
         private bool isSelectingTarget = false;
         private Character sourceCharacter;
-        private RuntimeAbility currentRuntimeAbility;
+        private ActiveSkillSlot currentSlot;
         private DiceData currentDice;
         private Camera mainCamera;
         private Unit currentPreviewTarget;
+        private TileData _lastPreviewTile;
+        private OrbitManager _orbitManager;
 
         // Properties
         public bool IsSelectingTarget => isSelectingTarget;
@@ -43,8 +46,9 @@ namespace DiceOrbit.Core
             }
 
             mainCamera = Camera.main;
+            _orbitManager = FindFirstObjectByType<OrbitManager>();
 
-            // LineRenderer 설정
+            // LineRenderer ?ㅼ젙
             if (targetLine == null)
             {
                 targetLine = gameObject.AddComponent<LineRenderer>();
@@ -55,7 +59,7 @@ namespace DiceOrbit.Core
             targetLine.positionCount = 2;
             targetLine.enabled = false;
 
-            // 점선 효과
+            // ?먯꽑 ?④낵
             targetLine.material = new Material(Shader.Find("Sprites/Default"));
             targetLine.textureMode = LineTextureMode.Tile;
         }
@@ -67,17 +71,18 @@ namespace DiceOrbit.Core
             var mouse = Mouse.current;
             if (mouse == null) return;
 
-            // 마우스 위치로 라인 업데이트
+            // 留덉슦???꾩튂濡??쇱씤 ?낅뜲?댄듃
             UpdateTargetLine();
             UpdateDamagePreview();
+            UpdateTilePreview();
 
-            // 마우스 클릭으로 타겟 선택
+            // 留덉슦???대┃?쇰줈 ?寃??좏깮
             if (mouse.leftButton.wasPressedThisFrame)
             {
                 TrySelectTarget();
             }
 
-            // 우클릭으로 취소
+            // ?고겢由?쑝濡?痍⑥냼
             if (mouse.rightButton.wasPressedThisFrame)
             {
                 CancelTargetSelection();
@@ -85,17 +90,17 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// 타겟 선택 모드 시작
+        /// ?寃??좏깮 紐⑤뱶 ?쒖옉
         /// </summary>
-        public void StartTargetSelection(Character character, RuntimeAbility runtimeAbility, DiceData dice)
+        public void StartTargetSelection(Character character, ActiveSkillSlot runtimeAbility, DiceData dice)
         {
             sourceCharacter = character;
-            currentRuntimeAbility = runtimeAbility;
+            currentSlot = runtimeAbility;
             currentDice = dice;
             isSelectingTarget = true;
             sourceCharacter?.OnSkillTargetingStarted();
 
-            // LineRenderer 확인 및 활성화
+            // LineRenderer ?뺤씤 諛??쒖꽦??
             if (targetLine == null)
             {
                 targetLine = GetComponent<LineRenderer>();
@@ -111,12 +116,21 @@ namespace DiceOrbit.Core
 
             targetLine.enabled = true;
 
-            var skillData = currentRuntimeAbility?.CurrentSkillData;
-            Debug.Log($"Target selection started for {skillData?.SkillName ?? "Unknown"} (Type: {currentRuntimeAbility.TargetType})");
+            var skillName = currentSlot?.BaseSkill?.SkillName ?? "Unknown";
+            Debug.Log($"Target selection started for {skillName} (Type: {currentSlot.TargetType})");
+
+            // AllTiles: ?좏깮 ?쒖옉怨??숈떆??紐⑤뱺 ??쇱뿉 ?꾨━酉??쒖떆
+            if (currentSlot.TargetType == CharacterSkillTargetType.AllTiles)
+            {
+                TileSkillPreviewManager.EnsureInstance();
+                var previewStyle = currentSlot.PreviewStyle;
+                if (_orbitManager != null)
+                    TileSkillPreviewManager.Instance?.ShowPreview(_orbitManager.Tiles, previewStyle);
+            }
         }
 
         /// <summary>
-        /// 타겟 라인 업데이트
+        /// ?寃??쇱씤 ?낅뜲?댄듃
         /// </summary>
         private void UpdateTargetLine()
         {
@@ -125,11 +139,11 @@ namespace DiceOrbit.Core
             var mouse = Mouse.current;
             if (mouse == null) return;
 
-            // 시작점: 캐릭터 위치
+            // ?쒖옉?? 罹먮┃???꾩튂
             Vector3 startPos = sourceCharacter.transform.position;
             targetLine.SetPosition(0, startPos);
 
-            // 마우스 아래 오브젝트 확인
+            // 留덉슦???꾨옒 ?ㅻ툕?앺듃 ?뺤씤
             Vector2 mousePos = mouse.position.ReadValue();
             Ray ray = mainCamera.ScreenPointToRay(mousePos);
             RaycastHit hit;
@@ -137,27 +151,27 @@ namespace DiceOrbit.Core
             bool validTarget = false;
             Vector3 endPos = startPos;
 
-            // Raycast로 타겟 찾기
+            // Raycast濡??寃?李얘린
             if (Physics.Raycast(ray, out hit))
             {
                 GameObject targetObj = hit.collider.gameObject;
                 validTarget = IsValidTarget(targetObj);
 
-                // 타겟이 유효하면 타겟 위치, 아니면 히트 위치
+                // ?寃잛씠 ?좏슚?섎㈃ ?寃??꾩튂, ?꾨땲硫??덊듃 ?꾩튂
                 if (validTarget)
                 {
-                    // 몬스터나 캐릭터의 중심으로
+                    // 紐ъ뒪?곕굹 罹먮┃?곗쓽 以묒떖?쇰줈
                     endPos = targetObj.transform.position;
                 }
                 else
                 {
-                    // 히트한 위치로
+                    // ?덊듃???꾩튂濡?
                     endPos = hit.point;
                 }
             }
             else
             {
-                // 히트 실패 시 평면상의 마우스 위치
+                // ?덊듃 ?ㅽ뙣 ???됰㈃?곸쓽 留덉슦???꾩튂
                 Plane plane = new Plane(Vector3.up, sourceCharacter.transform.position);
                 if (plane.Raycast(ray, out float distance))
                 {
@@ -167,7 +181,7 @@ namespace DiceOrbit.Core
 
             targetLine.SetPosition(1, endPos);
 
-            // 색상 업데이트
+            // ?됱긽 ?낅뜲?댄듃
             Color lineColor = validTarget ? validTargetColor : invalidTargetColor;
             targetLine.startColor = lineColor;
             targetLine.endColor = lineColor;
@@ -175,7 +189,7 @@ namespace DiceOrbit.Core
 
         private void UpdateDamagePreview()
         {
-            if (currentRuntimeAbility?.CurrentSkillData == null || sourceCharacter == null)
+            if (currentSlot?.BaseSkill == null || sourceCharacter == null)
             {
                 HoverTooltipUI.Instance?.HidePinned();
                 currentPreviewTarget = null;
@@ -222,82 +236,81 @@ namespace DiceOrbit.Core
 
         private string BuildAppliedDamagePreview(Unit targetUnit)
         {
-            if (currentRuntimeAbility?.CurrentSkillData == null || targetUnit == null || sourceCharacter == null)
-                return "예상 피해: -";
+            if (currentSlot?.BaseSkill == null || targetUnit == null || sourceCharacter == null)
+                return "?덉긽 ?쇳빐: -";
 
-            var activeTemplate = currentRuntimeAbility.BaseSkill?.ActiveTemplate;
+            var activeTemplate = currentSlot.RuntimeInstance;
             if (activeTemplate != null)
             {
-                int coupledRaw = activeTemplate.CalculateRawDamage(sourceCharacter, currentRuntimeAbility, currentDice.Value);
-                return coupledRaw > 0 ? $"예상 피해: {coupledRaw}" : "예상 피해: -";
+                int coupledRaw = activeTemplate.CalculateRawDamage(sourceCharacter, currentSlot, currentDice.Value);
+                return coupledRaw > 0 ? $"?덉긽 ?쇳빐: {coupledRaw}" : "?덉긽 ?쇳빐: -";
             }
 
-            var skillData = currentRuntimeAbility.CurrentSkillData;
-            if (skillData?.Effects == null || skillData.Effects.Count == 0)
-            {
-                return "예상 피해: -";
-            }
-
-            int totalRaw = 0;
-            foreach (var effect in skillData.Effects)
-            {
-                if (effect is Data.Skills.Effects.DiceMultiplierDamageEffect diceEffect)
-                {
-                    int resolvedMultiplier = diceEffect.GetMultiplierForSource(sourceCharacter);
-                    totalRaw += currentDice.Value * resolvedMultiplier;
-                }
-                else if (effect is Data.Skills.Effects.MageStackDamageEffect mageEffect)
-                {
-                    int resolvedBaseMultiplier = mageEffect.GetBaseMultiplierForSource(sourceCharacter);
-                    int focusStacks = sourceCharacter.StatusEffects != null
-                        ? sourceCharacter.StatusEffects.GetEffectValue(EffectType.Focus)
-                        : 0;
-                    float bonusRatio = mageEffect.GetBonusRatioForSource(sourceCharacter);
-                    int baseDamage = currentDice.Value * resolvedBaseMultiplier;
-                    totalRaw += Mathf.RoundToInt(baseDamage * (1.0f + focusStacks * bonusRatio));
-                }
-            }
-
-            return totalRaw > 0 ? $"예상 피해: {totalRaw}" : "예상 피해: -";
+            return "?덉긽 ?쇳빐: -";
         }
 
         /// <summary>
-        /// 타겟 선택 시도
+        /// ?寃??좏깮 ?쒕룄
         /// </summary>
         private void TrySelectTarget()
         {
             var mouse = Mouse.current;
             if (mouse == null) return;
 
+            var targetType = currentSlot.TargetType;
+
+            // AllTiles: ?대뵒???대┃?섎㈃ 紐⑤뱺 ??쇰줈 ?뺤젙
+            if (targetType == CharacterSkillTargetType.AllTiles)
+            {
+                NotifyTileTargetSelected(null);
+                EndTargetSelection();
+                return;
+            }
+
             Vector2 mousePos = mouse.position.ReadValue();
             Ray ray = mainCamera.ScreenPointToRay(mousePos);
-            RaycastHit hit;
 
-            if (Physics.Raycast(ray, out hit))
+            if (!Physics.Raycast(ray, out RaycastHit hit))
+                return;
+
+            // OneTile: TileData ?꾨? ?대┃?덉쓣 ?뚮쭔 ?뺤젙
+            if (targetType == CharacterSkillTargetType.OneTile)
             {
-                GameObject targetObj = hit.collider.gameObject;
-
-                if (IsValidTarget(targetObj))
+                var tile = hit.collider.GetComponentInParent<TileData>();
+                if (tile != null)
                 {
-                    NotifyTargetSelected(targetObj);
+                    NotifyTileTargetSelected(tile);
                     EndTargetSelection();
                 }
-                else
-                {
-                    Debug.LogWarning("Invalid target for this skill!");
-                }
+                return;
+            }
+
+            // ?좊떅 ?寃잜똿 (湲곗〈 濡쒖쭅)
+            GameObject targetObj = hit.collider.gameObject;
+            if (IsValidTarget(targetObj))
+            {
+                NotifyTargetSelected(targetObj);
+                EndTargetSelection();
+            }
+            else
+            {
+                Debug.LogWarning("Invalid target for this skill!");
             }
         }
 
         /// <summary>
-        /// 유효한 타겟인지 확인
+        /// ?좏슚???寃잛씤吏 ?뺤씤
         /// </summary>
         private bool IsValidTarget(GameObject target)
         {
-            switch (currentRuntimeAbility.TargetType)
+            switch (currentSlot.TargetType)
             {
                 case CharacterSkillTargetType.OneEnemy:
                     return target.GetComponentInParent<Monster>() != null;
+                case CharacterSkillTargetType.OneTile:
+                    return target.GetComponentInParent<TileData>() != null;
+                case CharacterSkillTargetType.AllTiles:
+                    return true; // ?대뵒???대┃?섎㈃ ?뺤젙
                 case CharacterSkillTargetType.None:
                     return false;
                 default:
@@ -306,7 +319,7 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// 타겟 선택 완료 -> CharacterActionUI로 콜백
+        /// ?寃??좏깮 ?꾨즺 -> CharacterActionUI濡?肄쒕갚
         /// </summary>
         private void NotifyTargetSelected(GameObject target)
         {
@@ -317,8 +330,8 @@ namespace DiceOrbit.Core
                 return;
             }
 
-            // CharacterActionUI에 타겟이 확정되었음을 알림
-            CharacterActionUI.Instance?.ConfirmSkillTarget(resolved, sourceCharacter, currentRuntimeAbility, currentDice);
+            // CharacterActionUI???寃잛씠 ?뺤젙?섏뿀?뚯쓣 ?뚮┝
+            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentSlot, currentDice, new System.Collections.Generic.List<Unit>{resolved}, new System.Collections.Generic.List<TileData>());
         }
 
         private Unit ResolveTarget(GameObject target)
@@ -333,11 +346,11 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// 타겟 선택 취소
+        /// ?寃??좏깮 痍⑥냼
         /// </summary>
         public void CancelTargetSelection()
         {
-            // 예약 상태였던 주사위를 다시 사용 가능하게 되돌림
+            // ?덉빟 ?곹깭???二쇱궗?꾨? ?ㅼ떆 ?ъ슜 媛?ν븯寃??섎룎由?
             if (currentDice != null)
             {
                 currentDice.State = DiceState.Available;
@@ -350,7 +363,7 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// 타겟 선택 종료
+        /// ?寃??좏깮 醫낅즺
         /// </summary>
         private void EndTargetSelection()
         {
@@ -358,17 +371,59 @@ namespace DiceOrbit.Core
             isSelectingTarget = false;
 
             if (targetLine != null)
-            {
                 targetLine.enabled = false;
-            }
-            HoverTooltipUI.Instance?.HidePinned();
-            currentPreviewTarget = null;
 
-            sourceCharacter = null;
-            currentRuntimeAbility = null;
-            currentDice = null;
+            HoverTooltipUI.Instance?.HidePinned();
+            TileSkillPreviewManager.Instance?.HidePreview();
+
+            currentPreviewTarget = null;
+            _lastPreviewTile     = null;
+            sourceCharacter      = null;
+            currentSlot = null;
+            currentDice          = null;
         }
 
-        private CharacterSkillData currentSkill => currentRuntimeAbility?.CurrentSkillData;
+        // ?? ????寃잜똿 ???????????????????????????????????????????????
+
+        /// <summary>
+        /// OneTile: 留덉슦???꾨옒 ??쇱씠 諛붾??뚮쭔 ?꾨━酉곕? 媛깆떊?⑸땲??
+        /// </summary>
+        private void UpdateTilePreview()
+        {
+            if (currentSlot?.TargetType != CharacterSkillTargetType.OneTile) return;
+
+            var tile = GetTileUnderMouse();
+            if (tile == _lastPreviewTile) return;
+
+            _lastPreviewTile = tile;
+            TileSkillPreviewManager.EnsureInstance();
+            var style = currentSlot.PreviewStyle;
+
+            if (tile != null)
+                TileSkillPreviewManager.Instance?.ShowPreview(new[] { tile }, style);
+            else
+                TileSkillPreviewManager.Instance?.HidePreview();
+        }
+
+        private TileData GetTileUnderMouse()
+        {
+            var mouse = Mouse.current;
+            if (mouse == null || mainCamera == null) return null;
+            Ray ray = mainCamera.ScreenPointToRay(mouse.position.ReadValue());
+            if (!Physics.Raycast(ray, out RaycastHit hit)) return null;
+            return hit.collider.GetComponentInParent<TileData>();
+        }
+
+        private void NotifyTileTargetSelected(TileData singleTile)
+        {
+            List<TileData> targets;
+
+            if (currentSlot.TargetType == CharacterSkillTargetType.AllTiles)
+                targets = _orbitManager != null ? new List<TileData>(_orbitManager.Tiles) : new List<TileData>();
+            else
+                targets = singleTile != null ? new List<TileData> { singleTile } : new List<TileData>();
+
+            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentSlot, currentDice, new System.Collections.Generic.List<Unit>(), targets);
+        }
     }
 }

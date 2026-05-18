@@ -12,7 +12,6 @@ namespace DiceOrbit.Core
     public abstract class Unit : MonoBehaviour
     {
         [Header("Visual")]
-        [SerializeField] protected Color highlightColor = Color.yellow;
         protected SpriteRenderer spriteRenderer;
         protected Color originalColor;
         protected Camera mainCamera;
@@ -121,28 +120,6 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"{name} has died.");
             // 사망 처리 (애니메이션, 제거 등)
-        }
-
-        /// <summary>
-        /// 마우스 호버 시 하이라이트
-        /// </summary>
-        protected virtual void OnMouseEnter()
-        {
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.color = highlightColor;
-            }
-        }
-
-        /// <summary>
-        /// 마우스 벗어날 때 원래 색상
-        /// </summary>
-        protected virtual void OnMouseExit()
-        {
-            if (spriteRenderer != null)
-            {
-                spriteRenderer.color = originalColor;
-            }
         }
 
         /// <summary>

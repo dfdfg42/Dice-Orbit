@@ -17,34 +17,21 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI levelText; // "New!" or "Lv.1 -> Lv.2"
         [SerializeField] private Button button;
 
-        private CharacterSkill mySkill;
-        private Action<CharacterSkill> onClickCallback;
+        private CharacterActiveSkill mySkill;
+        private Action<CharacterActiveSkill> onClickCallback;
 
-        public void Setup(CharacterSkill skill, bool isNew, int currentLevel, Action<CharacterSkill> callback)
+        public void Setup(CharacterActiveSkill skill, bool isNew, int currentLevel, Action<CharacterActiveSkill> callback)
         {
             mySkill = skill;
             onClickCallback = callback;
             
             // Visuals
-            if (iconImage != null) iconImage.sprite = skill.Icon;
+            if (iconImage != null) iconImage.sprite = skill.icon;
             if (nameText != null) nameText.text = skill.SkillName;
             
             // Description logic
-            string desc = "";
-            DiceRequirement requirement = null;
-            if (isNew)
-            {
-                var lvl1 = skill.GetSkillData(1); // use GetSkillData to get Description
-                desc = lvl1 != null ? lvl1.Description : "No Description";
-                requirement = skill.GetLevelData(1) != null ? skill.GetLevelData(1).Requirement : null;
-            }
-            else
-            {
-                var nextLvData = skill.GetSkillData(currentLevel + 1);
-                desc = nextLvData != null ? nextLvData.Description : "Max Level Reached!";
-                requirement = skill.GetLevelData(currentLevel + 1) != null ? skill.GetLevelData(currentLevel + 1).Requirement : null;
-            }
-
+            string desc = skill.Description ?? "No Description";
+            var requirement = skill.requirement;
             if (requirement != null)
             {
                 desc += $"\n<color=#9EE6FF>{requirement.GetDescription()}</color>";
@@ -52,7 +39,7 @@ namespace DiceOrbit.UI
 
             if (descText != null) descText.text = desc;
 
-            if (typeText != null) typeText.text = skill.Type.ToString();
+            if (typeText != null) typeText.text = "Active";
 
             if (levelText != null)
             {
@@ -68,6 +55,7 @@ namespace DiceOrbit.UI
         private void OnClick()
         {
             onClickCallback?.Invoke(mySkill);
+
         }
     }
 }

@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using DiceOrbit.Visuals;
 
 namespace DiceOrbit.UI
 {
@@ -19,19 +18,19 @@ namespace DiceOrbit.UI
         [SerializeField] private Transform cardContainer;
         [SerializeField] private GameObject characterCardPrefab;
         [SerializeField] private Canvas selectionCanvas; // Canvas 직접 참조
+        [SerializeField] private Image characterWindowImage; // 왼쪽에 표시할 창 이미지
+        [SerializeField] private Button confirmButton; // 선택 확인 버튼
         
-        [Header("Prefabs")]
-        [SerializeField] private GameObject characterUIPrefab; // CharacterUI 프리팹
-        [SerializeField] private RuntimeAnimatorController characterAnimatorController;
-        
+        [Header("Spawner")]
+        [SerializeField] private Core.CharacterSpawner characterSpawner;
+
         [Header("Settings")]
         [SerializeField] private int numberOfChoices = 4;
-    [SerializeField] private Vector3 characterScale = new Vector3(0.3f, 0.3f, 1f);
-    [SerializeField] private Vector2 colliderSizeMultiplier = new Vector2(1.6f, 1.6f);
-    [SerializeField] private float colliderDepth = 0.2f;
         
         private List<Core.CharacterPreset> currentChoices = new List<Core.CharacterPreset>();
+        private List<CharacterCard> currentCards = new List<CharacterCard>();
         private Core.CharacterPreset selectedCharacter;
+        private bool isSelectionSequencePlaying;
         
         private void Start()
         {
@@ -39,6 +38,11 @@ namespace DiceOrbit.UI
             if (selectionCanvas == null)
             {
                 selectionCanvas = GetComponentInParent<Canvas>();
+            }
+
+            if (characterWindowImage != null)
+            {
+                characterWindowImage.gameObject.SetActive(false);
             }
             
             GenerateRandomChoices();
@@ -86,6 +90,8 @@ namespace DiceOrbit.UI
             }
             
             currentChoices.Clear();
+            currentCards.Clear();
+            isSelectionSequencePlaying = false;
             
             // 랜덤 선택
             if (allCharacters.Count >= numberOfChoices)
@@ -99,21 +105,32 @@ namespace DiceOrbit.UI
             }
             
             // UI 카드 생성
+            var spawnedCards = new List<CharacterCard>();
             foreach (var character in currentChoices)
             {
-                CreateCharacterCard(character);
+                var card = CreateCharacterCard(character);
+                if (card != null)
+                {
+                    spawnedCards.Add(card);
+                    currentCards.Add(card);
+                }
+            }
+
+            if (spawnedCards.Count > 0)
+            {
+                StartCoroutine(PlayCharacterCardIntro(spawnedCards));
             }
         }
         
         /// <summary>
         /// 캐릭터 카드 생성
         /// </summary>
-        private void CreateCharacterCard(Core.CharacterPreset character)
+        private CharacterCard CreateCharacterCard(Core.CharacterPreset character)
         {
             if (characterCardPrefab == null)
             {
                 Debug.LogError("Character Card Prefab not assigned!");
-                return;
+                return null;
             }
             
             var cardObj = Instantiate(characterCardPrefab, cardContainer);
@@ -121,229 +138,124 @@ namespace DiceOrbit.UI
             
             if (card != null)
             {
-                card.Setup(character, OnCharacterSelected);
+                card.Setup(character, OnCharacterSelectedRequested);
+            }
+
+            return card;
+        }
+
+        private IEnumerator PlayCharacterCardIntro(List<CharacterCard> cards)
+        {
+            yield return null;
+
+            const float staggerDelay = 0.08f;
+
+            for (int i = 0; i < cards.Count; i++)
+            {
+                var card = cards[i];
+                if (card == null)
+                {
+                    continue;
+                }
+
+                card.CaptureIntroTargetPosition();
+                card.PlayIntro(i * staggerDelay);
             }
         }
         
-        /// <summary>
-        /// 캐릭터 선택 콜백
-        /// </summary>
-        private void OnCharacterSelected(Core.CharacterPreset character)
+        private void OnCharacterSelectedRequested(CharacterCard selectedCard, Core.CharacterPreset character)
         {
-            selectedCharacter = character;
-            Debug.Log($"[CharacterSelection] Character selected: {character.CharacterName}");
-            
-            // 캐릭터 생성
-            CreatePlayerCharacter(character);
-            
-            // Canvas 비활성화
-            if (selectionCanvas != null)
+            if (isSelectionSequencePlaying) return;
+            StartCoroutine(PlayCharacterSelectionSequence(selectedCard, character));
+        }
+
+        private IEnumerator PlayCharacterSelectionSequence(CharacterCard selectedCard, Core.CharacterPreset character)
+        {
+            isSelectionSequencePlaying = true;
+
+            for (int i = 0; i < currentCards.Count; i++)
             {
-                Debug.Log("[CharacterSelection] Hiding selection canvas");
-                selectionCanvas.gameObject.SetActive(false);
+                var card = currentCards[i];
+                if (card != null) card.SetSelectionLocked(true);
+            }
+
+            var selectedIndex = currentCards.IndexOf(selectedCard);
+            if (selectedIndex < 0) selectedIndex = 0;
+
+            var animationOrder = BuildSelectionOrder(selectedIndex);
+            for (int i = 0; i < animationOrder.Count; i++)
+            {
+                var cardIndex = animationOrder[i];
+                if (cardIndex < 0 || cardIndex >= currentCards.Count) continue;
+                var card = currentCards[cardIndex];
+                if (card == null) continue;
+
+                StartCoroutine(card.PlaySelectionExitRoutine(cardIndex == selectedIndex));
+                yield return new WaitForSeconds(0.2f);
+            }
+
+            yield return new WaitForSeconds(0.5f);
+            DisplayCharacterWindow(character);
+        }
+
+        private List<int> BuildSelectionOrder(int selectedIndex)
+        {
+            var order = new List<int>();
+            var count = currentCards.Count;
+            if (count <= 0) return order;
+
+            selectedIndex = Mathf.Clamp(selectedIndex, 0, count - 1);
+            order.Add(selectedIndex);
+            for (int i = selectedIndex - 1; i >= 0; i--) order.Add(i);
+            for (int i = selectedIndex + 1; i < count; i++) order.Add(i);
+            return order;
+        }
+
+        private void DisplayCharacterWindow(Core.CharacterPreset character)
+        {
+            if (character == null) return;
+
+            if (characterWindowImage != null)
+            {
+                var windowSprite = character.CharacterWindowSprite;
+                if (windowSprite != null)
+                {
+                    characterWindowImage.sprite = windowSprite;
+                    characterWindowImage.enabled = true;
+                    characterWindowImage.gameObject.SetActive(true);
+                    characterWindowImage.transform.SetAsLastSibling();
+                }
+                else
+                {
+                    characterWindowImage.gameObject.SetActive(false);
+                }
+            }
+
+            if (confirmButton != null)
+            {
+                confirmButton.gameObject.SetActive(true);
+                confirmButton.onClick.RemoveAllListeners();
+                confirmButton.onClick.AddListener(() => OnCharacterSelected(character));
             }
             else
             {
-                Debug.LogWarning("[CharacterSelection] Selection Canvas is null! Trying to hide parent.");
-                transform.parent.gameObject.SetActive(false);
+                OnCharacterSelected(character);
             }
+        }
+
+        private void OnCharacterSelected(Core.CharacterPreset preset)
+        {
+            selectedCharacter = preset;
+            characterSpawner?.Spawn(preset);
+
+            if (selectionCanvas != null)
+                selectionCanvas.gameObject.SetActive(false);
+            else
+                transform.parent.gameObject.SetActive(false);
 
             DiceUI.Instance?.SetPanelVisible(true);
-            
-            // GameFlowManager에 알림
-            var gameFlow = Core.GameFlowManager.Instance;
-            if (gameFlow != null)
-            {
-                gameFlow.OnCharacterSelected();
-            }
-            else
-            {
-                Debug.LogWarning("[CharacterSelection] GameFlowManager not found!");
-            }
+            Core.GameFlowManager.Instance?.OnCharacterSelected();
         }
         
-        /// <summary>
-        /// 플레이어 캐릭터 생성
-        /// </summary>
-        private void CreatePlayerCharacter(Core.CharacterPreset preset)
-        {
-            if (preset == null)
-            {
-                Debug.LogError("[CreatePlayer] Preset is null!");
-                return;
-            }
-            
-            Debug.Log($"[CreatePlayer] Creating character: {preset.CharacterName}");
-            
-            // OrbitManager 찾기
-            var orbitManager = Object.FindAnyObjectByType<Core.OrbitManager>();
-            if (orbitManager == null)
-            {
-                Debug.LogError("[CreatePlayer] OrbitManager not found! Cannot spawn character.");
-                return;
-            }
-            
-            Debug.Log("[CreatePlayer] OrbitManager found");
-            
-            // 시작 타일 찾기
-            var startTile = orbitManager.GetTile(0);
-            if (startTile == null)
-            {
-                Debug.LogError("[CreatePlayer] Start tile not found!");
-                return;
-            }
-            
-            Debug.Log($"[CreatePlayer] Start tile found at: {startTile.Position}");
-            
-            // Character GameObject 생성
-            var characterObj = new GameObject($"Player_{preset.CharacterName}");
-            characterObj.transform.localScale = characterScale;
-            Debug.Log($"[CreatePlayer] GameObject created: {characterObj.name}");
-            
-            // SpriteRenderer 추가 (Character보다 먼저 추가)
-            var spriteRenderer = characterObj.AddComponent<SpriteRenderer>();
-            if (spriteRenderer == null)
-            {
-                Debug.LogError("[CreatePlayer] Failed to add SpriteRenderer!");
-                return;
-            }
-            
-            if (preset.CharacterSprite != null)
-            {
-                spriteRenderer.sprite = preset.CharacterSprite;
-            }
-            
-            spriteRenderer.color = preset.SpriteColor;
-            Debug.Log($"[CreatePlayer] SpriteRenderer configured with color: {preset.SpriteColor}");
-
-            // CharacterSpriteVisual 추가 (애니메이션 스프라이트는 CharacterPreset 값만 사용)
-            var spriteVisual = characterObj.AddComponent<CharacterSpriteVisual>();
-            var animator = characterObj.GetComponent<Animator>();
-            if (animator == null)
-            {
-                animator = characterObj.AddComponent<Animator>();
-            }
-
-            RuntimeAnimatorController resolvedController = preset.AnimatorController != null
-                ? preset.AnimatorController
-                : characterAnimatorController;
-
-            if (resolvedController != null)
-            {
-                animator.runtimeAnimatorController = resolvedController;
-            }
-            else
-            {
-                Debug.LogWarning($"[CharacterSelection] Animator controller is not assigned for '{preset.CharacterName}'. Assign CharacterPreset.AnimatorController or fallback characterAnimatorController.");
-            }
-
-            if (spriteVisual != null)
-            {
-                spriteVisual.SetAnimationSprites(
-                    preset.IdleSprite,
-                    preset.MoveSprite,
-                    preset.DamageSprite,
-                    preset.SkillSprite
-                );
-                spriteVisual.PlayIdle();
-            }
-            
-            // Character 컴포넌트 추가
-            var character = characterObj.AddComponent<Core.Character>();
-            if (character == null)
-            {
-                Debug.LogError("[CreatePlayer] Failed to add Character component!");
-                Destroy(characterObj);
-                return;
-            }
-            Debug.Log("[CreatePlayer] Character component added");
-            
-            // Collider 추가 (클릭 감지용)
-            var collider = characterObj.AddComponent<BoxCollider>();
-            FitColliderToSprite(collider, spriteRenderer, characterObj.transform);
-            
-            // Stats 설정
-            var stats = preset.CreateStats();
-            if (stats == null)
-            {
-                Debug.LogError("[CreatePlayer] Failed to create stats!");
-                Destroy(characterObj);
-                return;
-            }
-            
-            character.InitializeStats(stats);
-            Debug.Log("[CreatePlayer] Stats initialized");
-            
-            // 시작 타일에 배치
-            var tileOffset = new Vector3(0, 1.5f, 1.0f);
-            characterObj.transform.position = startTile.Position + tileOffset;
-            Debug.Log($"[CreatePlayer] Character positioned at: {characterObj.transform.position}");
-            
-            // PartyManager에 추가
-            var partyManager = Core.PartyManager.Instance;
-            if (partyManager != null)
-            {
-                partyManager.AddCharacter(character);
-                Debug.Log("[CreatePlayer] Added to PartyManager");
-            }
-            else
-            {
-                Debug.LogWarning("[CreatePlayer] PartyManager not found!");
-            }
-            
-            // CharacterUI 생성
-            CreateCharacterUI(characterObj, character);
-            
-            Debug.Log($"[CreatePlayer] ✓ Character spawned successfully: {preset.CharacterName}");
-        }
-        
-        /// <summary>
-        /// 캐릭터 UI 생성
-        /// </summary>
-        private void CreateCharacterUI(GameObject characterObj, Core.Character character)
-        {
-            if (characterUIPrefab == null)
-            {
-                Debug.LogWarning("[CreatePlayer] CharacterUI Prefab not assigned! Skipping UI creation.");
-                return;
-            }
-            
-            // 프리팹 인스턴스화
-            var uiObj = Instantiate(characterUIPrefab, characterObj.transform);
-            uiObj.transform.localPosition = new Vector3(0, 1.2f, 0);
-            
-            // CharacterUI 컴포넌트 찾기 및 설정
-            var characterUI = uiObj.GetComponent<CharacterUI>();
-            if (characterUI != null)
-            {
-                characterUI.SetCharacter(character);
-                Debug.Log("[CreatePlayer] CharacterUI created from prefab");
-            }
-            else
-            {
-                Debug.LogWarning("[CreatePlayer] CharacterUI component not found on prefab!");
-            }
-        }
-
-        private void FitColliderToSprite(BoxCollider collider, SpriteRenderer renderer, Transform target)
-        {
-            if (collider == null || renderer == null || renderer.sprite == null || target == null) return;
-
-            var bounds = renderer.bounds;
-            var localSize = new Vector3(
-                bounds.size.x / target.localScale.x,
-                bounds.size.y / target.localScale.y,
-                colliderDepth
-            );
-
-            localSize = new Vector3(
-                localSize.x * colliderSizeMultiplier.x,
-                localSize.y * colliderSizeMultiplier.y,
-                localSize.z
-            );
-
-            collider.size = localSize;
-            collider.center = new Vector3(0f, localSize.y * 0.5f, 0f);
-        }
     }
 }

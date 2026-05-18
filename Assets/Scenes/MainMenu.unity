@@ -195,7 +195,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 5e0c2f189748d324aba0ba7247dec8b8, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ae811ac195ce195479e531459add6a52, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -500,7 +500,7 @@ RectTransform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 8, y: 8, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1920920231}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -574,8 +574,8 @@ RectTransform:
   m_GameObject: {fileID: 1492893469}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 8, y: 8, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 9.9, y: 9.9, z: 1.2375}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1920920231}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -747,8 +747,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 47.6899, y: -386.0175}
-  m_SizeDelta: {x: 358.2249, y: 72.5765}
+  m_AnchoredPosition: {x: 0, y: -427}
+  m_SizeDelta: {x: 570, y: 141}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1793103656
 MonoBehaviour:
@@ -814,7 +814,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 4553c920d4c54ec49a03e86d7c1cb257, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2836356b1839a7c4eaa05171bd96ef15, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -844,7 +844,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d963da6ef866efc46b392629abfd2570, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UIButtonScale
-  hoverScale: 1.1
+  hoverScale: 0.85
   animationDuration: 0.1
 --- !u!1 &1810798520
 GameObject:
@@ -876,14 +876,14 @@ RectTransform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 126}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 182434626}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 71, y: -280}
-  m_SizeDelta: {x: 357.2604, y: 73.2693}
+  m_AnchoredPosition: {x: 0, y: -278}
+  m_SizeDelta: {x: 570, y: 141}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1810798522
 MonoBehaviour:
@@ -949,7 +949,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 5af6dd71247627e428258c5c5a822c5c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6944aba08478184489e319c20daf7bbb, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -979,7 +979,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d963da6ef866efc46b392629abfd2570, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UIButtonScale
-  hoverScale: 1.1
+  hoverScale: 0.85
   animationDuration: 0.1
 --- !u!1 &1840780325
 GameObject:
@@ -1152,10 +1152,10 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 182434626}
-  - {fileID: 2101555179}
   - {fileID: 1492893472}
   - {fileID: 1840780328}
   - {fileID: 1310316985}
+  - {fileID: 2101555179}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1254,8 +1254,8 @@ RectTransform:
   m_GameObject: {fileID: 2101555176}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 8, y: 8, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 8.92, y: 8.92, z: 1.115}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1920920231}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

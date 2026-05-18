@@ -12,9 +12,9 @@ namespace DiceOrbit.Visuals
         [SerializeField] private Color orbitLineColor = new Color(0.5f, 0.5f, 1f, 0.5f);
         [SerializeField] private float orbitRadius = 8f;
         [SerializeField] private int lineSegments = 64;
-    [SerializeField] private float lineWidth = 0.12f;
-    [SerializeField] private float orbitLineHeight = 0.08f;
-    [SerializeField] private bool useWorldOrigin = true;
+        [SerializeField] private float lineWidth = 0.12f;
+        [SerializeField] private float orbitLineHeight = 0.08f;
+        [SerializeField] private bool useWorldOrigin = true;
         
         [Header("Materials")]
         [SerializeField] private Material lineMaterial;

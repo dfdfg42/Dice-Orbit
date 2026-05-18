@@ -1,49 +1,55 @@
 using System;
-using DiceOrbit.Data.Passives;
+using System.Collections.Generic;
+using DiceOrbit.Core;
 using UnityEngine;
 
 namespace DiceOrbit.Data.Skills
 {
     [Serializable]
-    public class RuntimeAbility
+    public class ActiveSkillSlot
     {
-        // 액티브/패시브 공통으로 사용하는 원본 스킬 에셋입니다.
-        public CharacterSkill BaseSkill;
-        // 캐릭터별 런타임 성장 상태(현재 레벨)입니다.
+        [SerializeReference] public CharacterActiveSkill BaseSkill;
         public int CurrentLevel;
 
-        // 패시브 능력일 때만 채워지는 런타임 패시브 인스턴스입니다.
-        [NonSerialized] public PassiveAbility RuntimePassiveInstance;
+        [NonSerialized] public CharacterActiveSkill RuntimeInstance;
 
-        public RuntimeAbility(CharacterSkill skill, int initialLevel = 1)
+        public ActiveSkillSlot(CharacterActiveSkill skill, int initialLevel = 1)
         {
-            BaseSkill = skill;
-            int max = skill != null ? Mathf.Max(1, skill.MaxLevel) : 1;
-            CurrentLevel = Mathf.Clamp(initialLevel, 1, max);
+            BaseSkill       = skill;
+            int max         = skill != null ? Mathf.Max(1, skill.MaxLevel) : 1;
+            CurrentLevel    = Mathf.Clamp(initialLevel, 1, max);
+            RuntimeInstance = skill?.Clone();
         }
 
-        public CharacterSkillType AbilityType => BaseSkill != null ? BaseSkill.Type : CharacterSkillType.Active;
-        public CharacterSkillTargetType TargetType => BaseSkill != null ? BaseSkill.TargetType : CharacterSkillTargetType.None;
-        public CharacterSkillData CurrentSkillData => BaseSkill?.GetSkillData(CurrentLevel);
+        public CharacterSkillTargetType TargetType   => BaseSkill?.TargetType   ?? CharacterSkillTargetType.None;
+        public Visuals.TilePreviewStyle PreviewStyle => BaseSkill?.PreviewStyle ?? Visuals.TilePreviewStyle.Neutral;
 
-        public SkillLevelData GetCurrentLevelData()
-        {
-            return BaseSkill?.GetLevelData(CurrentLevel);
-        }
-
-        public SkillLevelData GetNextLevelData()
-        {
-            return BaseSkill?.GetLevelData(CurrentLevel + 1);
-        }
+        public string          GetDescription() => BaseSkill?.Description ?? string.Empty;
+        public DiceRequirement GetRequirement() => BaseSkill?.requirement;
 
         public bool IsMaxLevel => BaseSkill == null || CurrentLevel >= BaseSkill.MaxLevel;
 
         public bool TryUpgrade()
         {
             if (BaseSkill == null || IsMaxLevel) return false;
-            // 레벨만 올리고, 실제 동작 반영은 스킬/패시브 실행 경로에서 처리합니다.
             CurrentLevel++;
             return true;
+        }
+
+        public bool CanUse(int diceValue) => BaseSkill?.CanUse(diceValue) ?? false;
+
+        public bool Execute(Character source, List<Unit> targets, List<TileData> targetTiles, int diceValue)
+        {
+            if (RuntimeInstance != null)
+                return RuntimeInstance.Execute(source, this, targets, targetTiles, diceValue);
+            return false;
+        }
+
+        public string BuildPreview(Character source, int diceValue)
+        {
+            if (RuntimeInstance != null)
+                return RuntimeInstance.BuildPreview(source, this, diceValue);
+            return "예상: -";
         }
     }
 }
