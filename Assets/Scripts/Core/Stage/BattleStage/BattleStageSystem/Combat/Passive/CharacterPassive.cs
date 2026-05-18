@@ -2,6 +2,7 @@ using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
+using DiceOrbit.UI;
 
 namespace DiceOrbit.Data.Passives
 {
@@ -55,5 +56,12 @@ namespace DiceOrbit.Data.Passives
         public virtual void OnOwnerMoved(TileData newTile) { }
 
         public virtual bool AllowSamePassive(IPassive incoming) => isStackable;
+
+        /// <summary>패시브가 실제로 발동했을 때 유닛 위에 이름 버블을 띄웁니다.</summary>
+        protected void Notify() => CombatNotifier.NotifyPassive(owner, PassiveName);
+
+        protected void Notify(string text) => CombatNotifier.NotifyPassive(owner, text);
+
+        protected void Notify(string text, Color color) => CombatNotifier.Notify(owner, text, color);
     }
 }

@@ -237,16 +237,16 @@ namespace DiceOrbit.Core
         private string BuildAppliedDamagePreview(Unit targetUnit)
         {
             if (currentSlot?.BaseSkill == null || targetUnit == null || sourceCharacter == null)
-                return "?덉긽 ?쇳빐: -";
+                return "예상 피해: -";
 
             var activeTemplate = currentSlot.RuntimeInstance;
             if (activeTemplate != null)
             {
                 int coupledRaw = activeTemplate.CalculateRawDamage(sourceCharacter, currentSlot, currentDice.Value);
-                return coupledRaw > 0 ? $"?덉긽 ?쇳빐: {coupledRaw}" : "?덉긽 ?쇳빐: -";
+                return coupledRaw > 0 ? $"예상 피해: {coupledRaw}" : "예상 피해: -";
             }
 
-            return "?덉긽 ?쇳빐: -";
+            return "예상 피해: -";
         }
 
         /// <summary>

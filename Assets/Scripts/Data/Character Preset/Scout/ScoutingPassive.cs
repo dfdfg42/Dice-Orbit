@@ -148,7 +148,7 @@ namespace DiceOrbit.Data.Characters.Scout
                 var buff = new ScoutDamageBuff(multiplier);
                 buff.Initialize(ally);
                 pm.AddPassive(buff);
-
+                DiceOrbit.UI.CombatNotifier.NotifyPassive(ally, "정찰 강화");
                 Debug.Log($"[정찰] {ally.Stats.CharacterName}에게 피해 +{(multiplier - 1f) * 100f:0.#}% 버프 적용");
             }
         }

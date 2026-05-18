@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
+using DiceOrbit.UI;
 using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Core.Pipeline
@@ -178,6 +179,8 @@ namespace DiceOrbit.Core.Pipeline
                     if (target.StatusEffects != null)
                     {
                         target.StatusEffects.AddEffect(DiceOrbit.Systems.Effects.StatusEffectManager.CreateEffect(effectInfo.Type, effectInfo.Value, effectInfo.Duration));
+                        var statusData = TooltipKeywordFormatter.BuildStatusDisplayData(effectInfo.Type.ToString(), effectInfo.Value, effectInfo.Duration);
+                        CombatNotifier.NotifyStatus(target, statusData.Name, statusData.Color);
                     }
                     break;
             }
