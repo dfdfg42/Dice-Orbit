@@ -103,6 +103,18 @@ namespace DiceOrbit.Core.Pipeline
                     }
             }
 
+            // D. 유물에서 Reactor 수집
+            if (Core.ArtifactManager.Instance != null)
+            {
+                foreach (var artifact in Core.ArtifactManager.Instance.Artifacts)
+                {
+                    if (artifact != null && artifact is ICombatReactor artifactReactor)
+                    {
+                        reactors.Add(artifactReactor);
+                    }
+                }
+            }
+
             // 우선순위 정렬 (높은 게 먼저 실행 -> 데미지 계산 시 중요)
             // 예: "데미지 2배" vs "데미지 +10" -> 순서에 따라 결과가 다름.
             // 보통 곱연산이나 고정값 합산을 하려면 합의된 Priority가 필요.
