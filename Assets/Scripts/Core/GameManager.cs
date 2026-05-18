@@ -13,7 +13,7 @@ namespace DiceOrbit.Core
         
         [Header("Camera")]
         [SerializeField] private Camera mainCamera;
-    [SerializeField] private Vector3 cameraPosition = new Vector3(7.2f, 20f, -12f);
+        [SerializeField] private Vector3 cameraPosition = new Vector3(7.2f, 20f, -12f);
         [SerializeField] private float cameraAngle = 60f;
         
         private static GameManager instance;
