@@ -156,10 +156,8 @@ namespace DiceOrbit.Core
 
         private void AddUnitSelection(Unit unit)
         {
-            Vector3 from = _confirmedPositions[_confirmedPositions.Count - 1];
-            Vector3 to   = unit.transform.position;
-            CreateConfirmedLine(from, to);
-            _confirmedPositions.Add(to);
+            if (_pendingUnits.Contains(unit)) return;
+            CreateConfirmedLine(_confirmedPositions[0], unit.transform.position);
             _pendingUnits.Add(unit);
             RefreshProgressTooltip();
 
@@ -169,10 +167,8 @@ namespace DiceOrbit.Core
 
         private void AddTileSelection(TileData tile)
         {
-            Vector3 from = _confirmedPositions[_confirmedPositions.Count - 1];
-            Vector3 to   = tile.transform.position;
-            CreateConfirmedLine(from, to);
-            _confirmedPositions.Add(to);
+            if (_pendingTiles.Contains(tile)) return;
+            CreateConfirmedLine(_confirmedPositions[0], tile.transform.position);
             _pendingTiles.Add(tile);
             RefreshProgressTooltip();
 
@@ -186,7 +182,6 @@ namespace DiceOrbit.Core
             {
                 Destroy(_confirmedLines[_confirmedLines.Count - 1].gameObject);
                 _confirmedLines.RemoveAt(_confirmedLines.Count - 1);
-                _confirmedPositions.RemoveAt(_confirmedPositions.Count - 1);
             }
 
             if (_pendingUnits.Count > 0)
@@ -218,8 +213,8 @@ namespace DiceOrbit.Core
             var mouse = Mouse.current;
             if (mouse == null) return;
 
-            // 시작점 = 마지막 확정 위치 (체인)
-            Vector3 startPos = _confirmedPositions[_confirmedPositions.Count - 1];
+            // 시작점 = 항상 캐릭터 위치 (방사형)
+            Vector3 startPos = _confirmedPositions[0];
             targetLine.SetPosition(0, startPos);
 
             Ray ray = mainCamera.ScreenPointToRay(mouse.position.ReadValue());
