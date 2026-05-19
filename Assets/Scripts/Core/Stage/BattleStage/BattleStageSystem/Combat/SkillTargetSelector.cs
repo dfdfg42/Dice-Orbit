@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem;
 using DiceOrbit.Data;
 using System.Collections.Generic;
@@ -8,61 +8,56 @@ using DiceOrbit.Visuals;
 
 namespace DiceOrbit.Core
 {
-    /// <summary>
-    /// ?ㅽ궗 ?寃??좏깮 ?쒖뒪??
-    /// </summary>
     public class SkillTargetSelector : MonoBehaviour
     {
         public static SkillTargetSelector Instance { get; private set; }
-        
+
         [Header("Visual")]
         [SerializeField] private LineRenderer targetLine;
-        [SerializeField] private Color validTargetColor = Color.green;
+        [SerializeField] private Color validTargetColor   = Color.green;
         [SerializeField] private Color invalidTargetColor = Color.red;
+        [SerializeField] private Color confirmedLineColor = new Color(0.3f, 0.8f, 1f, 1f);
         [SerializeField] private float lineWidth = 0.1f;
-        
-        private bool isSelectingTarget = false;
-        private Character sourceCharacter;
-        private ActiveSkillSlot currentSlot;
-        private DiceData currentDice;
-        private Camera mainCamera;
-        private Unit currentPreviewTarget;
-        private TileData _lastPreviewTile;
-        private OrbitManager _orbitManager;
 
-        // Properties
+        // 선택 상태
+        private bool            isSelectingTarget;
+        private Character       sourceCharacter;
+        private ActiveSkillSlot currentSlot;
+        private DiceData        currentDice;
+        private Camera          mainCamera;
+        private OrbitManager    _orbitManager;
+
+        // 멀티 선택 누적
+        private int                      _requiredCount;
+        private readonly List<LineRenderer> _confirmedLines     = new();
+        private readonly List<Vector3>      _confirmedPositions = new();
+        private readonly List<Unit>         _pendingUnits       = new();
+        private readonly List<TileData>     _pendingTiles       = new();
+
+        // 타일 프리뷰
+        private TileData _lastPreviewTile;
+
+        // 데미지 미리보기
+        private Unit _currentPreviewTarget;
+
         public bool IsSelectingTarget => isSelectingTarget;
+
+        // ── 초기화 ────────────────────────────────────────────────────────
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-                return;
-            }
+            if (Instance == null) Instance = this;
+            else { Destroy(gameObject); return; }
 
-            mainCamera = Camera.main;
+            mainCamera    = Camera.main;
             _orbitManager = FindFirstObjectByType<OrbitManager>();
 
-            // LineRenderer ?ㅼ젙
-            if (targetLine == null)
-            {
-                targetLine = gameObject.AddComponent<LineRenderer>();
-            }
-
-            targetLine.startWidth = lineWidth;
-            targetLine.endWidth = lineWidth;
-            targetLine.positionCount = 2;
+            if (targetLine == null) targetLine = gameObject.AddComponent<LineRenderer>();
+            ConfigureLine(targetLine);
             targetLine.enabled = false;
-
-            // ?먯꽑 ?④낵
-            targetLine.material = new Material(Shader.Find("Sprites/Default"));
-            targetLine.textureMode = LineTextureMode.Tile;
         }
+
+        // ── 매 프레임 ─────────────────────────────────────────────────────
 
         private void Update()
         {
@@ -71,152 +66,205 @@ namespace DiceOrbit.Core
             var mouse = Mouse.current;
             if (mouse == null) return;
 
-            // 留덉슦???꾩튂濡??쇱씤 ?낅뜲?댄듃
-            UpdateTargetLine();
+            UpdateCursorLine();
             UpdateDamagePreview();
             UpdateTilePreview();
 
-            // 留덉슦???대┃?쇰줈 ?寃??좏깮
-            if (mouse.leftButton.wasPressedThisFrame)
-            {
-                TrySelectTarget();
-            }
-
-            // ?고겢由?쑝濡?痍⑥냼
-            if (mouse.rightButton.wasPressedThisFrame)
-            {
-                CancelTargetSelection();
-            }
+            if (mouse.leftButton.wasPressedThisFrame)  TryAddSelection();
+            if (mouse.rightButton.wasPressedThisFrame) HandleRightClick();
         }
 
-        /// <summary>
-        /// ?寃??좏깮 紐⑤뱶 ?쒖옉
-        /// </summary>
-        public void StartTargetSelection(Character character, ActiveSkillSlot runtimeAbility, DiceData dice)
+        // ── 공개 API ──────────────────────────────────────────────────────
+
+        public void StartTargetSelection(Character character, ActiveSkillSlot slot, DiceData dice)
         {
-            sourceCharacter = character;
-            currentSlot = runtimeAbility;
-            currentDice = dice;
+            sourceCharacter   = character;
+            currentSlot       = slot;
+            currentDice       = dice;
             isSelectingTarget = true;
-            sourceCharacter?.OnSkillTargetingStarted();
 
-            // LineRenderer ?뺤씤 諛??쒖꽦??
-            if (targetLine == null)
-            {
-                targetLine = GetComponent<LineRenderer>();
-                if (targetLine == null)
-                {
-                    targetLine = gameObject.AddComponent<LineRenderer>();
-                    targetLine.startWidth = lineWidth;
-                    targetLine.endWidth = lineWidth;
-                    targetLine.positionCount = 2;
-                    targetLine.material = new Material(Shader.Find("Sprites/Default"));
-                }
-            }
+            _requiredCount = ResolveRequiredCount(slot);
+            _confirmedPositions.Clear();
+            _confirmedPositions.Add(character.transform.position);
+            _pendingUnits.Clear();
+            _pendingTiles.Clear();
 
+            if (targetLine == null) targetLine = gameObject.AddComponent<LineRenderer>();
             targetLine.enabled = true;
 
-            var skillName = currentSlot?.BaseSkill?.SkillName ?? "Unknown";
-            Debug.Log($"Target selection started for {skillName} (Type: {currentSlot.TargetType})");
+            sourceCharacter?.OnSkillTargetingStarted();
 
-            // AllTiles: ?좏깮 ?쒖옉怨??숈떆??紐⑤뱺 ??쇱뿉 ?꾨━酉??쒖떆
-            if (currentSlot.TargetType == CharacterSkillTargetType.AllTiles)
+            // AllTiles는 즉시 전체 타일 프리뷰
+            if (slot.TargetType == CharacterSkillTargetType.AllTiles)
             {
                 TileSkillPreviewManager.EnsureInstance();
-                var previewStyle = currentSlot.PreviewStyle;
                 if (_orbitManager != null)
-                    TileSkillPreviewManager.Instance?.ShowPreview(_orbitManager.Tiles, previewStyle);
+                    TileSkillPreviewManager.Instance?.ShowPreview(_orbitManager.Tiles, slot.PreviewStyle);
             }
+
+            RefreshProgressTooltip();
         }
 
-        /// <summary>
-        /// ?寃??쇱씤 ?낅뜲?댄듃
-        /// </summary>
-        private void UpdateTargetLine()
+        public void CancelTargetSelection()
         {
-            if (sourceCharacter == null) return;
+            if (currentDice != null)
+            {
+                currentDice.State = DiceState.Available;
+                DiceUI.Instance?.RefreshDiceVisual(currentDice);
+            }
+            sourceCharacter?.OnSkillResolved();
+            EndTargetSelection();
+        }
+
+        // ── 선택 처리 ─────────────────────────────────────────────────────
+
+        private void TryAddSelection()
+        {
+            var targetType = currentSlot.TargetType;
+
+            // AllTiles: 클릭 즉시 확정
+            if (targetType == CharacterSkillTargetType.AllTiles)
+            {
+                ConfirmAndExecute();
+                return;
+            }
+
+            var mouse = Mouse.current;
+            if (mouse == null) return;
+            Ray ray = mainCamera.ScreenPointToRay(mouse.position.ReadValue());
+            if (!Physics.Raycast(ray, out RaycastHit hit)) return;
+
+            if (IsTileTargetType(targetType))
+            {
+                var tile = hit.collider.GetComponentInParent<TileData>();
+                if (tile != null) AddTileSelection(tile);
+                return;
+            }
+
+            if (!IsValidTarget(hit.collider.gameObject)) return;
+            var unit = hit.collider.GetComponentInParent<Unit>();
+            if (unit != null && unit.IsAlive) AddUnitSelection(unit);
+        }
+
+        private void HandleRightClick()
+        {
+            if (_pendingUnits.Count > 0 || _pendingTiles.Count > 0)
+                UndoLastSelection();
+            else
+                CancelTargetSelection();
+        }
+
+        private void AddUnitSelection(Unit unit)
+        {
+            Vector3 from = _confirmedPositions[_confirmedPositions.Count - 1];
+            Vector3 to   = unit.transform.position;
+            CreateConfirmedLine(from, to);
+            _confirmedPositions.Add(to);
+            _pendingUnits.Add(unit);
+            RefreshProgressTooltip();
+
+            if (_pendingUnits.Count >= _requiredCount)
+                ConfirmAndExecute();
+        }
+
+        private void AddTileSelection(TileData tile)
+        {
+            Vector3 from = _confirmedPositions[_confirmedPositions.Count - 1];
+            Vector3 to   = tile.transform.position;
+            CreateConfirmedLine(from, to);
+            _confirmedPositions.Add(to);
+            _pendingTiles.Add(tile);
+            RefreshProgressTooltip();
+
+            if (_pendingTiles.Count >= _requiredCount)
+                ConfirmAndExecute();
+        }
+
+        private void UndoLastSelection()
+        {
+            if (_confirmedLines.Count > 0)
+            {
+                Destroy(_confirmedLines[_confirmedLines.Count - 1].gameObject);
+                _confirmedLines.RemoveAt(_confirmedLines.Count - 1);
+                _confirmedPositions.RemoveAt(_confirmedPositions.Count - 1);
+            }
+
+            if (_pendingUnits.Count > 0)
+                _pendingUnits.RemoveAt(_pendingUnits.Count - 1);
+            else if (_pendingTiles.Count > 0)
+                _pendingTiles.RemoveAt(_pendingTiles.Count - 1);
+
+            RefreshProgressTooltip();
+        }
+
+        private void ConfirmAndExecute()
+        {
+            var units = new List<Unit>(_pendingUnits);
+            var tiles = new List<TileData>(_pendingTiles);
+
+            if (currentSlot.TargetType == CharacterSkillTargetType.AllTiles && _orbitManager != null)
+                tiles = new List<TileData>(_orbitManager.Tiles);
+
+            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentSlot, currentDice, units, tiles);
+            EndTargetSelection();
+        }
+
+        // ── 커서 선 ──────────────────────────────────────────────────────
+
+        private void UpdateCursorLine()
+        {
+            if (sourceCharacter == null || targetLine == null) return;
 
             var mouse = Mouse.current;
             if (mouse == null) return;
 
-            // ?쒖옉?? 罹먮┃???꾩튂
-            Vector3 startPos = sourceCharacter.transform.position;
+            // 시작점 = 마지막 확정 위치 (체인)
+            Vector3 startPos = _confirmedPositions[_confirmedPositions.Count - 1];
             targetLine.SetPosition(0, startPos);
 
-            // 留덉슦???꾨옒 ?ㅻ툕?앺듃 ?뺤씤
-            Vector2 mousePos = mouse.position.ReadValue();
-            Ray ray = mainCamera.ScreenPointToRay(mousePos);
-            RaycastHit hit;
+            Ray ray = mainCamera.ScreenPointToRay(mouse.position.ReadValue());
+            bool    validTarget = false;
+            Vector3 endPos      = startPos;
 
-            bool validTarget = false;
-            Vector3 endPos = startPos;
-
-            // Raycast濡??寃?李얘린
-            if (Physics.Raycast(ray, out hit))
+            if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                GameObject targetObj = hit.collider.gameObject;
-                validTarget = IsValidTarget(targetObj);
-
-                // ?寃잛씠 ?좏슚?섎㈃ ?寃??꾩튂, ?꾨땲硫??덊듃 ?꾩튂
-                if (validTarget)
-                {
-                    // 紐ъ뒪?곕굹 罹먮┃?곗쓽 以묒떖?쇰줈
-                    endPos = targetObj.transform.position;
-                }
-                else
-                {
-                    // ?덊듃???꾩튂濡?
-                    endPos = hit.point;
-                }
+                validTarget = IsValidTarget(hit.collider.gameObject);
+                endPos      = validTarget ? hit.collider.GetComponentInParent<Transform>().position : hit.point;
             }
             else
             {
-                // ?덊듃 ?ㅽ뙣 ???됰㈃?곸쓽 留덉슦???꾩튂
-                Plane plane = new Plane(Vector3.up, sourceCharacter.transform.position);
-                if (plane.Raycast(ray, out float distance))
-                {
-                    endPos = ray.GetPoint(distance);
-                }
+                var plane = new Plane(Vector3.up, sourceCharacter.transform.position);
+                if (plane.Raycast(ray, out float dist)) endPos = ray.GetPoint(dist);
             }
 
             targetLine.SetPosition(1, endPos);
-
-            // ?됱긽 ?낅뜲?댄듃
-            Color lineColor = validTarget ? validTargetColor : invalidTargetColor;
-            targetLine.startColor = lineColor;
-            targetLine.endColor = lineColor;
+            var color = validTarget ? validTargetColor : invalidTargetColor;
+            targetLine.startColor = color;
+            targetLine.endColor   = color;
         }
+
+        // ── 데미지 미리보기 ──────────────────────────────────────────────
 
         private void UpdateDamagePreview()
         {
-            if (currentSlot?.BaseSkill == null || sourceCharacter == null)
+            var t = currentSlot?.TargetType;
+            if (t != CharacterSkillTargetType.OneEnemy && t != CharacterSkillTargetType.MultiEnemy)
             {
                 HoverTooltipUI.Instance?.HidePinned();
-                currentPreviewTarget = null;
+                _currentPreviewTarget = null;
                 return;
             }
+
+            if (currentSlot?.BaseSkill == null || sourceCharacter == null) return;
 
             var mouse = Mouse.current;
-            if (mouse == null)
-            {
-                HoverTooltipUI.Instance?.HidePinned();
-                currentPreviewTarget = null;
-                return;
-            }
+            if (mouse == null) return;
 
-            Vector2 mousePos = mouse.position.ReadValue();
-            Ray ray = mainCamera.ScreenPointToRay(mousePos);
-            if (!Physics.Raycast(ray, out RaycastHit hit))
+            Ray ray = mainCamera.ScreenPointToRay(mouse.position.ReadValue());
+            if (!Physics.Raycast(ray, out RaycastHit hit) || !IsValidTarget(hit.collider.gameObject))
             {
                 HoverTooltipUI.Instance?.HidePinned();
-                currentPreviewTarget = null;
-                return;
-            }
-
-            if (!IsValidTarget(hit.collider.gameObject))
-            {
-                HoverTooltipUI.Instance?.HidePinned();
-                currentPreviewTarget = null;
+                _currentPreviewTarget = null;
                 return;
             }
 
@@ -224,183 +272,35 @@ namespace DiceOrbit.Core
             if (targetUnit == null || !targetUnit.IsAlive)
             {
                 HoverTooltipUI.Instance?.HidePinned();
-                currentPreviewTarget = null;
+                _currentPreviewTarget = null;
                 return;
             }
 
-            currentPreviewTarget = targetUnit;
-            string text = BuildAppliedDamagePreview(targetUnit);
-            HoverTooltipUI.EnsureInstance();
-            HoverTooltipUI.Instance?.ShowPinned(text);
-        }
-
-        private string BuildAppliedDamagePreview(Unit targetUnit)
-        {
-            if (currentSlot?.BaseSkill == null || targetUnit == null || sourceCharacter == null)
-                return "예상 피해: -";
-
-            var activeTemplate = currentSlot.RuntimeInstance;
-            if (activeTemplate != null)
+            _currentPreviewTarget = targetUnit;
+            var tmpl = currentSlot.RuntimeInstance;
+            if (tmpl != null)
             {
-                int coupledRaw = activeTemplate.CalculateRawDamage(sourceCharacter, currentSlot, currentDice.Value);
-                return coupledRaw > 0 ? $"예상 피해: {coupledRaw}" : "예상 피해: -";
-            }
-
-            return "예상 피해: -";
-        }
-
-        /// <summary>
-        /// ?寃??좏깮 ?쒕룄
-        /// </summary>
-        private void TrySelectTarget()
-        {
-            var mouse = Mouse.current;
-            if (mouse == null) return;
-
-            var targetType = currentSlot.TargetType;
-
-            // AllTiles: ?대뵒???대┃?섎㈃ 紐⑤뱺 ??쇰줈 ?뺤젙
-            if (targetType == CharacterSkillTargetType.AllTiles)
-            {
-                NotifyTileTargetSelected(null);
-                EndTargetSelection();
-                return;
-            }
-
-            Vector2 mousePos = mouse.position.ReadValue();
-            Ray ray = mainCamera.ScreenPointToRay(mousePos);
-
-            if (!Physics.Raycast(ray, out RaycastHit hit))
-                return;
-
-            // OneTile: TileData ?꾨? ?대┃?덉쓣 ?뚮쭔 ?뺤젙
-            if (targetType == CharacterSkillTargetType.OneTile)
-            {
-                var tile = hit.collider.GetComponentInParent<TileData>();
-                if (tile != null)
-                {
-                    NotifyTileTargetSelected(tile);
-                    EndTargetSelection();
-                }
-                return;
-            }
-
-            // ?좊떅 ?寃잜똿 (湲곗〈 濡쒖쭅)
-            GameObject targetObj = hit.collider.gameObject;
-            if (IsValidTarget(targetObj))
-            {
-                NotifyTargetSelected(targetObj);
-                EndTargetSelection();
-            }
-            else
-            {
-                Debug.LogWarning("Invalid target for this skill!");
+                int raw = tmpl.CalculateRawDamage(sourceCharacter, currentSlot, currentDice.Value);
+                HoverTooltipUI.EnsureInstance();
+                HoverTooltipUI.Instance?.ShowPinned(raw > 0 ? $"예상 피해: {raw}" : "예상 피해: -");
             }
         }
 
-        /// <summary>
-        /// ?좏슚???寃잛씤吏 ?뺤씤
-        /// </summary>
-        private bool IsValidTarget(GameObject target)
-        {
-            switch (currentSlot.TargetType)
-            {
-                case CharacterSkillTargetType.OneEnemy:
-                    return target.GetComponentInParent<Monster>() != null;
-                case CharacterSkillTargetType.OneTile:
-                    return target.GetComponentInParent<TileData>() != null;
-                case CharacterSkillTargetType.AllTiles:
-                    return true; // ?대뵒???대┃?섎㈃ ?뺤젙
-                case CharacterSkillTargetType.None:
-                    return false;
-                default:
-                    return false;
-            }
-        }
+        // ── 타일 프리뷰 ──────────────────────────────────────────────────
 
-        /// <summary>
-        /// ?寃??좏깮 ?꾨즺 -> CharacterActionUI濡?肄쒕갚
-        /// </summary>
-        private void NotifyTargetSelected(GameObject target)
-        {
-            var resolved = ResolveTarget(target);
-            if (resolved == null)
-            {
-                CancelTargetSelection();
-                return;
-            }
-
-            // CharacterActionUI???寃잛씠 ?뺤젙?섏뿀?뚯쓣 ?뚮┝
-            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentSlot, currentDice, new System.Collections.Generic.List<Unit>{resolved}, new System.Collections.Generic.List<TileData>());
-        }
-
-        private Unit ResolveTarget(GameObject target)
-        {
-            var unit = target.GetComponentInParent<Unit>();
-            if (unit == null)
-            {
-                Debug.LogError("Selected target does not have a Unit component!");
-                return null;
-            }
-            else return unit;
-        }
-
-        /// <summary>
-        /// ?寃??좏깮 痍⑥냼
-        /// </summary>
-        public void CancelTargetSelection()
-        {
-            // ?덉빟 ?곹깭???二쇱궗?꾨? ?ㅼ떆 ?ъ슜 媛?ν븯寃??섎룎由?
-            if (currentDice != null)
-            {
-                currentDice.State = DiceState.Available;
-                DiceUI.Instance?.RefreshDiceVisual(currentDice);
-            }
-
-            sourceCharacter?.OnSkillResolved();
-            EndTargetSelection();
-            Debug.Log("Target selection cancelled");
-        }
-
-        /// <summary>
-        /// ?寃??좏깮 醫낅즺
-        /// </summary>
-        private void EndTargetSelection()
-        {
-            sourceCharacter?.OnSkillTargetingEnded();
-            isSelectingTarget = false;
-
-            if (targetLine != null)
-                targetLine.enabled = false;
-
-            HoverTooltipUI.Instance?.HidePinned();
-            TileSkillPreviewManager.Instance?.HidePreview();
-
-            currentPreviewTarget = null;
-            _lastPreviewTile     = null;
-            sourceCharacter      = null;
-            currentSlot = null;
-            currentDice          = null;
-        }
-
-        // ?? ????寃잜똿 ???????????????????????????????????????????????
-
-        /// <summary>
-        /// OneTile: 留덉슦???꾨옒 ??쇱씠 諛붾??뚮쭔 ?꾨━酉곕? 媛깆떊?⑸땲??
-        /// </summary>
         private void UpdateTilePreview()
         {
-            if (currentSlot?.TargetType != CharacterSkillTargetType.OneTile) return;
+            var t = currentSlot?.TargetType;
+            if (t != CharacterSkillTargetType.OneTile && t != CharacterSkillTargetType.MultiTile) return;
 
             var tile = GetTileUnderMouse();
             if (tile == _lastPreviewTile) return;
 
             _lastPreviewTile = tile;
             TileSkillPreviewManager.EnsureInstance();
-            var style = currentSlot.PreviewStyle;
 
             if (tile != null)
-                TileSkillPreviewManager.Instance?.ShowPreview(new[] { tile }, style);
+                TileSkillPreviewManager.Instance?.ShowPreview(new[] { tile }, currentSlot.PreviewStyle);
             else
                 TileSkillPreviewManager.Instance?.HidePreview();
         }
@@ -414,16 +314,104 @@ namespace DiceOrbit.Core
             return hit.collider.GetComponentInParent<TileData>();
         }
 
-        private void NotifyTileTargetSelected(TileData singleTile)
+        // ── 유효성 판정 ──────────────────────────────────────────────────
+
+        private bool IsValidTarget(GameObject target)
         {
-            List<TileData> targets;
+            return currentSlot.TargetType switch
+            {
+                CharacterSkillTargetType.OneEnemy   => target.GetComponentInParent<Monster>()   != null,
+                CharacterSkillTargetType.MultiEnemy => target.GetComponentInParent<Monster>()   != null,
+                CharacterSkillTargetType.OneAlly    => IsValidAlly(target),
+                CharacterSkillTargetType.MultiAlly  => IsValidAlly(target),
+                CharacterSkillTargetType.OneTile    => target.GetComponentInParent<TileData>()  != null,
+                CharacterSkillTargetType.MultiTile  => target.GetComponentInParent<TileData>()  != null,
+                CharacterSkillTargetType.AllTiles   => true,
+                _                                   => false,
+            };
+        }
 
-            if (currentSlot.TargetType == CharacterSkillTargetType.AllTiles)
-                targets = _orbitManager != null ? new List<TileData>(_orbitManager.Tiles) : new List<TileData>();
-            else
-                targets = singleTile != null ? new List<TileData> { singleTile } : new List<TileData>();
+        private bool IsValidAlly(GameObject target)
+        {
+            var character = target.GetComponentInParent<Character>();
+            return character != null && character != sourceCharacter && character.IsAlive;
+        }
 
-            SkillManager.Instance.ConfirmSkillExecution(sourceCharacter, currentSlot, currentDice, new System.Collections.Generic.List<Unit>(), targets);
+        private static bool IsTileTargetType(CharacterSkillTargetType t) =>
+            t == CharacterSkillTargetType.OneTile  ||
+            t == CharacterSkillTargetType.MultiTile ||
+            t == CharacterSkillTargetType.AllTiles;
+
+        // ── 진행상황 툴팁 ─────────────────────────────────────────────────
+
+        private void RefreshProgressTooltip()
+        {
+            if (_requiredCount <= 1) return;
+
+            int current = _pendingUnits.Count + _pendingTiles.Count;
+            HoverTooltipUI.EnsureInstance();
+            HoverTooltipUI.Instance?.ShowPinned($"{current} / {_requiredCount} 선택  (우클릭: 취소)");
+        }
+
+        private static int ResolveRequiredCount(ActiveSkillSlot slot)
+        {
+            return slot.TargetType switch
+            {
+                CharacterSkillTargetType.MultiEnemy => Mathf.Max(1, slot.TargetCount),
+                CharacterSkillTargetType.MultiAlly  => Mathf.Max(1, slot.TargetCount),
+                CharacterSkillTargetType.MultiTile  => Mathf.Max(1, slot.TargetCount),
+                _                                   => 1,
+            };
+        }
+
+        // ── 종료 & 정리 ──────────────────────────────────────────────────
+
+        private void EndTargetSelection()
+        {
+            sourceCharacter?.OnSkillTargetingEnded();
+            isSelectingTarget = false;
+
+            if (targetLine != null) targetLine.enabled = false;
+
+            foreach (var lr in _confirmedLines)
+                if (lr != null) Destroy(lr.gameObject);
+            _confirmedLines.Clear();
+            _confirmedPositions.Clear();
+            _pendingUnits.Clear();
+            _pendingTiles.Clear();
+
+            HoverTooltipUI.Instance?.HidePinned();
+            TileSkillPreviewManager.Instance?.HidePreview();
+
+            _currentPreviewTarget = null;
+            _lastPreviewTile      = null;
+            sourceCharacter       = null;
+            currentSlot           = null;
+            currentDice           = null;
+        }
+
+        // ── 라인 헬퍼 ─────────────────────────────────────────────────────
+
+        private LineRenderer CreateConfirmedLine(Vector3 from, Vector3 to)
+        {
+            var go = new GameObject("_ConfirmedLine");
+            var lr = go.AddComponent<LineRenderer>();
+            ConfigureLine(lr);
+            lr.startColor    = confirmedLineColor;
+            lr.endColor      = confirmedLineColor;
+            lr.SetPosition(0, from);
+            lr.SetPosition(1, to);
+            _confirmedLines.Add(lr);
+            return lr;
+        }
+
+        private void ConfigureLine(LineRenderer lr)
+        {
+            lr.material      = new Material(Shader.Find("Sprites/Default"));
+            lr.textureMode   = LineTextureMode.Tile;
+            lr.startWidth    = lineWidth;
+            lr.endWidth      = lineWidth;
+            lr.positionCount = 2;
         }
     }
 }

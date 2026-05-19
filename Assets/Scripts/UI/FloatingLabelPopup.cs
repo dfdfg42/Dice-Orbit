@@ -14,21 +14,26 @@ namespace DiceOrbit.UI
         private Color _baseColor;
         private Camera _cam;
 
-        private const float MoveSpeed = 1.6f;
-        private const float Lifetime  = 1.2f;
-        private const float FontSize  = 3.0f;
+        private const float MoveSpeed      = 1.6f;
+        private const float Lifetime       = 1.2f;
+        private const float LabelFontSize  = 10.0f;
+        private const float DamageFontSize = 10.0f;
+        private const float CritFontSize   = 11.5f;
+
+        private static readonly Color DamageColor   = Color.red;
+        private static readonly Color CriticalColor = Color.yellow;
 
         private void Awake()
         {
             _cam = Camera.main;
         }
 
-        public void Setup(string text, Color color)
+        public void Setup(string text, Color color, float fontSize = LabelFontSize)
         {
             _text              = gameObject.AddComponent<TextMeshPro>();
             _text.text         = text;
             _text.color        = color;
-            _text.fontSize     = FontSize;
+            _text.fontSize     = fontSize;
             _text.alignment    = TextAlignmentOptions.Center;
             _text.sortingOrder = 200;
             _baseColor         = color;
@@ -65,6 +70,17 @@ namespace DiceOrbit.UI
             var popup = go.AddComponent<FloatingLabelPopup>();
             go.transform.position = worldPos;
             popup.Setup(text, color);
+            return popup;
+        }
+
+        public static FloatingLabelPopup CreateDamage(int damage, Vector3 worldPos, bool isCritical = false)
+        {
+            Color color = isCritical ? CriticalColor : DamageColor;
+            float size  = isCritical ? CritFontSize  : DamageFontSize;
+            var go      = new GameObject("_DamagePopup");
+            var popup   = go.AddComponent<FloatingLabelPopup>();
+            go.transform.position = worldPos;
+            popup.Setup(damage.ToString(), color, size);
             return popup;
         }
     }

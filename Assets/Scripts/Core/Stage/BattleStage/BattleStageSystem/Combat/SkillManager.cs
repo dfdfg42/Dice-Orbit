@@ -46,22 +46,17 @@ namespace DiceOrbit.Core
 
             CharacterSkillTargetType targetType = runtimeAbility.TargetType;
 
-            if (targetType == CharacterSkillTargetType.None || targetType == CharacterSkillTargetType.AllTiles)
+            if (IsImmediateTargetType(targetType))
             {
-                var targetTiles = new List<TileData>();
-                if (targetType == CharacterSkillTargetType.AllTiles)
-                {
-                    var orbitManager = FindAnyObjectByType<OrbitManager>();
-                    if (orbitManager != null) targetTiles.AddRange(orbitManager.Tiles);
-                }
-
-                ConfirmSkillExecution(source, runtimeAbility, dice, new List<Unit>(), targetTiles);
+                ConfirmSkillExecution(source, runtimeAbility, dice,
+                    ResolveAllUnits(targetType),
+                    ResolveAllTiles(targetType));
             }
             else
             {
                 dice.State = DiceState.Reserved;
                 DiceUI.Instance?.RefreshDiceVisual(dice);
-                
+
                 var targetSelector = SkillTargetSelector.Instance;
                 if (targetSelector != null)
                 {
@@ -120,26 +115,44 @@ namespace DiceOrbit.Core
             if (source != null && source.IsAlive)
             {
                 source.OnSkillExecutionStarted();
-                
-                if (ability.TargetType == CharacterSkillTargetType.OneEnemy)
-                {
-                    // 기존 ResolveTargetsByType(OneEnemy) 호환 로직 (필요 시 확장)
-                    var resolvedTargets = new List<Unit>();
-                    if (targets != null && targets.Count > 0)
-                    {
-                        foreach(var t in targets) if (t != null) resolvedTargets.Add(t);
-                    }
-                    ability.Execute(source, resolvedTargets, tiles, dice.Value);
-                }
-                else
-                {
-                    ability.Execute(source, targets, tiles, dice.Value);
-                }
-
+                ability.Execute(source, targets ?? new List<Unit>(), tiles ?? new List<TileData>(), dice.Value);
                 source.OnSkillResolved();
             }
 
             yield return new WaitForSeconds(0.5f);
+        }
+
+        private static bool IsImmediateTargetType(CharacterSkillTargetType t) =>
+            t == CharacterSkillTargetType.None      ||
+            t == CharacterSkillTargetType.AllTiles  ||
+            t == CharacterSkillTargetType.AllEnemies ||
+            t == CharacterSkillTargetType.AllAllies;
+
+        private static List<Unit> ResolveAllUnits(CharacterSkillTargetType t)
+        {
+            var list = new List<Unit>();
+            if (t == CharacterSkillTargetType.AllEnemies)
+            {
+                var monsters = CombatManager.Instance?.ActiveMonsters;
+                if (monsters != null) foreach (var m in monsters) if (m != null) list.Add(m);
+            }
+            else if (t == CharacterSkillTargetType.AllAllies)
+            {
+                var chars = PartyManager.Instance?.GetAliveCharacters();
+                if (chars != null) foreach (var c in chars) if (c != null) list.Add(c);
+            }
+            return list;
+        }
+
+        private List<TileData> ResolveAllTiles(CharacterSkillTargetType t)
+        {
+            var list = new List<TileData>();
+            if (t == CharacterSkillTargetType.AllTiles)
+            {
+                var orbitManager = FindAnyObjectByType<OrbitManager>();
+                if (orbitManager != null) list.AddRange(orbitManager.Tiles);
+            }
+            return list;
         }
     }
 }

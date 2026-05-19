@@ -105,7 +105,7 @@ namespace DiceOrbit.Core
             int actualDamage = Stats.TakeDamage(damage);
             if (actualDamage > 0)
             {
-                DamagePopup.Create(actualDamage, transform.position + Vector3.up * 1.6f);
+                FloatingLabelPopup.CreateDamage(actualDamage, transform.position + Vector3.up * 1.6f);
             }
             return actualDamage;
         }
