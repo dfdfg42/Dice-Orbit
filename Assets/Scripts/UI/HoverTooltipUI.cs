@@ -96,6 +96,7 @@ namespace DiceOrbit.UI
             }
 
             Instance = this;
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject); // 씬 전환 시에도 툴팁 UI를 유지합니다
 
             // 참조 자동 탐색 및 레이아웃 초기화

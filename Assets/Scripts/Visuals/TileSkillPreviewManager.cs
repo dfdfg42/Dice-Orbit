@@ -192,8 +192,9 @@ namespace DiceOrbit.Visuals
 
         private sealed class TileTrailController : MonoBehaviour
         {
-            private Vector3[] _corners;
-            private float     _speed;
+            private Vector3[]     _corners;
+            private float         _speed;
+            private TrailRenderer _trail;
 
             public void Setup(Vector3[] corners, Color color, float speed, float trailTime, float widthHead, float widthTail)
             {
@@ -204,10 +205,16 @@ namespace DiceOrbit.Visuals
                 pivot.transform.SetParent(transform);
                 pivot.transform.position = corners[0];
 
-                var trail = pivot.AddComponent<TrailRenderer>();
-                ConfigureTrail(trail, color, trailTime, widthHead, widthTail);
+                _trail = pivot.AddComponent<TrailRenderer>();
+                ConfigureTrail(_trail, color, trailTime, widthHead, widthTail);
 
                 StartCoroutine(MoveLoop(pivot.transform));
+            }
+
+            private void OnDestroy()
+            {
+                if (_trail != null && _trail.material != null)
+                    Destroy(_trail.material);
             }
 
             private static void ConfigureTrail(TrailRenderer trail, Color color, float time, float widthHead, float widthTail)

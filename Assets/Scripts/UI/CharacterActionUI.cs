@@ -445,18 +445,20 @@ namespace DiceOrbit.UI
             return string.Join("\n", lines);
         }
 
-        private static string GetTargetTypeLabel(CharacterSkillTargetType targetType)
+        private static string GetTargetTypeLabel(CharacterSkillTargetType targetType) => targetType switch
         {
-            switch (targetType)
-            {
-                case CharacterSkillTargetType.OneEnemy:
-                    return "단일 적";
-                case CharacterSkillTargetType.None:
-                    return "대상 없음";
-                default:
-                    return "CharacterActionUI.cs GetTargetTypeLabel에서 수정 필요";
-            }
-        }
+            CharacterSkillTargetType.None        => "대상 없음",
+            CharacterSkillTargetType.OneEnemy    => "단일 적",
+            CharacterSkillTargetType.AllEnemies  => "전체 적",
+            CharacterSkillTargetType.OneAlly     => "단일 아군",
+            CharacterSkillTargetType.AllAllies   => "전체 아군",
+            CharacterSkillTargetType.OneTile     => "단일 타일",
+            CharacterSkillTargetType.AllTiles    => "전체 타일",
+            CharacterSkillTargetType.MultiEnemy  => "복수 적 선택",
+            CharacterSkillTargetType.MultiAlly   => "복수 아군 선택",
+            CharacterSkillTargetType.MultiTile   => "복수 타일 선택",
+            _                                    => targetType.ToString(),
+        };
 
 
         private static string BuildRequirementText(DiceRequirement requirement)

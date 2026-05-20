@@ -14,10 +14,14 @@ namespace DiceOrbit.Core.Pipeline
     {
         public static CombatPipeline Instance { get; private set; }
 
+        private OrbitManager _orbitManager;
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
+
+            _orbitManager = FindAnyObjectByType<OrbitManager>();
         }
 
         /// <summary>
@@ -114,6 +118,13 @@ namespace DiceOrbit.Core.Pipeline
                         reactors.Add(artifactReactor);
                     }
                 }
+            }
+
+            // E. 타일 Reactor 수집 (TileAttribute 포탑/연막 등이 매 전투마다 반응 가능)
+            if (_orbitManager != null)
+            {
+                foreach (var tile in _orbitManager.Tiles)
+                    if (tile != null) reactors.Add(tile);
             }
 
             // 우선순위 정렬 (높은 게 먼저 실행 -> 데미지 계산 시 중요)

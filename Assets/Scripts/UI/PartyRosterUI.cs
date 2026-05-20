@@ -35,6 +35,7 @@ namespace DiceOrbit.UI
             }
 
             Instance = this;
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
             TryAutoBind();
         }

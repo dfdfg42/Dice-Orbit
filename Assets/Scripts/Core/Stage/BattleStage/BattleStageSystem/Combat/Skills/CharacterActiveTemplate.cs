@@ -9,10 +9,16 @@ namespace DiceOrbit.Data.Skills
 {
     public enum CharacterSkillTargetType
     {
-        OneEnemy,
-        None,
-        OneTile,
-        AllTiles,
+        None,        // 타겟 없음, 즉시 실행
+        OneEnemy,    // 단일 적
+        AllEnemies,  // 모든 적
+        OneAlly,     // 단일 아군
+        AllAllies,   // 모든 아군
+        OneTile,     // 단일 타일
+        AllTiles,    // 모든 타일
+        MultiEnemy,  // N명 적 순차 선택
+        MultiAlly,   // N명 아군 순차 선택
+        MultiTile,   // N개 타일 순차 선택
     }
 
     [System.Serializable]
@@ -30,6 +36,8 @@ namespace DiceOrbit.Data.Skills
         [Header("Targeting")]
         [SerializeField] public CharacterSkillTargetType targetType = CharacterSkillTargetType.OneEnemy;
         [SerializeField] public TilePreviewStyle previewStyle = TilePreviewStyle.Neutral;
+        [Tooltip("MultiEnemy/MultiAlly/MultiTile 타입일 때 선택할 개수")]
+        [SerializeField] public int targetCount = 1;
 
         [Header("VFX")]
         [SerializeField] protected CombatVfxProfile vfxProfile;
@@ -40,6 +48,7 @@ namespace DiceOrbit.Data.Skills
 
         public CharacterSkillTargetType TargetType => targetType;
         public TilePreviewStyle PreviewStyle       => previewStyle;
+        public int              TargetCount        => Mathf.Max(1, targetCount);
         public CombatVfxProfile VfxProfile         => vfxProfile;
 
         public bool CanUse(int diceValue) => requirement.CanUse(diceValue);

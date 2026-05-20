@@ -23,6 +23,7 @@ namespace DiceOrbit.Data.Skills
 
         public CharacterSkillTargetType TargetType   => BaseSkill?.TargetType   ?? CharacterSkillTargetType.None;
         public Visuals.TilePreviewStyle PreviewStyle => BaseSkill?.PreviewStyle ?? Visuals.TilePreviewStyle.Neutral;
+        public int                      TargetCount  => BaseSkill?.TargetCount  ?? 1;
 
         public string          GetDescription() => BaseSkill?.Description ?? string.Empty;
         public DiceRequirement GetRequirement() => BaseSkill?.requirement;

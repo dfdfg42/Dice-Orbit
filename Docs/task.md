@@ -1,0 +1,17 @@
+- `[/]` 1. Create SkillAsset hierarchy
+  - `[ ]` Create `SkillAsset.cs`
+  - `[ ]` Create `ActiveSkillAsset.cs`
+  - `[ ]` Create `PassiveSkillAsset.cs`
+  - `[ ]` Delete `CharacterSkill.cs`
+- `[ ]` 2. Update `CharacterActiveTemplate.cs` to support cloning
+  - `[ ]` Add `ICloneable` and `Clone()` method
+- `[ ]` 3. Refactor `RuntimeAbility.cs`
+  - `[ ]` Update constructor to accept `SkillAsset` and clone Active/Passive instances
+  - `[ ]` Add `CanUse(int diceValue)` method checking states
+  - `[ ]` Add `Execute(...)` routing method
+- `[ ]` 4. Update references across codebase
+  - `[ ]` Update `CharacterPreset.cs` `StartingSkills`
+  - `[ ]` Update `SkillManager.cs` to use new `PrepareSkill` and targeting logic
+  - `[ ]` Update `CharacterActionUI.cs` to remove targeting logic
+  - `[ ]` Fix compile errors in other files (`SkillTargetSelector.cs`, `SkillCardUI.cs`, `HoverTooltipUI.cs`, etc.)
+- `[ ]` 5. Verification & Final Polish

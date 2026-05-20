@@ -42,7 +42,6 @@ namespace DiceOrbit.Core
         [SerializeField] private Button rollDiceButton;
         [SerializeField] private Button endTurnButton;
         [SerializeField] private TextMeshProUGUI turnCountText;
-        [SerializeField] private DamagePopup damagePopupPrefab;
 
         // Events
         public System.Action OnCombatStart;
@@ -80,7 +79,6 @@ namespace DiceOrbit.Core
 
             // 버튼 자동 연결 (Scene에 할당 안 된 경우 대비)
             EnsureButtons();
-            DamagePopup.ConfigurePrefab(damagePopupPrefab);
 
             // 버튼 이벤트 연결
             if (rollDiceButton != null)
