@@ -55,6 +55,16 @@ namespace DiceOrbit.Data.Skills
 
         public virtual CharacterActiveSkill Clone() => (CharacterActiveSkill)MemberwiseClone();
 
+        /// <summary>
+        /// 이 스킬에 맞는 캐싱용 컨텍스트를 생성하여 반환합니다.
+        /// 파생 클래스에서 오버라이드하여 전용 컨텍스트를 생성할 수 있습니다.
+        /// </summary>
+        public virtual ModifiedSkillContext GenerateContext(Character source, ActiveSkillSlot ability)
+        {
+            int level = ability?.CurrentLevel ?? 1;
+            return new ModifiedSkillContext(source, this, level);
+        }
+
         public abstract int    CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue);
         public abstract string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue);
 

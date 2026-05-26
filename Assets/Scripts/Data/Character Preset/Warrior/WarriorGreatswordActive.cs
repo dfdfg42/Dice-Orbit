@@ -12,10 +12,20 @@ namespace DiceOrbit.Data.CharacterActives
         [SerializeField] private int[] multiplierByLevel = { 4, 6, 8, 10, 12 };
         [SerializeField] private int baseMultiplier = 12;
 
-        public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
+        public override Core.Pipeline.ModifiedSkillContext GenerateContext(Character source, ActiveSkillSlot ability)
         {
             int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
             int multiplier = ResolveMultiplier(level);
+            return new Core.Pipeline.WarriorGreatswordModifiedContext(source, this, level, multiplier);
+        }
+
+        public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
+        {
+            int multiplier = ResolveMultiplier(Mathf.Max(1, ability?.CurrentLevel ?? 1));
+
+            // 만약 ability가 들고 있는 RuntimeInstance(나 자신)에 
+            // Caching된 데이터 체계가 본격적으로 Slot에 적용되면 여기서 읽어올 수 있습니다.
+            // 일단 현재는 기존대로 동작하게 둡니다.
             return diceValue * multiplier;
         }
 
