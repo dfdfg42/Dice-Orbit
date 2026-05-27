@@ -51,7 +51,7 @@ namespace DiceOrbit.Data.Passives
             if (currentHPRatio >= healthThresholdRatio)
             {
                 context.OutputValue *= runtimeDamageMultiplier;
-                Notify();
+                if (!context.IsSimulation) Notify();
             }
         }
     }

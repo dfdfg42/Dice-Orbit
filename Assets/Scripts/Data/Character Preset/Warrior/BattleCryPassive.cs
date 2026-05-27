@@ -49,7 +49,7 @@ namespace DiceOrbit.Data.Passives
             float bonusPercent = ResolveBonusPercent(currentLevel);
             float multiplier = 1f + (bonusPercent / 100f) * allyCount;
             context.OutputValue *= multiplier;
-            Notify();
+            if (!context.IsSimulation) Notify();
         }
 
         private int CountAdjacentAllies()

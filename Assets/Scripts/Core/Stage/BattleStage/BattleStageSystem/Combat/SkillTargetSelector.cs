@@ -276,8 +276,16 @@ namespace DiceOrbit.Core
             if (tmpl != null)
             {
                 int raw = tmpl.CalculateRawDamage(sourceCharacter, currentSlot, currentDice.Value);
+                int finalDamage = raw;
+                if (raw > 0 && Pipeline.CombatPipeline.Instance != null)
+                {
+                    var simAction = new Pipeline.CombatAction(tmpl.SkillName, Pipeline.ActionType.Attack, raw);
+                    var simContext = new Pipeline.CombatContext(sourceCharacter, targetUnit, simAction);
+                    finalDamage = Pipeline.CombatPipeline.Instance.SimulateCalculation(simContext);
+                }
+
                 HoverTooltipUI.EnsureInstance();
-                HoverTooltipUI.Instance?.ShowPinned(raw > 0 ? $"예상 피해: {raw}" : "예상 피해: -");
+                HoverTooltipUI.Instance?.ShowPinned(finalDamage > 0 ? $"예상 피해: {finalDamage}" : "예상 피해: -");
             }
         }
 

@@ -16,6 +16,7 @@ namespace DiceOrbit.Core.Pipeline
         public bool IsCancelled;        // 액션 취소 여부
         public bool IsEffected;         // 영향을 끼쳤는지 (추가 가능)
         public bool IsTiling;
+        public bool IsSimulation;       // 예상 피해량 미리보기용. true면 반응자가 부수효과(Notify, 스택 소비 등)를 건너뛰어야 함.
 
         // 생성자
         public CombatContext(Unit source, Unit target, CombatAction action)

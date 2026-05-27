@@ -99,7 +99,7 @@ namespace DiceOrbit.Data.Passives
                 context.SourceUnit == owner)
             {
                 context.OutputValue *= runtimeDamageMultiplier;
-                isConditionMet = false;
+                if (!context.IsSimulation) isConditionMet = false;
             }
         }
     }

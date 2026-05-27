@@ -165,10 +165,29 @@ namespace DiceOrbit.Core
 
             OnCombatStart?.Invoke();
 
-            // Start the turn loop directly
-            // 0.5초 딜레이 후 시작 (연출을 위해)
-            Invoke(nameof(StartPlayerTurn), 0.5f);
+            // 첫 플레이어 턴은 안내 띄우고 시작
+            StartCoroutine(AnnounceAndStartPlayerTurn());
+        }
 
+        private static readonly Color PlayerTurnColor  = new Color(0.55f, 0.85f, 1f, 1f);
+        private static readonly Color MonsterTurnColor = new Color(1f, 0.45f, 0.45f, 1f);
+
+        private System.Collections.IEnumerator AnnounceAndStartPlayerTurn()
+        {
+            UI.TurnAnnouncementUI.EnsureInstance();
+            var ui = UI.TurnAnnouncementUI.Instance;
+            if (ui != null)
+                yield return ui.ShowText("플레이어 턴", PlayerTurnColor);
+            StartPlayerTurn();
+        }
+
+        private System.Collections.IEnumerator AnnounceAndProgressMonsterTurn()
+        {
+            UI.TurnAnnouncementUI.EnsureInstance();
+            var ui = UI.TurnAnnouncementUI.Instance;
+            if (ui != null)
+                yield return ui.ShowText("몬스터 턴", MonsterTurnColor);
+            ProgressMonsterTurn();
         }
 
         public bool IsCombatFinished()
@@ -321,11 +340,8 @@ namespace DiceOrbit.Core
             // 공격 의도 미리보기 숨기기 (몬스터 턴 시작 전)
             HideMonsterIntents();
 
-            // 몬스터 턴 실행 (다음 스텝에서 이 부분도 큐 시스템에 통합 예정)
-            ProgressMonsterTurn();
-
-            // 한 프레임 대기
-            yield return null;
+            // "몬스터 턴" 안내 → ProgressMonsterTurn
+            yield return AnnounceAndProgressMonsterTurn();
         }
 
         /// <summary>
@@ -518,7 +534,8 @@ namespace DiceOrbit.Core
             if (IsCombatFinished()) yield break;
             if (inCombat)
             {
-                StartPlayerTurn(); // Loop back to player
+                // "플레이어 턴" 안내 → StartPlayerTurn
+                yield return AnnounceAndStartPlayerTurn();
             }
         }
 
