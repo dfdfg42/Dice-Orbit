@@ -143,7 +143,15 @@ namespace DiceOrbit.Core
                     break;
                 case GameState.CharacterSelection:
                     break;
-                    
+
+                case GameState.Recruit:
+                    if (characterSelectionUI != null) characterSelectionUI.Hide();
+                    break;
+
+                case GameState.Reward:
+                    if (rewardUI != null) rewardUI.Hide();
+                    break;
+
                 case GameState.Combat:
                     if (combatUI != null) combatUI.SetActive(false);
                     break;
@@ -188,15 +196,7 @@ namespace DiceOrbit.Core
         }
         
         // === Public Methods ===
-        
-        /// <summary>
-        /// 캐릭터 선택 완료
-        /// </summary>
-        public void OnCharacterSelected()
-        {
-            ChangeState(GameState.Combat);
-        }
-        
+
         /// <summary>
         /// 전투 승리
         /// </summary>
@@ -207,9 +207,10 @@ namespace DiceOrbit.Core
 
         public void OnWaveCleared(int wave)
         {
-            Debug.Log($"[GameFlow] Wave {wave} Cleared. Proceeding to Recruit.");
+            Debug.Log($"[GameFlow] Wave {wave} Cleared. Proceeding to Reward.");
             lastWaveCleared = wave;
-            ChangeState(GameState.Recruit);
+            // 웨이브 클리어 직후 보상 화면. 보상 확인하면 Recruit으로 넘어간다.
+            ChangeState(GameState.Reward);
         }
 
         private void OnWaveStarted(int wave)
@@ -223,37 +224,27 @@ namespace DiceOrbit.Core
 
         public void OnRewardComplete()
         {
-            // If max wave reached?
+            // 최종 웨이브 클리어 후 보상이면 Victory.
             if (WaveManager.Instance != null && lastWaveCleared >= WaveManager.Instance.MaxWave)
             {
                 ChangeState(GameState.Victory);
                 return;
             }
 
-            ChangeState(GameState.Combat);
-            if (WaveManager.Instance != null)
-            {
-                WaveManager.Instance.StartNextWave();
-            }
+            // Reward 다음 Recruit으로.
+            ChangeState(GameState.Recruit);
         }
 
         public void OnRecruitComplete()
         {
-            // After the initial recruit, go straight to combat (First Wave)
-            // Or if in-between waves?
-            if (WaveManager.Instance != null && WaveManager.Instance.CurrentWave == 0)
+            // 게임 시작 직후의 첫 영입(CurrentWave==0)이면 첫 웨이브를 띄우고,
+            // 웨이브 클리어 후 영입이면 다음 웨이브를 띄운다. 둘 다 Combat 상태 진입은 동일.
+            ChangeState(GameState.Combat);
+
+            var wm = WaveManager.Instance;
+            if (wm != null && wm.CurrentWave > 0 && !wm.IsWaveActive)
             {
-                 // Start game -> Recruit -> Combat(Wave1)
-                 ChangeState(GameState.Combat);
-            }
-            else
-            {
-                 // Wave Clear -> Recruit -> Reward -> Combat
-                 // If we have Reward UI, maybe go to Reward?
-                 // Current flow: Wave -> Reward -> Recruit -> Combat (Next Wave)
-                 // or Wave -> Recruit -> Reward -> Combat?
-                 // Let's assume Recruit -> Reward.
-                 ChangeState(GameState.Reward);
+                wm.StartNextWave();
             }
         }
         

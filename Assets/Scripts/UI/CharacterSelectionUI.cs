@@ -302,7 +302,8 @@ namespace DiceOrbit.UI
                 transform.parent.gameObject.SetActive(false);
 
             DiceUI.Instance?.SetPanelVisible(true);
-            Core.GameFlowManager.Instance?.OnCharacterSelected();
+            // 첫 영입이면 Combat으로, 웨이브 클리어 후 영입이면 Reward로 라우팅.
+            Core.GameFlowManager.Instance?.OnRecruitComplete();
         }
     }
 }
