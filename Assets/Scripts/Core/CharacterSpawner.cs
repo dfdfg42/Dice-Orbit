@@ -17,6 +17,10 @@ namespace DiceOrbit.Core
         [SerializeField] private Vector2 colliderSizeMultiplier = new Vector2(1.6f, 1.6f);
         [SerializeField] private float colliderDepth = 0.2f;
 
+        [Header("Character UI")]
+        [Tooltip("캐릭터 머리 위 체력바/이름 UI의 로컬 오프셋")]
+        [SerializeField] private Vector3 characterUIOffset = new Vector3(0f, 1.2f, 0f);
+
         public Character Spawn(CharacterPreset preset)
         {
             if (preset == null)
@@ -72,7 +76,7 @@ namespace DiceOrbit.Core
         {
             if (characterUIPrefab == null) return;
             var uiObj = Instantiate(characterUIPrefab, characterObj.transform);
-            uiObj.transform.localPosition = new Vector3(0, 1.2f, 0);
+            uiObj.transform.localPosition = characterUIOffset;
             uiObj.GetComponent<CharacterUI>()?.SetCharacter(character);
         }
 

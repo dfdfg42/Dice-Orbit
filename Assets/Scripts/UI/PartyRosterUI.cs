@@ -35,8 +35,7 @@ namespace DiceOrbit.UI
             }
 
             Instance = this;
-            transform.SetParent(null);
-            DontDestroyOnLoad(gameObject);
+            // 씬에 박혀있는 Canvas 자식이어야 ScreenSpace UI가 렌더링되므로 부모 분리/DDOL 하지 않는다.
             TryAutoBind();
         }
 
