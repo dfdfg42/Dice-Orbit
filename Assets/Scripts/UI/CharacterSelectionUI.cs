@@ -40,6 +40,8 @@ namespace DiceOrbit.UI
 
         [Header("Settings")]
         [SerializeField] private int numberOfChoices = 3;
+        [Tooltip("시작 시 고를 캐릭터 수 (이 횟수만큼 선택을 반복)")]
+        [SerializeField] private int charactersToSelect = 2;
 
         private List<Core.CharacterPreset> currentChoices = new List<Core.CharacterPreset>();
         private List<CharacterCard> currentCards = new List<CharacterCard>();
@@ -47,6 +49,10 @@ namespace DiceOrbit.UI
         private Core.CharacterPreset activeDetailPreset;
         private bool isTransitioning;
         private Coroutine activeTransitionRoutine;
+
+        private int selectedCount;
+        private int sessionTargetCount = 1;
+        private readonly List<Core.CharacterPreset> pickedPresets = new List<Core.CharacterPreset>();
 
         private void Start()
         {
@@ -57,7 +63,19 @@ namespace DiceOrbit.UI
 
             HideDetail();
             WireDetailButtons();
+            ResetSelectionSession();
             GenerateRandomChoices();
+        }
+
+        private void ResetSelectionSession()
+        {
+            selectedCount = 0;
+            pickedPresets.Clear();
+
+            // 파티가 비어있으면 첫 시작 → charactersToSelect명 선택,
+            // 이미 파티원이 있으면 (웨이브 후 영입 등) → 1명만 선택.
+            int partySize = Core.PartyManager.Instance != null ? Core.PartyManager.Instance.PartySize : 0;
+            sessionTargetCount = (partySize == 0) ? Mathf.Max(1, charactersToSelect) : 1;
         }
 
         private void WireDetailButtons()
@@ -88,6 +106,7 @@ namespace DiceOrbit.UI
 
             DiceUI.Instance?.SetPanelVisible(false);
             HideDetail();
+            ResetSelectionSession();
             GenerateRandomChoices();
         }
 
@@ -118,14 +137,15 @@ namespace DiceOrbit.UI
             activeDetailPreset = null;
             isTransitioning = false;
 
-            if (allCharacters.Count >= numberOfChoices)
+            // 이미 고른 캐릭터는 다음 선택지에서 제외
+            var pool = allCharacters.Where(c => c != null && !pickedPresets.Contains(c)).ToList();
+            if (pool.Count >= numberOfChoices)
             {
-                var shuffled = allCharacters.OrderBy(x => Random.value).ToList();
-                currentChoices = shuffled.Take(numberOfChoices).ToList();
+                currentChoices = pool.OrderBy(x => Random.value).Take(numberOfChoices).ToList();
             }
             else
             {
-                currentChoices = new List<Core.CharacterPreset>(allCharacters);
+                currentChoices = pool;
             }
 
             var spawnedCards = new List<CharacterCard>();
@@ -344,8 +364,23 @@ namespace DiceOrbit.UI
 
         private void FinalizeSelection(Core.CharacterPreset preset)
         {
-            characterSpawner?.Spawn(preset);
+            // 전체 타일을 최대 파티 인원으로 균등 분할해 배치 (현재 파티 인원 = 슬롯 인덱스)
+            int slotIndex = Core.PartyManager.Instance != null ? Core.PartyManager.Instance.PartySize : selectedCount;
+            int slotCount = Core.PartyManager.Instance != null ? Core.PartyManager.Instance.MaxPartySize : 4;
+            characterSpawner?.Spawn(preset, slotIndex, slotCount);
 
+            pickedPresets.Add(preset);
+            selectedCount++;
+
+            // 아직 더 골라야 하면 선택지를 새로 생성하고 선택 화면 유지
+            if (selectedCount < sessionTargetCount)
+            {
+                HideDetail();
+                GenerateRandomChoices();
+                return;
+            }
+
+            // 모두 선택 완료 → 화면 닫고 진행
             if (selectionCanvas != null)
                 selectionCanvas.gameObject.SetActive(false);
             else

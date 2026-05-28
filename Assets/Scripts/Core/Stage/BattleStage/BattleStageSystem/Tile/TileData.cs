@@ -215,7 +215,7 @@ namespace DiceOrbit.Data
             {
                 foreach (var ally in Core.PartyManager.Instance.Party)
                 {
-                    if (ally != null && ally.Passives is ICombatReactor allyReactor)
+                    if (ally != null && ally.CurrentTile == this)
                     {
                         characters.Add(ally);
                     }

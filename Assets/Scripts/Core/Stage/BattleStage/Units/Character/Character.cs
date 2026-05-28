@@ -18,6 +18,9 @@ namespace DiceOrbit.Core
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
+
+        /// <summary>스폰 시 시작 타일 인덱스를 지정 (Start의 지연 초기화 전에 호출).</summary>
+        public void SetStartTileIndex(int index) => startTileIndex = index;
         [SerializeField] private float stepHopHeight = 0.35f;
         [SerializeField] private float stepIdlePause = 0.05f;
         private bool stopMovementRequested = false;
