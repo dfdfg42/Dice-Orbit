@@ -53,6 +53,36 @@ namespace DiceOrbit.Data.Skills
 
         public bool CanUse(int diceValue) => requirement.CanUse(diceValue);
 
+        /// <summary>
+        /// 표시용 동적 설명. 현재 유효 수치(배율/조건)에서 매번 생성하므로
+        /// 모디파이어 등이 값을 바꾸면 자동으로 반영된다. 기본은 정적 Description.
+        /// </summary>
+        public virtual string GetDynamicDescription() => Description;
+
+        /// <summary>주사위 요구 조건을 한국어 문구로 변환.</summary>
+        protected string FormatDiceCondition()
+        {
+            if (requirement == null) return string.Empty;
+
+            if (requirement.ExactDiceValue.HasValue)
+                return $"주사위 {requirement.ExactDiceValue.Value}";
+
+            switch (requirement.Pattern)
+            {
+                case DicePattern.Odd:  return "홀수 주사위";
+                case DicePattern.Even: return "짝수 주사위";
+                case DicePattern.High: return "주사위 4 이상";
+                case DicePattern.Low:  return "주사위 3 이하";
+            }
+
+            int min = requirement.MinDiceValue;
+            var max = requirement.MaxDiceValue;
+            if (max.HasValue && min > 1) return $"주사위 {min}~{max.Value}";
+            if (max.HasValue)            return $"주사위 {max.Value} 이하";
+            if (min > 1)                 return $"주사위 {min} 이상";
+            return "주사위";
+        }
+
         public virtual CharacterActiveSkill Clone() => (CharacterActiveSkill)MemberwiseClone();
 
         public abstract int    CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue);

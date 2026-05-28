@@ -7,99 +7,57 @@ namespace DiceOrbit.Data.Passives
     public class PositioningPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("레벨별 다음 공격 피해 배율. 예: 1.05는 +5%")]
-        [SerializeField] private float[] damageMultiplierByLevel = { 1.10f, 1.15f, 1.20f, 1.25f, 1.30f };
-        [Tooltip("레벨별 활성화 이동 거리 조건")]
-        [SerializeField] private int[] thresholdDistanceByLevel = { 5, 5, 4, 4, 3 };
-
-        public float damageMultiplier = 1.05f;
-        public int thresholdDistance = 5;
-
-        private float runtimeDamageMultiplier;
-        private int runtimeThresholdDistance;
-        public float CurrentDamageMultiplier => runtimeDamageMultiplier;
-        public int CurrentThresholdDistance => runtimeThresholdDistance;
+        [Tooltip("한 턴에 이동한 타일 1칸당 다음 공격 피해 증가율(%). 예: 25는 +25%")]
+        [SerializeField] private float bonusPercentPerTile = 25f;
 
         private int movedDistanceThisTurn;
-        private bool isConditionMet;
 
         public override int Priority => 99;
 
         public override string GetDynamicDescription()
         {
-            return $"이동 {CurrentThresholdDistance}칸 이상 시 다음 공격 피해 +{(CurrentDamageMultiplier - 1f) * 100f:0.#}%";
+            return $"이동한 타일 1칸당 다음 공격 피해 +{bonusPercentPerTile:0.#}%";
         }
 
         public override void Initialize(DiceOrbit.Core.Unit Owner)
         {
             base.Initialize(Owner);
-            ResetTurnData();
-        }
-
-        protected override void ApplyLevel(int level)
-        {
-            runtimeDamageMultiplier = ResolveDamageMultiplier(level);
-            runtimeThresholdDistance = ResolveThresholdDistance(level);
-        }
-
-        private float ResolveDamageMultiplier(int level)
-        {
-            if (damageMultiplierByLevel == null || damageMultiplierByLevel.Length == 0)
-            {
-                return Mathf.Max(1f, damageMultiplier);
-            }
-
-            int index = Mathf.Clamp(level - 1, 0, damageMultiplierByLevel.Length - 1);
-            return Mathf.Max(1f, damageMultiplierByLevel[index]);
-        }
-
-        private int ResolveThresholdDistance(int level)
-        {
-            if (thresholdDistanceByLevel == null || thresholdDistanceByLevel.Length == 0)
-            {
-                return Mathf.Max(1, thresholdDistance);
-            }
-
-            int index = Mathf.Clamp(level - 1, 0, thresholdDistanceByLevel.Length - 1);
-            return Mathf.Max(1, thresholdDistanceByLevel[index]);
-        }
-
-        private void ResetTurnData()
-        {
             movedDistanceThisTurn = 0;
-            isConditionMet = false;
         }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
             if (context == null || context.Action == null) return;
 
+            // 턴 시작 시 이동 거리 초기화
             if (trigger == CombatTrigger.OnPreAction && context.Action.Type == ActionType.OnStartTurn)
             {
-                ResetTurnData();
+                movedDistanceThisTurn = 0;
+                return;
             }
 
+            // 이동 누적
             if ((trigger == CombatTrigger.OnPostAction || trigger == CombatTrigger.OnActionSuccess) &&
                 context.Action.Type == ActionType.Move &&
                 context.SourceUnit == owner)
             {
-                int dist = Mathf.RoundToInt(context.Action.BaseValue);
-                movedDistanceThisTurn += dist;
-
-                if (movedDistanceThisTurn >= runtimeThresholdDistance && !isConditionMet)
-                {
-                    isConditionMet = true;
-                    Notify();
-                }
+                movedDistanceThisTurn += Mathf.RoundToInt(context.Action.BaseValue);
+                return;
             }
 
+            // 다음 공격에 누적 이동량만큼 피해 증가, 이후 소모
             if (trigger == CombatTrigger.OnCalculateOutput &&
-                isConditionMet &&
                 context.Action.Type == ActionType.Attack &&
-                context.SourceUnit == owner)
+                context.SourceUnit == owner &&
+                movedDistanceThisTurn > 0)
             {
-                context.OutputValue *= runtimeDamageMultiplier;
-                if (!context.IsSimulation) isConditionMet = false;
+                float multiplier = 1f + (bonusPercentPerTile / 100f) * movedDistanceThisTurn;
+                context.OutputValue *= multiplier;
+                if (!context.IsSimulation)
+                {
+                    Notify();
+                    movedDistanceThisTurn = 0;
+                }
             }
         }
     }

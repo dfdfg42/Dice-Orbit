@@ -1,5 +1,6 @@
 using UnityEngine;
 using DiceOrbit.Data;
+using DiceOrbit.Core.Pipeline;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -320,10 +321,51 @@ namespace DiceOrbit.Core
                     {
                         sb.AppendLine($"<color=#FFAA75><b>의도:</b> {nextSkill.skillData.Description.Trim()}</color>");
                     }
+
+                    // 예상 피해 (패시브/모디파이어가 반영된 실제 피해를 시뮬레이션으로 계산)
+                    int previewBase = nextSkill.skillData.GetPreviewDamage();
+                    if (previewBase > 0)
+                    {
+                        int shown = previewBase;
+                        var repTarget = ResolvePreviewTarget();
+                        if (repTarget != null && CombatPipeline.Instance != null)
+                        {
+                            var simCtx = new CombatContext(this, repTarget,
+                                new CombatAction(nextSkill.skillData.SkillName, ActionType.Attack, previewBase));
+                            shown = CombatPipeline.Instance.SimulateCalculation(simCtx);
+                        }
+                        sb.AppendLine($"<color=#FF5555><b>예상 피해:</b> {shown}</color>");
+                    }
                 }
             }
 
             return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
+        }
+
+        /// <summary>의도 예상 피해 시뮬레이션에 쓸 대표 대상. 의도 대상이 있으면 그 대상, 없으면 생존 파티원.</summary>
+        private Unit ResolvePreviewTarget()
+        {
+            if (CurrentIntent != null)
+            {
+                if (CurrentIntent.Targets != null)
+                {
+                    var t = CurrentIntent.Targets.FirstOrDefault(x => x != null && x.IsAlive);
+                    if (t != null) return t;
+                }
+
+                if (CurrentIntent.TargetTiles != null)
+                {
+                    foreach (var tile in CurrentIntent.TargetTiles)
+                    {
+                        var chars = tile != null ? tile.GetCharactersOnTile() : null;
+                        var c = chars?.FirstOrDefault(x => x != null && x.IsAlive);
+                        if (c != null) return c;
+                    }
+                }
+            }
+
+            var alive = PartyManager.Instance?.GetAliveCharacters();
+            return (alive != null && alive.Count > 0) ? alive[0] : null;
         }
 
         public UI.HoverTooltipData GetHoverTooltipData()

@@ -24,8 +24,13 @@ namespace DiceOrbit.UI
         [SerializeField] private GameObject detailRoot;
         [SerializeField] private RectTransform selectedBottleAnchor;
         [SerializeField] private TextMeshProUGUI detailNameText;
-        [SerializeField] private TextMeshProUGUI detailDescriptionText;
         [SerializeField] private TextMeshProUGUI detailStatsText;
+        [Tooltip("패시브 설명 박스 (스킬 데이터에서 자동 생성)")]
+        [SerializeField] private TextMeshProUGUI detailPassiveText;
+        [Tooltip("액티브 설명 박스 (스킬 데이터에서 자동 생성)")]
+        [SerializeField] private TextMeshProUGUI detailActiveText;
+        [Tooltip("(옵션) 분리 박스를 안 쓸 때만 사용하는 통합 설명 텍스트")]
+        [SerializeField] private TextMeshProUGUI detailDescriptionText;
         [SerializeField] private Button cancelButton;
         [SerializeField] private Image ldIllustrationImage;
         [SerializeField] private Button ldConfirmButton;
@@ -216,8 +221,13 @@ namespace DiceOrbit.UI
             if (detailRoot != null) detailRoot.SetActive(true);
 
             if (detailNameText != null) detailNameText.text = character.CharacterName;
-            if (detailDescriptionText != null) detailDescriptionText.text = character.Description;
             if (detailStatsText != null) detailStatsText.text = $"HP: {character.MaxHP}";
+
+            bool hasSplitBoxes = detailPassiveText != null || detailActiveText != null;
+            if (detailPassiveText != null) detailPassiveText.text = BuildPassiveSummary(character);
+            if (detailActiveText != null) detailActiveText.text = BuildActiveSummary(character);
+            if (detailDescriptionText != null)
+                detailDescriptionText.text = hasSplitBoxes ? string.Empty : character.Description;
 
             if (ldIllustrationImage != null)
             {
@@ -228,6 +238,46 @@ namespace DiceOrbit.UI
 
             if (cancelButton != null) cancelButton.interactable = true;
             if (ldConfirmButton != null) ldConfirmButton.interactable = true;
+        }
+
+        private string BuildPassiveSummary(Core.CharacterPreset character)
+        {
+            if (character?.StartingPassives == null) return string.Empty;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var passive in character.StartingPassives)
+            {
+                if (passive == null) continue;
+
+                string name = string.IsNullOrWhiteSpace(passive.PassiveName) ? "패시브" : passive.PassiveName;
+                string body = passive.GetDynamicDescription();
+                if (string.IsNullOrWhiteSpace(body)) body = passive.Description;
+
+                if (sb.Length > 0) sb.Append('\n').Append('\n');
+                sb.Append("<b>[").Append(name).Append("]</b>");
+                if (!string.IsNullOrWhiteSpace(body)) sb.Append('\n').Append(body);
+            }
+            return sb.ToString();
+        }
+
+        private string BuildActiveSummary(Core.CharacterPreset character)
+        {
+            if (character?.StartingActives == null) return string.Empty;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var active in character.StartingActives)
+            {
+                if (active == null) continue;
+
+                string name = string.IsNullOrWhiteSpace(active.SkillName) ? "액티브" : active.SkillName;
+                string body = active.GetDynamicDescription();
+                if (string.IsNullOrWhiteSpace(body)) body = active.Description;
+
+                if (sb.Length > 0) sb.Append('\n').Append('\n');
+                sb.Append("<b>[").Append(name).Append("]</b>");
+                if (!string.IsNullOrWhiteSpace(body)) sb.Append('\n').Append(body);
+            }
+            return sb.ToString();
         }
 
         private void HideDetail()

@@ -14,6 +14,7 @@ namespace DiceOrbit.Data.Tile
         SnowPrison,
         Cloud,          // 구름 타일 (기상학자 패시브)
         ScoutHeal,      // 정찰병 치유 타일
+        Reagent,        // 시약 타일 (연금술사 패시브)
     }
 
     /// <summary>
@@ -100,6 +101,7 @@ namespace DiceOrbit.Data.Tile
                 TileAttributeType.Bone => "뼈 방패",
                 TileAttributeType.Honey => "꿀",
                 TileAttributeType.Cloud => "구름 타일",
+                TileAttributeType.Reagent => "시약 타일",
                 _ => Type.ToString()
             };
         }

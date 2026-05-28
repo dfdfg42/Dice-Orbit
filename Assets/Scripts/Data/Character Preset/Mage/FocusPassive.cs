@@ -1,6 +1,8 @@
 using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Data;
+using DiceOrbit.Systems.Effects;
 
 namespace DiceOrbit.Data.Passives
 {
@@ -8,47 +10,71 @@ namespace DiceOrbit.Data.Passives
     public class FocusPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("레벨별 집중 1스택당 추가 피해율(%). 예: 5는 +5%")]
-        [SerializeField] private float[] bonusPercentPerStackByLevel = {10f, 15f, 20f, 25f, 30f };
+        [Tooltip("피해를 입지 않은 턴 종료 시 부여할 집중 스택")]
+        [SerializeField] private int stacksGainedWhenSafe = 2;
+        [Tooltip("피해를 입은 턴 종료 시 집중 스택을 이 값으로 나눔 (예: 4 = 1/4로 감소)")]
+        [SerializeField] private int penaltyDivisor = 4;
 
-        public int stacksPerTurn = 1;
-        private float runtimeBonusDamageRatioPerStack = 0.05f;
-
-        public float BonusDamageRatioPerStack => runtimeBonusDamageRatioPerStack;
+        private int hpAtTurnStart = -1;
 
         public override int Priority => 50;
 
         public override string GetDynamicDescription()
         {
-            return $"집중 스택당 추가 피해 +{BonusDamageRatioPerStack * 100f:0.#}%";
-        }
-
-        protected override void ApplyLevel(int level)
-        {
-            float bonusPercent = ResolveBonusPercent(level);
-            runtimeBonusDamageRatioPerStack = bonusPercent / 100f;
-        }
-
-        private float ResolveBonusPercent(int level)
-        {
-            if (bonusPercentPerStackByLevel == null || bonusPercentPerStackByLevel.Length == 0)
-            {
-                return runtimeBonusDamageRatioPerStack * 100f;
-            }
-
-            int index = Mathf.Clamp(level - 1, 0, bonusPercentPerStackByLevel.Length - 1);
-            return bonusPercentPerStackByLevel[index];
+            return $"피해 없이 턴 종료 시 집중 +{stacksGainedWhenSafe}, 피해 입으면 1/{Mathf.Max(2, penaltyDivisor)}로 감소";
         }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
             if (owner == null || context == null || context.Action == null) return;
-
-            if (trigger != CombatTrigger.OnPostAction) return;
             if (context.SourceUnit != owner) return;
-            if (context.Action.Type != ActionType.OnEndTurn) return;
+            if (owner.Stats == null) return;
 
-            owner.StatusEffects?.AddEffect(DiceOrbit.Systems.Effects.StatusEffectManager.CreateEffect(DiceOrbit.Data.EffectType.Focus, stacksPerTurn, -1));
+            // 턴 시작 시 체력 스냅샷
+            if (trigger == CombatTrigger.OnPreAction && context.Action.Type == ActionType.OnStartTurn)
+            {
+                hpAtTurnStart = owner.Stats.CurrentHP;
+                return;
+            }
+
+            // 턴 종료 시 체력 손실 여부로 분기
+            if (trigger == CombatTrigger.OnPostAction && context.Action.Type == ActionType.OnEndTurn)
+            {
+                bool lostHP = hpAtTurnStart >= 0 && owner.Stats.CurrentHP < hpAtTurnStart;
+
+                if (lostHP)
+                {
+                    ReduceFocus();
+                }
+                else
+                {
+                    GainFocus();
+                }
+
+                hpAtTurnStart = owner.Stats.CurrentHP;
+            }
+        }
+
+        private void GainFocus()
+        {
+            owner.StatusEffects?.AddEffect(new StatusEffect(EffectType.Focus, Mathf.Max(1, stacksGainedWhenSafe), -1, isStackable: true));
+            Notify();
+        }
+
+        private void ReduceFocus()
+        {
+            if (owner.StatusEffects == null) return;
+
+            int current = owner.StatusEffects.GetEffectValue(EffectType.Focus);
+            if (current <= 0) return;
+
+            owner.StatusEffects.RemoveEffect(EffectType.Focus);
+
+            int reduced = current / Mathf.Max(2, penaltyDivisor);
+            if (reduced > 0)
+            {
+                owner.StatusEffects.AddEffect(new StatusEffect(EffectType.Focus, reduced, -1, isStackable: true));
+            }
             Notify();
         }
     }
