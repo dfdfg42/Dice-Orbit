@@ -37,6 +37,10 @@ namespace DiceOrbit.Core
 
         // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
         public new MonsterStats Stats => stat;
+
+        // 정체성 색상: 웨이브 시작 시 1회 배정되어 웨이브 내내 고정. 바닥 마커/타일 색 오버레이가 사용.
+        [System.NonSerialized] public Color IdentityColor = Color.white;
+        [System.NonSerialized] public bool HasIdentityColor = false;
         
         protected override void Awake()
         {
