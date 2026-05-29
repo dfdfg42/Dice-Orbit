@@ -7,8 +7,9 @@ namespace DiceOrbit.Visuals
 {
     /// <summary>
     /// 타일 윗면에 '몬스터 색상' 오버레이를 깐다.
-    /// 한 타일을 여러 몬스터가 공격하면 색을 파이(부채꼴)로 균등 분할해 한 타일에 함께 표시한다.
-    /// (몬스터 1마리 → 타일 전체가 그 색)
+    /// 한 타일을 여러 몬스터가 공격하면 색을 '가로 밴드'로 N등분해 한 타일에 함께 표시한다.
+    /// (1마리 → 타일 전체가 그 색 / 2마리 → 절반·절반 / 3마리 → 1/3씩 …)
+    /// 분할 기준은 타일 자체 윗면 축(로컬 엣지)이며, 카메라/월드 방향과 무관하다.
     /// </summary>
     public class MonsterTileColorOverlayManager : MonoBehaviour
     {
@@ -16,10 +17,9 @@ namespace DiceOrbit.Visuals
 
         [SerializeField] private float elevation = 0.05f;       // 타일 윗면 위로 살짝 띄움 (z-fighting 방지)
         [SerializeField, Range(0f, 1f)] private float overlayAlpha = 0.55f;
-        [SerializeField] private int pieTextureSize = 128;
 
         private readonly Dictionary<TileData, GameObject> _overlays = new();
-        private readonly Dictionary<string, Texture2D> _pieCache = new();
+        private readonly Dictionary<string, Texture2D> _bandCache = new();
 
         private void Awake()
         {
@@ -31,9 +31,9 @@ namespace DiceOrbit.Visuals
         {
             if (Instance == this) Instance = null;
             Clear();
-            foreach (var tex in _pieCache.Values)
+            foreach (var tex in _bandCache.Values)
                 if (tex != null) Destroy(tex);
-            _pieCache.Clear();
+            _bandCache.Clear();
         }
 
         public static void EnsureInstance()
@@ -57,7 +57,7 @@ namespace DiceOrbit.Visuals
             }
         }
 
-        /// <summary>오버레이 GameObject/메쉬/재질만 제거 (파이 텍스처는 캐시 유지).</summary>
+        /// <summary>오버레이 GameObject/메쉬/재질만 제거 (밴드 텍스처는 캐시 유지).</summary>
         public void Clear()
         {
             foreach (var kv in _overlays)
@@ -83,9 +83,15 @@ namespace DiceOrbit.Visuals
             var mf = go.AddComponent<MeshFilter>();
             var mesh = new Mesh { name = "TileColorQuad" };
             mesh.vertices = corners;
-            // UV: corner0→(0,1), corner1→(1,1), corner2→(1,0), corner3→(0,0)
-            // → 텍스처 중심(0.5,0.5)이 타일 중심에 오도록 매핑 (파이 분할의 기준점).
-            mesh.uv = new[] { new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0) };
+
+            // UV.v 를 타일 자체 윗면 축(로컬 ±Z 엣지)에 고정 매핑 → 밴드를 '타일 윗면 기준'으로 나눈다.
+            // corner0,1 = 한쪽 엣지(v=1, colors[0]) / corner2,3 = 반대쪽 엣지(v=0). u는 밴드 텍스처에 무관.
+            mesh.uv = new[]
+            {
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+            };
+
             mesh.colors = new[] { Color.white, Color.white, Color.white, Color.white };
             mesh.triangles = new[] { 0, 1, 2, 0, 2, 3 };
             mesh.RecalculateNormals();
@@ -97,7 +103,7 @@ namespace DiceOrbit.Visuals
             mr.receiveShadows = false;
 
             var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Transparent");
-            var mat = new Material(shader) { mainTexture = GetPieTexture(colors) };
+            var mat = new Material(shader) { mainTexture = GetBandTexture(colors) };
             if (mat.HasProperty("_Color")) mat.color = Color.white;
             mr.material = mat;
 
@@ -143,13 +149,13 @@ namespace DiceOrbit.Visuals
             };
         }
 
-        private Texture2D GetPieTexture(List<Color> colors)
+        private Texture2D GetBandTexture(List<Color> colors)
         {
             string sig = BuildSignature(colors);
-            if (_pieCache.TryGetValue(sig, out var cached) && cached != null) return cached;
+            if (_bandCache.TryGetValue(sig, out var cached) && cached != null) return cached;
 
-            var tex = BuildPieTexture(colors);
-            _pieCache[sig] = tex;
+            var tex = BuildBandTexture(colors);
+            _bandCache[sig] = tex;
             return tex;
         }
 
@@ -164,39 +170,30 @@ namespace DiceOrbit.Visuals
             return sb.ToString();
         }
 
-        /// <summary>중심에서의 각도로 N등분한 파이 텍스처. 사각 타일을 각도 부채꼴로 가득 채운다.</summary>
-        private Texture2D BuildPieTexture(List<Color> colors)
+        /// <summary>
+        /// 색 목록을 세로로 쌓은 1×N 밴드 텍스처. 위(v=1)부터 colors[0] 순으로 배치.
+        /// Point 필터 + 정확히 N행이라 밴드 경계가 또렷하다(블러 없음).
+        /// </summary>
+        private Texture2D BuildBandTexture(List<Color> colors)
         {
             int n = Mathf.Max(1, colors.Count);
-            int size = Mathf.Max(16, pieTextureSize);
 
-            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            var tex = new Texture2D(1, n, TextureFormat.RGBA32, false)
             {
                 wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear,
-                name = "TilePieTex"
+                filterMode = FilterMode.Point,
+                name = "TileBandTex"
             };
 
-            float center = (size - 1) * 0.5f;
-            const float twoPi = Mathf.PI * 2f;
-            var px = new Color[size * size];
-
-            for (int y = 0; y < size; y++)
+            var px = new Color[n];
+            for (int row = 0; row < n; row++)
             {
-                for (int x = 0; x < size; x++)
-                {
-                    float dx = x - center;
-                    float dy = y - center;
-                    float ang = Mathf.Atan2(dy, dx);     // -PI..PI
-                    float tt = (ang + Mathf.PI) / twoPi;  // 0..1
-                    int sector = Mathf.Clamp(Mathf.FloorToInt(tt * n), 0, n - 1);
-
-                    Color col = colors[sector];
-                    col.a = overlayAlpha;
-                    px[y * size + x] = col;
-                }
+                // row 0 = 아래(화면 아래), row n-1 = 위(화면 위). 위부터 colors[0]이 오도록 역순 인덱싱.
+                int idx = n - 1 - row;
+                Color col = colors[idx];
+                col.a = overlayAlpha;
+                px[row] = col;
             }
-
             tex.SetPixels(px);
             tex.Apply(false, false);
             return tex;
