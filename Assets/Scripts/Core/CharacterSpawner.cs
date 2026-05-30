@@ -14,7 +14,7 @@ namespace DiceOrbit.Core
 
         [Header("Spawn Settings")]
         [SerializeField] private Vector3 characterScale = new Vector3(0.3f, 0.3f, 1f);
-        [SerializeField] private Vector2 colliderSizeMultiplier = new Vector2(1.6f, 1.6f);
+        [SerializeField] private Vector2 colliderSizeMultiplier = new Vector2(0.8f, 0.8f); // 스프라이트 본체보다 약간 작게(본체만 클릭)
         [SerializeField] private float colliderDepth = 0.2f;
 
         [Header("Character UI")]
@@ -107,7 +107,8 @@ namespace DiceOrbit.Core
                 colliderDepth
             );
             collider.size = localSize;
-            collider.center = new Vector3(0f, localSize.y * 0.5f, 0f);
+            // 스프라이트 실제 중심에 맞춤(베이스 고정 X) → 콜라이더가 본체만 덮어 머리 위 체력바 영역이 클릭되지 않음
+            collider.center = target.InverseTransformPoint(bounds.center);
         }
     }
 }

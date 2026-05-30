@@ -32,7 +32,7 @@ namespace DiceOrbit.Core
         [SerializeField] private float tileHeight = 0.2f;
 
     [Header("Character Formation")]
-    [SerializeField] private float formationSpacing = 0.85f;
+    [SerializeField] private float formationSpacing = 1.3f;
     [SerializeField] private float formationYOffset = 1.5f;
     [SerializeField] private float formationForwardOffset = 1.0f;
         

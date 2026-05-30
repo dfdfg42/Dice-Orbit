@@ -34,6 +34,27 @@ namespace DiceOrbit.Core
 
         public TileData CurrentTile => currentTile;
         public Core.CharacterPreset SourcePreset => Stats?.SourcePreset;
+
+        [Header("Hover")]
+        [SerializeField] private int hoverSortingBoost = 100; // 마우스 올렸을 때 sortingOrder 가산량(같은 타일에서 앞으로)
+        private int baseSortingOrder;
+        private bool sortingCaptured;
+
+        // 호버 강조: 같은 타일에서 겹칠 때 마우스 올린 캐릭터를 앞으로(sortingOrder 가산).
+        // 새 Input System 전용 프로젝트라 레거시 OnMouseEnter/Exit가 안 불리므로 CharacterSelector가 매 프레임 호출한다.
+        public void SetHoverHighlight(bool hovered)
+        {
+            if (spriteRenderer == null) return;
+            if (hovered)
+            {
+                if (!sortingCaptured) { baseSortingOrder = spriteRenderer.sortingOrder; sortingCaptured = true; }
+                spriteRenderer.sortingOrder = baseSortingOrder + hoverSortingBoost;
+            }
+            else if (sortingCaptured)
+            {
+                spriteRenderer.sortingOrder = baseSortingOrder;
+            }
+        }
         
         /// <summary>
         /// Stats 초기화 (캐릭터 선택 후)
