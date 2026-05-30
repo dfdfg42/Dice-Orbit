@@ -1,9 +1,14 @@
 using UnityEngine;
-using TMPro;
 using System.Collections.Generic;
 
 namespace DiceOrbit.UI
 {
+    /// <summary>
+    /// 타일 속성 표시 컴포넌트.
+    /// 말풍선 대신, 타일 윗면의 '안쪽(궤도 중심 방향) 가장자리'에 아이콘을 평평하게(데칼) 눕혀서 표시한다.
+    /// 속성이 여러 개면 그 가장자리를 따라 나란히 배치한다.
+    /// (클래스/메서드 이름은 호환을 위해 유지: TileAttributeBubbleManager 가 그대로 호출)
+    /// </summary>
     public class TileAttributeBubbleUI : MonoBehaviour
     {
         public readonly struct BubbleIconData
@@ -18,164 +23,103 @@ namespace DiceOrbit.UI
             }
         }
 
-        [Header("Settings")]
-        [SerializeField] private Vector3 worldOffset = new Vector3(0f, 1.3f, 0f);
-        [SerializeField] private float iconScale = 0.2f;
-        [SerializeField] private float tailScale = 0.28f;
-        [SerializeField] private float iconSpacing = 0.24f;
-        [SerializeField] private float bodyMinWidth = 0.42f;
-        [SerializeField] private float bodyHeight = 0.24f;
-        [SerializeField] private float bodyPaddingX = 0.08f;
-        [SerializeField] private float bodyYOffset = 0.12f;
-        [SerializeField] private float iconYOffset = 0.12f;
-        [SerializeField] private int sortingOrder = 150;
-        [SerializeField] private bool showLabel = false;
+        [Header("Flat Icon Settings")]
+        [SerializeField] private float iconScale = 0.35f;    // 아이콘 크기(월드)
+        [SerializeField] private float iconSpacing = 0.5f;   // 여러 개일 때 가장자리 따라 간격(월드)
+        [SerializeField] private float edgeInset = 0.7f;     // 안쪽 가장자리까지 비율 (0=타일 중심, 1=가장자리)
+        [SerializeField] private float lift = 0.08f;         // 타일 윗면 위로 살짝 띄움 (z-fighting 방지)
+        [SerializeField] private int sortingOrder = 50;
 
         private Transform target;
-        private Camera mainCamera;
-        private SpriteRenderer tailRenderer;
-        private SpriteRenderer bodyRenderer;
         private readonly List<SpriteRenderer> iconRenderers = new List<SpriteRenderer>();
-        private TextMeshPro labelText;
-        private static Sprite whitePixelSprite;
-
-        private void Awake()
-        {
-            EnsureVisuals();
-            mainCamera = Camera.main;
-        }
 
         public void Setup(Transform followTarget, Sprite bubbleSprite, IReadOnlyList<BubbleIconData> icons, string label)
         {
+            // bubbleSprite/label 은 더 이상 사용하지 않음(말풍선 제거).
             target = followTarget;
-            EnsureVisuals();
 
             int iconCount = icons != null ? icons.Count : 0;
-
-            tailRenderer.sprite = bubbleSprite;
-            tailRenderer.sortingOrder = sortingOrder;
-            tailRenderer.transform.localScale = Vector3.one * tailScale;
-            tailRenderer.gameObject.SetActive(tailRenderer.sprite != null);
-
-            float iconSpan = iconCount > 0
-                ? (iconCount * iconScale) + ((iconCount - 1) * iconSpacing)
-                : 0f;
-            float bodyWidth = Mathf.Max(bodyMinWidth, iconSpan + (bodyPaddingX * 2f));
-            bodyRenderer.sortingOrder = sortingOrder;
-            bodyRenderer.transform.localPosition = new Vector3(0f, bodyYOffset, 0f);
-            bodyRenderer.transform.localScale = new Vector3(bodyWidth, bodyHeight, 1f);
-            bodyRenderer.gameObject.SetActive(iconCount > 0);
-
             EnsureIconRenderers(iconCount);
+
             for (int i = 0; i < iconRenderers.Count; i++)
             {
-                var renderer = iconRenderers[i];
+                var r = iconRenderers[i];
                 bool active = i < iconCount;
-                renderer.gameObject.SetActive(active);
+                r.gameObject.SetActive(active);
                 if (!active) continue;
 
-                var iconData = icons[i];
-                renderer.sprite = iconData.Icon;
-                renderer.color = iconData.Tint;
-                renderer.sortingOrder = sortingOrder + 1;
-
-                float centeredIndex = i - ((iconCount - 1) * 0.5f);
-                float x = centeredIndex * (iconScale + iconSpacing);
-                renderer.transform.localPosition = new Vector3(x, iconYOffset, 0f);
-                renderer.transform.localScale = Vector3.one * iconScale;
+                r.sprite = icons[i].Icon;
+                r.color = icons[i].Tint;
+                r.sortingOrder = sortingOrder;
             }
 
-            if (labelText != null)
-            {
-                labelText.text = label ?? string.Empty;
-                labelText.gameObject.SetActive(showLabel && !string.IsNullOrWhiteSpace(label));
-            }
-
-            UpdateTransform();
+            PlaceIcons(iconCount);
         }
 
         private void LateUpdate()
         {
-            if (target == null)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            if (mainCamera == null || !mainCamera.isActiveAndEnabled)
-            {
-                mainCamera = Camera.main;
-            }
-
-            UpdateTransform();
+            // 타일이 사라지면 같이 정리. (타일은 고정이라 위치 갱신은 Setup 시 한 번이면 충분)
+            if (target == null) Destroy(gameObject);
         }
 
-        private void UpdateTransform()
+        private void PlaceIcons(int iconCount)
         {
-            transform.position = target.position + worldOffset;
-            if (mainCamera != null)
+            if (target == null || iconCount <= 0) return;
+
+            ResolveInnerEdge(out Vector3 edgeCenter, out Vector3 toCenter, out Vector3 tangent);
+
+            // 평평하게 눕힘: 법선(+Z)=월드 위, 아이콘 윗방향(+Y)=중심 반대(=타일 안쪽을 바라보게 위아래 뒤집음).
+            Quaternion rot = Quaternion.LookRotation(Vector3.up, -toCenter);
+
+            int placed = 0;
+            for (int i = 0; i < iconRenderers.Count; i++)
             {
-                transform.LookAt(
-                    transform.position + mainCamera.transform.rotation * Vector3.forward,
-                    mainCamera.transform.rotation * Vector3.up
-                );
+                var r = iconRenderers[i];
+                if (r == null || !r.gameObject.activeSelf) continue;
+
+                float centered = placed - ((iconCount - 1) * 0.5f);
+                Vector3 pos = edgeCenter + tangent * (centered * iconSpacing) + Vector3.up * lift;
+                r.transform.SetPositionAndRotation(pos, rot);
+                r.transform.localScale = Vector3.one * iconScale;
+                placed++;
             }
         }
 
-        private void EnsureVisuals()
+        /// <summary>타일 윗면의 안쪽(중심 방향) 가장자리 중점(월드), 중심 방향, 가장자리 접선 벡터를 구한다.</summary>
+        private void ResolveInnerEdge(out Vector3 edgeCenter, out Vector3 toCenter, out Vector3 tangent)
         {
-            if (tailRenderer == null)
+            Vector3 tilePos = target.position;
+
+            // 궤도 중심은 월드 원점. 타일에서 중심으로 향하는 수평 방향.
+            toCenter = new Vector3(-tilePos.x, 0f, -tilePos.z);
+            if (toCenter.sqrMagnitude < 1e-6f) toCenter = target.forward; // 폴백(타일이 LookAt(중심) 이므로 forward=중심)
+            toCenter.Normalize();
+
+            tangent = Vector3.Cross(Vector3.up, toCenter).normalized;
+
+            float topY = tilePos.y;
+            float innerDist = 0.6f;
+
+            var mf = target.GetComponentInChildren<MeshFilter>();
+            if (mf != null && mf.sharedMesh != null)
             {
-                var bg = new GameObject("Tail");
-                bg.transform.SetParent(transform, false);
-                tailRenderer = bg.AddComponent<SpriteRenderer>();
+                Bounds b = mf.sharedMesh.bounds;
+                Transform t = mf.transform;
+                topY = t.TransformPoint(b.center + new Vector3(0f, b.extents.y, 0f)).y; // 윗면 높이(월드)
+                innerDist = b.extents.z * Mathf.Abs(t.lossyScale.z) * edgeInset;        // 중심 방향 가장자리까지(월드)
             }
 
-            if (bodyRenderer == null)
-            {
-                var body = new GameObject("Body");
-                body.transform.SetParent(transform, false);
-                body.transform.localPosition = new Vector3(0f, bodyYOffset, 0f);
-                bodyRenderer = body.AddComponent<SpriteRenderer>();
-                bodyRenderer.sprite = GetWhitePixelSprite();
-                bodyRenderer.color = new Color(0.09f, 0.1f, 0.15f, 0.9f);
-            }
-
-            if (labelText == null)
-            {
-                var label = new GameObject("Label");
-                label.transform.SetParent(transform, false);
-                label.transform.localPosition = new Vector3(0f, -0.26f, 0f);
-                labelText = label.AddComponent<TextMeshPro>();
-                labelText.fontSize = 2.5f;
-                labelText.alignment = TextAlignmentOptions.Center;
-                labelText.color = Color.white;
-            }
+            edgeCenter = new Vector3(tilePos.x, topY, tilePos.z) + toCenter * innerDist;
         }
 
         private void EnsureIconRenderers(int required)
         {
             while (iconRenderers.Count < required)
             {
-                var icon = new GameObject($"Icon_{iconRenderers.Count}");
-                icon.transform.SetParent(transform, false);
-                var renderer = icon.AddComponent<SpriteRenderer>();
-                iconRenderers.Add(renderer);
+                var go = new GameObject($"AttrIcon_{iconRenderers.Count}");
+                go.transform.SetParent(transform, false);
+                iconRenderers.Add(go.AddComponent<SpriteRenderer>());
             }
-        }
-
-        private static Sprite GetWhitePixelSprite()
-        {
-            if (whitePixelSprite != null) return whitePixelSprite;
-
-            var tex = Texture2D.whiteTexture;
-            whitePixelSprite = Sprite.Create(
-                tex,
-                new Rect(0f, 0f, tex.width, tex.height),
-                new Vector2(0.5f, 0.5f),
-                100f);
-            return whitePixelSprite;
         }
     }
 }
-
