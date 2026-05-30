@@ -29,6 +29,7 @@ namespace DiceOrbit.UI
         [SerializeField] private float edgeInset = 0.7f;     // 안쪽 가장자리까지 비율 (0=타일 중심, 1=가장자리)
         [SerializeField] private float lift = 0.08f;         // 타일 윗면 위로 살짝 띄움 (z-fighting 방지)
         [SerializeField] private int sortingOrder = 50;
+        [SerializeField] private int outerEdgeFromIndex = 10; // 이 인덱스 이상 타일은 안쪽 대신 '바깥쪽' 가장자리에 표시 (체력바 가림 회피)
 
         private Transform target;
         private readonly List<SpriteRenderer> iconRenderers = new List<SpriteRenderer>();
@@ -66,10 +67,10 @@ namespace DiceOrbit.UI
         {
             if (target == null || iconCount <= 0) return;
 
-            ResolveInnerEdge(out Vector3 edgeCenter, out Vector3 toCenter, out Vector3 tangent);
+            ResolveEdge(out Vector3 edgeCenter, out Vector3 edgeDir, out Vector3 tangent);
 
-            // 평평하게 눕힘: 법선(+Z)=월드 위, 아이콘 윗방향(+Y)=중심 반대(=타일 안쪽을 바라보게 위아래 뒤집음).
-            Quaternion rot = Quaternion.LookRotation(Vector3.up, -toCenter);
+            // 평평하게 눕힘: 법선(+Z)=월드 위, 아이콘 윗방향(+Y)=가장자리에서 타일 안쪽을 바라보게(=-edgeDir).
+            Quaternion rot = Quaternion.LookRotation(Vector3.up, -edgeDir);
 
             int placed = 0;
             for (int i = 0; i < iconRenderers.Count; i++)
@@ -85,20 +86,29 @@ namespace DiceOrbit.UI
             }
         }
 
-        /// <summary>타일 윗면의 안쪽(중심 방향) 가장자리 중점(월드), 중심 방향, 가장자리 접선 벡터를 구한다.</summary>
-        private void ResolveInnerEdge(out Vector3 edgeCenter, out Vector3 toCenter, out Vector3 tangent)
+        /// <summary>
+        /// 아이콘을 놓을 타일 윗면 가장자리 중점(월드), 가장자리 방향(중심쪽 또는 바깥쪽), 접선 벡터를 구한다.
+        /// 타일 인덱스가 outerEdgeFromIndex 이상이면 안쪽 대신 바깥쪽 가장자리를 사용(뒤쪽 타일 체력바 가림 회피).
+        /// </summary>
+        private void ResolveEdge(out Vector3 edgeCenter, out Vector3 edgeDir, out Vector3 tangent)
         {
             Vector3 tilePos = target.position;
 
             // 궤도 중심은 월드 원점. 타일에서 중심으로 향하는 수평 방향.
-            toCenter = new Vector3(-tilePos.x, 0f, -tilePos.z);
+            Vector3 toCenter = new Vector3(-tilePos.x, 0f, -tilePos.z);
             if (toCenter.sqrMagnitude < 1e-6f) toCenter = target.forward; // 폴백(타일이 LookAt(중심) 이므로 forward=중심)
             toCenter.Normalize();
 
             tangent = Vector3.Cross(Vector3.up, toCenter).normalized;
 
+            // 타일 인덱스에 따라 안쪽/바깥쪽 가장자리 선택
+            bool outward = false;
+            var tileData = target.GetComponent<DiceOrbit.Data.TileData>();
+            if (tileData != null && tileData.TileIndex >= outerEdgeFromIndex) outward = true;
+            edgeDir = outward ? -toCenter : toCenter;
+
             float topY = tilePos.y;
-            float innerDist = 0.6f;
+            float dist = 0.6f;
 
             var mf = target.GetComponentInChildren<MeshFilter>();
             if (mf != null && mf.sharedMesh != null)
@@ -106,10 +116,10 @@ namespace DiceOrbit.UI
                 Bounds b = mf.sharedMesh.bounds;
                 Transform t = mf.transform;
                 topY = t.TransformPoint(b.center + new Vector3(0f, b.extents.y, 0f)).y; // 윗면 높이(월드)
-                innerDist = b.extents.z * Mathf.Abs(t.lossyScale.z) * edgeInset;        // 중심 방향 가장자리까지(월드)
+                dist = b.extents.z * Mathf.Abs(t.lossyScale.z) * edgeInset;             // 가장자리까지 거리(월드)
             }
 
-            edgeCenter = new Vector3(tilePos.x, topY, tilePos.z) + toCenter * innerDist;
+            edgeCenter = new Vector3(tilePos.x, topY, tilePos.z) + edgeDir * dist;
         }
 
         private void EnsureIconRenderers(int required)
