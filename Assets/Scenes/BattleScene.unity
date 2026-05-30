@@ -4654,7 +4654,7 @@ MonoBehaviour:
   attackIntentMaterial: {fileID: 2100000, guid: 4893f299d8ff0f44da8e0fa739719873, type: 2}
   tileWidth: 1.5
   tileHeight: 0.2
-  formationSpacing: 1
+  formationSpacing: 2.3
   formationYOffset: 1.5
   formationForwardOffset: 1
 --- !u!4 &1279481570
