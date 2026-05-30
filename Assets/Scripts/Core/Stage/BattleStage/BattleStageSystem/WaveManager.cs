@@ -138,6 +138,10 @@ namespace DiceOrbit.Core
             }
 
             Debug.Log($"[WaveManager] Total {spawnedMonsters.Count} monsters spawned for Wave {wave}.");
+
+            // 몬스터 정체성 색상 배정 + 발밑 바닥 색상 마커 생성
+            Visuals.MonsterIdentityManager.EnsureInstance();
+            Visuals.MonsterIdentityManager.Instance.Setup(spawnedMonsters);
         }
 
         /// <summary>

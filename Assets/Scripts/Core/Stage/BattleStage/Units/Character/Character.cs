@@ -18,8 +18,12 @@ namespace DiceOrbit.Core
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
-        [SerializeField] private float stepHopHeight = 0.35f;
-        [SerializeField] private float stepIdlePause = 0.05f;
+
+        /// <summary>스폰 시 시작 타일 인덱스를 지정 (Start의 지연 초기화 전에 호출).</summary>
+        public void SetStartTileIndex(int index) => startTileIndex = index;
+        [SerializeField] private float stepHopHeight = 0.6f;       // 한 칸 점프 높이 (클수록 높이 뜀)
+        [SerializeField] private float stepIdlePause = 0.15f;      // 한 칸 착지 후 잠깐 멈추는 시간(초)
+        [SerializeField] private float stepDuration = 0.4f;        // 한 칸 건너가는 시간(초) — 길수록 천천히, 이동 애니메이션이 보일 시간 확보
         private bool stopMovementRequested = false;
 
         // 스프라이트 비주얼
@@ -30,6 +34,27 @@ namespace DiceOrbit.Core
 
         public TileData CurrentTile => currentTile;
         public Core.CharacterPreset SourcePreset => Stats?.SourcePreset;
+
+        [Header("Hover")]
+        [SerializeField] private int hoverSortingBoost = 100; // 마우스 올렸을 때 sortingOrder 가산량(같은 타일에서 앞으로)
+        private int baseSortingOrder;
+        private bool sortingCaptured;
+
+        // 호버 강조: 같은 타일에서 겹칠 때 마우스 올린 캐릭터를 앞으로(sortingOrder 가산).
+        // 새 Input System 전용 프로젝트라 레거시 OnMouseEnter/Exit가 안 불리므로 CharacterSelector가 매 프레임 호출한다.
+        public void SetHoverHighlight(bool hovered)
+        {
+            if (spriteRenderer == null) return;
+            if (hovered)
+            {
+                if (!sortingCaptured) { baseSortingOrder = spriteRenderer.sortingOrder; sortingCaptured = true; }
+                spriteRenderer.sortingOrder = baseSortingOrder + hoverSortingBoost;
+            }
+            else if (sortingCaptured)
+            {
+                spriteRenderer.sortingOrder = baseSortingOrder;
+            }
+        }
         
         /// <summary>
         /// Stats 초기화 (캐릭터 선택 후)
@@ -181,10 +206,9 @@ namespace DiceOrbit.Core
         /// </summary>
         public System.Collections.IEnumerator MoveStepByStep(List<TileData> path)
         {
-            float stepDuration = 0.2f;
             int stepsTraveled = 0;
             TileData arrivalTile = null;
-            
+
             foreach (var tile in path)
             {
                 Vector3 startPos = transform.position;
@@ -192,8 +216,8 @@ namespace DiceOrbit.Core
                 float elapsed = 0f;
                 UpdateFacingByMoveDirection(endPos - startPos);
 
-                // 한 칸 이동 시작 → Move 스프라이트
-                spriteVisual?.PlayMove();
+                // 한 칸 이동 시작 → 이동 애니메이션을 처음부터 재생 (한 칸 건너가는 시간 = stepDuration)
+                spriteVisual?.PlayMoveStep();
 
                 while (elapsed < stepDuration)
                 {

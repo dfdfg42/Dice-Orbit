@@ -156,30 +156,12 @@ namespace DiceOrbit.UI
                 activeFloatingUIs.Remove(monster);
             }
 
-            // 해당 몬스터의 타일 제거
-            if (monsterTiles.TryGetValue(monster, out var tiles))
+            // 해당 몬스터의 타일 제거 후 남은 몬스터 색으로 오버레이 재구성
+            if (monsterTiles.ContainsKey(monster))
             {
-                // 다른 몬스터가 사용 중인 타일 확인
-                var otherMonsterTiles = monsterTiles
-                    .Where(kvp => kvp.Key != monster && kvp.Key != null)
-                    .SelectMany(kvp => kvp.Value ?? new List<Data.TileData>())
-                    .Where(t => t != null)
-                    .Distinct()
-                    .ToHashSet();
-
-                // 해당 몬스터만 사용하던 타일만 언하이라이트
-                foreach (var tile in tiles)
-                {
-                    if (tile != null && !otherMonsterTiles.Contains(tile))
-                    {
-                        tile.ClearHighlight();
-                    }
-                }
-
                 monsterTiles.Remove(monster);
-
-                // highlightedTiles 재계산
                 RecalculateHighlightedTiles();
+                RebuildTileOverlays();
             }
 
             //Debug.Log($"[AttackIndicator] Intent removed for {monster.name}");
@@ -282,6 +264,9 @@ namespace DiceOrbit.UI
         {
             if (tiles == null || tiles.Count == 0 || monster == null) return;
 
+            Visuals.MonsterIdentityManager.EnsureInstance();
+            Color monsterColor = Visuals.MonsterIdentityManager.Instance.GetColor(monster);
+
             // 몬스터별 타일 저장
             monsterTiles[monster] = tiles;
 
@@ -293,35 +278,33 @@ namespace DiceOrbit.UI
             // highlightedTiles 재계산
             RecalculateHighlightedTiles();
 
-            // 타일 하이라이트 및 플로팅 풍선 생성
+            // 플로팅 말풍선 생성 (타일 색상 표시는 파이 오버레이가 담당)
             foreach (var tile in tiles)
             {
-                if (tile != null)
+                if (tile == null) continue;
+
+                if (floatingIntentUIPrefab != null)
                 {
-                    tile.Highlight(tileAttackColor);
+                    var floatingUIObj = Instantiate(floatingIntentUIPrefab, tile.transform.position, Quaternion.identity);
+                    var floatingUI = floatingUIObj.GetComponent<FloatingIntentUI>();
 
-                    // 플로팅 말풍선 생성
-                    if (floatingIntentUIPrefab != null)
+                    if (floatingUI != null)
                     {
-                        var floatingUIObj = Instantiate(floatingIntentUIPrefab, tile.transform.position, Quaternion.identity);
-                        var floatingUI = floatingUIObj.GetComponent<FloatingIntentUI>();
-
-                        if (floatingUI != null)
+                        // 아이콘이 없으면 몬스터 정체성 색(방어 의도는 파랑)으로 말풍선 표시
+                        Color colorToUse = Color.white;
+                        if (intent.Icon == null)
                         {
-                            // 인텐트 색상 결정 (기존 방식 유지)
-                            Color colorToUse = Color.white;
-                            if (intent.Icon == null)
-                            {
-                                colorToUse = intent.Type == Data.IntentType.Defend ? Color.blue : tileAttackColor;
-                            }
-
-                            // 타깃을 Tile의 Transform으로 설정
-                            floatingUI.Setup(tile.transform, intent.Icon, colorToUse);
-                            activeFloatingUIs[monster].Add(floatingUIObj);
+                            colorToUse = intent.Type == Data.IntentType.Defend ? Color.blue : monsterColor;
                         }
+
+                        floatingUI.Setup(tile.transform, intent.Icon, colorToUse);
+                        activeFloatingUIs[monster].Add(floatingUIObj);
                     }
                 }
             }
+
+            // 모든 몬스터의 타일 색상을 합쳐 파이 오버레이 재구성
+            RebuildTileOverlays();
         }
 
         /// <summary>
@@ -511,6 +494,43 @@ namespace DiceOrbit.UI
                 .ToList();
         }
 
+        /// <summary>
+        /// 현재 (몬스터 → 공격 타일) 정보를 (타일 → 몬스터 색상 목록) 으로 변환해
+        /// 파이 색상 오버레이를 재구성한다. 한 타일에 N개 색이 모이면 N등분된다.
+        /// </summary>
+        private void RebuildTileOverlays()
+        {
+            Visuals.MonsterIdentityManager.EnsureInstance();
+            Visuals.MonsterTileColorOverlayManager.EnsureInstance();
+
+            var map = new Dictionary<Data.TileData, List<Color>>();
+            // 몬스터를 안정된 순서로 순회 → 한 타일의 파이 조각 색 순서가 턴마다 바뀌지 않도록 고정
+            var orderedMonsters = monsterTiles.Keys
+                .Where(m => m != null)
+                .OrderBy(m => m.GetInstanceID())
+                .ToList();
+
+            foreach (var monster in orderedMonsters)
+            {
+                var tiles = monsterTiles[monster];
+                if (tiles == null) continue;
+
+                Color col = Visuals.MonsterIdentityManager.Instance.GetColor(monster);
+                foreach (var tile in tiles)
+                {
+                    if (tile == null) continue;
+                    if (!map.TryGetValue(tile, out var listC))
+                    {
+                        listC = new List<Color>();
+                        map[tile] = listC;
+                    }
+                    listC.Add(col);
+                }
+            }
+
+            Visuals.MonsterTileColorOverlayManager.Instance.Rebuild(map);
+        }
+
         // 플로팅 UI 프리팹 보관
         [Header("Floating Tile UI")]
         [SerializeField] private GameObject floatingIntentUIPrefab;
@@ -523,18 +543,9 @@ namespace DiceOrbit.UI
         /// </summary>
         private void ClearVisualization()
         {
-            // 타일 하이라이트 제거
-            if (highlightedTiles != null)
-            {
-                foreach (var tile in highlightedTiles)
-                {
-                    if (tile != null)
-                    {
-                        tile.ClearHighlight();
-                    }
-                }
-                highlightedTiles = null;
-            }
+            // 타일 색상 오버레이 제거
+            Visuals.MonsterTileColorOverlayManager.Instance?.Clear();
+            highlightedTiles = null;
 
             // 모든 플로팅 풍선 제거
             foreach (var uiList in activeFloatingUIs.Values)

@@ -24,6 +24,11 @@ namespace DiceOrbit.UI
         [Header("Settings")]
         [SerializeField] private Vector3 uiOffset = new Vector3(0, 1.2f, 0);
         [SerializeField] private bool autoFindCharacter = true;
+
+        [Header("Overlap Stacking")]
+        [Tooltip("같은 타일에 여러 명이면 체력바를 인덱스별로 Y를 올려 서로 겹치지 않게 세로로 쌓는다")]
+        [SerializeField] private bool stackSameTile = true;
+        [SerializeField] private float perIndexYStep = 0.35f; // 같은 타일 캐릭터 1명당 올릴 Y(월드)
         
         private Camera mainCamera;
         
@@ -52,7 +57,43 @@ namespace DiceOrbit.UI
         private void Update()
         {
             UpdateUI();
+            UpdatePosition();
             // Canvas 회전은 부모 Character의 Billboard가 처리함
+        }
+
+        /// <summary>체력바 위치 갱신. 같은 타일에 여러 명이면 인덱스만큼 Y를 올려 세로로 쌓아 겹침을 막는다.
+        /// (옆으로 벌어진 캐릭터들은 카메라 거리가 거의 같아 거리 기반 분리가 안 되므로 인덱스로 처리)</summary>
+        private void UpdatePosition()
+        {
+            if (worldCanvas == null) return;
+
+            Transform anchor = character != null ? character.transform : transform;
+            Vector3 pos = anchor.position + uiOffset;
+
+            if (stackSameTile)
+            {
+                pos += Vector3.up * (GetSameTileIndex() * perIndexYStep);
+            }
+
+            worldCanvas.transform.position = pos;
+        }
+
+        /// <summary>같은 타일에 있는 캐릭터들 중 이 캐릭터의 순서(InstanceID 정렬 = 포메이션 순서)를 0부터 반환.</summary>
+        private int GetSameTileIndex()
+        {
+            if (character == null || character.CurrentTile == null) return 0;
+
+            var party = Core.PartyManager.Instance?.Party;
+            if (party == null) return 0;
+
+            int myId = character.GetInstanceID();
+            int index = 0;
+            foreach (var other in party)
+            {
+                if (other == null || other == character) continue;
+                if (other.CurrentTile == character.CurrentTile && other.GetInstanceID() < myId) index++;
+            }
+            return index;
         }
         
         /// <summary>
