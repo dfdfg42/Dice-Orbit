@@ -22,6 +22,13 @@ namespace DiceOrbit.Core
         [SerializeField] private string deadBool = "IsDead";
         [SerializeField] private float destroyDelayAfterDeath = 0.35f;
 
+        [Header("Sprite Swap Feedback")]
+        [Tooltip("공격 스프라이트를 보여주는 시간(초)")]
+        [SerializeField] private float attackSpriteDuration = 0.25f;
+        [Tooltip("피격 스프라이트를 보여주는 시간(초)")]
+        [SerializeField] private float damageSpriteDuration = 0.2f;
+        private Coroutine spriteSwapRoutine;
+
         [Header("Preset")]
         [SerializeField] private Data.Monsters.MonsterPreset preset;
 
@@ -442,17 +449,50 @@ namespace DiceOrbit.Core
         private void PlayAttackVisual()
         {
             SetTriggerSafe(attackTrigger);
+            SwapSpriteTemporarily(stat?.AttackSprite, attackSpriteDuration);
         }
 
         private void PlayDamageVisual()
         {
             SetTriggerSafe(hitTrigger);
+            SwapSpriteTemporarily(stat?.DamageSprite, damageSpriteDuration);
         }
 
         private void PlayDeathVisual()
         {
             SetBoolSafe(deadBool, true);
             SetTriggerSafe(deathTrigger);
+
+            // 사망 시 진행 중인 스프라이트 스왑 중단 (idle로 되돌리지 않음)
+            if (spriteSwapRoutine != null)
+            {
+                StopCoroutine(spriteSwapRoutine);
+                spriteSwapRoutine = null;
+            }
+        }
+
+        /// <summary>
+        /// 공격/피격 스프라이트로 잠시 바꿨다가 기본(MonsterSprite)으로 복귀한다.
+        /// AttackSprite/DamageSprite가 없으면 아무것도 하지 않는다.
+        /// </summary>
+        private void SwapSpriteTemporarily(Sprite temp, float duration)
+        {
+            if (spriteRenderer == null || temp == null || duration <= 0f) return;
+
+            if (spriteSwapRoutine != null) StopCoroutine(spriteSwapRoutine);
+            spriteSwapRoutine = StartCoroutine(CoSwapSprite(temp, duration));
+        }
+
+        private System.Collections.IEnumerator CoSwapSprite(Sprite temp, float duration)
+        {
+            spriteRenderer.sprite = temp;
+            yield return new WaitForSeconds(duration);
+
+            // 살아있으면 기본 스프라이트로 복귀
+            if (spriteRenderer != null && stat != null && stat.MonsterSprite != null)
+                spriteRenderer.sprite = stat.MonsterSprite;
+
+            spriteSwapRoutine = null;
         }
 
         private void SetTriggerSafe(string trigger)
