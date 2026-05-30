@@ -7,7 +7,7 @@ namespace DiceOrbit.Visuals
 {
     public class TileVfxManager : MonoBehaviour
     {
-        private const string DefaultDatabasePath = "VFX/TileVfxDatabase";
+        private const string DefaultDatabasePath = "Skill/VFX/TileVfxDatabase";
 
         public static TileVfxManager Instance { get; private set; }
 
