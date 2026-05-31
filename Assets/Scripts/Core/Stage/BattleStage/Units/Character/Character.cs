@@ -257,6 +257,9 @@ namespace DiceOrbit.Core
                 arrivalTile = path[path.Count - 1];
             }
 
+            // 이번 턴 이동 거리 누적 ("이동 안 함" 판정용)
+            if (stat != null) stat.MoveOnThisTurn += stepsTraveled;
+
             if (arrivalTile != null)
             {
                 RefreshTileFormation(arrivalTile);
@@ -313,6 +316,8 @@ namespace DiceOrbit.Core
         /// </summary>
         public override void OnStartTurn()
         {
+            // 이번 턴 이동 거리 초기화 (서리토템 동상 등 "이동 안 함" 판정용)
+            if (stat != null) stat.MoveOnThisTurn = 0;
             base.OnStartTurn();
         }
 

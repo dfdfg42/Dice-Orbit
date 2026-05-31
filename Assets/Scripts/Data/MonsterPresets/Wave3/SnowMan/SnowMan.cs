@@ -4,74 +4,135 @@ using DiceOrbit.Data;
 using DiceOrbit.Data.Monsters;
 using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Tile;
+using DiceOrbit.Systems.Effects;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace DiceOrbit.Systems.Effects
-{
-    /// <summary>
-    /// 공격력 버프 (데미지 계산 시 추가)
-    /// </summary>
-    public class SlushSnow : StatusEffect
-    {
-        public SlushSnow(int value, int duration) : base(EffectType.SlushSnow, value, duration)
-        {
-            IsStackable = false;
-        }
-
-
-        public override void EffectApplied()
-        {
-            if (Owner.Stats is CharacterStats c)
-            {
-                c.MoveDebuff += Value;
-            }
-        }
-
-        public override void EffectExpired()
-        {
-            if (Owner.Stats is CharacterStats c)
-            {
-                c.MoveDebuff -= Value;
-            }
-        }
-    }
-}
 
 namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
 {
     // ==========================================
-    // 1. 눈사람 스킬 구현
+    // 눈사람 세트 공유 헬퍼
+    // ==========================================
+    public static class SnowSet
+    {
+        /// <summary>owner를 제외한 살아있는 아군 몬스터.</summary>
+        public static IEnumerable<Monster> OtherAliveMonsters(Monster owner)
+        {
+            var monsters = CombatManager.Instance?.ActiveMonsters;
+            if (monsters == null) yield break;
+            foreach (var m in monsters)
+                if (m != null && m != owner && m.IsAlive) yield return m;
+        }
+
+        /// <summary>중심 타일에서 좌우 range칸 확장 (순환).</summary>
+        public static List<TileData> ExpandLR(TileData center, int range)
+        {
+            var result = new List<TileData>();
+            if (center == null) return result;
+
+            var set = new HashSet<TileData> { center };
+            var t = center;
+            for (int i = 0; i < range && t?.NextTile != null; i++) { t = t.NextTile; set.Add(t); }
+            t = center;
+            for (int i = 0; i < range && t?.PreviousTile != null; i++) { t = t.PreviousTile; set.Add(t); }
+            result.AddRange(set);
+            return result;
+        }
+
+        // 눈사람이 이번 라운드(직전 플레이어 턴) 동안 받은 피해 누적
+        private static readonly Dictionary<Monster, int> DamageTakenThisRound = new();
+
+        public static void AddDamageTaken(Monster snowman, int amount)
+        {
+            if (snowman == null) return;
+            DamageTakenThisRound.TryGetValue(snowman, out int cur);
+            DamageTakenThisRound[snowman] = cur + Mathf.Max(0, amount);
+        }
+
+        public static int GetDamageTaken(Monster snowman)
+        {
+            if (snowman == null) return 0;
+            DamageTakenThisRound.TryGetValue(snowman, out int cur);
+            return cur;
+        }
+
+        public static void ResetDamageTaken(Monster snowman)
+        {
+            if (snowman != null) DamageTakenThisRound[snowman] = 0;
+        }
+    }
+
+    // ==========================================
+    // 패턴 1 [눈덩이 던지기]
     // ==========================================
     /// <summary>
-    /// 눈사람이 사용할 스킬 틀입니다. SkillData를 상속받습니다.
-    /// 구체적인 수치나 로직은 필요에 따라 채워넣으세요.
+    /// 무작위 대상 1명에게 눈감옥(다음 턴 이동 불가) 디버프 부여.
+    /// 눈사람이 직전 플레이어 턴 동안 10 이상 피해를 받았으면 공격을 취소한다.
+    /// 대상 선정은 MonsterSkill: RandomCharacter + Characters + count 1.
     /// </summary>
     [System.Serializable]
     public class ThrowSnow : SkillData
     {
-        int damage = 30;
+        [Header("Skill Settings")]
+        [Tooltip("눈감옥(이동 불가) 지속 턴")]
+        [SerializeField] private int prisonDuration = 2;
+        [Tooltip("이 피해 이상 받으면 공격 취소")]
+        [SerializeField] private int cancelDamageThreshold = 10;
+
         public ThrowSnow()
         {
-            skillName = "눈 던지기";
-            description = $"무작위 대상 1명에게 {damage} 피해";
+            skillName = "눈덩이 던지기";
+            description = "무작위 대상 1명에게 눈감옥(다음 턴 이동 불가) 부여. 10 이상 피해를 받으면 공격 취소";
         }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            AttackUnits(source, targetUnits, damage);
+            var snowman = source as Monster;
+
+            // 받은 피해가 임계치 이상이면 공격 취소
+            if (snowman != null && SnowSet.GetDamageTaken(snowman) >= cancelDamageThreshold)
+            {
+                Debug.Log($"[눈덩이 던지기] {source.name} 피해 {SnowSet.GetDamageTaken(snowman)} ≥ {cancelDamageThreshold} → 공격 취소");
+                return;
+            }
+
+            bool appliedDebuff = false;
+            if (targetUnits != null)
+            {
+                foreach (var target in targetUnits)
+                {
+                    if (target == null || !target.IsAlive) continue;
+                    target.StatusEffects?.AddEffect(new FrozenDebuff(0, prisonDuration));
+                    appliedDebuff = true;
+                }
+            }
+
+            // [행복한 눈사람] 디버프 부여 성공 → 다른 아군 몬스터 +3 회복
+            if (appliedDebuff && snowman != null)
+                HappySnowmanPassive.HealAllies(snowman);
         }
     }
 
+    // ==========================================
+    // 패턴 2 [눈보라]
+    // ==========================================
+    /// <summary>
+    /// 무작위 대상 2명이 속한 타일 + 좌우 각각 1칸에 피해.
+    /// 대상은 MonsterSkill: RandomCharacter + Tiles + count 2 + range 1.
+    /// </summary>
     [System.Serializable]
-    public class SnowStom : SkillData
+    public class SnowStorm : SkillData
     {
-        int damage = 20;
-        public SnowStom()
+        [Header("Skill Settings")]
+        [SerializeField] private int damage = 20;
+
+        public SnowStorm()
         {
             skillName = "눈보라";
-            description = $"턴 시작 기준 무작위 대상 1명이 서있는 타일 + 좌우 2칸에 {damage} 피해";
+            description = "무작위 대상 2명이 속한 타일 + 좌우 각각 1칸에 피해";
         }
+
+        public override int GetPreviewDamage() => damage;
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
@@ -79,64 +140,79 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
         }
     }
 
-
     // ==========================================
-    // 2. 눈사람 사망 효과 구현 (필요 시 주석 해제)
-    // ==========================================
-    /*
-    [System.Serializable]
-    public class SnowManDeath : DeathEffect
-    {
-        public SnowManDeath()
-        {
-            effectName = "SnowMan Death";
-            description = "눈사람 사망 효과입니다.";
-        }
-
-        public override void Execute(Monster deadMonster)
-        {
-            // TODO: 사망 시 효과 구현
-        }
-    }
-    */
-
-    // ==========================================
-    // 3. 눈사람 패시브 구현
+    // 패시브 [행복한 눈사람]
     // ==========================================
     /// <summary>
-    /// 눈사람의 고유 패시브 스킬 틀입니다. PassiveAbility를 상속받습니다.
+    /// 눈사람의 공격이 성공(피해 적중)하면 다른 아군 몬스터의 체력을 +3 회복한다.
+    /// (디버프 부여 시 회복은 ThrowSnow 스킬에서 직접 호출)
+    /// 또한 눈사람이 받은 피해를 누적해 [눈덩이 던지기]의 공격 취소 판정에 사용한다.
     /// </summary>
     [System.Serializable]
-    public class SnowManPassive : PassiveAbility
+    public class HappySnowmanPassive : PassiveAbility
     {
-        int moveDebuffValue = 2; // 이동력 감소 수치
-        int duration = 1; // 디버프 지속 턴 수
+        [Header("Passive Settings")]
+        [Tooltip("아군 1명당 회복량")]
+        [SerializeField] private int healAmount = 3;
 
-        public SnowManPassive()
+        // 외부(스킬)에서 호출하기 위한 정적 회복량 캐시
+        private static int s_healAmount = 3;
+
+        public HappySnowmanPassive()
         {
-            passiveName = "진창눈";
-            description = "눈사람의 공격에 피격 시, 진창눈 디버프 부여";
-            priority = 10; 
+            passiveName = "행복한 눈사람";
+            description = "눈사람이 적에게 디버프를 부여하거나 공격에 성공하면 다른 아군 +3 회복";
+            priority = 10;
             isStackable = false;
         }
 
+        protected override void ApplyLevel(int level) { }
+
+        public override string GetDynamicDescription()
+            => $"눈사람이 디버프 부여/공격 성공 시 다른 아군 체력 +{healAmount}";
+
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            // 예외 방지
-            if (context?.Action == null) return;
+            if (context?.Action == null || owner == null) return;
+            s_healAmount = healAmount;
+
+            // 눈사람이 받은 피해 누적 (공격 취소 판정용)
             if (trigger == CombatTrigger.OnHit &&
-                context.Action.Type == ActionType.Attack && 
-                context.SourceUnit == owner && 
-                context.Target != null &&
-                context.Target.IsAlive )
+                context.Action.Type == ActionType.Attack &&
+                context.Target == owner &&
+                !context.IsSimulation &&
+                context.IsEffected)
             {
-                context.Target.StatusEffects.AddEffect(new DiceOrbit.Systems.Effects.SlushSnow(moveDebuffValue, duration + 1));
+                SnowSet.AddDamageTaken(owner as Monster, Mathf.RoundToInt(context.OutputValue));
+            }
+
+            // 눈사람의 공격이 적중하면 다른 아군 회복
+            if (trigger == CombatTrigger.OnHit &&
+                context.Action.Type == ActionType.Attack &&
+                context.SourceUnit == owner &&
+                !context.IsSimulation &&
+                context.IsEffected)
+            {
+                HealAllies(owner as Monster);
+            }
+
+            // 턴 종료 시 누적 피해 초기화
+            if (trigger == CombatTrigger.OnPostAction &&
+                context.Action.Type == ActionType.OnEndTurn &&
+                context.SourceUnit == owner)
+            {
+                SnowSet.ResetDamageTaken(owner as Monster);
             }
         }
 
-        public override bool AllowSamePassive(IPassive incoming)
+        /// <summary>owner를 제외한 모든 아군 몬스터를 healAmount만큼 회복.</summary>
+        public static void HealAllies(Monster snowman)
         {
-            return false;
+            if (snowman == null) return;
+            foreach (var ally in SnowSet.OtherAliveMonsters(snowman))
+                ally.Heal(s_healAmount);
         }
+
+        public override bool AllowSamePassive(IPassive incoming) => false;
     }
 }

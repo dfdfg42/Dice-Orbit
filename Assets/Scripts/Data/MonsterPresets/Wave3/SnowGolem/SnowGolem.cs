@@ -1,101 +1,149 @@
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Tile;
-using System.Collections.Generic;
+using DiceOrbit.Data.MonsterPresets.Wave3.SnowMan;
 using DiceOrbit.Data.Monsters;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
 {
     // ==========================================
-    // 1. 스노우 골렘 스킬 구현
+    // 패턴 1 [눈강타]
     // ==========================================
     /// <summary>
-    /// 스노우 골렘이 사용할 스킬 틀입니다. SkillData를 상속받습니다.
-    /// 구체적인 수치나 로직은 필요에 따라 채워넣으세요.
+    /// 이동 불가(눈감옥/빙결) 상태인 적이 속한 타일 + 좌우 각각 2칸에 피해.
+    /// 그런 적이 없으면 무작위 적 1명이 속한 타일 + 좌우 2칸에 피해.
+    /// 대상 타일은 GetCustomTiles에서 직접 선정한다.
     /// </summary>
     [System.Serializable]
-    public class SnowGolemSkill1 : SkillData
+    public class SnowSmash : SkillData
     {
-        public SnowGolemSkill1()
+        [Header("Skill Settings")]
+        [SerializeField] private int damage = 20;
+        [Tooltip("중심 타일 기준 좌우 확장 칸 수")]
+        [SerializeField] private int range = 2;
+
+        public SnowSmash()
         {
-            skillName = "눈 강타";
-            description = "";
+            skillName = "눈강타";
+            description = "이동 불가 적이 속한 타일 + 좌우 각각 2칸에 피해 (없으면 무작위 적 기준)";
+        }
+
+        public override int GetPreviewDamage() => damage;
+
+        public override List<TileData> GetCustomTiles(MonsterSkill skill, Monster owner)
+        {
+            var alive = PartyManager.Instance?.GetAliveCharacters();
+            if (alive == null || alive.Count == 0) return new List<TileData>();
+
+            // 1순위: 이동 불가(빙결) 상태인 적
+            var frozen = alive.Where(c =>
+                c != null && c.CurrentTile != null &&
+                c.StatusEffects != null && c.StatusEffects.HasEffect(DiceOrbit.Data.EffectType.Frozen)).ToList();
+
+            Character center = frozen.Count > 0
+                ? frozen[Random.Range(0, frozen.Count)]
+                : alive[Random.Range(0, alive.Count)];
+
+            return center != null ? SnowSet.ExpandLR(center.CurrentTile, range) : new List<TileData>();
         }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            // TODO: 스노우 골렘 스킬 효과 구현 (데미지나 빙결, 방어막 등)
-        }
-    }
-
-    [System.Serializable]
-    public class SnowGolemSkill2 : SkillData
-    {
-        public SnowGolemSkill2()
-        {
-            skillName = "스노우 골렘 스킬";
-            description = "스노우 골렘 스킬의 설명입니다.";
-        }
-
-        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
-        {
-            // TODO: 스노우 골렘 스킬 효과 구현 (데미지나 빙결, 방어막 등)
+            AttackTiles(source, targetTiles, damage);
         }
     }
 
     // ==========================================
-    // 2. 스노우 골렘 사망 효과 구현 (필요 시 주석 해제)
+    // 패턴 2 [눈 방패]
+    // ==========================================
+    /// <summary>
+    /// 모든 아군 몬스터(자신 포함)에게 일시 방어도를 부여한다.
+    /// 타겟 없는 팀 버프이므로 MonsterSkill: TargetType=Self, IntentType=Defend.
+    /// </summary>
+    [System.Serializable]
+    public class SnowShield : SkillData
+    {
+        [Header("Skill Settings")]
+        [SerializeField] private int armorAmount = 5;
+
+        public SnowShield()
+        {
+            skillName = "눈 방패";
+            description = "모든 아군에게 일시 방어도 부여";
+        }
+
+        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
+        {
+            var monsters = CombatManager.Instance?.ActiveMonsters;
+            if (monsters == null) return;
+
+            foreach (var m in monsters)
+            {
+                if (m == null || !m.IsAlive || m.Stats == null) continue;
+                m.Stats.TempArmor += armorAmount;
+            }
+            Debug.Log($"[눈 방패] 모든 아군 방어도 +{armorAmount}");
+        }
+    }
+
+    // ==========================================
+    // 사망 효과
     // ==========================================
     [System.Serializable]
     public class SnowGolemDeath : DeathEffect
     {
         public SnowGolemDeath()
         {
-            effectName = "사망 시 효과 디폴트 이름";
+            effectName = "SnowGolem Death";
             description = "눈 골렘이 사망 시, 눈 감옥 타일들이 전부 사라집니다.";
         }
 
         public override void Execute(Monster deadMonster)
         {
             var orbitManager = GameManager.Instance?.GetOrbitManager();
-            foreach (var tile in orbitManager?.Tiles ?? new List<TileData>())
-            {
-                tile.RemoveAttributeType(TileAttributeType.SnowPrison);
-            }
+            if (orbitManager?.Tiles == null) return;
+            foreach (var tile in orbitManager.Tiles)
+                if (tile != null) tile.RemoveAttributeType(TileAttributeType.SnowPrison);
         }
     }
 
     // ==========================================
-    // 3. 스노우 골렘 패시브 구현
+    // 패시브 [눈감옥]
     // ==========================================
     /// <summary>
-    /// 스노우 골렘의 고유 패시브 스킬 틀입니다. PassiveAbility를 상속받습니다.
+    /// 턴 시작 시 무작위 타일 1개와 좌우 1칸에 눈감옥 타일을 설치한다.
+    /// 해당 타일에서 턴 종료 시 눈감옥(다음 턴 이동 불가) 상태이상이 부여되며,
+    /// 타일은 지속시간이 끝나면 사라진다. 몬스터 사망 시 SnowGolemDeath가 모두 제거.
     /// </summary>
     [System.Serializable]
     public class SnowGolemPassive : PassiveAbility
     {
-        int tileDuration = 1, frozenDuration = 1; // 타일 지속 시간 (1턴)
+        [Header("Passive Settings")]
+        [Tooltip("타일 지속 턴")]
+        [SerializeField] private int tileDuration = 1;
+        [Tooltip("부여되는 빙결(이동 불가) 지속 턴")]
+        [SerializeField] private int frozenDuration = 1;
+
         public SnowGolemPassive()
         {
-            passiveName = "눈 감옥 생성";
-            description = "매 턴 시작 시, 무작위 타일 1개와 그 좌우 타일에 눈 감옥을 설치합니다.";
-            priority = 10; 
+            passiveName = "눈 감옥";
+            description = "턴 시작 시 무작위 타일 1개와 좌우 1칸에 눈감옥 설치. 그 위에서 턴 종료 시 다음 턴 이동 불가";
+            priority = 10;
             isStackable = false;
         }
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            // 예외 방지
-            if (context?.Action == null) return;
+            if (context?.Action == null || owner == null) return;
 
-            // 턴 시작 시점 감지
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.OnStartTurn && 
+                context.Action.Type == ActionType.OnStartTurn &&
                 context.SourceUnit == owner)
             {
-                Debug.Log($"[SnowGolemPassive] 눈 감옥 타일 설치 발동");
                 PlantSnowPrisonTiles();
             }
         }
@@ -105,35 +153,25 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
             var orbitManager = GameManager.Instance?.GetOrbitManager();
             if (orbitManager == null) return;
 
-            // 0~19 중앙 타일 1개 선정 (20개 타일 기준)
-            int centerIndex = Random.Range(0, 20);
-            // 좌우 타일 계산 (순환 구조에 맞게 % 연산 활용)
-            int leftIndex = (centerIndex - 1 + 20) % 20;
-            int rightIndex = (centerIndex + 1) % 20;
+            int total = orbitManager.TileCount;
+            if (total <= 0) return;
 
-            int[] targetIndices = new int[] { leftIndex, centerIndex, rightIndex };
+            int centerIndex = Random.Range(0, total);
+            int leftIndex = (centerIndex - 1 + total) % total;
+            int rightIndex = (centerIndex + 1) % total;
 
-            foreach (var index in targetIndices)
+            foreach (var index in new[] { leftIndex, centerIndex, rightIndex })
             {
                 var tile = orbitManager.GetTile(index);
-                if (tile != null)
-                {
-                    // 눈 감옥 타일 속성 생성 (데미지 0, 1턴 지속)
-                    var snowPrisonAttribute = new SnowPrisonTileAttribute(
-                        TileAttributeType.SnowPrison, 
-                        frozenDuration + 1,
-                        tileDuration + 1
-                    );
+                if (tile == null || tile.HasAttribute(TileAttributeType.SnowPrison)) continue;
 
-                    tile.AddAttribute(snowPrisonAttribute);
-                    Debug.Log($"[SnowGolemPassive] SnowPrison Tile Generated at index: {index}");
-                }
+                tile.AddAttribute(new SnowPrisonTileAttribute(
+                    TileAttributeType.SnowPrison,
+                    frozenDuration + 1,
+                    tileDuration + 1));
             }
         }
 
-        public override bool AllowSamePassive(IPassive incoming)
-        {
-            return false;
-        }
+        public override bool AllowSamePassive(IPassive incoming) => false;
     }
 }
