@@ -24,6 +24,10 @@ namespace DiceOrbit.UI
         [Header("Settings")]
         [SerializeField] private Vector3 uiOffset = new Vector3(0, 1.2f, 0);
         [SerializeField] private bool autoFindCharacter = true;
+        [Tooltip("체력바 캔버스 정렬 순서. 스프라이트(hover 시 최대 +100)보다 높아야 항상 앞에 보인다.")]
+        [SerializeField] private int canvasSortingOrder = 500;
+        [Tooltip("체력바 캔버스 크기(월드 스케일). 키우려면 값을 올린다.")]
+        [SerializeField] private float canvasScale = 0.07f;
 
         [Header("Overlap Stacking")]
         [Tooltip("같은 타일에 여러 명이면 체력바를 인덱스별로 Y를 올려 서로 겹치지 않게 세로로 쌓는다")]
@@ -109,17 +113,24 @@ namespace DiceOrbit.UI
             
             worldCanvas.renderMode = RenderMode.WorldSpace;
             worldCanvas.worldCamera = mainCamera;
-            
+
+            // 항상 스프라이트보다 앞에 표시 (hover 시 sortingOrder +100 되는 캐릭터에 가리지 않도록)
+            worldCanvas.overrideSorting = true;
+            worldCanvas.sortingOrder = canvasSortingOrder;
+
             // 위치 설정
             worldCanvas.transform.position = transform.position + uiOffset;
-            
+
             // 크기 조정
             RectTransform rectTransform = worldCanvas.GetComponent<RectTransform>();
             if (rectTransform != null)
             {
                 rectTransform.sizeDelta = new Vector2(2, 0.5f);
-                rectTransform.localScale = Vector3.one * 0.07f; // 작은 크기로
+                rectTransform.localScale = Vector3.one * canvasScale;
             }
+
+            // 체력 텍스트가 체력바(슬라이더) 그래픽에 가려지지 않도록 맨 앞(마지막 형제)으로
+            if (hpText != null) hpText.transform.SetAsLastSibling();
 
             ConfigureNonBlockingRaycasts();
         }

@@ -461,8 +461,10 @@ MonoBehaviour:
   buffColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   specialColor: {r: 1, g: 0, b: 1, a: 1}
   neutralBubbleColor: {r: 1, g: 1, b: 1, a: 0.92}
-  uiOffset: {x: 0, y: 2, z: 0}
+  uiOffset: {x: 0, y: 2.5, z: 0}
   autoFindMonster: 1
+  canvasSortingOrder: 500
+  canvasScale: 0.12
   hideBubbleWhenNoIntent: 1
   tintBubbleByIntent: 0
   showIntentText: 1
@@ -1132,6 +1134,8 @@ MonoBehaviour:
   deathTrigger: Death
   deadBool: IsDead
   destroyDelayAfterDeath: 0.35
+  attackSpriteDuration: 0.25
+  damageSpriteDuration: 0.2
   preset: {fileID: 0}
 --- !u!1 &6708218376261250130
 GameObject:
@@ -1169,8 +1173,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -44.899998, y: 63.049995}
-  m_SizeDelta: {x: 40, y: 32.5}
+  m_AnchoredPosition: {x: -44.95, y: 66.67}
+  m_SizeDelta: {x: 48.9, y: 39.73}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5327369885770384892
 CanvasRenderer:
