@@ -5032,7 +5032,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 694d7667e8c892540a9a8a2855e35113, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.ArtifactManager
-  debugPowerfullPunchData: {fileID: 0}
+  debugPowerfullPunchData: {fileID: 11400000, guid: df00b1571da111741bce3a03efe939a2, type: 2}
 --- !u!1 &1556532173
 GameObject:
   m_ObjectHideFlags: 0

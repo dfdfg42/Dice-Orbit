@@ -8,28 +8,33 @@ using DiceOrbit.Data.Tile;
 namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
 {
     // ==========================================
-    // 패턴 1 [울부 짖기]
+    // 패턴 1 [보호]
     // ==========================================
     /// <summary>
-    /// 무작위 타일(MonsterSkill 설정: RandomTiles + count 8)에 피해.
+    /// 본인 및 아기곰에게 일시 방어도를 부여한다.
+    /// 타겟 없는 팀 버프이므로 MonsterSkill: TargetType=Self, IntentType=Defend.
     /// </summary>
     [System.Serializable]
-    public class MommyBearRoar : SkillData
+    public class ProtectSkill : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 20;
+        [SerializeField] private int armorAmount = 5;
 
-        public MommyBearRoar()
+        public ProtectSkill()
         {
-            skillName = "울부 짖기";
-            description = "무작위 타일 8개에 피해";
+            skillName = "보호";
+            description = "본인 및 아기곰에게 일시 방어도 부여";
         }
-
-        public override int GetPreviewDamage() => damage;
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            AttackTiles(source, targetTiles, damage);
+            if (source?.Stats != null) source.Stats.TempArmor += armorAmount;
+
+            var baby = BearHelper.FindMonsterByName("아기 곰");
+            if (baby != null && baby.IsAlive && baby.Stats != null)
+                baby.Stats.TempArmor += armorAmount;
+
+            Debug.Log($"[보호] 본인 및 아기곰 방어도 +{armorAmount}");
         }
     }
 
@@ -37,61 +42,19 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
     // 패턴 2 [곰은 사람을 찢어]
     // ==========================================
     /// <summary>
-    /// 지난 턴에 아기곰을 마지막으로 공격한 캐릭터가 속한 타일 + 좌우 각각 2칸에 피해.
-    /// 대상 타일은 GetCustomTiles에서 BearPackTracker.LastBabyBearAttacker 기준으로 직접 선정.
+    /// 턴 시작 기준 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해.
+    /// (대상/범위 선정은 MonsterSkill 설정: RandomCharacter + Tiles + range 2)
     /// </summary>
     [System.Serializable]
     public class MommyBearTear : SkillData
     {
         [Header("Skill Settings")]
         [SerializeField] private int damage = 20;
-        [Tooltip("중심 타일 기준 좌우 확장 칸 수")]
-        [SerializeField] private int range = 2;
 
         public MommyBearTear()
         {
             skillName = "곰은 사람을 찢어";
-            description = "지난 턴 아기곰을 마지막으로 공격한 캐릭터가 속한 타일 + 좌우 각각 2칸에 피해";
-        }
-
-        public override List<TileData> GetCustomTiles(MonsterSkill skill, Monster owner)
-        {
-            var result = new List<TileData>();
-
-            var attacker = BearPackTracker.LastBabyBearAttacker;
-            TileData center = (attacker != null && attacker.IsAlive) ? attacker.CurrentTile : null;
-
-            // 마지막 공격자가 없거나 사망 시 무작위 생존 캐릭터로 폴백
-            if (center == null)
-            {
-                var alive = PartyManager.Instance?.GetAliveCharacters();
-                if (alive != null && alive.Count > 0)
-                {
-                    var pick = alive[Random.Range(0, alive.Count)];
-                    center = pick != null ? pick.CurrentTile : null;
-                }
-            }
-
-            if (center == null) return result;
-
-            var set = new HashSet<TileData> { center };
-
-            var t = center;
-            for (int i = 0; i < range && t != null && t.NextTile != null; i++)
-            {
-                t = t.NextTile;
-                set.Add(t);
-            }
-
-            t = center;
-            for (int i = 0; i < range && t != null && t.PreviousTile != null; i++)
-            {
-                t = t.PreviousTile;
-                set.Add(t);
-            }
-
-            result.AddRange(set);
-            return result;
+            description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -103,22 +66,24 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
     }
 
     // ==========================================
-    // 패시브 [분노]
+    // 패시브 [꿀 묻은 털]
     // ==========================================
     /// <summary>
-    /// 아기곰이 피격당한 횟수당 엄마곰의 피해량이 일정량씩 영구 증가.
+    /// 필드의 꿀 타일이 일정 개수 이상이면 엄마곰이 받는 피해량을 일정 비율 감소시킨다.
     /// </summary>
     [System.Serializable]
-    public class RagePassive : PassiveAbility
+    public class HoneyFurPassive : PassiveAbility
     {
-        [Header("Designer Tuning")]
-        [Tooltip("아기곰 피격 1회당 추가 피해")]
-        [SerializeField] private int damagePerHit = 3;
+        [Header("Passive Settings")]
+        [Tooltip("이 개수 이상 꿀 타일이 있으면 발동")]
+        [SerializeField] private int honeyTileRequirement = 5;
+        [Tooltip("받는 피해 감소 퍼센트")]
+        [SerializeField] private int damageReductionPercent = 20;
 
-        public RagePassive()
+        public HoneyFurPassive()
         {
-            passiveName = "분노";
-            description = "아기곰이 피격당한 횟수당 피해량이 3씩 영구 증가";
+            passiveName = "꿀 묻은 털";
+            description = "꿀 타일이 5개 이상이면 받는 피해량 20% 감소";
             priority = 10;
             isStackable = false;
         }
@@ -130,20 +95,38 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
         }
 
         public override string GetDynamicDescription()
-            => $"아기곰 피격 1회당 피해 +{damagePerHit} (현재 +{damagePerHit * BearPackTracker.BabyBearHits})";
+            => $"꿀 타일 {honeyTileRequirement}개 이상이면 받는 피해 -{damageReductionPercent}% (현재 꿀 {BearPackTracker.HoneyTileCount()}개)";
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
             if (context?.Action == null || owner == null) return;
 
+            // 엄마곰이 피해를 받는 쪽일 때, 꿀 타일이 충분하면 받는 피해 감소
             if (trigger == CombatTrigger.OnCalculateOutput &&
                 context.Action.Type == ActionType.Attack &&
-                context.SourceUnit == owner)
+                context.Target == owner &&
+                BearPackTracker.HoneyTileCount() >= honeyTileRequirement)
             {
-                context.OutputValue += damagePerHit * BearPackTracker.BabyBearHits;
+                context.OutputValue *= 1f - (damageReductionPercent / 100f);
             }
         }
 
         public override bool AllowSamePassive(IPassive incoming) => false;
+    }
+
+    // ==========================================
+    // 공용 헬퍼
+    // ==========================================
+    public static class BearHelper
+    {
+        public static Monster FindMonsterByName(string name)
+        {
+            var monsters = CombatManager.Instance?.ActiveMonsters;
+            if (monsters == null) return null;
+            foreach (var m in monsters)
+                if (m != null && m.IsAlive && m.Stats != null && m.Stats.MonsterName == name)
+                    return m;
+            return null;
+        }
     }
 }
