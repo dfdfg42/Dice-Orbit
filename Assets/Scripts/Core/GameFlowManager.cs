@@ -22,6 +22,7 @@ namespace DiceOrbit.Core
         [SerializeField] private string gameplaySceneName = "";
 
         private bool pendingStartGame = false;
+        private bool pendingRestart = false;
         private int lastWaveCleared = 0;
         // 레벨업 타일을 밟은 캐릭터를 임시 보관합니다.
         private Character pendingLevelUpCharacter;
@@ -207,9 +208,17 @@ namespace DiceOrbit.Core
 
         public void OnWaveCleared(int wave)
         {
-            Debug.Log($"[GameFlow] Wave {wave} Cleared. Proceeding to Reward.");
+            Debug.Log($"[GameFlow] Wave {wave} Cleared.");
             lastWaveCleared = wave;
-            // 웨이브 클리어 직후 보상 화면. 보상 확인하면 Recruit으로 넘어간다.
+
+            // 마지막 웨이브를 클리어했으면 바로 승리(프로토타입 종료) 화면으로.
+            if (WaveManager.Instance != null && wave >= WaveManager.Instance.MaxWave)
+            {
+                ChangeState(GameState.Victory);
+                return;
+            }
+
+            // 그 외에는 보상 화면 → (확인) → 영입.
             ChangeState(GameState.Reward);
         }
 
@@ -303,9 +312,16 @@ namespace DiceOrbit.Core
             {
                 WaveManager.Instance.OnWaveStart -= OnWaveStarted;
                 WaveManager.Instance.OnWaveStart += OnWaveStarted;
-                
+
                 WaveManager.Instance.OnWaveClear -= OnWaveCleared;
                 WaveManager.Instance.OnWaveClear += OnWaveCleared;
+            }
+
+            // 재시작 후 재진입: 영입 화면부터 다시 시작
+            if (pendingRestart)
+            {
+                pendingRestart = false;
+                StartGameFlow();
             }
         }
 
@@ -348,13 +364,34 @@ namespace DiceOrbit.Core
         private void ShowVictory()
         {
             Debug.Log("[GameFlow] Victory Screen Shown");
-            // TODO: Implement UI
+            UI.GameResultUI.ShowVictory();
         }
 
         private void ShowGameOver()
         {
             Debug.Log("[GameFlow] Game Over Screen Shown");
-            // TODO: Implement UI
+            UI.GameResultUI.ShowGameOver();
+        }
+
+        /// <summary>
+        /// 게임 재시작: 공유 정적 상태를 초기화하고 현재 씬을 다시 로드한 뒤 영입 화면으로 진입.
+        /// </summary>
+        public void RestartGame()
+        {
+            Debug.Log("[GameFlow] RestartGame");
+
+            // 공유 정적 상태 초기화
+            DiceOrbit.Data.MonsterPresets.Wave2.BearPackTracker.Reset();
+
+            // 플로우 상태 초기화
+            lastWaveCleared = 0;
+            pendingLevelUpCharacter = null;
+            pendingRestart = true;
+
+            UI.GameResultUI.Instance?.Hide();
+
+            // 현재 씬 재로드 (씬 종속 매니저/오브젝트는 모두 새로 초기화됨)
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         private void EnterLevelUpState()

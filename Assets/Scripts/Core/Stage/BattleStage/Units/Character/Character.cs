@@ -394,13 +394,31 @@ namespace DiceOrbit.Core
             return actual;
         }
 
+        [SerializeField] private float deathDespawnDelay = 0.7f;
+        private bool isDying = false;
+
         protected override void HandleDeath()
         {
+            if (isDying) return;
+            isDying = true;
+
             base.HandleDeath();
             spriteVisual?.PlayDeath();
 
+            // 전멸/전투 종료 판정 (HP 기준이라 파괴 전에 호출해도 안전)
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnCharacterDefeated(this);
+
+            // 사망 연출 후 파티에서 제거하고 오브젝트 파괴
+            StartCoroutine(DespawnAfterDeath());
+        }
+
+        private System.Collections.IEnumerator DespawnAfterDeath()
+        {
+            yield return new WaitForSeconds(Mathf.Max(0f, deathDespawnDelay));
+
+            PartyManager.Instance?.RemoveCharacter(this);
+            Destroy(gameObject);
         }
 
         /// <summary>
