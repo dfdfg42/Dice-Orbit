@@ -4461,7 +4461,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Visuals.VfxManager
   defaultAttackHitVfx: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
-  defaultHealVfx: {fileID: 0}
+  defaultHealVfx: {fileID: 9157105887711914197, guid: c4f829cb7dd4b864caf8832ec5b1ee55, type: 3}
   fallbackLifetime: 2.5
   vfxRoot: {fileID: 0}
 --- !u!114 &1238762784
