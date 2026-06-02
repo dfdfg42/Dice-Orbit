@@ -94,7 +94,8 @@ namespace DiceOrbit.UI
             _upgradeHeader.text = $"[{name}] 모디파이어 선택";
             ClearRow();
 
-            var choices = ModifierRegistry.GetRandomChoices(modifierChoiceCount);
+            // 이 캐릭터에게 적용 가능한 모디파이어만 제시
+            var choices = ModifierRegistry.GetRandomChoicesFor(ch, modifierChoiceCount);
             foreach (var mod in choices)
             {
                 var captured = mod;

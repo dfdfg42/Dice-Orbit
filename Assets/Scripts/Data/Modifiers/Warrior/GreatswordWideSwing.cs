@@ -34,5 +34,15 @@ namespace DiceOrbit.Data.Modifiers.Warrior
             if (skill is not WarriorGreatswordActive) return string.Empty;
             return "[광역 참격] 대상 수 +1";
         }
+
+        // 전사 대검(WarriorGreatswordActive)을 가진 캐릭터에게만 제시/장착 가능
+        public override bool CanApplyTo(Character character)
+        {
+            var slots = character?.Stats?.ActiveAbilities;
+            if (slots == null) return false;
+            foreach (var slot in slots)
+                if (slot?.BaseSkill is WarriorGreatswordActive) return true;
+            return false;
+        }
     }
 }

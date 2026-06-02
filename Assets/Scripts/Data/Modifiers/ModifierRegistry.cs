@@ -29,7 +29,23 @@ namespace DiceOrbit.Data.Modifiers
         /// <summary>중복 없이 무작위 count개를 새 인스턴스로 반환.</summary>
         public static List<CharacterModifier> GetRandomChoices(int count)
         {
-            var pool = new List<System.Func<CharacterModifier>>(Factories);
+            return GetRandomChoicesFor(null, count);
+        }
+
+        /// <summary>
+        /// 해당 캐릭터에게 줄 수 있는(CanApplyTo) 모디파이어만 골라 무작위 count개 반환.
+        /// character가 null이면 전체 풀에서 뽑는다.
+        /// </summary>
+        public static List<CharacterModifier> GetRandomChoicesFor(Core.Character character, int count)
+        {
+            // 캐릭터에 적용 가능한 팩토리만 필터
+            var pool = new List<System.Func<CharacterModifier>>();
+            foreach (var f in Factories)
+            {
+                if (character == null) { pool.Add(f); continue; }
+                if (f().CanApplyTo(character)) pool.Add(f);
+            }
+
             // Fisher-Yates 셔플
             for (int i = pool.Count - 1; i > 0; i--)
             {

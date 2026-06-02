@@ -61,5 +61,11 @@ namespace DiceOrbit.Data.Modifiers
         /// 같은 타입이 여러 개 장착된 경우 UI에서 (×N)으로 그룹핑됨.
         /// </summary>
         public virtual string GetSkillLine(CharacterActiveSkill skill) => string.Empty;
+
+        /// <summary>
+        /// 이 모디파이어를 해당 캐릭터에게 줄 수 있는지(보상 제시/장착 가능 여부).
+        /// 기본은 모든 캐릭터(Generic). 특정 스킬에만 작동하는 시그니처는 override해서 제한한다.
+        /// </summary>
+        public virtual bool CanApplyTo(Character character) => true;
     }
 }
