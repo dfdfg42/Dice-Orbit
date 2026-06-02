@@ -16,6 +16,9 @@ namespace DiceOrbit.Data.Modifiers
             () => new Generic.BerserkModifier(),
             () => new Generic.GiantStrengthModifier(),
             () => new Warrior.GreatswordWideSwing(),
+            () => new Alchemist.AlchemistExtraReagent(),
+            () => new Rogue.RoguePositioningBoost(),
+            () => new Mage.MageFocusBoost(),
         };
 
         /// <summary>전체 모디파이어를 새 인스턴스로 생성.</summary>

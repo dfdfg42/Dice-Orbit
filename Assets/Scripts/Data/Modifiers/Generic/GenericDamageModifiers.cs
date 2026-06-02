@@ -9,7 +9,7 @@ namespace DiceOrbit.Data.Modifiers.Generic
     [System.Serializable]
     public class SharpBladeModifier : CharacterModifier
     {
-        [SerializeField] private int bonusDamage = 3;
+        [SerializeField] private int bonusDamage = 1;
 
         public override ModifierCategory Category => ModifierCategory.Generic;
         public override string ModifierName => "예리한 칼날";
@@ -45,7 +45,7 @@ namespace DiceOrbit.Data.Modifiers.Generic
     [System.Serializable]
     public class GiantStrengthModifier : CharacterModifier
     {
-        [SerializeField] private int bonusDamage = 5;
+        [SerializeField] private int bonusDamage = 2;
 
         public override ModifierCategory Category => ModifierCategory.Generic;
         public override string ModifierName => "거인의 힘";

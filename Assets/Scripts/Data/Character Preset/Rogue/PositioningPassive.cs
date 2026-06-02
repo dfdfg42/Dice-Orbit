@@ -16,7 +16,7 @@ namespace DiceOrbit.Data.Passives
 
         public override string GetDynamicDescription()
         {
-            return $"이동한 타일 1칸당 다음 공격 피해 +{bonusPercentPerTile:0.#}%";
+            return $"이동한 타일 1칸당 다음 공격 피해 +{(bonusPercentPerTile + GetPositioningBonus()):0.#}%";
         }
 
         public override void Initialize(DiceOrbit.Core.Unit Owner)
@@ -51,7 +51,8 @@ namespace DiceOrbit.Data.Passives
                 context.SourceUnit == owner &&
                 movedDistanceThisTurn > 0)
             {
-                float multiplier = 1f + (bonusPercentPerTile / 100f) * movedDistanceThisTurn;
+                float effectivePercent = bonusPercentPerTile + GetPositioningBonus();
+                float multiplier = 1f + (effectivePercent / 100f) * movedDistanceThisTurn;
                 context.OutputValue *= multiplier;
                 if (!context.IsSimulation)
                 {
@@ -59,6 +60,19 @@ namespace DiceOrbit.Data.Passives
                     movedDistanceThisTurn = 0;
                 }
             }
+        }
+
+        /// <summary>장착된 시그니처 모디파이어가 더해주는 이동 1칸당 추가 피해율(%) 합산.</summary>
+        private float GetPositioningBonus()
+        {
+            if (!(owner is DiceOrbit.Core.Character ch)) return 0f;
+            var mods = ch.Stats?.Modifiers?.Modifiers;
+            if (mods == null) return 0f;
+            float bonus = 0f;
+            foreach (var m in mods)
+                if (m is DiceOrbit.Data.Modifiers.Rogue.RoguePositioningBoost r)
+                    bonus += r.BonusPercentPerTile;
+            return bonus;
         }
     }
 }

@@ -27,7 +27,7 @@ namespace DiceOrbit.Data.Passives
 
         public override string GetDynamicDescription()
         {
-            return $"웨이브 시작 시 시약 타일 {reagentTileCount}개 설치. 통과/턴 종료 시 피해 +{bonusPercentPerStack:0.#}% (중첩)";
+            return $"웨이브 시작 시 시약 타일 {reagentTileCount + GetReagentTileBonus()}개 설치. 통과/턴 종료 시 피해 +{bonusPercentPerStack:0.#}% (중첩)";
         }
 
         public override void Initialize(Unit ownerUnit)
@@ -88,7 +88,7 @@ namespace DiceOrbit.Data.Passives
             if (tiles == null || tiles.Count == 0) return;
 
             var alchemist = owner as Character;
-            int count = Mathf.Clamp(reagentTileCount, 0, tiles.Count);
+            int count = Mathf.Clamp(reagentTileCount + GetReagentTileBonus(), 0, tiles.Count);
 
             var pool = tiles.Where(t => t != null && !t.HasAttribute(TileAttributeType.Reagent)).ToList();
             for (int i = 0; i < count && pool.Count > 0; i++)
@@ -112,6 +112,19 @@ namespace DiceOrbit.Data.Passives
             {
                 if (tile != null) tile.RemoveAttributeType(TileAttributeType.Reagent);
             }
+        }
+
+        /// <summary>장착된 시그니처 모디파이어가 더해주는 추가 시약 타일 수 합산.</summary>
+        private int GetReagentTileBonus()
+        {
+            if (!(owner is Character ch)) return 0;
+            var mods = ch.Stats?.Modifiers?.Modifiers;
+            if (mods == null) return 0;
+            int bonus = 0;
+            foreach (var m in mods)
+                if (m is DiceOrbit.Data.Modifiers.Alchemist.AlchemistExtraReagent r)
+                    bonus += r.BonusReagentTiles;
+            return bonus;
         }
     }
 }

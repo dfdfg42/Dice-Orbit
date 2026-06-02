@@ -21,7 +21,7 @@ namespace DiceOrbit.Data.Passives
 
         public override string GetDynamicDescription()
         {
-            return $"피해 없이 턴 종료 시 집중 +{stacksGainedWhenSafe}, 피해 입으면 1/{Mathf.Max(2, penaltyDivisor)}로 감소";
+            return $"피해 없이 턴 종료 시 집중 +{stacksGainedWhenSafe + GetFocusStackBonus()}, 피해 입으면 1/{Mathf.Max(2, penaltyDivisor)}로 감소";
         }
 
         public override void Initialize(Unit ownerUnit)
@@ -68,7 +68,7 @@ namespace DiceOrbit.Data.Passives
 
         private void GainFocus()
         {
-            owner.StatusEffects?.AddEffect(new StatusEffect(EffectType.Focus, Mathf.Max(1, stacksGainedWhenSafe), -1, isStackable: true));
+            owner.StatusEffects?.AddEffect(new StatusEffect(EffectType.Focus, Mathf.Max(1, stacksGainedWhenSafe + GetFocusStackBonus()), -1, isStackable: true));
             Notify();
         }
 
@@ -87,6 +87,19 @@ namespace DiceOrbit.Data.Passives
                 owner.StatusEffects.AddEffect(new StatusEffect(EffectType.Focus, reduced, -1, isStackable: true));
             }
             Notify();
+        }
+
+        /// <summary>장착된 시그니처 모디파이어가 더해주는 추가 집중 스택 합산.</summary>
+        private int GetFocusStackBonus()
+        {
+            if (!(owner is Character ch)) return 0;
+            var mods = ch.Stats?.Modifiers?.Modifiers;
+            if (mods == null) return 0;
+            int bonus = 0;
+            foreach (var m in mods)
+                if (m is DiceOrbit.Data.Modifiers.Mage.MageFocusBoost f)
+                    bonus += f.BonusFocusStacks;
+            return bonus;
         }
     }
 }
