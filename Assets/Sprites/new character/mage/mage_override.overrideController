@@ -7,5 +7,7 @@ AnimatorOverrideController:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: mage_override
-  m_Controller: {fileID: 0}
-  m_Clips: []
+  m_Controller: {fileID: 9100000, guid: 443dba1fdf87a9540b7d32960dc410eb, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 7389ed4fd3c370244b6a72a4de2a10a4, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: aa04c9dd5297e064da5a8b677929b533, type: 2}
