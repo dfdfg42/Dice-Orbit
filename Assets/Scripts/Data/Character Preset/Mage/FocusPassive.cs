@@ -24,6 +24,24 @@ namespace DiceOrbit.Data.Passives
             return $"피해 없이 턴 종료 시 집중 +{stacksGainedWhenSafe}, 피해 입으면 1/{Mathf.Max(2, penaltyDivisor)}로 감소";
         }
 
+        public override void Initialize(Unit ownerUnit)
+        {
+            base.Initialize(ownerUnit);
+
+            // 웨이브가 넘어갈 때만 집중 스택 초기화 (공격으로는 소비되지 않음)
+            if (WaveManager.Instance != null)
+            {
+                WaveManager.Instance.OnWaveStart -= HandleWaveStart;
+                WaveManager.Instance.OnWaveStart += HandleWaveStart;
+            }
+        }
+
+        private void HandleWaveStart(int wave)
+        {
+            owner?.StatusEffects?.RemoveEffect(EffectType.Focus);
+            hpAtTurnStart = -1;
+        }
+
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
             if (owner == null || context == null || context.Action == null) return;

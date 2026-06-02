@@ -54,6 +54,12 @@ namespace DiceOrbit.Data.Tile
             }
         }
 
+        /// <summary>라운드 종료 시 지속시간 1 감소 (-1은 영구라 감소하지 않음). CombatManager.TileTurnEnd에서 호출.</summary>
+        public void TickDuration()
+        {
+            if (Duration > 0) Duration--;
+        }
+
         // ICombatReactor Implementation
         public virtual void OnReact(CombatTrigger trigger, CombatContext context)
         {

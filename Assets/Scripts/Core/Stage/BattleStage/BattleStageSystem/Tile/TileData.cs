@@ -208,6 +208,17 @@ namespace DiceOrbit.Data
             UI.TileAttributeBubbleManager.Instance?.RefreshTile(this);
         }
 
+        /// <summary>라운드 종료 시 모든 속성 지속시간을 1 감소시키고 만료된 속성을 제거한다.</summary>
+        public void TickTurnEnd()
+        {
+            if (attributes.Count == 0) return;
+
+            foreach (var attribute in attributes.Values.ToList())
+                attribute?.TickDuration();
+
+            CleanupExpiredAttributes();
+        }
+
         public List<Character> GetCharactersOnTile()
         {
             var characters = new List<Character>();

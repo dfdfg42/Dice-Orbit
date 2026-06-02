@@ -541,9 +541,13 @@ namespace DiceOrbit.Core
 
         private void TileTurnEnd()
         {
-            // 타일 턴 시작 처리 (패시브/상태효과)
-            CombatContext context = new CombatContext(null, null, new CombatAction("Turn End", ActionType.None, 0));
-            CombatPipeline.Instance.Process(context);
+            // 매 라운드 종료 시 모든 타일 속성의 지속시간을 1 감소시키고, 만료된 속성을 제거한다.
+            // (파이프라인 IsTiling 컨텍스트가 실제로 발사되지 않아 동작하지 않던 것을 직접 틱으로 대체)
+            var orbit = GameManager.Instance?.GetOrbitManager();
+            if (orbit?.Tiles == null) return;
+
+            foreach (var tile in orbit.Tiles)
+                if (tile != null) tile.TickTurnEnd();
         }
 
         /// <summary>

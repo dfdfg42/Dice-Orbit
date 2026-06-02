@@ -29,13 +29,6 @@ namespace DiceOrbit.Data.CharacterActives
         public override string GetDynamicDescription()
             => $"{FormatDiceCondition()} X {Mathf.Max(1, multiplier)} + 집중 스택 피해";
 
-        public override void OnAfterResolved(Character source, ActiveSkillSlot ability)
-        {
-            int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
-            if (focusStacks > 0)
-            {
-                source.StatusEffects?.RemoveEffect(EffectType.Focus);
-            }
-        }
+        // 집중 스택은 공격으로 소비되지 않는다. (웨이브 시작 시에만 초기화 — FocusPassive가 처리)
     }
 }
