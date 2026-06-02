@@ -33,6 +33,10 @@ namespace DiceOrbit.Core
         [Tooltip("캐릭터 전용 Animator Controller 또는 Animator Override Controller")]
         public RuntimeAnimatorController AnimatorController;
 
+        [Header("Modifier Configuration")]
+        [HideInInspector]
+        public string ModifierContextTypeName;
+
         [Header("Starting Skills")]
         [SerializeReference]
         public List<CharacterActiveSkill> StartingActives = new List<CharacterActiveSkill>();

@@ -55,7 +55,7 @@ namespace DiceOrbit.Core
                 spriteRenderer.sortingOrder = baseSortingOrder;
             }
         }
-        
+
         /// <summary>
         /// Stats 초기화 (캐릭터 선택 후)
         /// </summary>
@@ -88,11 +88,35 @@ namespace DiceOrbit.Core
                 spriteVisual.PlayIdle();
             }
 
+            InitializeModifierManager();
+
             // 스킬 재초기화
             InitializeSkills();
             InitializePassives();
 
             Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP})");
+        }
+
+        private void InitializeModifierManager()
+        {
+            if (stat?.SourcePreset == null || string.IsNullOrEmpty(stat.SourcePreset.ModifierContextTypeName)) return;
+
+            System.Type contextType = System.Type.GetType(stat.SourcePreset.ModifierContextTypeName);
+            if (contextType != null)
+            {
+                System.Type managerType = typeof(Data.Modifiers.ModifierManager<>).MakeGenericType(contextType);
+
+                if (stat.Modifiers == null)
+                {
+                    stat.Modifiers = (Data.Modifiers.IModifierManager)System.Activator.CreateInstance(managerType);
+                    stat.Modifiers.Initialize(this);
+                    Debug.Log($"[Character] Created ModifierManager<{contextType.Name}> for {stat.CharacterName}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[Character] Could not find ModifierContextType: {stat.SourcePreset.ModifierContextTypeName}");
+            }
         }
 
         private void InitializeSkills()
@@ -131,12 +155,12 @@ namespace DiceOrbit.Core
 
             Debug.Log($"[Character] {stat.CharacterName} leveled up -> Lv.{stat.Level}");
         }
-        
+
         protected override void Awake()
         {
             // 자식 오브젝트에서 SpriteRenderer 찾기 (Visual 분리 지원)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-            spriteVisual   = GetComponentInChildren<CharacterSpriteVisual>();
+            spriteVisual = GetComponentInChildren<CharacterSpriteVisual>();
 
             if (spriteRenderer == null)
                 Debug.LogWarning("SpriteRenderer not found in children! Add SpriteRenderer component to a child object.");
@@ -152,13 +176,13 @@ namespace DiceOrbit.Core
             if (statusEffects == null) statusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
             statusEffects.Initialize(this);
         }
-        
+
         private void Start()
         {
             // 한 프레임 기다려서 OrbitManager가 타일 생성하도록 함
             StartCoroutine(InitializeAfterDelay());
         }
-        
+
         private System.Collections.IEnumerator InitializeAfterDelay()
         {
             yield return null;
@@ -199,7 +223,7 @@ namespace DiceOrbit.Core
                 Debug.LogError("OrbitManager not found! Make sure OrbitSystem exists in scene.");
             }
         }
-        
+
 
         /// <summary>
         /// 타일을 하나씩 거쳐서 이동
@@ -250,7 +274,7 @@ namespace DiceOrbit.Core
                     break;
                 }
             }
-            
+
             // 최종 도착
             if (arrivalTile == null && path.Count > 0)
             {
@@ -310,7 +334,7 @@ namespace DiceOrbit.Core
         {
             stopMovementRequested = true;
         }
-        
+
         /// <summary>
         /// 턴 시작 처리 (Pipeline)
         /// </summary>
@@ -337,7 +361,7 @@ namespace DiceOrbit.Core
         //{
         //    UseSkillByIndex(0, diceValue);
         //}
-        
+
         /// <summary>
         /// 특정 인덱스의 스킬 사용
         /// </summary>
@@ -476,7 +500,7 @@ namespace DiceOrbit.Core
         private string BuildCharacterTooltipText()
         {
             var sb = new StringBuilder();
-            
+
             // 이름 강조 (크기, 굵기)
             string characterName = stat != null && !string.IsNullOrWhiteSpace(stat.CharacterName)
                 ? stat.CharacterName
@@ -505,7 +529,7 @@ namespace DiceOrbit.Core
             foreach (var passive in passives.ActivePassives)
             {
                 if (passive == null) continue;
-                
+
                 string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
                 if (passive.CurrentLevel > 0)
                 {
@@ -520,8 +544,8 @@ namespace DiceOrbit.Core
                     desc = $"{effText}\n<color=#B3B3B3>{passive.Description}</color>";
 
                 // 패시브 카드는 약간 붉은빛 주황색 기본 제공 (Inspector에서 색을 지정 안했으므로 코드로 하드코딩)
-                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f); 
-                
+                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f);
+
                 passivesList.Add(new UI.TooltipKeywordFormatter.KeywordDisplayData(passiveName, desc.Trim(), passiveColor, null));
             }
 
@@ -543,6 +567,12 @@ namespace DiceOrbit.Core
             }
 
             return statuses;
+        }
+
+        public override void CollectReactors(List<Pipeline.ICombatReactor> list)
+        {
+            base.CollectReactors(list);
+            stat?.Modifiers?.CollectReactors(list);
         }
     }
 }

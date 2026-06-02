@@ -11,18 +11,24 @@ public class CharacterPresetEditor : Editor
 {
     private SerializedProperty startingActivesProp;
     private SerializedProperty startingPassivesProp;
+    private SerializedProperty modifierContextTypeNameProp;
 
     private void OnEnable()
     {
         startingActivesProp  = serializedObject.FindProperty("StartingActives");
         startingPassivesProp = serializedObject.FindProperty("StartingPassives");
+        modifierContextTypeNameProp = serializedObject.FindProperty("ModifierContextTypeName");
     }
 
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
 
-        DrawPropertiesExcluding(serializedObject, "StartingActives", "StartingPassives");
+        DrawPropertiesExcluding(serializedObject, "StartingActives", "StartingPassives", "ModifierContextTypeName");
+
+        EditorGUILayout.Space();
+        DrawContextTypeDropdown();
+        EditorGUILayout.Space();
 
         EditorGUILayout.Space();
         DrawSkillListSection(startingActivesProp,  "Starting Actives",  typeof(CharacterActiveSkill));
@@ -126,5 +132,49 @@ public class CharacterPresetEditor : Editor
         }
 
         menu.ShowAsContext();
+    }
+
+    private void DrawContextTypeDropdown()
+    {
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.PrefixLabel("Modifier Context Type");
+
+        string currentName = modifierContextTypeNameProp.stringValue;
+        string displayName = string.IsNullOrEmpty(currentName) ? "(Default/None)" : currentName.Split(',')[0].Split('.').Last();
+
+        if (GUILayout.Button(displayName, EditorStyles.popup))
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("None"), string.IsNullOrEmpty(currentName), () => {
+                modifierContextTypeNameProp.stringValue = "";
+                modifierContextTypeNameProp.serializedObject.ApplyModifiedProperties();
+            });
+            menu.AddSeparator("");
+
+            var baseTypes = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => { try { return a.GetTypes(); } catch { return Type.EmptyTypes; } })
+                .Where(t => t.Name == "CharacterModfierContext" || t.Name == "ModifiedSkillContext")
+                .ToList();
+
+            if (baseTypes.Count > 0)
+            {
+                Type actualBaseType = baseTypes[0];
+                var types = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => { try { return a.GetTypes(); } catch { return Type.EmptyTypes; } })
+                    .Where(t => !t.IsAbstract && (t == actualBaseType || t.IsSubclassOf(actualBaseType)))
+                    .OrderBy(t => t.Name);
+
+                foreach (var t in types)
+                {
+                    var captured = t.AssemblyQualifiedName;
+                    menu.AddItem(new GUIContent(t.Name), currentName == captured, () => {
+                        modifierContextTypeNameProp.stringValue = captured;
+                        modifierContextTypeNameProp.serializedObject.ApplyModifiedProperties();
+                    });
+                }
+            }
+            menu.ShowAsContext();
+        }
+        EditorGUILayout.EndHorizontal();
     }
 }

@@ -320,6 +320,7 @@ Transform:
   - {fileID: 1638101002}
   - {fileID: 1379319587}
   - {fileID: 1534631183}
+  - {fileID: 1434335717}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &196083665
@@ -4896,6 +4897,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1434335716
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1434335717}
+  - component: {fileID: 1434335718}
+  m_Layer: 0
+  m_Name: DebugManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1434335717
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1434335716}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 51532390}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1434335718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1434335716}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 309a42f2b6c574847a8573189e33776a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleStageDebugManager
 --- !u!1 &1497632817
 GameObject:
   m_ObjectHideFlags: 0
@@ -5032,7 +5077,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 694d7667e8c892540a9a8a2855e35113, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.ArtifactManager
-  debugPowerfullPunchData: {fileID: 11400000, guid: df00b1571da111741bce3a03efe939a2, type: 2}
+  debugPowerfullPunchData: {fileID: 0}
 --- !u!1 &1556532173
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,6 +11,11 @@ namespace DiceOrbit.Data.CharacterActives
         [Tooltip("피해 = 주사위 눈금 x 배율")]
         [SerializeField] private int multiplier = 1;
 
+        public override Core.Pipeline.CharacterModfierContext GenerateContext(Character source, ActiveSkillSlot ability)
+        {
+            return new Core.Pipeline.WarriorGreatswordModifiedContext(source, this);
+        }
+
         public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
         {
             return diceValue * Mathf.Max(1, multiplier);
