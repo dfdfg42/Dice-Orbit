@@ -542,6 +542,8 @@ namespace DiceOrbit.UI
             {
                 portraitImage.raycastTarget = true;
                 AddEventTrigger(portraitImage.gameObject);
+                // 병 전체(초상화 영역)를 클릭해도 선택되도록 클릭 핸들러 추가
+                AddClickTrigger(portraitImage.gameObject);
             }
         }
 
@@ -561,6 +563,18 @@ namespace DiceOrbit.UI
             var entryExit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
             entryExit.callback.AddListener((data) => { SetHover(false); });
             ev.triggers.Add(entryExit);
+        }
+
+        private void AddClickTrigger(GameObject go)
+        {
+            if (go == null) return;
+
+            var ev = go.GetComponent<EventTrigger>();
+            if (ev == null) ev = go.AddComponent<EventTrigger>();
+
+            var entryClick = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            entryClick.callback.AddListener((data) => { OnSelectClicked(); });
+            ev.triggers.Add(entryClick);
         }
         
         /// <summary>
