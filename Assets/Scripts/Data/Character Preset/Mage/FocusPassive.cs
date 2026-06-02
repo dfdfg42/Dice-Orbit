@@ -48,18 +48,10 @@ namespace DiceOrbit.Data.Passives
             if (context.SourceUnit != owner) return;
             if (owner.Stats == null) return;
 
-            // 턴 시작 시 체력 스냅샷
-            if (trigger == CombatTrigger.OnPreAction && context.Action.Type == ActionType.OnStartTurn)
-            {
-                hpAtTurnStart = owner.Stats.CurrentHP;
-                return;
-            }
-
             // 턴 종료 시 체력 손실 여부로 분기
             if (trigger == CombatTrigger.OnPostAction && context.Action.Type == ActionType.OnEndTurn)
             {
                 bool lostHP = hpAtTurnStart >= 0 && owner.Stats.CurrentHP < hpAtTurnStart;
-
                 if (lostHP)
                 {
                     ReduceFocus();
