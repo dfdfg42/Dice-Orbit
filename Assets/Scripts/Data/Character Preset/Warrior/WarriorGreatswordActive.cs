@@ -12,11 +12,9 @@ namespace DiceOrbit.Data.CharacterActives
         [SerializeField] private int[] multiplierByLevel = { 4, 6, 8, 10, 12 };
         [SerializeField] private int baseMultiplier = 12;
 
-        public override Core.Pipeline.ModifiedSkillContext GenerateContext(Character source, ActiveSkillSlot ability)
+        public override Core.Pipeline.CharacterModfierContext GenerateContext(Character source, ActiveSkillSlot ability)
         {
-            int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
-            int multiplier = ResolveMultiplier(level);
-            return new Core.Pipeline.WarriorGreatswordModifiedContext(source, this, level, multiplier);
+            return new Core.Pipeline.WarriorGreatswordModifiedContext(source, this);
         }
 
         public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)

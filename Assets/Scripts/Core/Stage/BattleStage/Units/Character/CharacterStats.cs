@@ -35,6 +35,9 @@ namespace DiceOrbit.Data
         public int MoveOnThisTurn = 0;
         public int BindDebuff  = 0;
 
+        [HideInInspector]
+        public Data.Modifiers.IModifierManager Modifiers;
+
         public int ActiveAbilityCount => ActiveAbilities.Count;
 
         public ActiveSkillSlot GetActiveAbilityByIndex(int index)

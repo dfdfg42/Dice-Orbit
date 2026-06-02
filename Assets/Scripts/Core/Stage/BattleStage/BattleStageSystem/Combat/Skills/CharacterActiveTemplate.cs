@@ -59,10 +59,9 @@ namespace DiceOrbit.Data.Skills
         /// 이 스킬에 맞는 캐싱용 컨텍스트를 생성하여 반환합니다.
         /// 파생 클래스에서 오버라이드하여 전용 컨텍스트를 생성할 수 있습니다.
         /// </summary>
-        public virtual ModifiedSkillContext GenerateContext(Character source, ActiveSkillSlot ability)
+        public virtual CharacterModfierContext GenerateContext(Character source, ActiveSkillSlot ability)
         {
-            int level = ability?.CurrentLevel ?? 1;
-            return new ModifiedSkillContext(source, this, level);
+            return new CharacterModfierContext(source, this);
         }
 
         public abstract int    CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue);
