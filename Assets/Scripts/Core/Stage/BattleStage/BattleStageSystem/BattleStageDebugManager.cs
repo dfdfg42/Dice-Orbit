@@ -48,14 +48,14 @@ public class BattleStageDebugManager : MonoBehaviour
                     {
                         var modifiers = firstCharacter.Stats.Modifiers;
 
-                        if (modifiers is DiceOrbit.Data.Modifiers.ModifierManager<DiceOrbit.Core.Pipeline.WarriorGreatswordModifiedContext>)
+                        if (modifiers != null)
                         {
                             modifiers.Add(new DiceOrbit.Data.Modifiers.Warrior.GreatswordWideSwing());
                             Debug.Log($"[Debug] 선두 캐릭터({firstCharacter.Stats.CharacterName})에게 'GreatswordWideSwing' 모디파이어를 추가했습니다!");
                         }
                         else
                         {
-                            Debug.Log($"[Debug] 선두 캐릭터({firstCharacter.Stats.CharacterName})는 WarriorGreatswordModifiedContext 매니저가 아닙니다.");
+                            Debug.Log($"[Debug] 선두 캐릭터({firstCharacter.Stats.CharacterName})에 ModifierManager가 없습니다.");
                         }
                     }
                     else

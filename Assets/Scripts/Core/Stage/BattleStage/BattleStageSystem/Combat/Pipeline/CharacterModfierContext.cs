@@ -2,7 +2,6 @@
 using DiceOrbit.Data;
 using DiceOrbit.Data.Skills;
 using DiceOrbit.Visuals;
-using static Unity.VisualScripting.Member;
 
 namespace DiceOrbit.Core.Pipeline
 {

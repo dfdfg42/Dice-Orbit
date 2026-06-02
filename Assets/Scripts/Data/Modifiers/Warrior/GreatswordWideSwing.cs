@@ -34,11 +34,5 @@ namespace DiceOrbit.Data.Modifiers.Warrior
             if (skill is not WarriorGreatswordActive) return string.Empty;
             return "[광역 참격] 대상 수 +1";
         }
-
-        protected override void OnAttackWithActive(CombatContext context)
-        {
-            context.OutputValue = 1000;
-            Debug.Log($"[광역 참격] 공격력 +10000");
-        }
     }
 }

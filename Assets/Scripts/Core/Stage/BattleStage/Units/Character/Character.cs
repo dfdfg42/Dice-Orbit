@@ -99,23 +99,20 @@ namespace DiceOrbit.Core
 
         private void InitializeModifierManager()
         {
-            if (stat?.SourcePreset == null || string.IsNullOrEmpty(stat.SourcePreset.ModifierContextTypeName)) return;
+            if (stat == null) return;
 
-            System.Type contextType = System.Type.GetType(stat.SourcePreset.ModifierContextTypeName);
-            if (contextType != null)
+            // 모디파이어 컨테이너 생성 (컨텍스트는 스킬별로 그때그때 생성하므로 타입 지정 불필요)
+            if (stat.Modifiers == null)
             {
-                System.Type managerType = typeof(Data.Modifiers.ModifierManager<>).MakeGenericType(contextType);
-
-                if (stat.Modifiers == null)
-                {
-                    stat.Modifiers = (Data.Modifiers.IModifierManager)System.Activator.CreateInstance(managerType);
-                    stat.Modifiers.Initialize(this);
-                    Debug.Log($"[Character] Created ModifierManager<{contextType.Name}> for {stat.CharacterName}");
-                }
+                stat.Modifiers = new Data.Modifiers.ModifierManager();
+                stat.Modifiers.Initialize(this);
             }
-            else
+
+            // 각 액티브 슬롯에 소유자 주입 → 슬롯이 유효 타게팅(모디파이어 반영)을 계산할 수 있게 함
+            if (stat.ActiveAbilities != null)
             {
-                Debug.LogWarning($"[Character] Could not find ModifierContextType: {stat.SourcePreset.ModifierContextTypeName}");
+                foreach (var slot in stat.ActiveAbilities)
+                    if (slot != null) slot.Owner = this;
             }
         }
 
