@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DiceOrbit.Core;
 using DiceOrbit.Data.MonsterPresets.Wave1.Goblin;
-using UnityEngine;
 
 namespace DiceOrbit.Data
 {

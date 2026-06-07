@@ -26,6 +26,8 @@ namespace DiceOrbit.UI
         [Header("Hover Settings")]
         [SerializeField] private float normalAlpha = 0.5f;
         [SerializeField] private float hoverAlpha = 1f;
+        [SerializeField] private float hoverScale = 1.08f;
+        [SerializeField] private float hoverScaleDuration = 0.12f;
         [SerializeField] private List<HoverPortraitSpriteOption> hoverPortraitSprites = new List<HoverPortraitSpriteOption>();
 
         [Header("Select Button Sprite")]
@@ -45,7 +47,26 @@ namespace DiceOrbit.UI
         [SerializeField] private float selectExitDuration = 0.32f;
         [SerializeField] private AnimationCurve selectRiseCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
         [SerializeField] private AnimationCurve selectExitCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-        
+
+        [Header("Detail Slide Animation")]
+        [SerializeField] private float detailSlideDuration = 0.32f;
+        [SerializeField] private AnimationCurve detailSlideCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+        [Header("Dim Settings")]
+        [SerializeField] private float dimmedAlpha = 0.25f;
+
+        [Header("Tilt & Fall Animation")]
+        [SerializeField] private float fallTiltAngle = 90f;
+        [SerializeField] private float fallDropOffsetX = -260f;
+        [SerializeField] private float fallDropOffsetY = 1100f;
+        [SerializeField] private float fallDuration = 0.7f;
+        [Range(0f, 1f)]
+        [SerializeField] private float tiltCompleteAt = 0.55f;
+        [Range(0f, 1f)]
+        [SerializeField] private float dropStartAt = 0.15f;
+        [SerializeField] private AnimationCurve fallTiltCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [SerializeField] private AnimationCurve fallDropCurve = new AnimationCurve(new Keyframe(0f, 0f, 0f, 0f), new Keyframe(1f, 1f, 2.5f, 2.5f));
+
         private Core.CharacterPreset character;
         private System.Action<CharacterCard, Core.CharacterPreset> onSelected;
         private Sprite defaultPortraitSprite;
@@ -53,6 +74,10 @@ namespace DiceOrbit.UI
         private CanvasGroup canvasGroup;
         private Vector2 introTargetPosition;
         private bool hasCapturedIntroTarget;
+        private bool isDimmed;
+        private bool hoverSuppressed;
+        private Vector3 baseScale = Vector3.one;
+        private Coroutine hoverScaleRoutine;
 
         [System.Serializable]
         private class SelectButtonSpriteOption
@@ -82,6 +107,11 @@ namespace DiceOrbit.UI
             if (canvasGroup == null)
             {
                 canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+
+            if (rectTransform != null)
+            {
+                baseScale = rectTransform.localScale;
             }
 
             if (selectButton != null)
@@ -247,6 +277,11 @@ namespace DiceOrbit.UI
 
         private void SetHover(bool hover)
         {
+            if (hoverSuppressed)
+            {
+                return;
+            }
+
             ApplyAlphaToUI(hover ? hoverAlpha : normalAlpha);
 
             if (canvasGroup != null)
@@ -269,6 +304,185 @@ namespace DiceOrbit.UI
                     portraitImage.sprite = defaultPortraitSprite;
                 }
             }
+
+            PlayHoverScale(hover ? hoverScale : 1f);
+        }
+
+        private void PlayHoverScale(float multiplier)
+        {
+            if (rectTransform == null)
+            {
+                return;
+            }
+
+            if (hoverScaleRoutine != null)
+            {
+                StopCoroutine(hoverScaleRoutine);
+            }
+
+            if (!gameObject.activeInHierarchy)
+            {
+                rectTransform.localScale = baseScale * multiplier;
+                return;
+            }
+
+            hoverScaleRoutine = StartCoroutine(HoverScaleRoutine(baseScale * multiplier));
+        }
+
+        private IEnumerator HoverScaleRoutine(Vector3 target)
+        {
+            var start = rectTransform.localScale;
+            var elapsed = 0f;
+            var duration = Mathf.Max(0.0001f, hoverScaleDuration);
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(elapsed / duration);
+                rectTransform.localScale = Vector3.LerpUnclamped(start, target, t);
+                yield return null;
+            }
+
+            rectTransform.localScale = target;
+            hoverScaleRoutine = null;
+        }
+
+        public void SetDimmed(bool dimmed)
+        {
+            isDimmed = dimmed;
+            hoverSuppressed = dimmed;
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = dimmed ? dimmedAlpha : 0.3f;
+                canvasGroup.interactable = !dimmed;
+                canvasGroup.blocksRaycasts = !dimmed;
+            }
+
+            ApplyAlphaToUI(dimmed ? dimmedAlpha : normalAlpha);
+
+            if (dimmed)
+            {
+                PlayHoverScale(1f);
+            }
+        }
+
+        public IEnumerator PlayDetailEntryRoutine(Vector2 targetAnchoredPosition)
+        {
+            if (!hasCapturedIntroTarget)
+            {
+                CaptureIntroTargetPosition();
+            }
+
+            hoverSuppressed = true;
+            PlayHoverScale(1f);
+
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 1f;
+            }
+            ApplyAlphaToUI(hoverAlpha);
+
+            if (rectTransform == null)
+            {
+                yield break;
+            }
+
+            var start = rectTransform.anchoredPosition;
+            var elapsed = 0f;
+            var duration = Mathf.Max(0.0001f, detailSlideDuration);
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(elapsed / duration);
+                var eased = detailSlideCurve != null ? detailSlideCurve.Evaluate(t) : t;
+                rectTransform.anchoredPosition = Vector2.LerpUnclamped(start, targetAnchoredPosition, eased);
+                yield return null;
+            }
+
+            rectTransform.anchoredPosition = targetAnchoredPosition;
+        }
+
+        public IEnumerator PlayDetailReturnRoutine()
+        {
+            if (!hasCapturedIntroTarget)
+            {
+                yield break;
+            }
+
+            if (rectTransform == null)
+            {
+                yield break;
+            }
+
+            var start = rectTransform.anchoredPosition;
+            var elapsed = 0f;
+            var duration = Mathf.Max(0.0001f, detailSlideDuration);
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(elapsed / duration);
+                var eased = detailSlideCurve != null ? detailSlideCurve.Evaluate(t) : t;
+                rectTransform.anchoredPosition = Vector2.LerpUnclamped(start, introTargetPosition, eased);
+                yield return null;
+            }
+
+            rectTransform.anchoredPosition = introTargetPosition;
+            hoverSuppressed = false;
+            ApplyAlphaToUI(normalAlpha);
+            if (canvasGroup != null) canvasGroup.alpha = 0.3f;
+        }
+
+        public IEnumerator PlayConfirmFallRoutine()
+        {
+            hoverSuppressed = true;
+            PlayHoverScale(1f);
+
+            if (rectTransform == null)
+            {
+                yield break;
+            }
+
+            var startRotation = rectTransform.localEulerAngles;
+            var targetRotation = startRotation + new Vector3(0f, 0f, fallTiltAngle);
+            var startPos = rectTransform.anchoredPosition;
+            var targetPos = startPos + new Vector2(fallDropOffsetX, -fallDropOffsetY);
+
+            var elapsed = 0f;
+            var duration = Mathf.Max(0.0001f, fallDuration);
+            var tiltCutoff = Mathf.Clamp01(tiltCompleteAt);
+            var dropBegin = Mathf.Clamp01(dropStartAt);
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(elapsed / duration);
+
+                // Tilt: completes early so the bottle is fully on its side while still falling.
+                var tiltT = tiltCutoff > 0f ? Mathf.Clamp01(t / tiltCutoff) : 1f;
+                var tiltEased = fallTiltCurve != null ? fallTiltCurve.Evaluate(tiltT) : tiltT;
+                rectTransform.localEulerAngles = Vector3.LerpUnclamped(startRotation, targetRotation, tiltEased);
+
+                // Drop: starts slightly after the tilt begins, then accelerates (gravity-ish).
+                var dropSpan = 1f - dropBegin;
+                var dropT = dropSpan > 0f ? Mathf.Clamp01((t - dropBegin) / dropSpan) : 1f;
+                var dropEased = fallDropCurve != null ? fallDropCurve.Evaluate(dropT) : dropT;
+                rectTransform.anchoredPosition = Vector2.LerpUnclamped(startPos, targetPos, dropEased);
+
+                if (canvasGroup != null)
+                {
+                    // Hold opacity until the bottle has cleared, then fade out quickly.
+                    var fadeT = Mathf.Clamp01((t - 0.6f) / 0.4f);
+                    canvasGroup.alpha = Mathf.Lerp(1f, 0f, fadeT);
+                }
+                yield return null;
+            }
+
+            rectTransform.anchoredPosition = targetPos;
+            rectTransform.localEulerAngles = targetRotation;
+            if (canvasGroup != null) canvasGroup.alpha = 0f;
         }
 
         private Sprite ResolveHoverPortraitSprite()
@@ -328,6 +542,8 @@ namespace DiceOrbit.UI
             {
                 portraitImage.raycastTarget = true;
                 AddEventTrigger(portraitImage.gameObject);
+                // 병 전체(초상화 영역)를 클릭해도 선택되도록 클릭 핸들러 추가
+                AddClickTrigger(portraitImage.gameObject);
             }
         }
 
@@ -347,6 +563,18 @@ namespace DiceOrbit.UI
             var entryExit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
             entryExit.callback.AddListener((data) => { SetHover(false); });
             ev.triggers.Add(entryExit);
+        }
+
+        private void AddClickTrigger(GameObject go)
+        {
+            if (go == null) return;
+
+            var ev = go.GetComponent<EventTrigger>();
+            if (ev == null) ev = go.AddComponent<EventTrigger>();
+
+            var entryClick = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+            entryClick.callback.AddListener((data) => { OnSelectClicked(); });
+            ev.triggers.Add(entryClick);
         }
         
         /// <summary>

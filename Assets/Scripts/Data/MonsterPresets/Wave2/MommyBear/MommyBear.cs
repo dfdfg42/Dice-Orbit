@@ -1,31 +1,63 @@
+using UnityEngine;
+using System.Collections.Generic;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
-using DiceOrbit.Data.Monsters;
 using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Tile;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.TextCore.Text;
-using static Unity.VisualScripting.Member;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
 {
     // ==========================================
-    // 1. 엄마곰 스킬 구현
+    // 패턴 1 [보호]
     // ==========================================
     /// <summary>
-    /// 엄마곰이 사용할 스킬 틀입니다. SkillData를 상속받습니다.
-    /// 구체적인 수치나 로직은 필요에 따라 채워넣으세요.
+    /// 본인 및 아기곰에게 일시 방어도를 부여한다.
+    /// 타겟 없는 팀 버프이므로 MonsterSkill: TargetType=Self, IntentType=Defend.
     /// </summary>
     [System.Serializable]
-    public class MommyBearAttack1 : SkillData
+    public class ProtectSkill : SkillData
     {
-        int damage = 15;
-        public MommyBearAttack1()
+        [Header("Skill Settings")]
+        [SerializeField] private int armorAmount = 5;
+
+        public ProtectSkill()
         {
-            skillName = "휘둘러치기";
-            description = $"무작위 대상 1명이 서있는 타일 + 좌우 2칸에 {damage} 피해";
+            skillName = "보호";
+            description = "본인 및 아기곰에게 일시 방어도 부여";
         }
+
+        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
+        {
+            if (source?.Stats != null) source.Stats.TempArmor += armorAmount;
+
+            var baby = BearHelper.FindMonsterByName("아기 곰");
+            if (baby != null && baby.IsAlive && baby.Stats != null)
+                baby.Stats.TempArmor += armorAmount;
+
+            Debug.Log($"[보호] 본인 및 아기곰 방어도 +{armorAmount}");
+        }
+    }
+
+    // ==========================================
+    // 패턴 2 [곰은 사람을 찢어]
+    // ==========================================
+    /// <summary>
+    /// 턴 시작 기준 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해.
+    /// (대상/범위 선정은 MonsterSkill 설정: RandomCharacter + Tiles + range 2)
+    /// </summary>
+    [System.Serializable]
+    public class MommyBearTear : SkillData
+    {
+        [Header("Skill Settings")]
+        [SerializeField] private int damage = 20;
+
+        public MommyBearTear()
+        {
+            skillName = "곰은 사람을 찢어";
+            description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
+        }
+
+        public override int GetPreviewDamage() => damage;
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
@@ -33,81 +65,68 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
         }
     }
 
-    [System.Serializable]
-    public class MommyBearAttack2 : SkillData
-    {
-        int damage = 20;
-        public MommyBearAttack2()
-        {
-            skillName = "곰은 사람을 찢어";
-            description = $"무작위 대상 1명에게 {damage} 피해";
-        }
-
-        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
-        {
-            AttackUnits(source, targetUnits, damage);
-        }
-    }
     // ==========================================
-    // 2. 엄마곰 사망 효과 구현 (필요 시 주석 해제)
-    // ==========================================
-    /*
-    [System.Serializable]
-    public class MommyBearDeath : DeathEffect
-    {
-        public MommyBearDeath()
-        {
-            effectName = "Mommy Bear Death";
-            description = "엄마곰 사망 효과입니다.";
-        }
-
-        public override void Execute(Monster deadMonster)
-        {
-            // TODO: 사망 시 효과 구현
-        }
-    }
-    */
-
-    // ==========================================
-    // 3. 엄마곰 패시브 구현
+    // 패시브 [꿀 묻은 털]
     // ==========================================
     /// <summary>
-    /// 엄마곰의 고유 패시브 스킬 틀입니다. PassiveAbility를 상속받습니다.
+    /// 필드의 꿀 타일이 일정 개수 이상이면 엄마곰이 받는 피해량을 일정 비율 감소시킨다.
     /// </summary>
     [System.Serializable]
-    public class MommyBearPassive : PassiveAbility
+    public class HoneyFurPassive : PassiveAbility
     {
-        int healAmount = 10;
-        public MommyBearPassive()
+        [Header("Passive Settings")]
+        [Tooltip("이 개수 이상 꿀 타일이 있으면 발동")]
+        [SerializeField] private int honeyTileRequirement = 5;
+        [Tooltip("받는 피해 감소 퍼센트")]
+        [SerializeField] private int damageReductionPercent = 20;
+
+        public HoneyFurPassive()
         {
-            passiveName = "엄마 곰도 꿀을 좋아해";
-            description = $"꿀 디버프를 가진 적을 공격할 경우, 체력을 {healAmount} 회복";
+            passiveName = "꿀 묻은 털";
+            description = "꿀 타일이 5개 이상이면 받는 피해량 20% 감소";
             priority = 10;
             isStackable = false;
         }
 
+        public override void Initialize(Unit Owner)
+        {
+            base.Initialize(Owner);
+            BearPackTracker.EnsureWaveHook();
+        }
+
+        public override string GetDynamicDescription()
+            => $"꿀 타일 {honeyTileRequirement}개 이상이면 받는 피해 -{damageReductionPercent}% (현재 꿀 {BearPackTracker.HoneyTileCount()}개)";
+
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            // 예외 방지
-            if (context?.Action == null) return;
+            if (context?.Action == null || owner == null) return;
 
-            if (trigger == CombatTrigger.OnHit &&
+            // 엄마곰이 피해를 받는 쪽일 때, 꿀 타일이 충분하면 받는 피해 감소
+            if (trigger == CombatTrigger.OnCalculateOutput &&
                 context.Action.Type == ActionType.Attack &&
-                context.SourceUnit == owner &&
-                context.Target.StatusEffects.HasEffect(EffectType.Honey))
+                context.Target == owner &&
+                BearPackTracker.HoneyTileCount() >= honeyTileRequirement)
             {
-                // 패시브 발동
-                Debug.Log("엄마곰 패시브 발동");
-                var action = new CombatAction(passiveName, ActionType.Heal, healAmount);
-                var attackContext = new CombatContext(owner, owner, action);
-
-                CombatPipeline.Instance?.Process(attackContext);
+                context.OutputValue *= 1f - (damageReductionPercent / 100f);
             }
         }
 
-        public override bool AllowSamePassive(IPassive incoming)
+        public override bool AllowSamePassive(IPassive incoming) => false;
+    }
+
+    // ==========================================
+    // 공용 헬퍼
+    // ==========================================
+    public static class BearHelper
+    {
+        public static Monster FindMonsterByName(string name)
         {
-            return false;
+            var monsters = CombatManager.Instance?.ActiveMonsters;
+            if (monsters == null) return null;
+            foreach (var m in monsters)
+                if (m != null && m.IsAlive && m.Stats != null && m.Stats.MonsterName == name)
+                    return m;
+            return null;
         }
     }
 }

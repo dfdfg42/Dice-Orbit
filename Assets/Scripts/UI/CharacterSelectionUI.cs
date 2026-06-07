@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,45 +8,89 @@ using System.Linq;
 namespace DiceOrbit.UI
 {
     /// <summary>
-    /// 캐릭터 선택 UI
+    /// 캐릭터 선택 UI (유리병 3개 → 선택 시 detail 화면)
     /// </summary>
     public class CharacterSelectionUI : MonoBehaviour
     {
         [Header("Character Presets")]
         [SerializeField] private List<Core.CharacterPreset> allCharacters = new List<Core.CharacterPreset>();
-        
-        [Header("UI References")]
+
+        [Header("Card UI References")]
         [SerializeField] private Transform cardContainer;
         [SerializeField] private GameObject characterCardPrefab;
-        [SerializeField] private Canvas selectionCanvas; // Canvas 직접 참조
-        [SerializeField] private Image characterWindowImage; // 왼쪽에 표시할 창 이미지
-        [SerializeField] private Button confirmButton; // 선택 확인 버튼
-        
+        [SerializeField] private Canvas selectionCanvas;
+
+        [Header("Detail UI References")]
+        [SerializeField] private GameObject detailRoot;
+        [SerializeField] private RectTransform selectedBottleAnchor;
+        [SerializeField] private TextMeshProUGUI detailNameText;
+        [SerializeField] private TextMeshProUGUI detailStatsText;
+        [Tooltip("패시브 설명 박스 (스킬 데이터에서 자동 생성)")]
+        [SerializeField] private TextMeshProUGUI detailPassiveText;
+        [Tooltip("액티브 설명 박스 (스킬 데이터에서 자동 생성)")]
+        [SerializeField] private TextMeshProUGUI detailActiveText;
+        [Tooltip("(옵션) 분리 박스를 안 쓸 때만 사용하는 통합 설명 텍스트")]
+        [SerializeField] private TextMeshProUGUI detailDescriptionText;
+        [SerializeField] private Button cancelButton;
+        [SerializeField] private Image ldIllustrationImage;
+        [SerializeField] private Button ldConfirmButton;
+
         [Header("Spawner")]
         [SerializeField] private Core.CharacterSpawner characterSpawner;
 
         [Header("Settings")]
-        [SerializeField] private int numberOfChoices = 4;
-        
+        [SerializeField] private int numberOfChoices = 3;
+        [Tooltip("시작 시 고를 캐릭터 수 (이 횟수만큼 선택을 반복)")]
+        [SerializeField] private int charactersToSelect = 2;
+
         private List<Core.CharacterPreset> currentChoices = new List<Core.CharacterPreset>();
         private List<CharacterCard> currentCards = new List<CharacterCard>();
-        private Core.CharacterPreset selectedCharacter;
-        private bool isSelectionSequencePlaying;
-        
+        private CharacterCard activeDetailCard;
+        private Core.CharacterPreset activeDetailPreset;
+        private bool isTransitioning;
+        private Coroutine activeTransitionRoutine;
+
+        private int selectedCount;
+        private int sessionTargetCount = 1;
+        private readonly List<Core.CharacterPreset> pickedPresets = new List<Core.CharacterPreset>();
+
         private void Start()
         {
-            // Canvas 자동 찾기
             if (selectionCanvas == null)
             {
                 selectionCanvas = GetComponentInParent<Canvas>();
             }
 
-            if (characterWindowImage != null)
-            {
-                characterWindowImage.gameObject.SetActive(false);
-            }
-            
+            HideDetail();
+            WireDetailButtons();
+            ResetSelectionSession();
             GenerateRandomChoices();
+        }
+
+        private void ResetSelectionSession()
+        {
+            selectedCount = 0;
+            pickedPresets.Clear();
+
+            // 파티가 비어있으면 첫 시작 → charactersToSelect명 선택,
+            // 이미 파티원이 있으면 (웨이브 후 영입 등) → 1명만 선택.
+            int partySize = Core.PartyManager.Instance != null ? Core.PartyManager.Instance.PartySize : 0;
+            sessionTargetCount = (partySize == 0) ? Mathf.Max(1, charactersToSelect) : 1;
+        }
+
+        private void WireDetailButtons()
+        {
+            if (cancelButton != null)
+            {
+                cancelButton.onClick.RemoveAllListeners();
+                cancelButton.onClick.AddListener(OnCancelClicked);
+            }
+
+            if (ldConfirmButton != null)
+            {
+                ldConfirmButton.onClick.RemoveAllListeners();
+                ldConfirmButton.onClick.AddListener(OnConfirmClicked);
+            }
         }
 
         public void Show()
@@ -60,7 +105,8 @@ namespace DiceOrbit.UI
             }
 
             DiceUI.Instance?.SetPanelVisible(false);
-
+            HideDetail();
+            ResetSelectionSession();
             GenerateRandomChoices();
         }
 
@@ -77,34 +123,31 @@ namespace DiceOrbit.UI
 
             DiceUI.Instance?.SetPanelVisible(true);
         }
-        
-        /// <summary>
-        /// 랜덤 캐릭터 4개 생성
-        /// </summary>
+
         private void GenerateRandomChoices()
         {
-            // 기존 카드 제거
             foreach (Transform child in cardContainer)
             {
                 Destroy(child.gameObject);
             }
-            
+
             currentChoices.Clear();
             currentCards.Clear();
-            isSelectionSequencePlaying = false;
-            
-            // 랜덤 선택
-            if (allCharacters.Count >= numberOfChoices)
+            activeDetailCard = null;
+            activeDetailPreset = null;
+            isTransitioning = false;
+
+            // 이미 고른 캐릭터는 다음 선택지에서 제외
+            var pool = allCharacters.Where(c => c != null && !pickedPresets.Contains(c)).ToList();
+            if (pool.Count >= numberOfChoices)
             {
-                var shuffled = allCharacters.OrderBy(x => Random.value).ToList();
-                currentChoices = shuffled.Take(numberOfChoices).ToList();
+                currentChoices = pool.OrderBy(x => Random.value).Take(numberOfChoices).ToList();
             }
             else
             {
-                currentChoices = new List<Core.CharacterPreset>(allCharacters);
+                currentChoices = pool;
             }
-            
-            // UI 카드 생성
+
             var spawnedCards = new List<CharacterCard>();
             foreach (var character in currentChoices)
             {
@@ -121,10 +164,7 @@ namespace DiceOrbit.UI
                 StartCoroutine(PlayCharacterCardIntro(spawnedCards));
             }
         }
-        
-        /// <summary>
-        /// 캐릭터 카드 생성
-        /// </summary>
+
         private CharacterCard CreateCharacterCard(Core.CharacterPreset character)
         {
             if (characterCardPrefab == null)
@@ -132,10 +172,10 @@ namespace DiceOrbit.UI
                 Debug.LogError("Character Card Prefab not assigned!");
                 return null;
             }
-            
+
             var cardObj = Instantiate(characterCardPrefab, cardContainer);
             var card = cardObj.GetComponent<CharacterCard>();
-            
+
             if (card != null)
             {
                 card.Setup(character, OnCharacterSelectedRequested);
@@ -153,109 +193,202 @@ namespace DiceOrbit.UI
             for (int i = 0; i < cards.Count; i++)
             {
                 var card = cards[i];
-                if (card == null)
-                {
-                    continue;
-                }
+                if (card == null) continue;
 
                 card.CaptureIntroTargetPosition();
                 card.PlayIntro(i * staggerDelay);
             }
         }
-        
+
         private void OnCharacterSelectedRequested(CharacterCard selectedCard, Core.CharacterPreset character)
         {
-            if (isSelectionSequencePlaying) return;
-            StartCoroutine(PlayCharacterSelectionSequence(selectedCard, character));
+            if (isTransitioning) return;
+            if (selectedCard == null || character == null) return;
+
+            if (activeTransitionRoutine != null) StopCoroutine(activeTransitionRoutine);
+            activeTransitionRoutine = StartCoroutine(EnterDetailRoutine(selectedCard, character));
         }
 
-        private IEnumerator PlayCharacterSelectionSequence(CharacterCard selectedCard, Core.CharacterPreset character)
+        private IEnumerator EnterDetailRoutine(CharacterCard selectedCard, Core.CharacterPreset character)
         {
-            isSelectionSequencePlaying = true;
+            isTransitioning = true;
+            activeDetailCard = selectedCard;
+            activeDetailPreset = character;
 
-            for (int i = 0; i < currentCards.Count; i++)
+            foreach (var card in currentCards)
             {
-                var card = currentCards[i];
-                if (card != null) card.SetSelectionLocked(true);
-            }
-
-            var selectedIndex = currentCards.IndexOf(selectedCard);
-            if (selectedIndex < 0) selectedIndex = 0;
-
-            var animationOrder = BuildSelectionOrder(selectedIndex);
-            for (int i = 0; i < animationOrder.Count; i++)
-            {
-                var cardIndex = animationOrder[i];
-                if (cardIndex < 0 || cardIndex >= currentCards.Count) continue;
-                var card = currentCards[cardIndex];
                 if (card == null) continue;
-
-                StartCoroutine(card.PlaySelectionExitRoutine(cardIndex == selectedIndex));
-                yield return new WaitForSeconds(0.2f);
-            }
-
-            yield return new WaitForSeconds(0.5f);
-            DisplayCharacterWindow(character);
-        }
-
-        private List<int> BuildSelectionOrder(int selectedIndex)
-        {
-            var order = new List<int>();
-            var count = currentCards.Count;
-            if (count <= 0) return order;
-
-            selectedIndex = Mathf.Clamp(selectedIndex, 0, count - 1);
-            order.Add(selectedIndex);
-            for (int i = selectedIndex - 1; i >= 0; i--) order.Add(i);
-            for (int i = selectedIndex + 1; i < count; i++) order.Add(i);
-            return order;
-        }
-
-        private void DisplayCharacterWindow(Core.CharacterPreset character)
-        {
-            if (character == null) return;
-
-            if (characterWindowImage != null)
-            {
-                var windowSprite = character.CharacterWindowSprite;
-                if (windowSprite != null)
+                card.SetSelectionLocked(true);
+                if (card != selectedCard)
                 {
-                    characterWindowImage.sprite = windowSprite;
-                    characterWindowImage.enabled = true;
-                    characterWindowImage.gameObject.SetActive(true);
-                    characterWindowImage.transform.SetAsLastSibling();
-                }
-                else
-                {
-                    characterWindowImage.gameObject.SetActive(false);
+                    card.SetDimmed(true);
                 }
             }
 
-            if (confirmButton != null)
-            {
-                confirmButton.gameObject.SetActive(true);
-                confirmButton.onClick.RemoveAllListeners();
-                confirmButton.onClick.AddListener(() => OnCharacterSelected(character));
-            }
-            else
-            {
-                OnCharacterSelected(character);
-            }
+            var anchorPos = selectedBottleAnchor != null
+                ? selectedBottleAnchor.anchoredPosition
+                : selectedCard.GetComponent<RectTransform>().anchoredPosition;
+
+            yield return StartCoroutine(selectedCard.PlayDetailEntryRoutine(anchorPos));
+
+            ShowDetail(character);
+            isTransitioning = false;
+            activeTransitionRoutine = null;
         }
 
-        private void OnCharacterSelected(Core.CharacterPreset preset)
+        private void ShowDetail(Core.CharacterPreset character)
         {
-            selectedCharacter = preset;
-            characterSpawner?.Spawn(preset);
+            if (detailRoot != null) detailRoot.SetActive(true);
 
+            if (detailNameText != null) detailNameText.text = character.CharacterName;
+            if (detailStatsText != null) detailStatsText.text = $"HP: {character.MaxHP}";
+
+            bool hasSplitBoxes = detailPassiveText != null || detailActiveText != null;
+            if (detailPassiveText != null) detailPassiveText.text = BuildPassiveSummary(character);
+            if (detailActiveText != null) detailActiveText.text = BuildActiveSummary(character);
+            if (detailDescriptionText != null)
+                detailDescriptionText.text = hasSplitBoxes ? string.Empty : character.Description;
+
+            if (ldIllustrationImage != null)
+            {
+                var sprite = character.CharacterWindowSprite != null ? character.CharacterWindowSprite : character.Portrait;
+                ldIllustrationImage.sprite = sprite;
+                ldIllustrationImage.enabled = sprite != null;
+            }
+
+            if (cancelButton != null) cancelButton.interactable = true;
+            if (ldConfirmButton != null) ldConfirmButton.interactable = true;
+        }
+
+        private string BuildPassiveSummary(Core.CharacterPreset character)
+        {
+            if (character?.StartingPassives == null) return string.Empty;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var passive in character.StartingPassives)
+            {
+                if (passive == null) continue;
+
+                string name = string.IsNullOrWhiteSpace(passive.PassiveName) ? "패시브" : passive.PassiveName;
+                string body = passive.GetDynamicDescription();
+                if (string.IsNullOrWhiteSpace(body)) body = passive.Description;
+
+                if (sb.Length > 0) sb.Append('\n').Append('\n');
+                sb.Append("<b>[").Append(name).Append("]</b>");
+                if (!string.IsNullOrWhiteSpace(body)) sb.Append('\n').Append(body);
+            }
+            return sb.ToString();
+        }
+
+        private string BuildActiveSummary(Core.CharacterPreset character)
+        {
+            if (character?.StartingActives == null) return string.Empty;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var active in character.StartingActives)
+            {
+                if (active == null) continue;
+
+                string name = string.IsNullOrWhiteSpace(active.SkillName) ? "액티브" : active.SkillName;
+                string body = active.GetDynamicDescription();
+                if (string.IsNullOrWhiteSpace(body)) body = active.Description;
+
+                if (sb.Length > 0) sb.Append('\n').Append('\n');
+                sb.Append("<b>[").Append(name).Append("]</b>");
+                if (!string.IsNullOrWhiteSpace(body)) sb.Append('\n').Append(body);
+            }
+            return sb.ToString();
+        }
+
+        private void HideDetail()
+        {
+            if (detailRoot != null) detailRoot.SetActive(false);
+        }
+
+        private void OnCancelClicked()
+        {
+            if (isTransitioning) return;
+            if (activeDetailCard == null) return;
+
+            if (activeTransitionRoutine != null) StopCoroutine(activeTransitionRoutine);
+            activeTransitionRoutine = StartCoroutine(CancelDetailRoutine());
+        }
+
+        private IEnumerator CancelDetailRoutine()
+        {
+            isTransitioning = true;
+            HideDetail();
+
+            var returningCard = activeDetailCard;
+            activeDetailCard = null;
+            activeDetailPreset = null;
+
+            yield return StartCoroutine(returningCard.PlayDetailReturnRoutine());
+
+            foreach (var card in currentCards)
+            {
+                if (card == null) continue;
+                card.SetDimmed(false);
+                card.SetSelectionLocked(false);
+            }
+
+            isTransitioning = false;
+            activeTransitionRoutine = null;
+        }
+
+        private void OnConfirmClicked()
+        {
+            if (isTransitioning) return;
+            if (activeDetailCard == null || activeDetailPreset == null) return;
+
+            if (activeTransitionRoutine != null) StopCoroutine(activeTransitionRoutine);
+            activeTransitionRoutine = StartCoroutine(ConfirmDetailRoutine());
+        }
+
+        private IEnumerator ConfirmDetailRoutine()
+        {
+            isTransitioning = true;
+
+            if (cancelButton != null) cancelButton.interactable = false;
+            if (ldConfirmButton != null) ldConfirmButton.interactable = false;
+
+            var preset = activeDetailPreset;
+            var card = activeDetailCard;
+
+            HideDetail();
+
+            yield return StartCoroutine(card.PlayConfirmFallRoutine());
+
+            FinalizeSelection(preset);
+        }
+
+        private void FinalizeSelection(Core.CharacterPreset preset)
+        {
+            // 전체 타일을 최대 파티 인원으로 균등 분할해 배치 (현재 파티 인원 = 슬롯 인덱스)
+            int slotIndex = Core.PartyManager.Instance != null ? Core.PartyManager.Instance.PartySize : selectedCount;
+            int slotCount = Core.PartyManager.Instance != null ? Core.PartyManager.Instance.MaxPartySize : 4;
+            characterSpawner?.Spawn(preset, slotIndex, slotCount);
+
+            pickedPresets.Add(preset);
+            selectedCount++;
+
+            // 아직 더 골라야 하면 선택지를 새로 생성하고 선택 화면 유지
+            if (selectedCount < sessionTargetCount)
+            {
+                HideDetail();
+                GenerateRandomChoices();
+                return;
+            }
+
+            // 모두 선택 완료 → 화면 닫고 진행
             if (selectionCanvas != null)
                 selectionCanvas.gameObject.SetActive(false);
             else
                 transform.parent.gameObject.SetActive(false);
 
             DiceUI.Instance?.SetPanelVisible(true);
-            Core.GameFlowManager.Instance?.OnCharacterSelected();
+            // 첫 영입이면 Combat으로, 웨이브 클리어 후 영입이면 Reward로 라우팅.
+            Core.GameFlowManager.Instance?.OnRecruitComplete();
         }
-        
     }
 }

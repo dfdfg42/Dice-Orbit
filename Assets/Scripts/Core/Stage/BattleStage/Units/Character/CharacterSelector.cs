@@ -10,15 +10,18 @@ namespace DiceOrbit.Core
     public class CharacterSelector : MonoBehaviour
     {
         private Camera mainCamera;
-        
+        private Character hoveredCharacter;
+
         private void Start()
         {
             mainCamera = Camera.main;
             Debug.Log("CharacterSelector started! Camera: " + (mainCamera != null ? mainCamera.name : "NULL"));
         }
-        
+
         private void Update()
         {
+            HandleHover();
+
             // 새로운 Input System 사용
             if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
             {
@@ -65,6 +68,30 @@ namespace DiceOrbit.Core
                 {
                     Debug.Log("[CharacterSelector] Raycast hit nothing");
                 }
+            }
+        }
+
+        // 매 프레임 마우스 아래 캐릭터를 찾아 앞으로 보낸다(호버 강조). 새 Input System 기반.
+        private void HandleHover()
+        {
+            Character hit = null;
+
+            bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            if (!overUI && mainCamera != null && Mouse.current != null)
+            {
+                Vector2 mousePos = Mouse.current.position.ReadValue();
+                Ray ray = mainCamera.ScreenPointToRay(mousePos);
+                if (Physics.Raycast(ray, out var rayHit, 500f, ~0))
+                {
+                    hit = rayHit.collider.GetComponent<Character>();
+                }
+            }
+
+            if (hit != hoveredCharacter)
+            {
+                if (hoveredCharacter != null) hoveredCharacter.SetHoverHighlight(false);
+                hoveredCharacter = hit;
+                if (hoveredCharacter != null) hoveredCharacter.SetHoverHighlight(true);
             }
         }
     }

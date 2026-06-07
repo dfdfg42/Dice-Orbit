@@ -1,236 +1,115 @@
 using UnityEngine;
+using System.Collections.Generic;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Tile;
-using System.Collections.Generic;
-using DiceOrbit.Data.Monsters;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
 {
     // ==========================================
-    // 1. ¾Æ±â°õ ½ºÅ³ ±¸Çö
+    // íŒ¨í„´ 1 [ê¿€ ë¬»ì€ ë°œ]
     // ==========================================
     /// <summary>
-    /// ¸ó½ºÅÍ°¡ »ç¿ëÇÒ ½ºÅ³ÀÔ´Ï´Ù. SkillData¸¦ »ó¼Ó¹Ş½À´Ï´Ù.
-    /// ¿¡µğÅÍÀÇ "AI Pattern" ¼½¼Ç¿¡¼­ ¼³Á¤ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+    /// ë¬´ì‘ìœ„ íƒ€ì¼(MonsterSkill ì„¤ì •: RandomTiles + count 4)ì— ê¿€ íƒ€ì¼ì„ ì„¤ì¹˜í•œë‹¤.
+    /// í†µê³¼ ì‹œ ì†ŒëŸ‰ íšŒë³µí•˜ê³ , í•œ í„´ì— 3ê°œ ì´ìƒ ë°Ÿìœ¼ë©´ ì´ë™ ë¶ˆê°€ê°€ ëœë‹¤.
     /// </summary>
     [System.Serializable]
-    public class BabyBearAttack : SkillData
+    public class HoneyPawSkill : SkillData
     {
         [Header("Skill Settings")]
-        [Tooltip("½ºÅ³ »ç¿ë ½Ã ÀÔÈú ÇÇÇØ·®")]
-        [SerializeField] private int damage = 15;
+        [Tooltip("ê¿€ íƒ€ì¼ í†µê³¼ ì‹œ íšŒë³µëŸ‰")]
+        [SerializeField] private int healOnStep = 2;
+        [Tooltip("ì´ ê°œìˆ˜ ì´ìƒ ë°Ÿìœ¼ë©´ ì´ë™ ë¶ˆê°€")]
+        [SerializeField] private int bindThreshold = 3;
+        [Tooltip("ì´ë™ ë¶ˆê°€ ì§€ì† í„´ (í•´ë‹¹ í„´ + ë‹¤ìŒ í„´)")]
+        [SerializeField] private int bindDuration = 2;
 
-        /// <summary>
-        /// »ı¼ºÀÚ¿¡¼­´Â ½ºÅ³ÀÇ ÀÌ¸§°ú ¼³¸íÀ» ÃÊ±âÈ­ÇØ¾ß ÇÕ´Ï´Ù.
-        /// ÀÌ¸¦ »ı·«ÇÏ¸é °ÔÀÓ ³» ÅøÆÁ µî¿¡¼­ ³»¿ëÀÌ ºñ¾îº¸ÀÔ´Ï´Ù.
-        /// </summary>
-        public BabyBearAttack()
+        public HoneyPawSkill()
         {
-            skillName = "¿µ¿ª Ä§¹ü";
-            description = $"¼³Ä¡µÈ ²Ü Å¸ÀÏ + ÁÂ¿ì ÇÑÄ­¿¡ {damage} ÇÇÇØ.";
+            skillName = "ê¿€ ë¬»ì€ ë°œ";
+            description = "ë¬´ì‘ìœ„ íƒ€ì¼ 4ê°œì— ê¿€ íƒ€ì¼ ì„¤ì¹˜. í†µê³¼ ì‹œ íšŒë³µ, í•œ í„´ì— 3ê°œ ì´ìƒ ë°Ÿìœ¼ë©´ ì´ë™ ë¶ˆê°€(ë°œë™ í›„ ì‚­ì œ)";
         }
 
-        /// <summary>
-        /// ½ÇÁ¦ ½ºÅ³ÀÌ ¹ßµ¿µÉ ¶§ ½ÇÇàµÇ´Â ·ÎÁ÷ÀÔ´Ï´Ù.
-        /// </summary>
-        /// <param name="source">½ºÅ³À» »ç¿ëÇÏ´Â ÁÖÃ¼ (¸ó½ºÅÍ)</param>
-        /// <param name="targetUnits">Å¸°ÙÆÃ µÈ À¯´Öµé ¸®½ºÆ®</param>
-        /// <param name="targetTiles">Å¸°ÙÆÃ µÈ Å¸ÀÏµé ¸®½ºÆ®</param>
-        /// <param name="diceValue">½ºÅ³ ¹ßµ¿ ½Ã °è»êµÈ ÁÖ»çÀ§ °ª (ÇÊ¿ä½Ã »ç¿ë)</param>
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            var partyManager = PartyManager.Instance;
-            if (partyManager == null) return;
+            if (targetTiles == null) return;
 
-            // 1. ÇØ´ç ¿µ¿ª(²Ü Å¸ÀÏ + ¹İ°æ) Å¸ÀÏ ¸ñ·ÏÀÌ ¾øÀ¸¸é ¹«½Ã
-            if (targetTiles == null || targetTiles.Count == 0) return;
-
-            // 2. »ì¾ÆÀÖ´Â ¸ğµç ¾Æ±º(Character) Å½»ö
-            var aliveCharacters = partyManager.GetAliveCharacters();
-            
-            foreach (var character in aliveCharacters)
+            foreach (var tile in targetTiles)
             {
-                if (character == null || !character.IsAlive) continue;
-                
-                // 3. Ä³¸¯ÅÍ°¡ ¼­ ÀÖ´Â Å¸ÀÏÀÌ, ¾Õ¼­ Å¸°ÙÀ¸·Î ÁöÁ¤µÈ targetTiles ¹üÁÖ ¾È¿¡ µé¾îÀÖ´Ù¸é µ¥¹ÌÁö Àû¿ë!
-                if (character.CurrentTile != null && targetTiles.Contains(character.CurrentTile))
-                {
-                    var action = new CombatAction(SkillName, ActionType.Attack, damage);
-                    var context = new CombatContext(source, character, action);
-                    
-                    CombatPipeline.Instance?.Process(context);
-
-                    Debug.Log($"[{SkillName}] {source.name} attacks {character.name} for {damage} damage");
-                }
-            }
-        }
-    }
-
-    [System.Serializable]
-    public class EatHoney : SkillData
-    {
-        [Header("Skill Settings")]
-        [Tooltip("Ã¼·Â È¸º¹·®")]
-        [SerializeField] private int healamount = 15;
-
-        /// <summary>
-        /// »ı¼ºÀÚ¿¡¼­´Â ½ºÅ³ÀÇ ÀÌ¸§°ú ¼³¸íÀ» ÃÊ±âÈ­ÇØ¾ß ÇÕ´Ï´Ù.
-        /// ÀÌ¸¦ »ı·«ÇÏ¸é °ÔÀÓ ³» ÅøÆÁ µî¿¡¼­ ³»¿ëÀÌ ºñ¾îº¸ÀÔ´Ï´Ù.
-        /// </summary>
-        public EatHoney()
-        {
-            skillName = "²Ü ¸Ô±â";
-            description = $"¼³Ä¡µÈ ²Ü Å¸ÀÏ Áß ÇÏ³ª¸¦ ¼Ò¸ğÇØ Ã¼·ÂÀ» {healamount} È¸º¹ÇÑ´Ù.";
-        }
-
-        /// <summary>
-        /// ½ÇÁ¦ ½ºÅ³ÀÌ ¹ßµ¿µÉ ¶§ ½ÇÇàµÇ´Â ·ÎÁ÷ÀÔ´Ï´Ù.
-        /// </summary>
-        /// <param name="source">½ºÅ³À» »ç¿ëÇÏ´Â ÁÖÃ¼ (¸ó½ºÅÍ)</param>
-        /// <param name="targetUnits">Å¸°ÙÆÃ µÈ À¯´Öµé ¸®½ºÆ®</param>
-        /// <param name="targetTiles">Å¸°ÙÆÃ µÈ Å¸ÀÏµé ¸®½ºÆ®</param>
-        /// <param name="diceValue">½ºÅ³ ¹ßµ¿ ½Ã °è»êµÈ ÁÖ»çÀ§ °ª (ÇÊ¿ä½Ã »ç¿ë)</param>
-        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
-        {
-            foreach (var target in targetTiles)
-            {
-                if (target == null) continue;
-                // Å¸ÀÏ¿¡ ²Ü Å¸ÀÏÀÌ ÀÖ´ÂÁö È®ÀÎ
-                if (target.HasAttribute(TileAttributeType.Honey))
-                {
-                    // ²Ü Å¸ÀÏ Á¦°Å
-                    target.RemoveAttributeType(TileAttributeType.Honey);
-                    Debug.Log($"[EatHoney] {source.name} consumes a honey tile at index {target.TileIndex}");
-                    break; // ÇÏ³ª¸¸ ¼ÒºñÇÏ¹Ç·Î ·çÇÁ Á¾·á
-                }
-            }
-            foreach (var target in targetUnits)
-            {
-                if (target == null || !target.IsAlive) continue;
-
-                // 1. °ø°İ Á¤º¸¸¦ ´ãÀ» CombatAction »ı¼º
-                // (ÀÌ¸§, Å¸ÀÔ, ¸Å°³º¯¼ö(damage µî))
-                var action = new CombatAction(SkillName, ActionType.Heal, healamount);
-
-                // 2. ÆÄÀÌÇÁ¶óÀÎ¿¡ Àü´ŞÇÒ CombatContext »ı¼º
-                var context = new CombatContext(source, target, action);
-
-                // 3. ÀüÅõ ÆÄÀÌÇÁ¶óÀÎ(CombatPipeline)À» ÅëÇØ Ã³¸®¸¦ ¿ä«Š (ÆĞ½Ãºê µîÀÌ Áß°£¿¡ °³ÀÔÇÒ ¼ö ÀÖÀ½)
-                CombatPipeline.Instance?.Process(context);
-
-                Debug.Log($"[{SkillName}] {source.name} heals");
+                if (tile == null) continue;
+                if (tile.HasAttribute(TileAttributeType.Honey)) continue;
+                tile.AddAttribute(new HoneyPawTile(healOnStep, bindThreshold, bindDuration));
             }
         }
     }
 
     // ==========================================
-    // 2. ¾Æ±â°õ »ç¸Á È¿°ú ±¸Çö
+    // íŒ¨í„´ 2 [ëŒì§„]
     // ==========================================
     /// <summary>
-    /// ¸ó½ºÅÍ°¡ »ç¸ÁÇßÀ» ¶§ ¹ß»ıÇÏ´Â È¿°úÀÔ´Ï´Ù. DeathEffect¸¦ »ó¼Ó¹Ş½À´Ï´Ù.
-    /// </summary>
-    //[System.Serializable]
-    //public class BabyBearDeath : DeathEffect
-    //{
-    //    public BabyBearDeath()
-    //    {
-    //        effectName = "Baby Bear Death";
-    //        description = "¸ó½ºÅÍ°¡ Á×À» ¶§ ¹ßµ¿ÇÏ´Â ¾Æ±â°õ È¿°úÀÔ´Ï´Ù.";
-    //    }
-
-    //    /// <summary>
-    //    /// »ç¸Á È¿°ú°¡ ¹ßµ¿µÇ´Â ·ÎÁ÷ÀÔ´Ï´Ù.
-    //    /// </summary>
-    //    /// <param name="deadMonster">Á×Àº ¸ó½ºÅÍ À¯´Ö °´Ã¼</param>
-    //    public override void Execute(Monster deadMonster)
-    //    {
-    //        // ¿¹½Ã: ¸ó½ºÅÍ°¡ Á×À» ¶§ ¸Ê¿¡ ¼³Ä¡ÇÑ Æ¯Á¤ Å¸ÀÏ È¿°ú¸¦ ¸ğµÎ Áö¿î´Ù°Å³ª ¾Æ±º¿¡°Ô ¹öÇÁ¸¦ ÁÙ ¼ö ÀÖ½À´Ï´Ù.
-    //        Debug.Log($"[BabyBearDeath] {deadMonster.name} died! Executing death effect...");
-    //    }
-    //}
-
-    // ==========================================
-    // 3. ¾Æ±â°õ ÆĞ½Ãºê ±¸Çö
-    // ==========================================
-    /// <summary>
-    /// Á¶°ÇÀÌ ¸ÂÀ» ¶§ ÀÚµ¿À¸·Î ¹ßµ¿µÇ´Â ÆĞ½ÃºêÀÔ´Ï´Ù. PassiveAbility¸¦ »ó¼Ó¹Ş½À´Ï´Ù.
-    /// ¿¡µğÅÍÀÇ "Starting Passives" ¼½¼Ç¿¡ Ãß°¡ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+    /// ë¬´ì‘ìœ„ ëŒ€ìƒ 1ëª…ì´ ì†í•œ íƒ€ì¼ + ì¢Œìš° ê°ê° 2ì¹¸ì— í”¼í•´.
+    /// (ëŒ€ìƒ/ë²”ìœ„ ì„ ì •ì€ MonsterSkill ì„¤ì •: RandomCharacter + Tiles + range 2)
     /// </summary>
     [System.Serializable]
-    public class BabyBearPassive : PassiveAbility
+    public class BabyBearCharge : SkillData
     {
-        int tileDuration = -1, honeyDuration = 1;
+        [Header("Skill Settings")]
+        [SerializeField] private int damage = 20;
 
-        public BabyBearPassive()
+        public BabyBearCharge()
         {
-            passiveName = "¾Æ±â °õÀº ²ÜÀ» ÁÁ¾ÆÇØ";
-            description = " ¸Å ÅÏ ½ÃÀÛ ½Ã, ¹«ÀÛÀ§ Å¸ÀÏ 3°³¿¡ ²Ü Å¸ÀÏÀ» ¼³Ä¡ÇÕ´Ï´Ù.";
+            skillName = "ëŒì§„";
+            description = "ë¬´ì‘ìœ„ ëŒ€ìƒ 1ëª…ì´ ì†í•œ íƒ€ì¼ + ì¢Œìš° ê°ê° 2ì¹¸ì— í”¼í•´";
+        }
 
-            // Priority(¿ì¼±¼øÀ§)°¡ ³ôÀ»¼ö·Ï °°Àº Å¸ÀÌ¹Ö¿¡ °ãÃÆÀ» ¶§ ¸ÕÀú ½ÇÇàµË´Ï´Ù.
-            priority = 10; 
+        public override int GetPreviewDamage() => damage;
 
-            // stackableÀÌ false¸é ÁßÃ¸µÇÁö ¾Ê½À´Ï´Ù (µ¿ÀÏ È¿°ú ºÒ°¡).
+        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
+        {
+            AttackTiles(source, targetTiles, damage);
+        }
+    }
+
+    // ==========================================
+    // íŒ¨ì‹œë¸Œ [ì•„ê¸° ê³°ì€ ê¿€ì„ ì¢‹ì•„í•´]
+    // ==========================================
+    /// <summary>
+    /// í”Œë ˆì´ì–´ê°€ ë¨¹ì€ ê¿€ì˜ ì–‘ë§Œí¼ ì•„ê¸°ê³°ì˜ í”¼í•´ëŸ‰ì´ 1ì”© ì˜êµ¬ ì¦ê°€.
+    /// </summary>
+    [System.Serializable]
+    public class HoneyLoverPassive : PassiveAbility
+    {
+        public HoneyLoverPassive()
+        {
+            passiveName = "ì•„ê¸° ê³°ì€ ê¿€ì„ ì¢‹ì•„í•´";
+            description = "í”Œë ˆì´ì–´ê°€ ë¨¹ì€ ê¿€ì˜ ì–‘ë§Œí¼ í”¼í•´ëŸ‰ì´ 1ì”© ì˜êµ¬ ì¦ê°€";
+            priority = 10;
             isStackable = false;
         }
 
-        /// <summary>
-        /// ÀüÅõ Áß¿¡ ¹ß»ıÇÏ´Â °¢Á¾ ÀÌº¥Æ®(CombatTrigger) ½ÅÈ£¸¦ °¨ÁöÇÏ°í ¹İÀÀÇÕ´Ï´Ù.
-        /// </summary>
+        public override void Initialize(Unit Owner)
+        {
+            base.Initialize(Owner);
+            BearPackTracker.EnsureWaveHook();
+        }
+
+        public override string GetDynamicDescription()
+            => $"ë¨¹ì€ ê¿€ 1ê°œë‹¹ í”¼í•´ +1 (í˜„ì¬ +{BearPackTracker.HoneyEaten})";
+
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            // ¿¹¿Ü 1) ¸Æ¶ôÀÌ³ª ¾×¼ÇÀÌ ºñ¾î ÀÖÀ¸¸é ¹«½Ã
-            if (context?.Action == null) return;
+            if (context?.Action == null || owner == null) return;
 
-            // ¿¹¿Ü 2) ³»°¡ ÀÏÀ¸Å²(ourceUnit == owner) ÀÌº¥Æ®ÀÌ¸é¼­,
-            //         "ÅÏ ½ÃÀÛ" ½ÃÁ¡ÀÇ ¾×¼Ç(ActionType.OnStartTurn)ÀÌ "½ÇÇàµÇ±â Á÷Àü"(OnPreAction)ÀÏ ¶§ °¨ÁöÇÕ´Ï´Ù.
-            if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.OnStartTurn && 
+            // ì•„ê¸°ê³° ê³µê²© â†’ ë¨¹ì€ ê¿€ ì–‘ë§Œí¼ í”¼í•´ ì¦ê°€
+            if (trigger == CombatTrigger.OnCalculateOutput &&
+                context.Action.Type == ActionType.Attack &&
                 context.SourceUnit == owner)
             {
-                Debug.Log($"[BabyBearPassive] ²Ü Å¸ÀÏ ¼³Ä¡");
-                PlantHoneyTiles();
+                context.OutputValue += BearPackTracker.HoneyEaten;
             }
         }
 
-        private void PlantHoneyTiles()
-        {
-            var orbitManager = GameManager.Instance?.GetOrbitManager();
-            if (orbitManager == null) return;
-
-            // 0~19 »çÀÌÀÇ ·£´ıÇÑ 3°³ Á¤¼ö¸¦ »Ì±â
-            var randomIndices = new List<int>();
-            while (randomIndices.Count < 3)
-            {
-                int randomIndex = Random.Range(0, 20);
-                if (!randomIndices.Contains(randomIndex))
-                {
-                    randomIndices.Add(randomIndex);
-                }
-            }
-
-            // ÇØ´ç ÀÎµ¦½ºÀÇ Å¸ÀÏ¿¡ ²Ü(HoneyTileAttribute) ºÎ¿©
-            foreach (var index in randomIndices)
-            {
-                var tile = orbitManager.GetTile(index);
-                if (tile != null)
-                {
-                    var honeyAttribute = new HoneyTileAttribute(
-                        TileAttributeType.Honey,
-                        honeyDuration, // ²ÜÀº µ¥¹ÌÁö°¡ ¾øÀ¸¹Ç·Î Value´Â 0
-                        tileDuration
-                    );
-
-                    tile.AddAttribute(honeyAttribute);
-                    Debug.Log($"Honey Tile Generated at random index: {index}");
-                }
-            }
-        }
-
-        public override bool AllowSamePassive(IPassive incoming)
-        {
-            return false;
-        }
+        public override bool AllowSamePassive(IPassive incoming) => false;
     }
 }

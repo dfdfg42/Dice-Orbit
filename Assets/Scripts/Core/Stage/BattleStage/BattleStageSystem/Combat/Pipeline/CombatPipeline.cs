@@ -46,6 +46,24 @@ namespace DiceOrbit.Core.Pipeline
             HandlePostAction(context);
         }
 
+        /// <summary>
+        /// 예상 피해량 시뮬레이션. OnCalculateOutput 단계만 돌려서 최종 OutputValue를 계산하고
+        /// 적용/OnHit/OnPostAction은 건너뛴다. 반응자는 context.IsSimulation 체크로 Notify·스택소비 같은
+        /// 부수효과를 스킵해야 한다. OnPreAction은 회피 RNG가 있어 미리보기에 부적합하므로 제외.
+        /// </summary>
+        public int SimulateCalculation(CombatContext context)
+        {
+            if (context == null || context.Action == null) return 0;
+
+            context.IsSimulation = true;
+            NotifyReactors(context, CombatTrigger.OnCalculateOutput);
+
+            if (context.Action.Type == ActionType.Attack && context.OutputValue < 0)
+                context.OutputValue = 0;
+
+            return Mathf.RoundToInt(context.OutputValue);
+        }
+
         private bool HandlePreAction(CombatContext context)
         {
             NotifyReactors(context, CombatTrigger.OnPreAction);

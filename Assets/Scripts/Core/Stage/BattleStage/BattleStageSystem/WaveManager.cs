@@ -138,6 +138,10 @@ namespace DiceOrbit.Core
             }
 
             Debug.Log($"[WaveManager] Total {spawnedMonsters.Count} monsters spawned for Wave {wave}.");
+
+            // 몬스터 정체성 색상 배정 + 발밑 바닥 색상 마커 생성
+            Visuals.MonsterIdentityManager.EnsureInstance();
+            Visuals.MonsterIdentityManager.Instance.Setup(spawnedMonsters);
         }
 
         /// <summary>
@@ -181,17 +185,7 @@ namespace DiceOrbit.Core
             Debug.Log($"[WaveManager] Wave {CurrentWave} Cleared!");
 
             OnWaveClear?.Invoke(CurrentWave);
-
-            // 다음 웨이브 자동 시작 (2초 딜레이)
-            if (CurrentWave < MaxWave)
-            {
-                Debug.Log($"[WaveManager] Starting next wave in 2 seconds...");
-                Invoke(nameof(StartNextWave), 2f);
-            }
-            else
-            {
-                Debug.Log("[WaveManager] All waves completed! Game finished!");
-            }
+            // 다음 웨이브는 Recruit → Reward 플로우 완료 후 GameFlowManager.OnRewardComplete가 StartNextWave 호출.
         }
 
         private void ResolveMaxWave()

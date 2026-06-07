@@ -26,6 +26,7 @@ namespace DiceOrbit.Core
         public List<Character> Party => party;
         public Character SelectedCharacter => selectedCharacter;
         public int PartySize => party.Count;
+        public int MaxPartySize => maxPartySize;
         public bool IsPartyFull => party.Count >= maxPartySize;
     public bool TeamFirstActionUsed => teamFirstActionUsed;
 

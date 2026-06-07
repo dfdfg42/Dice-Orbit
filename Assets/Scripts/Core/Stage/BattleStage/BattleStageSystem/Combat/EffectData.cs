@@ -20,6 +20,7 @@ namespace DiceOrbit.Data
         SlushSnow,      // 눈사람 진창눈 이동 디버프 (몬스터 전용 타일/상태 로직)
         Frozen,          // 빙결 상태이상
         Dodge,           // 회피율 (%)
+        Frostbite,       // 동상: 입는 피해량 증가 (서리토템)
     }
 
     /// <summary>

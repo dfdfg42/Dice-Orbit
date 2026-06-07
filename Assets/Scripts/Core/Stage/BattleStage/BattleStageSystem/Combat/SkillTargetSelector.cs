@@ -154,9 +154,19 @@ namespace DiceOrbit.Core
                 CancelTargetSelection();
         }
 
+        // Multi 타입(다중 타격)은 같은 대상을 여러 번 선택 가능(같은 적에게 집중 타격).
+        // 그 외(단일 등)는 어차피 1회 클릭에 확정되므로 중복이 의미 없음.
+        private bool AllowsDuplicateSelection()
+        {
+            var t = currentSlot.TargetType;
+            return t == CharacterSkillTargetType.MultiEnemy
+                || t == CharacterSkillTargetType.MultiAlly
+                || t == CharacterSkillTargetType.MultiTile;
+        }
+
         private void AddUnitSelection(Unit unit)
         {
-            if (_pendingUnits.Contains(unit)) return;
+            if (!AllowsDuplicateSelection() && _pendingUnits.Contains(unit)) return;
             CreateConfirmedLine(_confirmedPositions[0], unit.transform.position);
             _pendingUnits.Add(unit);
             RefreshProgressTooltip();
@@ -167,7 +177,7 @@ namespace DiceOrbit.Core
 
         private void AddTileSelection(TileData tile)
         {
-            if (_pendingTiles.Contains(tile)) return;
+            if (!AllowsDuplicateSelection() && _pendingTiles.Contains(tile)) return;
             CreateConfirmedLine(_confirmedPositions[0], tile.transform.position);
             _pendingTiles.Add(tile);
             RefreshProgressTooltip();
@@ -276,8 +286,16 @@ namespace DiceOrbit.Core
             if (tmpl != null)
             {
                 int raw = tmpl.CalculateRawDamage(sourceCharacter, currentSlot, currentDice.Value);
+                int finalDamage = raw;
+                if (raw > 0 && Pipeline.CombatPipeline.Instance != null)
+                {
+                    var simAction = new Pipeline.CombatAction(tmpl.SkillName, Pipeline.ActionType.Attack, raw);
+                    var simContext = new Pipeline.CombatContext(sourceCharacter, targetUnit, simAction);
+                    finalDamage = Pipeline.CombatPipeline.Instance.SimulateCalculation(simContext);
+                }
+
                 HoverTooltipUI.EnsureInstance();
-                HoverTooltipUI.Instance?.ShowPinned(raw > 0 ? $"예상 피해: {raw}" : "예상 피해: -");
+                HoverTooltipUI.Instance?.ShowPinned(finalDamage > 0 ? $"예상 피해: {finalDamage}" : "예상 피해: -");
             }
         }
 

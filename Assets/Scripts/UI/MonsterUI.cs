@@ -42,6 +42,10 @@ namespace DiceOrbit.UI
         [Header("Settings")]
         [SerializeField] private Vector3 uiOffset = new Vector3(0, 2f, 0);
         [SerializeField] private bool autoFindMonster = true;
+        [Tooltip("체력바 캔버스 정렬 순서. 스프라이트보다 높아야 항상 앞에 보인다.")]
+        [SerializeField] private int canvasSortingOrder = 500;
+        [Tooltip("체력바 캔버스 크기(월드 스케일). 키우려면 값을 올린다.")]
+        [SerializeField] private float canvasScale = 0.1f;
         [SerializeField] private bool hideBubbleWhenNoIntent = true;
         [SerializeField] private bool tintBubbleByIntent = false;
         [SerializeField] private bool showIntentText = true;
@@ -99,13 +103,17 @@ namespace DiceOrbit.UI
             
             worldCanvas.renderMode = RenderMode.WorldSpace;
             worldCanvas.worldCamera = mainCamera;
-            
+
+            // 항상 스프라이트보다 앞에 표시
+            worldCanvas.overrideSorting = true;
+            worldCanvas.sortingOrder = canvasSortingOrder;
+
             // 크기 조정
             RectTransform rectTransform = worldCanvas.GetComponent<RectTransform>();
             if (rectTransform != null)
             {
                 rectTransform.sizeDelta = new Vector2(3, 1f);
-                rectTransform.localScale = Vector3.one * 0.1f;
+                rectTransform.localScale = Vector3.one * canvasScale;
             }
 
             ConfigureNonBlockingRaycasts();

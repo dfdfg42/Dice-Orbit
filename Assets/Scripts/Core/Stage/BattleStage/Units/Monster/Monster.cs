@@ -1,5 +1,6 @@
 using UnityEngine;
 using DiceOrbit.Data;
+using DiceOrbit.Core.Pipeline;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,6 +22,13 @@ namespace DiceOrbit.Core
         [SerializeField] private string deadBool = "IsDead";
         [SerializeField] private float destroyDelayAfterDeath = 0.35f;
 
+        [Header("Sprite Swap Feedback")]
+        [Tooltip("공격 스프라이트를 보여주는 시간(초)")]
+        [SerializeField] private float attackSpriteDuration = 0.25f;
+        [Tooltip("피격 스프라이트를 보여주는 시간(초)")]
+        [SerializeField] private float damageSpriteDuration = 0.2f;
+        private Coroutine spriteSwapRoutine;
+
         [Header("Preset")]
         [SerializeField] private Data.Monsters.MonsterPreset preset;
 
@@ -36,6 +44,10 @@ namespace DiceOrbit.Core
 
         // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
         public new MonsterStats Stats => stat;
+
+        // 정체성 색상: 웨이브 시작 시 1회 배정되어 웨이브 내내 고정. 바닥 마커/타일 색 오버레이가 사용.
+        [System.NonSerialized] public Color IdentityColor = Color.white;
+        [System.NonSerialized] public bool HasIdentityColor = false;
         
         protected override void Awake()
         {
@@ -320,10 +332,51 @@ namespace DiceOrbit.Core
                     {
                         sb.AppendLine($"<color=#FFAA75><b>의도:</b> {nextSkill.skillData.Description.Trim()}</color>");
                     }
+
+                    // 예상 피해 (패시브/모디파이어가 반영된 실제 피해를 시뮬레이션으로 계산)
+                    int previewBase = nextSkill.skillData.GetPreviewDamage();
+                    if (previewBase > 0)
+                    {
+                        int shown = previewBase;
+                        var repTarget = ResolvePreviewTarget();
+                        if (repTarget != null && CombatPipeline.Instance != null)
+                        {
+                            var simCtx = new CombatContext(this, repTarget,
+                                new CombatAction(nextSkill.skillData.SkillName, ActionType.Attack, previewBase));
+                            shown = CombatPipeline.Instance.SimulateCalculation(simCtx);
+                        }
+                        sb.AppendLine($"<color=#FF5555><b>예상 피해:</b> {shown}</color>");
+                    }
                 }
             }
 
             return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
+        }
+
+        /// <summary>의도 예상 피해 시뮬레이션에 쓸 대표 대상. 의도 대상이 있으면 그 대상, 없으면 생존 파티원.</summary>
+        private Unit ResolvePreviewTarget()
+        {
+            if (CurrentIntent != null)
+            {
+                if (CurrentIntent.Targets != null)
+                {
+                    var t = CurrentIntent.Targets.FirstOrDefault(x => x != null && x.IsAlive);
+                    if (t != null) return t;
+                }
+
+                if (CurrentIntent.TargetTiles != null)
+                {
+                    foreach (var tile in CurrentIntent.TargetTiles)
+                    {
+                        var chars = tile != null ? tile.GetCharactersOnTile() : null;
+                        var c = chars?.FirstOrDefault(x => x != null && x.IsAlive);
+                        if (c != null) return c;
+                    }
+                }
+            }
+
+            var alive = PartyManager.Instance?.GetAliveCharacters();
+            return (alive != null && alive.Count > 0) ? alive[0] : null;
         }
 
         public UI.HoverTooltipData GetHoverTooltipData()
@@ -396,17 +449,50 @@ namespace DiceOrbit.Core
         private void PlayAttackVisual()
         {
             SetTriggerSafe(attackTrigger);
+            SwapSpriteTemporarily(stat?.AttackSprite, attackSpriteDuration);
         }
 
         private void PlayDamageVisual()
         {
             SetTriggerSafe(hitTrigger);
+            SwapSpriteTemporarily(stat?.DamageSprite, damageSpriteDuration);
         }
 
         private void PlayDeathVisual()
         {
             SetBoolSafe(deadBool, true);
             SetTriggerSafe(deathTrigger);
+
+            // 사망 시 진행 중인 스프라이트 스왑 중단 (idle로 되돌리지 않음)
+            if (spriteSwapRoutine != null)
+            {
+                StopCoroutine(spriteSwapRoutine);
+                spriteSwapRoutine = null;
+            }
+        }
+
+        /// <summary>
+        /// 공격/피격 스프라이트로 잠시 바꿨다가 기본(MonsterSprite)으로 복귀한다.
+        /// AttackSprite/DamageSprite가 없으면 아무것도 하지 않는다.
+        /// </summary>
+        private void SwapSpriteTemporarily(Sprite temp, float duration)
+        {
+            if (spriteRenderer == null || temp == null || duration <= 0f) return;
+
+            if (spriteSwapRoutine != null) StopCoroutine(spriteSwapRoutine);
+            spriteSwapRoutine = StartCoroutine(CoSwapSprite(temp, duration));
+        }
+
+        private System.Collections.IEnumerator CoSwapSprite(Sprite temp, float duration)
+        {
+            spriteRenderer.sprite = temp;
+            yield return new WaitForSeconds(duration);
+
+            // 살아있으면 기본 스프라이트로 복귀
+            if (spriteRenderer != null && stat != null && stat.MonsterSprite != null)
+                spriteRenderer.sprite = stat.MonsterSprite;
+
+            spriteSwapRoutine = null;
         }
 
         private void SetTriggerSafe(string trigger)

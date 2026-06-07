@@ -107,14 +107,23 @@ namespace DiceOrbit.UI
         private static readonly Dictionary<string, string> StatusNameAliases =
             new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
             {
-                { "Honey",      "꿀"   },
-                { "SlushSnow",  "진창눈" },
-                { "Focus",      "집중" },
-                { "Poison",     "중독" },
-                { "Weak",       "약화" },
-                { "Vulnerable", "취약" },
-                { "Stun",       "기절" },
-                { "Silence",    "침묵" },
+                { "Honey",         "꿀"      },
+                { "SlushSnow",     "진창눈"   },
+                { "Focus",         "집중"    },
+                { "Poison",        "중독"    },
+                { "Weak",          "약화"    },
+                { "Vulnerable",    "취약"    },
+                { "Stun",          "기절"    },
+                { "Silence",       "침묵"    },
+                { "Frozen",        "빙결"    },
+                { "Frostbite",     "동상"    },
+                { "BuffAttack",    "공격력 증가" },
+                { "BuffDefense",   "방어력 증가" },
+                { "DebuffAttack",  "공격력 감소" },
+                { "DebuffDefense", "방어력 감소" },
+                { "Dot",           "지속 피해" },
+                { "Shield",        "보호막"   },
+                { "Dodge",         "회피"    },
             };
 
         // ScriptableObject DB 인스턴스 캐시 (Resources.Load 반복 호출 방지)

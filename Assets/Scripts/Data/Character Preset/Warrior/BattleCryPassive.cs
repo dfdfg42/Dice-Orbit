@@ -11,15 +11,14 @@ namespace DiceOrbit.Data.Passives
     public class BattleCryPassive : CharacterPassiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("레벨별 인접 아군 1명당 피해 증가율(%). 예: 10은 +10%")]
-        [SerializeField] private float[] bonusPercentPerAllyByLevel = { 10f, 50f, 100f, 150f, 200f };
+        [Tooltip("인접(좌우 1칸) 아군 1명당 피해 증가율(%). 예: 50은 +50%")]
+        [SerializeField] private float bonusPercentPerAlly = 50f;
 
         public override int Priority => 100;
 
         public override string GetDynamicDescription()
         {
-            float bonus = ResolveBonusPercent(currentLevel);
-            return $"좌우 1칸 아군 1명당 피해 +{bonus:0.#}%";
+            return $"좌우 1칸 아군 1명당 피해 +{bonusPercentPerAlly:0.#}%";
         }
 
         public override void Initialize(Unit ownerUnit)
@@ -46,10 +45,9 @@ namespace DiceOrbit.Data.Passives
             int allyCount = CountAdjacentAllies();
             if (allyCount <= 0) return;
 
-            float bonusPercent = ResolveBonusPercent(currentLevel);
-            float multiplier = 1f + (bonusPercent / 100f) * allyCount;
+            float multiplier = 1f + (bonusPercentPerAlly / 100f) * allyCount;
             context.OutputValue *= multiplier;
-            Notify();
+            if (!context.IsSimulation) Notify();
         }
 
         private int CountAdjacentAllies()
@@ -74,14 +72,6 @@ namespace DiceOrbit.Data.Passives
                     count++;
             }
             return count;
-        }
-
-        private float ResolveBonusPercent(int level)
-        {
-            if (bonusPercentPerAllyByLevel == null || bonusPercentPerAllyByLevel.Length == 0)
-                return 10f;
-            int index = Mathf.Clamp(level - 1, 0, bonusPercentPerAllyByLevel.Length - 1);
-            return Mathf.Max(0f, bonusPercentPerAllyByLevel[index]);
         }
 
         private void RefreshRangePreview(TileData centerTile)

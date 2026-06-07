@@ -22,6 +22,7 @@ namespace DiceOrbit.Core
         [SerializeField] private string gameplaySceneName = "";
 
         private bool pendingStartGame = false;
+        private bool pendingRestart = false;
         private int lastWaveCleared = 0;
         // 레벨업 타일을 밟은 캐릭터를 임시 보관합니다.
         private Character pendingLevelUpCharacter;
@@ -143,7 +144,15 @@ namespace DiceOrbit.Core
                     break;
                 case GameState.CharacterSelection:
                     break;
-                    
+
+                case GameState.Recruit:
+                    if (characterSelectionUI != null) characterSelectionUI.Hide();
+                    break;
+
+                case GameState.Reward:
+                    if (rewardUI != null) rewardUI.Hide();
+                    break;
+
                 case GameState.Combat:
                     if (combatUI != null) combatUI.SetActive(false);
                     break;
@@ -188,15 +197,7 @@ namespace DiceOrbit.Core
         }
         
         // === Public Methods ===
-        
-        /// <summary>
-        /// 캐릭터 선택 완료
-        /// </summary>
-        public void OnCharacterSelected()
-        {
-            ChangeState(GameState.Combat);
-        }
-        
+
         /// <summary>
         /// 전투 승리
         /// </summary>
@@ -207,9 +208,18 @@ namespace DiceOrbit.Core
 
         public void OnWaveCleared(int wave)
         {
-            Debug.Log($"[GameFlow] Wave {wave} Cleared. Proceeding to Recruit.");
+            Debug.Log($"[GameFlow] Wave {wave} Cleared.");
             lastWaveCleared = wave;
-            ChangeState(GameState.Recruit);
+
+            // 마지막 웨이브를 클리어했으면 바로 승리(프로토타입 종료) 화면으로.
+            if (WaveManager.Instance != null && wave >= WaveManager.Instance.MaxWave)
+            {
+                ChangeState(GameState.Victory);
+                return;
+            }
+
+            // 그 외에는 보상 화면 → (확인) → 영입.
+            ChangeState(GameState.Reward);
         }
 
         private void OnWaveStarted(int wave)
@@ -223,37 +233,27 @@ namespace DiceOrbit.Core
 
         public void OnRewardComplete()
         {
-            // If max wave reached?
+            // 최종 웨이브 클리어 후 보상이면 Victory.
             if (WaveManager.Instance != null && lastWaveCleared >= WaveManager.Instance.MaxWave)
             {
                 ChangeState(GameState.Victory);
                 return;
             }
 
-            ChangeState(GameState.Combat);
-            if (WaveManager.Instance != null)
-            {
-                WaveManager.Instance.StartNextWave();
-            }
+            // Reward 다음 Recruit으로.
+            ChangeState(GameState.Recruit);
         }
 
         public void OnRecruitComplete()
         {
-            // After the initial recruit, go straight to combat (First Wave)
-            // Or if in-between waves?
-            if (WaveManager.Instance != null && WaveManager.Instance.CurrentWave == 0)
+            // 게임 시작 직후의 첫 영입(CurrentWave==0)이면 첫 웨이브를 띄우고,
+            // 웨이브 클리어 후 영입이면 다음 웨이브를 띄운다. 둘 다 Combat 상태 진입은 동일.
+            ChangeState(GameState.Combat);
+
+            var wm = WaveManager.Instance;
+            if (wm != null && wm.CurrentWave > 0 && !wm.IsWaveActive)
             {
-                 // Start game -> Recruit -> Combat(Wave1)
-                 ChangeState(GameState.Combat);
-            }
-            else
-            {
-                 // Wave Clear -> Recruit -> Reward -> Combat
-                 // If we have Reward UI, maybe go to Reward?
-                 // Current flow: Wave -> Reward -> Recruit -> Combat (Next Wave)
-                 // or Wave -> Recruit -> Reward -> Combat?
-                 // Let's assume Recruit -> Reward.
-                 ChangeState(GameState.Reward);
+                wm.StartNextWave();
             }
         }
         
@@ -312,9 +312,16 @@ namespace DiceOrbit.Core
             {
                 WaveManager.Instance.OnWaveStart -= OnWaveStarted;
                 WaveManager.Instance.OnWaveStart += OnWaveStarted;
-                
+
                 WaveManager.Instance.OnWaveClear -= OnWaveCleared;
                 WaveManager.Instance.OnWaveClear += OnWaveCleared;
+            }
+
+            // 재시작 후 재진입: 영입 화면부터 다시 시작
+            if (pendingRestart)
+            {
+                pendingRestart = false;
+                StartGameFlow();
             }
         }
 
@@ -357,13 +364,34 @@ namespace DiceOrbit.Core
         private void ShowVictory()
         {
             Debug.Log("[GameFlow] Victory Screen Shown");
-            // TODO: Implement UI
+            UI.GameResultUI.ShowVictory();
         }
 
         private void ShowGameOver()
         {
             Debug.Log("[GameFlow] Game Over Screen Shown");
-            // TODO: Implement UI
+            UI.GameResultUI.ShowGameOver();
+        }
+
+        /// <summary>
+        /// 게임 재시작: 공유 정적 상태를 초기화하고 현재 씬을 다시 로드한 뒤 영입 화면으로 진입.
+        /// </summary>
+        public void RestartGame()
+        {
+            Debug.Log("[GameFlow] RestartGame");
+
+            // 공유 정적 상태 초기화
+            DiceOrbit.Data.MonsterPresets.Wave2.BearPackTracker.Reset();
+
+            // 플로우 상태 초기화
+            lastWaveCleared = 0;
+            pendingLevelUpCharacter = null;
+            pendingRestart = true;
+
+            UI.GameResultUI.Instance?.Hide();
+
+            // 현재 씬 재로드 (씬 종속 매니저/오브젝트는 모두 새로 초기화됨)
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
         private void EnterLevelUpState()

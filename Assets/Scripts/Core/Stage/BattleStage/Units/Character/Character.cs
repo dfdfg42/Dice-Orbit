@@ -18,8 +18,12 @@ namespace DiceOrbit.Core
         [Header("Movement")]
         [SerializeField] private TileData currentTile;
         [SerializeField] private int startTileIndex = 0;
-        [SerializeField] private float stepHopHeight = 0.35f;
-        [SerializeField] private float stepIdlePause = 0.05f;
+
+        /// <summary>스폰 시 시작 타일 인덱스를 지정 (Start의 지연 초기화 전에 호출).</summary>
+        public void SetStartTileIndex(int index) => startTileIndex = index;
+        [SerializeField] private float stepHopHeight = 0.6f;       // 한 칸 점프 높이 (클수록 높이 뜀)
+        [SerializeField] private float stepIdlePause = 0.15f;      // 한 칸 착지 후 잠깐 멈추는 시간(초)
+        [SerializeField] private float stepDuration = 0.4f;        // 한 칸 건너가는 시간(초) — 길수록 천천히, 이동 애니메이션이 보일 시간 확보
         private bool stopMovementRequested = false;
 
         // 스프라이트 비주얼
@@ -30,7 +34,28 @@ namespace DiceOrbit.Core
 
         public TileData CurrentTile => currentTile;
         public Core.CharacterPreset SourcePreset => Stats?.SourcePreset;
-        
+
+        [Header("Hover")]
+        [SerializeField] private int hoverSortingBoost = 100; // 마우스 올렸을 때 sortingOrder 가산량(같은 타일에서 앞으로)
+        private int baseSortingOrder;
+        private bool sortingCaptured;
+
+        // 호버 강조: 같은 타일에서 겹칠 때 마우스 올린 캐릭터를 앞으로(sortingOrder 가산).
+        // 새 Input System 전용 프로젝트라 레거시 OnMouseEnter/Exit가 안 불리므로 CharacterSelector가 매 프레임 호출한다.
+        public void SetHoverHighlight(bool hovered)
+        {
+            if (spriteRenderer == null) return;
+            if (hovered)
+            {
+                if (!sortingCaptured) { baseSortingOrder = spriteRenderer.sortingOrder; sortingCaptured = true; }
+                spriteRenderer.sortingOrder = baseSortingOrder + hoverSortingBoost;
+            }
+            else if (sortingCaptured)
+            {
+                spriteRenderer.sortingOrder = baseSortingOrder;
+            }
+        }
+
         /// <summary>
         /// Stats 초기화 (캐릭터 선택 후)
         /// </summary>
@@ -63,11 +88,32 @@ namespace DiceOrbit.Core
                 spriteVisual.PlayIdle();
             }
 
+            InitializeModifierManager();
+
             // 스킬 재초기화
             InitializeSkills();
             InitializePassives();
 
             Debug.Log($"Character initialized: {stat.CharacterName} (HP: {stat.MaxHP})");
+        }
+
+        private void InitializeModifierManager()
+        {
+            if (stat == null) return;
+
+            // 모디파이어 컨테이너 생성 (컨텍스트는 스킬별로 그때그때 생성하므로 타입 지정 불필요)
+            if (stat.Modifiers == null)
+            {
+                stat.Modifiers = new Data.Modifiers.ModifierManager();
+                stat.Modifiers.Initialize(this);
+            }
+
+            // 각 액티브 슬롯에 소유자 주입 → 슬롯이 유효 타게팅(모디파이어 반영)을 계산할 수 있게 함
+            if (stat.ActiveAbilities != null)
+            {
+                foreach (var slot in stat.ActiveAbilities)
+                    if (slot != null) slot.Owner = this;
+            }
         }
 
         private void InitializeSkills()
@@ -106,12 +152,12 @@ namespace DiceOrbit.Core
 
             Debug.Log($"[Character] {stat.CharacterName} leveled up -> Lv.{stat.Level}");
         }
-        
+
         protected override void Awake()
         {
             // 자식 오브젝트에서 SpriteRenderer 찾기 (Visual 분리 지원)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-            spriteVisual   = GetComponentInChildren<CharacterSpriteVisual>();
+            spriteVisual = GetComponentInChildren<CharacterSpriteVisual>();
 
             if (spriteRenderer == null)
                 Debug.LogWarning("SpriteRenderer not found in children! Add SpriteRenderer component to a child object.");
@@ -127,13 +173,13 @@ namespace DiceOrbit.Core
             if (statusEffects == null) statusEffects = gameObject.AddComponent<Systems.Effects.StatusEffectManager>();
             statusEffects.Initialize(this);
         }
-        
+
         private void Start()
         {
             // 한 프레임 기다려서 OrbitManager가 타일 생성하도록 함
             StartCoroutine(InitializeAfterDelay());
         }
-        
+
         private System.Collections.IEnumerator InitializeAfterDelay()
         {
             yield return null;
@@ -174,17 +220,16 @@ namespace DiceOrbit.Core
                 Debug.LogError("OrbitManager not found! Make sure OrbitSystem exists in scene.");
             }
         }
-        
+
 
         /// <summary>
         /// 타일을 하나씩 거쳐서 이동
         /// </summary>
         public System.Collections.IEnumerator MoveStepByStep(List<TileData> path)
         {
-            float stepDuration = 0.2f;
             int stepsTraveled = 0;
             TileData arrivalTile = null;
-            
+
             foreach (var tile in path)
             {
                 Vector3 startPos = transform.position;
@@ -192,8 +237,8 @@ namespace DiceOrbit.Core
                 float elapsed = 0f;
                 UpdateFacingByMoveDirection(endPos - startPos);
 
-                // 한 칸 이동 시작 → Move 스프라이트
-                spriteVisual?.PlayMove();
+                // 한 칸 이동 시작 → 이동 애니메이션을 처음부터 재생 (한 칸 건너가는 시간 = stepDuration)
+                spriteVisual?.PlayMoveStep();
 
                 while (elapsed < stepDuration)
                 {
@@ -226,12 +271,15 @@ namespace DiceOrbit.Core
                     break;
                 }
             }
-            
+
             // 최종 도착
             if (arrivalTile == null && path.Count > 0)
             {
                 arrivalTile = path[path.Count - 1];
             }
+
+            // 이번 턴 이동 거리 누적 ("이동 안 함" 판정용)
+            if (stat != null) stat.MoveOnThisTurn += stepsTraveled;
 
             if (arrivalTile != null)
             {
@@ -283,12 +331,14 @@ namespace DiceOrbit.Core
         {
             stopMovementRequested = true;
         }
-        
+
         /// <summary>
         /// 턴 시작 처리 (Pipeline)
         /// </summary>
         public override void OnStartTurn()
         {
+            // 이번 턴 이동 거리 초기화 (서리토템 동상 등 "이동 안 함" 판정용)
+            if (stat != null) stat.MoveOnThisTurn = 0;
             base.OnStartTurn();
         }
 
@@ -308,7 +358,7 @@ namespace DiceOrbit.Core
         //{
         //    UseSkillByIndex(0, diceValue);
         //}
-        
+
         /// <summary>
         /// 특정 인덱스의 스킬 사용
         /// </summary>
@@ -365,13 +415,31 @@ namespace DiceOrbit.Core
             return actual;
         }
 
+        [SerializeField] private float deathDespawnDelay = 0.7f;
+        private bool isDying = false;
+
         protected override void HandleDeath()
         {
+            if (isDying) return;
+            isDying = true;
+
             base.HandleDeath();
             spriteVisual?.PlayDeath();
 
+            // 전멸/전투 종료 판정 (HP 기준이라 파괴 전에 호출해도 안전)
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnCharacterDefeated(this);
+
+            // 사망 연출 후 파티에서 제거하고 오브젝트 파괴
+            StartCoroutine(DespawnAfterDeath());
+        }
+
+        private System.Collections.IEnumerator DespawnAfterDeath()
+        {
+            yield return new WaitForSeconds(Mathf.Max(0f, deathDespawnDelay));
+
+            PartyManager.Instance?.RemoveCharacter(this);
+            Destroy(gameObject);
         }
 
         /// <summary>
@@ -429,7 +497,7 @@ namespace DiceOrbit.Core
         private string BuildCharacterTooltipText()
         {
             var sb = new StringBuilder();
-            
+
             // 이름 강조 (크기, 굵기)
             string characterName = stat != null && !string.IsNullOrWhiteSpace(stat.CharacterName)
                 ? stat.CharacterName
@@ -458,7 +526,7 @@ namespace DiceOrbit.Core
             foreach (var passive in passives.ActivePassives)
             {
                 if (passive == null) continue;
-                
+
                 string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
                 if (passive.CurrentLevel > 0)
                 {
@@ -473,8 +541,8 @@ namespace DiceOrbit.Core
                     desc = $"{effText}\n<color=#B3B3B3>{passive.Description}</color>";
 
                 // 패시브 카드는 약간 붉은빛 주황색 기본 제공 (Inspector에서 색을 지정 안했으므로 코드로 하드코딩)
-                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f); 
-                
+                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f);
+
                 passivesList.Add(new UI.TooltipKeywordFormatter.KeywordDisplayData(passiveName, desc.Trim(), passiveColor, null));
             }
 
@@ -496,6 +564,12 @@ namespace DiceOrbit.Core
             }
 
             return statuses;
+        }
+
+        public override void CollectReactors(List<Pipeline.ICombatReactor> list)
+        {
+            base.CollectReactors(list);
+            stat?.Modifiers?.CollectReactors(list);
         }
     }
 }

@@ -34,6 +34,12 @@ namespace DiceOrbit.Data
         public virtual string Description => description;
 
         /// <summary>
+        /// 의도 미리보기용 기본 피해. 0이면 피해 스킬이 아니므로 예상 피해를 표시하지 않는다.
+        /// SimulateCalculation의 시드값으로 쓰여 패시브/모디파이어 보너스가 합산된 최종 예상 피해가 산출된다.
+        /// </summary>
+        public virtual int GetPreviewDamage() => 0;
+
+        /// <summary>
         /// TargetSelectionStrategy가 Custom일 때 호출되어 타겟 유닛들을 가져옵니다.
         /// 파생 클래스에서 오버라이드하여 독자적인 타겟팅을 구현하세요.
         /// </summary>

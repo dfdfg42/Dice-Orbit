@@ -23,6 +23,7 @@ namespace DiceOrbit.Visuals
 
         [Header("Animator")]
         [SerializeField] private Animator animator;
+        [SerializeField] private string moveStateName = ""; // 한 칸 이동 시 처음부터 재생할 Move 상태 이름 (비우면 IsMoving bool만 사용)
         [SerializeField] private string movingBool = "IsMoving";
         [SerializeField] private string aimingBool = "IsAiming";
         [SerializeField] private string attackTrigger = "Attack";
@@ -74,6 +75,30 @@ namespace DiceOrbit.Visuals
         {
             SetBoolSafe(movingBool, true);
             SetBoolSafe(aimingBool, false);
+        }
+
+        /// <summary>
+        /// 한 칸 이동용 Move 애니메이션을 '처음(0프레임)부터' 재생하고, 그 재생 길이(초)를 반환한다.
+        /// moveStateName 이 지정돼 있고 해당 상태가 존재하면 animator.Play 로 강제 재시작한다.
+        /// 반환값(>0)을 한 칸 이동 시간과 동기화하면 애니메이션이 끝난 뒤에 다음 칸으로 넘어간다.
+        /// (지정 안 됐거나 상태가 없으면 IsMoving bool 만 켜고 0 을 반환 → 호출부가 기본 이동 시간을 사용)
+        /// </summary>
+        public float PlayMoveStep()
+        {
+            SetBoolSafe(aimingBool, false);
+            SetBoolSafe(movingBool, true);
+
+            if (animator != null && !string.IsNullOrWhiteSpace(moveStateName))
+            {
+                int hash = Animator.StringToHash(moveStateName);
+                if (animator.HasState(0, hash))
+                {
+                    animator.Play(hash, 0, 0f);
+                    animator.Update(0f); // 상태를 즉시 진입시켜 길이를 바로 읽을 수 있게 한다
+                    return animator.GetCurrentAnimatorStateInfo(0).length;
+                }
+            }
+            return 0f;
         }
 
         /// <summary>피격 애니메이션 트리거</summary>

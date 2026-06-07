@@ -85,7 +85,7 @@ namespace DiceOrbit.Core
             }
         }
         //패시브와 현재 상태이상에서 Reactor 수집
-        public void CollectReactors(System.Collections.Generic.List<DiceOrbit.Core.Pipeline.ICombatReactor> reactors)
+        public virtual void CollectReactors(System.Collections.Generic.List<DiceOrbit.Core.Pipeline.ICombatReactor> reactors)
         {
             reactors.Add(Stats);
             foreach (var passive in passives.ActivePassives)

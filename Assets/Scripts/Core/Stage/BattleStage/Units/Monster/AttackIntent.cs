@@ -204,7 +204,9 @@ namespace DiceOrbit.Data
             if (orbitManager == null || centerTiles == null || centerTiles.Count == 0)
                 return expandedTiles.ToList();
 
-            const int TotalTiles = 20;
+            int totalTiles = orbitManager.TileCount;
+            if (totalTiles <= 0)
+                return expandedTiles.ToList();
 
             foreach (var centerTile in centerTiles)
             {
@@ -214,7 +216,8 @@ namespace DiceOrbit.Data
 
                     for (int offset = -range; offset <= range; offset++)
                     {
-                        int targetIndex = (centerIndex + offset + TotalTiles) % TotalTiles;
+                        // 음수/큰 offset도 안전하게 0..totalTiles-1로 감싸기 (0번 타일 좌측 → 마지막 타일)
+                        int targetIndex = ((centerIndex + offset) % totalTiles + totalTiles) % totalTiles;
                         var tile = orbitManager.GetTile(targetIndex);
                         if (tile != null)
                         {

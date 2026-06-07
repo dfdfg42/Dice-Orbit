@@ -9,69 +9,26 @@ namespace DiceOrbit.Data.CharacterActives
     public class MageEnergyBallActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("레벨별 기본 배율 (주사위값 x 배율)")]
-        [SerializeField] private int[] baseMultiplierByLevel = { 8, 10, 12, 14, 16 };
-        [Tooltip("레벨별 집중 1스택당 추가 피해 비율. 예: 0.05 = +5%")]
-        [SerializeField] private float[] bonusRatioPerStackByLevel = { 0.05f, 0.06f, 0.07f, 0.08f, 0.09f };
-
-        [SerializeField] private int baseMultiplier = 12;
-        [SerializeField] private float baseBonusRatioPerStack = 0.05f;
+        [Tooltip("피해 = (주사위 눈금 x 배율) + 집중 스택")]
+        [SerializeField] private int multiplier = 1;
 
         public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
         {
-            int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
-            int resolvedBaseMultiplier = ResolveBaseMultiplier(level);
-            float resolvedBonusRatio = ResolveBonusRatioPerStack(level);
             int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
-
-            int baseDamage = diceValue * resolvedBaseMultiplier;
-            return Mathf.RoundToInt(baseDamage * (1.0f + (focusStacks * resolvedBonusRatio)));
+            return diceValue * Mathf.Max(1, multiplier) + focusStacks;
         }
 
         public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
         {
-            int level = Mathf.Max(1, ability?.CurrentLevel ?? 1);
-            int resolvedBaseMultiplier = ResolveBaseMultiplier(level);
-            float resolvedBonusRatio = ResolveBonusRatioPerStack(level);
+            int mult = Mathf.Max(1, multiplier);
             int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
-
-            int baseDamage = diceValue * resolvedBaseMultiplier;
-            float totalMultiplier = 1.0f + (focusStacks * resolvedBonusRatio);
-            int finalDamage = Mathf.RoundToInt(baseDamage * totalMultiplier);
-            float bonusPercent = focusStacks * resolvedBonusRatio * 100f;
-
-            return $"예상 피해: ({diceValue} x {resolvedBaseMultiplier}) x (1 + {focusStacks} x {resolvedBonusRatio:0.##})\n= {baseDamage} x {totalMultiplier:0.##} = {finalDamage} (집중 +{bonusPercent:0.#}%)";
+            int damage = diceValue * mult + focusStacks;
+            return $"예상 피해: ({diceValue} x {mult}) + 집중 {focusStacks} = {damage}";
         }
 
-        public override void OnAfterResolved(Character source, ActiveSkillSlot ability)
-        {
-            int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
-            if (focusStacks > 0)
-            {
-                source.StatusEffects?.RemoveEffect(EffectType.Focus);
-            }
-        }
+        public override string GetDynamicDescription()
+            => $"{FormatDiceCondition()} X {Mathf.Max(1, multiplier)} + 집중 스택 피해";
 
-        private int ResolveBaseMultiplier(int level)
-        {
-            if (baseMultiplierByLevel == null || baseMultiplierByLevel.Length == 0)
-            {
-                return Mathf.Max(1, baseMultiplier + (level - 1));
-            }
-
-            int index = Mathf.Clamp(level - 1, 0, baseMultiplierByLevel.Length - 1);
-            return Mathf.Max(1, baseMultiplierByLevel[index]);
-        }
-
-        private float ResolveBonusRatioPerStack(int level)
-        {
-            if (bonusRatioPerStackByLevel == null || bonusRatioPerStackByLevel.Length == 0)
-            {
-                return Mathf.Max(0f, baseBonusRatioPerStack + ((level - 1) * 0.01f));
-            }
-
-            int index = Mathf.Clamp(level - 1, 0, bonusRatioPerStackByLevel.Length - 1);
-            return Mathf.Max(0f, bonusRatioPerStackByLevel[index]);
-        }
+        // 집중 스택은 공격으로 소비되지 않는다. (웨이브 시작 시에만 초기화 — FocusPassive가 처리)
     }
 }

@@ -35,15 +35,44 @@ namespace DiceOrbit.UI
             }
 
             Instance = this;
-            transform.SetParent(null);
-            DontDestroyOnLoad(gameObject);
+            // 씬에 박혀있는 Canvas 자식이어야 ScreenSpace UI가 렌더링되므로 부모 분리/DDOL 하지 않는다.
             TryAutoBind();
+            ConfigureListRootLayout();
         }
 
         private void Update()
         {
+            UpdateVisibility();
             SyncEntries();
             RefreshEntries();
+        }
+
+        /// <summary>위쪽 기준으로 아래로 쌓이도록 listRoot 피벗을 상단(y=1)으로 맞춘다.
+        /// (앵커/피벗이 중앙이면 ContentSizeFitter가 위아래 양쪽으로 커져 '가운데부터' 채워진다.)</summary>
+        private void ConfigureListRootLayout()
+        {
+            if (listRoot is RectTransform rt && !Mathf.Approximately(rt.pivot.y, 1f))
+            {
+                rt.pivot = new Vector2(rt.pivot.x, 1f);
+            }
+        }
+
+        /// <summary>전투 상태에서만 로스터를 표시(캐릭터 선택/메뉴/보상 중엔 숨김).</summary>
+        private void UpdateVisibility()
+        {
+            if (listRoot == null) return;
+
+            bool show = true;
+            var flow = Core.GameFlowManager.Instance;
+            if (flow != null)
+            {
+                show = flow.CurrentState == Core.GameState.Combat;
+            }
+
+            if (listRoot.gameObject.activeSelf != show)
+            {
+                listRoot.gameObject.SetActive(show);
+            }
         }
 
         public static void EnsureInstance()

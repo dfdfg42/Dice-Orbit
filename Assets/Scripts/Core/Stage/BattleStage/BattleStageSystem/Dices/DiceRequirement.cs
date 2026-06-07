@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace DiceOrbit.Data
 {
     /// <summary>
@@ -11,7 +13,7 @@ namespace DiceOrbit.Data
         High,       // 4 이상
         Low         // 3 이하
     }
-    
+
     /// <summary>
     /// 주사위 요구사항
     /// </summary>
@@ -20,10 +22,19 @@ namespace DiceOrbit.Data
     {
         public int MinDiceCount = 1;        // 필요한 최소 주사위 개수 (나중에 구현)
         public int MinDiceValue = 1;        // 최소 주사위 값
-        public int? MaxDiceValue = null;    // 최대 주사위 값 (옵션)
-        public int? ExactDiceValue = null;  // 정확한 값 요구 (예: 6만)
+
+        // Unity는 int? 를 직렬화하지 못하므로 sentinel(0 = 미사용) int 필드로 저장하고
+        // 기존 호출부(.HasValue/.Value)와 호환되도록 nullable 프로퍼티로 노출한다.
+        [Tooltip("최대 주사위 값. 0이면 상한 없음")]
+        [SerializeField] private int maxDiceValue = 0;
+        [Tooltip("정확한 주사위 값. 0이면 미사용")]
+        [SerializeField] private int exactDiceValue = 0;
+
         public DicePattern Pattern = DicePattern.None; // 패턴
-        
+
+        public int? MaxDiceValue   => maxDiceValue   > 0 ? maxDiceValue   : (int?)null;
+        public int? ExactDiceValue => exactDiceValue > 0 ? exactDiceValue : (int?)null;
+
         /// <summary>
         /// 주사위 값이 요구사항을 만족하는지 확인
         /// </summary>
