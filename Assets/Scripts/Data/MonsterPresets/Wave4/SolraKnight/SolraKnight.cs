@@ -107,10 +107,10 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraKnight
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
             // 예외 방지
-            if (context?.Action == null) return;
+            if (context == null) return;
 
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.Attack && 
+                context is AttackContext atk &&
                 context.Target == owner)
             {
                 if (context.SourceUnit is Character c)
@@ -118,13 +118,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraKnight
                     if (c.CurrentTile.TileIndex % 2 == 0) // 공격하는 적이 짝수 타일에 있을 때
                     {
                         Debug.Log("태양의 기사 패시브 발동(아프게 맞기)");
-                        context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageTakenMultiplier); // 입는 피해량 30% 증가
+                        atk.OutputValue = Mathf.RoundToInt(atk.OutputValue * damageTakenMultiplier); // 입는 피해량 30% 증가
                     }
                 }
             }
 
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.Attack &&
+                context is AttackContext atk2 &&
                 context.SourceUnit == owner)
             {
                 if (context.Target is Character c)
@@ -132,7 +132,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraKnight
                     if (c.CurrentTile.TileIndex % 2 == 1) // 공격하는 적이 홀수 타일에 있을 때
                     {
                         Debug.Log("태양의 기사 패시브 발동(아프게 때리기)");
-                        context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageDealtMultiplier); // 입히는 피해량 30% 증가
+                        atk2.OutputValue = Mathf.RoundToInt(atk2.OutputValue * damageDealtMultiplier); // 입히는 피해량 30% 증가
                     }
                 }
             }

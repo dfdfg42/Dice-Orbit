@@ -27,10 +27,10 @@ namespace DiceOrbit.Data.Tile
         {
             if (target == null || !target.IsAlive) return;
 
-            var context = new Core.Pipeline.CombatContext(
+            var context = new Core.Pipeline.AttackContext(
                 null,
                 target,
-                new Core.Pipeline.CombatAction("Mine Explosion", Core.Pipeline.ActionType.Attack, Value)
+                "Mine Explosion", Value
             );
             Core.Pipeline.CombatPipeline.Instance?.Process(context);
             Owner.RemoveAttribute(this);

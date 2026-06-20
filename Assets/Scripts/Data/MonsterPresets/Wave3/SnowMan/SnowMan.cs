@@ -173,32 +173,32 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context?.Action == null || owner == null) return;
+            if (context == null || owner == null) return;
             s_healAmount = healAmount;
 
             // 눈사람이 받은 피해 누적 (공격 취소 판정용)
             if (trigger == CombatTrigger.OnHit &&
-                context.Action.Type == ActionType.Attack &&
-                context.Target == owner &&
-                !context.IsSimulation &&
-                context.IsEffected)
+                context is AttackContext atk &&
+                atk.Target == owner &&
+                !atk.IsSimulation &&
+                atk.IsEffected)
             {
-                SnowSet.AddDamageTaken(owner as Monster, Mathf.RoundToInt(context.OutputValue));
+                SnowSet.AddDamageTaken(owner as Monster, Mathf.RoundToInt(atk.OutputValue));
             }
 
             // 눈사람의 공격이 적중하면 다른 아군 회복
             if (trigger == CombatTrigger.OnHit &&
-                context.Action.Type == ActionType.Attack &&
-                context.SourceUnit == owner &&
-                !context.IsSimulation &&
-                context.IsEffected)
+                context is AttackContext atk2 &&
+                atk2.SourceUnit == owner &&
+                !atk2.IsSimulation &&
+                atk2.IsEffected)
             {
                 HealAllies(owner as Monster);
             }
 
             // 턴 종료 시 누적 피해 초기화
             if (trigger == CombatTrigger.OnPostAction &&
-                context.Action.Type == ActionType.OnEndTurn &&
+                context is TurnEventContext { Phase: EventPhase.TurnEnd } &&
                 context.SourceUnit == owner)
             {
                 SnowSet.ResetDamageTaken(owner as Monster);

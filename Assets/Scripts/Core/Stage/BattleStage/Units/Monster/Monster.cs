@@ -341,8 +341,8 @@ namespace DiceOrbit.Core
                         var repTarget = ResolvePreviewTarget();
                         if (repTarget != null && CombatPipeline.Instance != null)
                         {
-                            var simCtx = new CombatContext(this, repTarget,
-                                new CombatAction(nextSkill.skillData.SkillName, ActionType.Attack, previewBase));
+                            var simCtx = new AttackContext(this, repTarget,
+                                nextSkill.skillData.SkillName, previewBase);
                             shown = CombatPipeline.Instance.SimulateCalculation(simCtx);
                         }
                         sb.AppendLine($"<color=#FF5555><b>예상 피해:</b> {shown}</color>");

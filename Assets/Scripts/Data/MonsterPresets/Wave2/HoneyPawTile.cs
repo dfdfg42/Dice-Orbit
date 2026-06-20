@@ -37,7 +37,7 @@ namespace DiceOrbit.Data.Tile
             // 1) 통과한 캐릭터 회복 (미끼)
             if (healAmount > 0)
             {
-                var heal = new CombatContext(null, target, new CombatAction("꿀", ActionType.Heal, healAmount));
+                var heal = new HealContext(null, target, "꿀", healAmount);
                 CombatPipeline.Instance?.Process(heal);
             }
 

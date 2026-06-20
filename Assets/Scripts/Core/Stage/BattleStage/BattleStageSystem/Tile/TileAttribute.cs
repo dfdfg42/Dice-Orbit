@@ -64,15 +64,7 @@ namespace DiceOrbit.Data.Tile
         public virtual void OnReact(CombatTrigger trigger, CombatContext context)
         {
             if (Owner == null) return;
-
-            // 공통 로직: 턴 종료 시 지속시간 감소
-            if (context.Action.Type == ActionType.OnEndTurn && context.IsTiling == true)
-            {
-                if (Duration > 0)
-                {
-                    Duration--;
-                }
-            }
+            // 지속시간 감소는 TickDuration()(직접 틱)에서 처리한다.
         }
 
         public virtual void OnArrive(Core.Character character)

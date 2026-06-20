@@ -99,15 +99,15 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context?.Action == null || owner == null) return;
+            if (context == null || owner == null) return;
 
             // 엄마곰이 피해를 받는 쪽일 때, 꿀 타일이 충분하면 받는 피해 감소
             if (trigger == CombatTrigger.OnCalculateOutput &&
-                context.Action.Type == ActionType.Attack &&
+                context is AttackContext atk &&
                 context.Target == owner &&
                 BearPackTracker.HoneyTileCount() >= honeyTileRequirement)
             {
-                context.OutputValue *= 1f - (damageReductionPercent / 100f);
+                atk.OutputValue *= 1f - (damageReductionPercent / 100f);
             }
         }
 

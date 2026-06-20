@@ -620,8 +620,7 @@ namespace DiceOrbit.Core
             if (target == null || !target.IsAlive) return;
 
             // System/Direct Attack via Pipeline
-            var action = new Pipeline.CombatAction("Direct Attack", Pipeline.ActionType.Attack, damage);
-            var context = new Pipeline.CombatContext(null, target, action); // Source is null (System)
+            var context = new Pipeline.AttackContext(null, target, "Direct Attack", damage); // Source is null (System)
 
             if (Pipeline.CombatPipeline.Instance != null)
             {
@@ -641,8 +640,7 @@ namespace DiceOrbit.Core
             {
                 if (monster.IsAlive)
                 {
-                    var action = new Pipeline.CombatAction("Global Attack", Pipeline.ActionType.Attack, damage);
-                    var context = new Pipeline.CombatContext(null, monster, action);
+                    var context = new Pipeline.AttackContext(null, monster, "Global Attack", damage);
 
                     if (Pipeline.CombatPipeline.Instance != null)
                     {

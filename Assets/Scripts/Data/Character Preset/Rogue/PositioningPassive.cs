@@ -27,33 +27,33 @@ namespace DiceOrbit.Data.Passives
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context == null || context.Action == null) return;
+            if (context == null) return;
 
             // 턴 시작 시 이동 거리 초기화
-            if (trigger == CombatTrigger.OnPreAction && context.Action.Type == ActionType.OnStartTurn)
+            if (trigger == CombatTrigger.OnPreAction && context is TurnEventContext { Phase: EventPhase.TurnStart })
             {
                 movedDistanceThisTurn = 0;
                 return;
             }
 
             // 이동 누적
-            if ((trigger == CombatTrigger.OnPostAction || trigger == CombatTrigger.OnActionSuccess) &&
-                context.Action.Type == ActionType.Move &&
+            if ((trigger == CombatTrigger.OnPostAction) &&
+                context is MoveContext mv &&
                 context.SourceUnit == owner)
             {
-                movedDistanceThisTurn += Mathf.RoundToInt(context.Action.BaseValue);
+                movedDistanceThisTurn += mv.Steps;
                 return;
             }
 
             // 다음 공격에 누적 이동량만큼 피해 증가, 이후 소모
             if (trigger == CombatTrigger.OnCalculateOutput &&
-                context.Action.Type == ActionType.Attack &&
+                context is AttackContext atk &&
                 context.SourceUnit == owner &&
                 movedDistanceThisTurn > 0)
             {
                 float effectivePercent = bonusPercentPerTile + GetPositioningBonus();
                 float multiplier = 1f + (effectivePercent / 100f) * movedDistanceThisTurn;
-                context.OutputValue *= multiplier;
+                atk.OutputValue *= multiplier;
                 if (!context.IsSimulation)
                 {
                     Notify();

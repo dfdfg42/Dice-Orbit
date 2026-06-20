@@ -115,10 +115,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
                 if (character == null || !character.IsAlive) continue;
                 if (character.CurrentTile == null || !affectedTiles.Contains(character.CurrentTile)) continue;
 
-                var action = new CombatAction(SkillName, ActionType.Attack, damage);
-                if (vfxProfile != null) action.AddTag("CustomVfx");
-
-                var context = new CombatContext(source, character, action);
+                var context = new AttackContext(source, character, SkillName, damage);
+                if (vfxProfile != null) context.AddTag("CustomVfx");
                 CombatPipeline.Instance?.Process(context);
 
                 if (context.IsEffected) VfxManager.PlayHit(vfxProfile, character);
@@ -173,7 +171,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context.Action.Type == ActionType.OnStartTurn && context.SourceUnit == owner && trigger == CombatTrigger.OnPreAction)
+            if (context is TurnEventContext { Phase: EventPhase.TurnStart } && context.SourceUnit == owner && trigger == CombatTrigger.OnPreAction)
             {
                 PlantMines();
             }

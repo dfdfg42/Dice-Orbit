@@ -30,7 +30,7 @@ namespace DiceOrbit.Core.Pipeline
         /// </summary>
         public void Process(CombatContext context)
         {
-            if (context == null || context.Action == null) return;
+            if (context == null) return;
             if (context.IsCancelled) return;
 
             // 1. Pre-Action (준비 단계)
@@ -51,14 +51,14 @@ namespace DiceOrbit.Core.Pipeline
         /// 적용/OnHit/OnPostAction은 건너뛴다. 반응자는 context.IsSimulation 체크로 Notify·스택소비 같은
         /// 부수효과를 스킵해야 한다. OnPreAction은 회피 RNG가 있어 미리보기에 부적합하므로 제외.
         /// </summary>
-        public int SimulateCalculation(CombatContext context)
+        public int SimulateCalculation(EffectContext context)
         {
-            if (context == null || context.Action == null) return 0;
+            if (context == null) return 0;
 
             context.IsSimulation = true;
             NotifyReactors(context, CombatTrigger.OnCalculateOutput);
 
-            if (context.Action.Type == ActionType.Attack && context.OutputValue < 0)
+            if (context is AttackContext && context.OutputValue < 0)
                 context.OutputValue = 0;
 
             return Mathf.RoundToInt(context.OutputValue);
@@ -69,7 +69,7 @@ namespace DiceOrbit.Core.Pipeline
             NotifyReactors(context, CombatTrigger.OnPreAction);
             if (context.IsCancelled) return false;
 
-            if (context.Action.Type == ActionType.Attack && context.Target?.Stats?.DodgeChance > 0f)
+            if (context is AttackContext && context.Target?.Stats?.DodgeChance > 0f)
             {
                 if (UnityEngine.Random.value < context.Target.Stats.DodgeChance / 100f)
                 {
@@ -87,15 +87,15 @@ namespace DiceOrbit.Core.Pipeline
             NotifyReactors(context, CombatTrigger.OnCalculateOutput);
 
             // 억지로 음수가 되지 않도록 보정 (HEAL이면 그대로)
-            if (context.Action.Type == ActionType.Attack)
+            if (context is AttackContext atk)
             {
-                if (context.OutputValue < 0) context.OutputValue = 0;
+                if (atk.OutputValue < 0) atk.OutputValue = 0;
             }
         }
 
         private void HandlePostAction(CombatContext context)
         {
-            //Debug.LogWarning($"{context.SourceUnit.name}, {context.Target.name}, {context.Action.Type}");
+            //Debug.LogWarning($"{context.SourceUnit.name}, {context.Target.name}, {context.Type}");
             // 적중했다면 OnHit, 처치했다면 OnKill 등 세분화 가능
             NotifyReactors(context, CombatTrigger.OnHit); // 일단 OnHit으로 통일
             NotifyReactors(context, CombatTrigger.OnPostAction);
@@ -170,34 +170,27 @@ namespace DiceOrbit.Core.Pipeline
 
         private void ApplyAction(CombatContext context)
         {
-            // 1. 기본 액션 값 적용 (Base Value)
-            int finalValue = Mathf.RoundToInt(context.OutputValue);
-
-            if (context.Action.Type == ActionType.Attack)
+            switch (context)
             {
-                if (context.Target.TakeDamage(finalValue)!=0) context.IsEffected = true;
-                if (context.IsEffected && !context.Action.HasTag("CustomVfx"))
-                {
-                    VfxManager.PlayDefaultAttackHit(context.Target);
-                }
-            }
-            else if (context.Action.Type == ActionType.Heal)
-            {
-                // Unit.Heal을 사용하는 것이 일관성에 좋음 (오버라이드 가능성 고려)
-                context.Target.Heal(finalValue);
-                if (!context.Action.HasTag("CustomVfx"))
-                {
-                    VfxManager.PlayDefaultHeal(context.Target);
-                }
+                case AttackContext atk:
+                    if (atk.Target.TakeDamage(Mathf.RoundToInt(atk.OutputValue)) != 0) atk.IsEffected = true;
+                    if (atk.IsEffected && !atk.HasTag("CustomVfx"))
+                        VfxManager.PlayDefaultAttackHit(atk.Target);
+                    break;
+                case HealContext heal:
+                    // Unit.Heal을 사용하는 것이 일관성에 좋음 (오버라이드 가능성 고려)
+                    heal.Target.Heal(Mathf.RoundToInt(heal.OutputValue));
+                    if (!heal.HasTag("CustomVfx"))
+                        VfxManager.PlayDefaultHeal(heal.Target);
+                    break;
+                // MoveContext / TurnEventContext: 순수 방송 — Apply 없음 (의도적 no-op)
             }
 
-            // 2. 추가 효과 적용 (Effects)
-            if (context.Action.Effects != null && context.Action.Effects.Count > 0)
+            // 추가 효과 적용 (Effects) — 효과 행위(공격/힐)만 해당
+            if (context is EffectContext efx && efx.Effects != null && efx.Effects.Count > 0)
             {
-                foreach (var effect in context.Action.Effects)
-                {
-                    ApplyEffect(context.Target, effect);
-                }
+                foreach (var effect in efx.Effects)
+                    ApplyEffect(efx.Target, effect);
             }
         }
 

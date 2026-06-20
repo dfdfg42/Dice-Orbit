@@ -14,7 +14,6 @@ namespace DiceOrbit.Core.Pipeline
         
         // 3. 액션 실행 후
         OnHit,              // 적중 시 (방어, 반격)
-        OnActionSuccess,    // 액션 성공 (흡혈, 처치 시 효과)
         OnPostAction        // 모든 처리 완료 후
     }
 

@@ -116,10 +116,8 @@ namespace DiceOrbit.Data.Skills
             {
                 if (target == null || !target.IsAlive) continue;
 
-                var action = new CombatAction(skillName, ActionType.Attack, rawDamage);
-                if (vfxProfile != null) action.AddTag("CustomVfx");
-
-                var context = new CombatContext(source, target, action);
+                var context = new AttackContext(source, target, skillName, rawDamage);
+                if (vfxProfile != null) context.AddTag("CustomVfx");
                 CombatPipeline.Instance?.Process(context);
 
                 if (context.IsEffected) VfxManager.PlayHit(vfxProfile, target);

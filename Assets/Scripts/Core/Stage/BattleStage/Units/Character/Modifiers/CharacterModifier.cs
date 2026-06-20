@@ -36,7 +36,7 @@ namespace DiceOrbit.Data.Modifiers
             if (context.SourceUnit != owner) {
                 return;
             }
-            if (context.Action.Type != ActionType.Attack)
+            if (context is not AttackContext atk)
             {
                 return;
             }
@@ -44,11 +44,11 @@ namespace DiceOrbit.Data.Modifiers
             {
                 return;
             }
-            OnAttackWithActive(context);
+            OnAttackWithActive(atk);
 
         }
 
-        protected virtual void OnAttackWithActive(CombatContext context) { 
+        protected virtual void OnAttackWithActive(AttackContext context) {
         
         }
 

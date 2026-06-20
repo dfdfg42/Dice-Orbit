@@ -14,9 +14,9 @@ public class PowerfullPunch : RuntimeArtifact
     public override void OnReact(CombatTrigger trigger, CombatContext context)
     {
         if (trigger != CombatTrigger.OnCalculateOutput) return;
-        if (context.Action.Type != ActionType.Attack) return;
+        if (context is not AttackContext atk) return;
         if (context.SourceUnit is not Character) return;
         Debug.Log("artifact react: Powerfull Punch");
-        context.OutputValue = 1000;
+        atk.OutputValue = 1000;
     }
 }

@@ -69,14 +69,14 @@ namespace DiceOrbit.Data.Passives
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (owner == null || context == null || context.Action == null) return;
+            if (owner == null || context == null) return;
             if (trigger != CombatTrigger.OnCalculateOutput) return;
-            if (context.Action.Type != ActionType.Attack) return;
+            if (context is not AttackContext atk) return;
             if (context.SourceUnit != owner) return;
             if (reagentStacks <= 0) return;
 
             float multiplier = 1f + (bonusPercentPerStack / 100f) * reagentStacks;
-            context.OutputValue *= multiplier;
+            atk.OutputValue *= multiplier;
         }
 
         private void PlaceReagentTiles()

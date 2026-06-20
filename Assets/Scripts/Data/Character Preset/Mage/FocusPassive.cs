@@ -44,16 +44,18 @@ namespace DiceOrbit.Data.Passives
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (trigger == CombatTrigger.OnPostAction && context.Action.Type == ActionType.Attack)
+            if (owner == null || context == null) return;
+
+            // 공격받으면 집중 감소
+            if (trigger == CombatTrigger.OnPostAction && context is AttackContext)
             {
                 if (context.Target != owner) return;
                 ReduceFocus();
             }
 
             // 턴 종료 시 체력 손실 여부로 확인
-            if (trigger == CombatTrigger.OnPostAction && context.Action.Type == ActionType.OnEndTurn)
+            if (trigger == CombatTrigger.OnPostAction && context is TurnEventContext { Phase: EventPhase.TurnEnd })
             {
-                if (owner == null || context == null || context.Action == null) return;
                 if (context.SourceUnit != owner) return;
                 if (owner.Stats == null) return;
                 bool lostHP = hpAtTurnStart >= 0 && owner.Stats.CurrentHP < hpAtTurnStart;

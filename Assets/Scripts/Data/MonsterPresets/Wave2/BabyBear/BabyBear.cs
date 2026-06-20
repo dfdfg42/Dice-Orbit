@@ -99,14 +99,14 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context?.Action == null || owner == null) return;
+            if (context == null || owner == null) return;
 
             // 아기곰 공격 → 먹은 꿀 양만큼 피해 증가
             if (trigger == CombatTrigger.OnCalculateOutput &&
-                context.Action.Type == ActionType.Attack &&
+                context is AttackContext atk &&
                 context.SourceUnit == owner)
             {
-                context.OutputValue += BearPackTracker.HoneyEaten;
+                atk.OutputValue += BearPackTracker.HoneyEaten;
             }
         }
 

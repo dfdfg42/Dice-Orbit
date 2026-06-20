@@ -79,32 +79,32 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaKnight
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context?.Action == null) return;
+            if (context == null) return;
 
             // 방어 (입는 피해량 처리)
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.Attack && 
+                context is AttackContext atk &&
                 context.Target == owner)
             {
                 if (context.SourceUnit is Character c)
                 {
                     if (c.CurrentTile.TileIndex % 2 == 1) // 공격하는 적이 홀수 타일에 있을 때
                     {
-                        context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageTakenMultiplier); // 입는 피해량 30% 증가
+                        atk.OutputValue = Mathf.RoundToInt(atk.OutputValue * damageTakenMultiplier); // 입는 피해량 30% 증가
                     }
                 }
             }
 
             // 공격 (입히는 피해량 처리)
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.Attack &&
+                context is AttackContext atk2 &&
                 context.SourceUnit == owner)
             {
                 if (context.Target is Character c)
                 {
                     if (c.CurrentTile.TileIndex % 2 == 0) // 공격받는 적이 짝수 타일에 있을 때
                     {
-                        context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageDealtMultiplier); // 입히는 피해량 30% 증가
+                        atk2.OutputValue = Mathf.RoundToInt(atk2.OutputValue * damageDealtMultiplier); // 입히는 피해량 30% 증가
                     }
                 }
             }

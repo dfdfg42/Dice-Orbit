@@ -289,8 +289,7 @@ namespace DiceOrbit.Core
                 int finalDamage = raw;
                 if (raw > 0 && Pipeline.CombatPipeline.Instance != null)
                 {
-                    var simAction = new Pipeline.CombatAction(tmpl.SkillName, Pipeline.ActionType.Attack, raw);
-                    var simContext = new Pipeline.CombatContext(sourceCharacter, targetUnit, simAction);
+                    var simContext = new Pipeline.AttackContext(sourceCharacter, targetUnit, tmpl.SkillName, raw);
                     finalDamage = Pipeline.CombatPipeline.Instance.SimulateCalculation(simContext);
                 }
 

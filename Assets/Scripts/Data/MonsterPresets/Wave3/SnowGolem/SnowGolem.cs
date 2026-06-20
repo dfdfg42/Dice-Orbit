@@ -138,10 +138,10 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context?.Action == null || owner == null) return;
+            if (context == null || owner == null) return;
 
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.OnStartTurn &&
+                context is TurnEventContext { Phase: EventPhase.TurnStart } &&
                 context.SourceUnit == owner)
             {
                 PlantSnowPrisonTiles();

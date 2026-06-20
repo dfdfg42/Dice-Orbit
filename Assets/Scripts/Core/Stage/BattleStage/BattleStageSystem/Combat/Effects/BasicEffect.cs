@@ -23,10 +23,10 @@ namespace DiceOrbit.Systems.Effects
             if (trigger == CombatTrigger.OnCalculateOutput)
             {
                 // 소유자가 공격자이며, 공격 액션일 때
-                if (context.SourceUnit == Owner && context.Action.Type == ActionType.Attack)
+                if (context.SourceUnit == Owner && context is AttackContext atk)
                 {
-                    context.OutputValue += Value;
-                    // Debug.Log($"[BuffAttack] Added {Value} damage to {context.Action.Name}");
+                    atk.OutputValue += Value;
+                    // Debug.Log($"[BuffAttack] Added {Value} damage to {context.Name}");
                 }
             }
         }

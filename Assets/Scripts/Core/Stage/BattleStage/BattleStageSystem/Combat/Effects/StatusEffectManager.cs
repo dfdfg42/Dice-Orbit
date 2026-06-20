@@ -81,7 +81,7 @@ namespace DiceOrbit.Systems.Effects
             }
 
             // 턴 시작 시, 반응 처리 후 만료된 효과 정리
-            if (context.Action.Type==ActionType.OnStartTurn && context.SourceUnit == owner)
+            if (context is TurnEventContext { Phase: EventPhase.TurnStart } && context.SourceUnit == owner)
             {
                 CleanupExpiredEffects();
             }

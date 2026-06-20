@@ -156,11 +156,11 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraPriest
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
-            if (context?.Action == null) return;
+            if (context == null) return;
 
             // 턴 시작 시점 실행
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.OnEndTurn &&
+                context is TurnEventContext { Phase: EventPhase.TurnEnd } &&
                 context.SourceUnit == owner)
             {
                 var aliveCharacters = PartyManager.Instance?.GetAliveCharacters();
