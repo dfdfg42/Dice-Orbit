@@ -97,17 +97,16 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
         public override string GetDynamicDescription()
             => $"꿀 타일 {honeyTileRequirement}개 이상이면 받는 피해 -{damageReductionPercent}% (현재 꿀 {BearPackTracker.HoneyTileCount()}개)";
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            if (context == null || owner == null) return;
+            if (owner == null) return;
 
             // 엄마곰이 피해를 받는 쪽일 때, 꿀 타일이 충분하면 받는 피해 감소
             if (trigger == CombatTrigger.OnCalculateOutput &&
-                context is AttackContext atk &&
                 context.Target == owner &&
                 BearPackTracker.HoneyTileCount() >= honeyTileRequirement)
             {
-                atk.OutputValue *= 1f - (damageReductionPercent / 100f);
+                context.OutputValue *= 1f - (damageReductionPercent / 100f);
             }
         }
 

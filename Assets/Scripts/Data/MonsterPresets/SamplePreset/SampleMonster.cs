@@ -113,7 +113,7 @@ namespace DiceOrbit.Data.MonsterPresets.SamplePreset
         /// <summary>
         /// ���� �߿� �߻��ϴ� ���� �̺�Ʈ(CombatTrigger) ��ȣ�� �����ϰ� �����մϴ�.
         /// </summary>
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             // ���� 1) �ƶ��̳� �׼��� ��� ������ ����
             if (context == null) return;
@@ -121,7 +121,7 @@ namespace DiceOrbit.Data.MonsterPresets.SamplePreset
             // ���� 2) ���� ����Ų(ourceUnit == owner) �̺�Ʈ�̸鼭,
             //         "�� ����" ������ �׼�(ActionType.OnStartTurn)�� "����Ǳ� ����"(OnPreAction)�� �� �����մϴ�.
             if (trigger == CombatTrigger.OnPreAction &&
-                context is TurnEventContext { Phase: EventPhase.TurnStart } && 
+                context.Phase == EventPhase.TurnStart &&
                 context.SourceUnit == owner)
             {
                 Debug.Log($"[SamplePassive] �� ���� Ʈ���� �ߵ� - �� ����");

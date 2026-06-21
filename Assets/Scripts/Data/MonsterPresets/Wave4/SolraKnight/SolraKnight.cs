@@ -104,36 +104,27 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraKnight
             isStackable = false;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            // 예외 방지
-            if (context == null) return;
+            if (trigger != CombatTrigger.OnPreAction) return;
 
-            if (trigger == CombatTrigger.OnPreAction &&
-                context is AttackContext atk &&
-                context.Target == owner)
+            // 입는 피해 (owner가 대상)
+            if (context.Target == owner && context.SourceUnit is Character attacker)
             {
-                if (context.SourceUnit is Character c)
+                if (attacker.CurrentTile.TileIndex % 2 == 0) // 공격하는 적이 짝수 타일에 있을 때
                 {
-                    if (c.CurrentTile.TileIndex % 2 == 0) // 공격하는 적이 짝수 타일에 있을 때
-                    {
-                        Debug.Log("태양의 기사 패시브 발동(아프게 맞기)");
-                        atk.OutputValue = Mathf.RoundToInt(atk.OutputValue * damageTakenMultiplier); // 입는 피해량 30% 증가
-                    }
+                    Debug.Log("태양의 기사 패시브 발동(아프게 맞기)");
+                    context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageTakenMultiplier); // 입는 피해량 30% 증가
                 }
             }
 
-            if (trigger == CombatTrigger.OnPreAction &&
-                context is AttackContext atk2 &&
-                context.SourceUnit == owner)
+            // 입히는 피해 (owner가 공격자)
+            if (context.SourceUnit == owner && context.Target is Character victim)
             {
-                if (context.Target is Character c)
+                if (victim.CurrentTile.TileIndex % 2 == 1) // 공격받는 적이 홀수 타일에 있을 때
                 {
-                    if (c.CurrentTile.TileIndex % 2 == 1) // 공격하는 적이 홀수 타일에 있을 때
-                    {
-                        Debug.Log("태양의 기사 패시브 발동(아프게 때리기)");
-                        atk2.OutputValue = Mathf.RoundToInt(atk2.OutputValue * damageDealtMultiplier); // 입히는 피해량 30% 증가
-                    }
+                    Debug.Log("태양의 기사 패시브 발동(아프게 때리기)");
+                    context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageDealtMultiplier); // 입히는 피해량 30% 증가
                 }
             }
         }

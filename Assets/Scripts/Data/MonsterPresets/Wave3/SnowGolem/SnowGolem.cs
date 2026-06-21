@@ -136,12 +136,12 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
             isStackable = false;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
-            if (context == null || owner == null) return;
+            if (owner == null) return;
 
             if (trigger == CombatTrigger.OnPreAction &&
-                context is TurnEventContext { Phase: EventPhase.TurnStart } &&
+                context.Phase == EventPhase.TurnStart &&
                 context.SourceUnit == owner)
             {
                 PlantSnowPrisonTiles();
