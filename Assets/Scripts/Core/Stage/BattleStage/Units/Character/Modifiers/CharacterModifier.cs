@@ -32,20 +32,10 @@ namespace DiceOrbit.Data.Modifiers
         public Character owner;
 
         /// <summary>파이프라인 훅. Generic은 여기서 OutputValue 조작.</summary>
-        public virtual void OnReact(CombatTrigger trigger, CombatContext context) {
-            if (context.SourceUnit != owner) {
-                return;
-            }
-            if (context is not AttackContext atk)
-            {
-                return;
-            }
-            if (trigger != CombatTrigger.OnCalculateOutput)
-            {
-                return;
-            }
-            OnAttackWithActive(atk);
-
+        public virtual void OnAttack(CombatTrigger trigger, AttackContext context) {
+            if (context.SourceUnit != owner) return;
+            if (trigger != CombatTrigger.OnCalculateOutput) return;
+            OnAttackWithActive(context);
         }
 
         protected virtual void OnAttackWithActive(AttackContext context) {

@@ -44,14 +44,13 @@ namespace DiceOrbit.Systems.Effects
             }
         }
 
-        // ICombatReactor Implementation
-        public virtual void OnReact(CombatTrigger trigger, CombatContext context)
+        // ICombatReactor: OnReact는 인터페이스 기본 디스패치(DIM)를 사용. 공통 지속시간 감소는 OnTurnEvent에서.
+        public virtual void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             if (Owner == null) return;
 
-            // 공통 로직: 턴 시작 시 지속시간 감소
-            // (SourceUnit == Owner일 때 = 나의 턴 시작)
-            if (context is TurnEventContext { Phase: EventPhase.TurnStart }
+            // 공통 로직: 턴 시작 시 지속시간 감소 (SourceUnit == Owner = 나의 턴 시작)
+            if (context.Phase == EventPhase.TurnStart
                 && trigger == CombatTrigger.OnPostAction
                 && context.SourceUnit == Owner)
             {

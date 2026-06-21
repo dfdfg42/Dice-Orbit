@@ -220,14 +220,11 @@ namespace DiceOrbit.Systems.Effects
             IsStackable = false;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            base.OnReact(trigger, context);
-            if (trigger == CombatTrigger.OnPreAction &&
-                context is AttackContext atk &&
-                context.SourceUnit == Owner)
+            if (trigger == CombatTrigger.OnPreAction && context.SourceUnit == Owner)
             {
-                atk.OutputValue += atk.OutputValue * (Value / 100f);
+                context.OutputValue += context.OutputValue * (Value / 100f);
             }
         }
     }

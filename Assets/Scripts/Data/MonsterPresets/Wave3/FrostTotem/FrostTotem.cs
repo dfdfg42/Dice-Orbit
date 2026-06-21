@@ -21,17 +21,14 @@ namespace DiceOrbit.Systems.Effects
             IsStackable = false;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            base.OnReact(trigger, context);
-            if (Owner == null || context == null) return;
+            if (Owner == null) return;
 
             // 내가 피해를 받는 쪽일 때 받는 피해량 증가
-            if (trigger == CombatTrigger.OnCalculateOutput &&
-                context is AttackContext atk &&
-                context.Target == Owner)
+            if (trigger == CombatTrigger.OnCalculateOutput && context.Target == Owner)
             {
-                atk.OutputValue *= 1f + (Value / 100f);
+                context.OutputValue *= 1f + (Value / 100f);
             }
         }
     }
