@@ -78,7 +78,7 @@ namespace Core {
 
 namespace Data {
     class UnitStats {
-        +MaxHP:int
+        +MaxHP:int                                               
         +CurrentHP:int
         +Attack:int
         +TempArmor:int
