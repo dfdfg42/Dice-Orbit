@@ -35,18 +35,17 @@ namespace DiceOrbit.Data.Passives
 
         protected override void ApplyLevel(int level) { }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            if (owner == null || context == null) return;
+            if (owner == null) return;
             if (trigger != CombatTrigger.OnCalculateOutput) return;
-            if (context is not AttackContext atk) return;
             if (context.SourceUnit != owner) return;
 
             int allyCount = CountAdjacentAllies();
             if (allyCount <= 0) return;
 
             float multiplier = 1f + (bonusPercentPerAlly / 100f) * allyCount;
-            atk.OutputValue *= multiplier;
+            context.OutputValue *= multiplier;
             if (!context.IsSimulation) Notify();
         }
 

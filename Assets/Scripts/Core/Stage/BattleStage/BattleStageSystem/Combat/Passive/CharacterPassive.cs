@@ -49,7 +49,8 @@ namespace DiceOrbit.Data.Passives
 
         public virtual IPassive Clone() => (CharacterPassiveSkill)MemberwiseClone();
 
-        public abstract void OnReact(CombatTrigger trigger, CombatContext context);
+        // OnReact는 ICombatReactor의 기본 디스패치(default interface method)를 사용한다.
+        // 자식은 OnAttack / OnHeal / OnMove / OnTurnEvent 훅 중 필요한 것만 구현한다.
 
         public virtual void OnOwnerSelected(Character c)  { }
         public virtual void OnOwnerDeselected()            { }
