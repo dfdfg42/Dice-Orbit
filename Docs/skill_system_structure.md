@@ -11,11 +11,12 @@
 ### 1.1 Combat Domain Class Diagram (Current)
 
 > **주요 설계 원칙**
-> - `CharacterSkillBase` → `[Serializable]` 추상 클래스. 이름·설명·요구조건·레벨 데이터 공통 보유
-> - `CharacterActiveTemplate`, `CharacterPassive` → `CharacterSkillBase` 상속, `[Serializable]` 일반 클래스 (SO 아님)
-> - `CharacterPreset.StartingSkills` → `[SerializeReference] List<CharacterSkillBase>` (Inspector 타입 피커)
-> - `PassiveAbility` → `[Serializable]` 유지 (몬스터 전용 인라인 패시브)
-> - `IPassive` → 캐릭터/몬스터 패시브를 `PassiveManager`에서 통합 관리하는 공통 인터페이스
+> - `CombatContext` → **추상 베이스**. `SourceUnit`/`Target`/`IsCancelled`/`IsSimulation`/`Type`(마이그레이션 shim)만 보유. 파이프라인이 나르는 "봉투".
+> - 구체 컨텍스트는 서브클래스로 분화: `EffectContext`(→ `AttackContext`/`HealContext`), `MoveContext`, `TurnEventContext`. (구 `CombatAction` 객체는 `CombatContext`로 **병합**되어 더 이상 존재하지 않음)
+> - `CharacterActiveSkill`, `CharacterPassiveSkill` → 각각 **독립된** `[Serializable]` 추상 클래스 (SO 아님, `[SerializeReference]` 인라인). 공통 베이스(`CharacterSkillBase`)는 **제거됨**.
+> - `CharacterPreset` → `StartingActives`(`List<CharacterActiveSkill>`)와 `StartingPassives`(`List<CharacterPassiveSkill>`)의 **두 개** `[SerializeReference]` 리스트로 분리.
+> - `PassiveAbility` → `[Serializable]` 유지 (몬스터 전용 인라인 패시브). `CharacterPassiveSkill`과 함께 `IPassive` 구현.
+> - `ICombatReactor` → **DIM(default interface method)**. 기본 `OnReact`가 컨텍스트 구체 타입으로 디스패치하고, 리액터는 필요한 타입 훅(`OnAttack`/`OnHeal`/`OnMove`/`OnTurnEvent`)만 구현.
 
 ```mermaid
 classDiagram
@@ -53,32 +54,59 @@ namespace Core {
     }
 
     class CombatPipeline {
+        +static Instance
         +Process(CombatContext)
     }
 
     class CombatContext {
-        +SourceUnit: Unit
-        +Target: Unit
-        +Action: CombatAction
-        +OutputValue: float
+        <<abstract>>
+        +Unit SourceUnit
+        +Unit Target
+        +bool IsCancelled
+        +bool IsSimulation
+        +ActionType Type
     }
 
-    class CombatAction {
-        +Type: ActionType
-        +BaseValue: int
-        +Tags: List~string~
+    class EffectContext {
+        <<abstract>>
+        +string Name
+        +float BaseValue
+        +float OutputValue
+        +HashSet~string~ Tags
+        +List~ActionEffectInfo~ Effects
+        +AddTag(string)
+        +HasTag(string) bool
+        +AddEffect(EffectType, int, int)
+    }
+
+    class AttackContext {
+        +bool IsEffected
+    }
+
+    class HealContext
+
+    class MoveContext {
+        +int Steps
+    }
+
+    class TurnEventContext {
+        +EventPhase Phase
     }
 
     class ICombatReactor {
         <<interface>>
-        +Priority:int
+        +int Priority
         +OnReact(CombatTrigger, CombatContext)
+        +OnAttack(CombatTrigger, AttackContext)
+        +OnHeal(CombatTrigger, HealContext)
+        +OnMove(CombatTrigger, MoveContext)
+        +OnTurnEvent(CombatTrigger, TurnEventContext)
     }
 }
 
 namespace Data {
     class UnitStats {
-        +MaxHP:int                                               
+        +MaxHP:int
         +CurrentHP:int
         +Attack:int
         +TempArmor:int
@@ -89,8 +117,9 @@ namespace Data {
     class CharacterStats {
         +CharacterName:string
         +Level:int
-        +RuntimeAbilities: List~RuntimeAbility~
-        +GetActiveAbilityByIndex(int) RuntimeAbility
+        +ActiveAbilities: List~ActiveSkillSlot~
+        +PassiveInstances: List~CharacterPassiveSkill~
+        +GetActiveAbilityByIndex(int) ActiveSkillSlot
     }
 
     class MonsterStats {
@@ -102,7 +131,9 @@ namespace Data {
 
     class CharacterPreset {
         <<ScriptableObject>>
-        +StartingSkills: List~CharacterSkillBase~ SerializeReference
+        +StartingActives: List~CharacterActiveSkill~ SerializeReference
+        +StartingPassives: List~CharacterPassiveSkill~ SerializeReference
+        +ModifierContextTypeName:string
         +CreateStats() CharacterStats
     }
 
@@ -158,45 +189,37 @@ namespace Data {
         +GetDynamicDescription() string
     }
 
-    class CharacterSkillBase {
-        <<abstract, Serializable>>
-        +skillName:string
-        +description:string
-        +requirement: DiceRequirement
-        +levels: List~SkillLevelData~
-        +SkillType: CharacterSkillType
-        +CanUse(int) bool
-        +GetDescription(int) string
-        +GetRequirement(int) DiceRequirement
-    }
-
-    class CharacterActiveTemplate {
+    class CharacterActiveSkill {
         <<abstract, Serializable>>
         +targetType: CharacterSkillTargetType
         +previewStyle: TilePreviewStyle
-        +Execute(Character, RuntimeAbility, List~Unit~, List~TileData~, int) bool
-        +BuildPreview(Character, RuntimeAbility, int) string
-        +CalculateRawDamage(Character, RuntimeAbility, int) int
-        +Clone() CharacterActiveTemplate
+        +targetCount:int
+        #vfxProfile: CombatVfxProfile
+        +Execute(Character, ActiveSkillSlot, List~Unit~, List~TileData~, int) bool
+        +CalculateRawDamage(Character, ActiveSkillSlot, int) int
+        +BuildPreview(Character, ActiveSkillSlot, int) string
+        +GenerateContext(Character, ActiveSkillSlot) CharacterModfierContext
+        +Clone() CharacterActiveSkill
     }
 
-    class CharacterPassive {
+    class CharacterPassiveSkill {
         <<abstract, Serializable>>
         +priority:int
         +isStackable:bool
         +currentLevel:int
         +Clone() IPassive
-        +OnReact(CombatTrigger, CombatContext)
+        +OnAttack/OnHeal/OnMove/OnTurnEvent(...)
     }
 
-    class RuntimeAbility {
-        +BaseSkill: CharacterSkillBase
+    class ActiveSkillSlot {
+        +BaseSkill: CharacterActiveSkill SerializeReference
         +CurrentLevel:int
-        +RuntimeActiveInstance: CharacterActiveTemplate
-        +RuntimePassiveInstance: IPassive
+        +RuntimeInstance: CharacterActiveSkill NonSerialized
+        +Owner: Character
         +TryUpgrade() bool
         +Execute(...) bool
         +CanUse(int) bool
+        +BuildEffectiveContext() CharacterModfierContext
     }
 
     class PassiveAbility {
@@ -205,26 +228,45 @@ namespace Data {
         +Initialize(Unit)
         +SetLevel(int)
         +Clone() IPassive
-        +OnReact(CombatTrigger, CombatContext)
+        +OnAttack/OnHeal/OnMove/OnTurnEvent(...)
     }
 
     class PassiveManager {
         +ActivePassives: IReadOnlyList~IPassive~
         +AddPassive(IPassive)
         +RemovePassive(IPassive)
+        +OnReact(CombatTrigger, CombatContext)
     }
 
     class StatusEffect {
         +Type: EffectType
         +Value:int
         +Duration:int
-        +OnReact(CombatTrigger, CombatContext)
+        +OnTurnEvent(CombatTrigger, TurnEventContext)
     }
 
     class StatusEffectManager {
+        +CreateEffect(...)
         +AddEffect(StatusEffect)
-        +RemoveEffect(EffectType)
-        +HasEffect(EffectType) bool
+        +CleanupExpiredEffects()
+        +OnReact(CombatTrigger, CombatContext)
+    }
+
+    class CharacterModifier {
+        <<abstract>>
+        +OnAttackWithActive(AttackContext)
+        +OnRefreshSkill(CharacterModfierContext)
+    }
+
+    class ModifierManager {
+        +ApplyTo(CharacterModfierContext)
+    }
+
+    class CharacterModfierContext {
+        +TargetType: CharacterSkillTargetType
+        +TargetCount:int
+        +PreviewStyle: TilePreviewStyle
+        +IsCancelled:bool
     }
 
     class TileData
@@ -232,8 +274,11 @@ namespace Data {
 }
 
 %% Inheritance
-CharacterSkillBase <|-- CharacterActiveTemplate
-CharacterSkillBase <|-- CharacterPassive
+CombatContext <|-- EffectContext
+CombatContext <|-- MoveContext
+CombatContext <|-- TurnEventContext
+EffectContext <|-- AttackContext
+EffectContext <|-- HealContext
 
 Unit <|-- Character
 Unit <|-- Monster
@@ -242,14 +287,16 @@ UnitStats <|-- MonsterStats
 MonsterAI <|-- RandomPattern
 MonsterAI <|-- SequentialPattern
 
-IPassive <|.. CharacterPassive : implements
+IPassive <|.. CharacterPassiveSkill : implements
 IPassive <|.. PassiveAbility : implements
 ICombatReactor <|.. IPassive : extends
+ICombatReactor <|.. CharacterModifier : implements
 
-%% Reactor implementation
+%% Reactor implementation (propagating reactors override OnReact)
 PassiveManager ..|> ICombatReactor
 StatusEffect ..|> ICombatReactor
 StatusEffectManager ..|> ICombatReactor
+TileData ..|> ICombatReactor
 
 %% Composition / associations
 Unit o-- UnitStats
@@ -257,7 +304,8 @@ Unit o-- PassiveManager
 Unit o-- StatusEffectManager
 
 CharacterPreset ..> CharacterStats : creates
-CharacterPreset o-- CharacterSkillBase : SerializeReference 인라인
+CharacterPreset o-- CharacterActiveSkill : StartingActives (SerializeReference)
+CharacterPreset o-- CharacterPassiveSkill : StartingPassives (SerializeReference)
 
 MonsterPreset ..> MonsterStats : creates
 MonsterPreset o-- MonsterAI
@@ -272,11 +320,15 @@ MonsterSkill ..> AttackIntent : generates
 AttackIntent --> Unit : targets
 AttackIntent --> TileData : targetTiles
 
-CharacterSkillBase o-- SkillLevelData
-CharacterStats o-- RuntimeAbility
-RuntimeAbility --> CharacterSkillBase
-RuntimeAbility o-- CharacterActiveTemplate : MemberwiseClone 복사본
-RuntimeAbility o-- IPassive : 런타임 인스턴스
+CharacterStats o-- ActiveSkillSlot
+CharacterStats o-- CharacterPassiveSkill
+ActiveSkillSlot --> CharacterActiveSkill : BaseSkill
+ActiveSkillSlot o-- CharacterActiveSkill : RuntimeInstance (Clone 복사본)
+ActiveSkillSlot ..> CharacterModfierContext : BuildEffectiveContext
+
+CharacterStats o-- ModifierManager : Modifiers
+ModifierManager o-- CharacterModifier
+ModifierManager ..> CharacterModfierContext : ApplyTo
 
 Character ..> CharacterProgressionService : level-up policy
 
@@ -285,7 +337,6 @@ StatusEffectManager o-- StatusEffect
 
 CombatPipeline ..> CombatContext
 CombatPipeline ..> ICombatReactor
-CombatContext o-- CombatAction
 CombatContext --> Unit
 ```
 
@@ -300,40 +351,41 @@ classDiagram
     }
 
     class CombatContext {
-        +object SourceUnit
-        +object Target
-        +CombatAction Action
-        +float OutputValue
+        <<abstract>>
+        +Unit SourceUnit
+        +Unit Target
         +bool IsCancelled
-        +SourceCharacter
-        +SourceMonster
+        +bool IsSimulation
+        +ActionType Type
     }
 
-    class CombatAction {
+    class AttackContext {
         +string Name
-        +ActionType Type
-        +int BaseValue
-        +List~string~ Tags
+        +float BaseValue
+        +float OutputValue
+        +bool IsEffected
+        +HashSet~string~ Tags
     }
 
     class ICombatReactor {
         <<Interface>>
-        +OnReact(Trigger, Context)
         +int Priority
+        +OnReact(Trigger, Context)
+        +OnAttack(Trigger, AttackContext)
+        +OnTurnEvent(Trigger, TurnEventContext)
     }
 
     %% --- Managers (Generators) ---
     class SkillManager {
-        +PrepareSkill(...)
-        +ExecuteSkill(...)
+        +PrepareSkill(Character, int, DiceData)
         --
-        생성: CombatAction(Attack/Heal)
+        생성: AttackContext / HealContext
     }
 
     class Monster {
         +ExecuteIntent()
         --
-        생성: CombatAction(Attack)
+        생성: AttackContext
     }
 
     %% --- Reactive Systems (Listeners) ---
@@ -346,47 +398,52 @@ classDiagram
         +OnReact(...)
         -List~StatusEffect~ activeEffects
     }
-    
+
     class IPassive {
         <<Interface>>
-        +OnReact(...)
+        +OnAttack(...) / OnTurnEvent(...)
         +Clone() IPassive
     }
 
     class StatusEffect {
-        +OnReact(...)
+        +OnTurnEvent(...)
         +EffectType Type
     }
 
     %% --- Relationships ---
     CombatPipeline ..> CombatContext : Uses
-    CombatContext *-- CombatAction : Contains
-    
+    CombatContext <|-- AttackContext : Subclass
+
     SkillManager ..> CombatPipeline : Sends Context
     Monster ..> CombatPipeline : Sends Context
-    
-    CombatPipeline --> ICombatReactor : Notifies
-    
-    PassiveManager ..|> ICombatReactor : Implements
-    StatusEffectManager ..|> ICombatReactor : Implements
-    
+
+    CombatPipeline --> ICombatReactor : Notifies (typed dispatch)
+
+    PassiveManager ..|> ICombatReactor : Implements (overrides OnReact)
+    StatusEffectManager ..|> ICombatReactor : Implements (overrides OnReact)
+
     PassiveManager o-- IPassive : Manages
     StatusEffectManager o-- StatusEffect : Manages
-    
+
     IPassive ..|> ICombatReactor : extends
     StatusEffect ..|> ICombatReactor : Logic Proxy
 ```
 
 ## 2. 전투 실행 흐름 (Execution Flow)
 
-모든 전투 행위(스킬, 몬스터 공격, 도트 데미지 등)는 `CombatPipeline`을 통과합니다.
+모든 전투 행위(스킬, 몬스터 공격, 도트 데미지 등)는 `CombatPipeline.Instance.Process(CombatContext)`를 통과합니다.
 
 ### 2.1 전체 파이프라인 순서
-1.  **Preparation**: 액션 생성 및 타겟 설정 (`CombatContext` 생성)
-2.  **Pre-Action**: 액션 시작 전 단계 (취소, 회피 판정 등)
-3.  **Calculation**: 수치 계산 단계 (데미지 공식, 버프/디버프 연산)
-4.  **Application**: 실제 적용 (HP 감소, 힐 적용)
-5.  **Reaction**: 적용 후 반응 (피격 시 효과, 흡혈, 처치 효과)
+1.  **Preparation**: 액션 생성 및 타겟 설정 (`AttackContext`/`HealContext` 등 구체 `CombatContext` 생성)
+2.  **Pre-Action** (`OnPreAction`): 액션 시작 전 단계 (취소, 회피 판정 등)
+3.  **Calculation** (`OnCalculateOutput`): 수치 계산 단계 (데미지 공식, 버프/디버프 연산 → `OutputValue`)
+4.  **Application**: 실제 적용 (`Unit.TakeDamage`/`Heal`, 효과는 `StatusEffectManager.CreateEffect` 경유)
+5.  **Reaction** (`OnHit` → `OnPostAction`): 적용 후 반응 (피격 시 효과, 흡혈, 처치 효과)
+
+> `CombatTrigger`는 정확히 `{ OnPreAction, OnCalculateOutput, OnHit, OnPostAction }` 4개뿐입니다.
+> 턴 시작/종료·타일 틱 같은 사건은 트리거가 아니라 `TurnEventContext`(+`EventPhase { TurnStart, TurnEnd, TileTick }`)로 운반됩니다.
+
+`NotifyReactors`는 리액터를 다음에서 수집합니다: source/target 패시브, 파티 전역 패시브, 상태이상(StatusEffect), 아티팩트(`ArtifactManager`), 타일(`OrbitManager.Tiles`/`TileData`).
 
 ### 2.2 상세 시퀀스 다이어그램
 
@@ -396,28 +453,28 @@ sequenceDiagram
     participant SM as Skill/Intent System
     participant Pipe as CombatPipeline
     participant Context as CombatContext
-    participant Reactors as Passives/Effects
+    participant Reactors as Passives/Effects/Tiles
     participant Target as "Target (Unit)"
 
     Note over Source, SM: 1. Action Generation
     Source->>SM: Use Skill / Execute Intent
-    SM->>Context: Create Context(Source, Target, Action)
+    SM->>Context: new AttackContext(Source, Target, name, baseValue)
     SM->>Pipe: Process(Context)
 
-    Note over Pipe, Reactors: 2. Pipeline Execution
+    Note over Pipe, Reactors: 2. Pipeline Execution (typed dispatch)
 
     %% Step 1: Pre-Action
-    Pipe->>Reactors: OnReact(OnPreAction)
+    Pipe->>Reactors: OnReact(OnPreAction) → OnAttack(...)
     Reactors-->>Context: Modify/Cancel?
 
     %% Step 2: Calculation
-    Pipe->>Reactors: OnReact(OnCalculateOutput)
+    Pipe->>Reactors: OnReact(OnCalculateOutput) → OnAttack(...)
     Reactors-->>Context: Add Damage / Reduce Damage
     Note right of Pipe: Final Value = OutputValue
 
     %% Step 3: Application
-    Pipe->>Target: Apply(OutputValue)
-    Target-->>Target: Reduce HP / Apply Effect
+    Pipe->>Target: TakeDamage(OutputValue) / Heal
+    Target-->>Target: Reduce HP / StatusEffectManager.CreateEffect
 
     %% Step 4: Reaction
     Pipe->>Reactors: OnReact(OnHit / OnPostAction)
@@ -431,22 +488,25 @@ sequenceDiagram
 
 | 클래스 | 타입 | 역할 |
 |---|---|---|
-| `CharacterSkillBase` | abstract `[Serializable]` | 액티브/패시브 공통 베이스. 이름·설명·조건·레벨 데이터 보유 |
-| `CharacterActiveTemplate` | abstract `[Serializable]` | 캐릭터 액티브 스킬 실행 로직. `CharacterSkillBase` 상속. TargetType·PreviewStyle 포함 |
-| `CharacterPassive` | abstract `[Serializable]` | 캐릭터 패시브 로직. `CharacterSkillBase` + `IPassive` 구현 |
-| `PassiveAbility` | abstract `[Serializable]` | 몬스터 전용 패시브. `MonsterPreset` 안에 인라인 저장 (`[SerializeReference]`) |
-| `IPassive` | interface | `CharacterPassive`와 `PassiveAbility` 공통 인터페이스. `PassiveManager`가 이 타입으로 관리 |
+| `CharacterActiveSkill` | abstract `[Serializable]` | 캐릭터 액티브 스킬. 이름·설명·요구조건·타게팅·VFX 보유, `Execute`/`CalculateRawDamage`/`BuildPreview`/`GenerateContext` 정의. 독립 베이스(공통 부모 없음) |
+| `CharacterPassiveSkill` | abstract `[Serializable]` | 캐릭터 패시브. `IPassive` 구현, 타입 훅(`OnAttack` 등) 오버라이드. 독립 베이스 |
+| `ActiveSkillSlot` | `[Serializable]` 런타임 래퍼 | `BaseSkill`(`[SerializeReference]`) + `CurrentLevel` + `RuntimeInstance`(Clone) + `Owner`. `CanUse`/`Execute`/`TryUpgrade`/`BuildEffectiveContext` |
+| `PassiveAbility` | abstract `[Serializable]` | 몬스터 전용 패시브. `MonsterPreset` 안에 인라인 저장 (`[SerializeReference]`). `IPassive` 구현 |
+| `IPassive` | interface (`: ICombatReactor`) | `CharacterPassiveSkill`과 `PassiveAbility` 공통 인터페이스. `PassiveManager`가 이 타입으로 관리 |
+
+> 구 `CharacterSkillBase`(공통 베이스), `PassiveSkillAsset`은 제거되었습니다(빈 tombstone). `SkillAsset`/`ActiveSkillAsset`/`SkillLevelData`/`EffectManager`/`IEffect`는 존재하지 않습니다.
+> 구 런타임 래퍼 이름 `RuntimeAbility`(클래스)는 더 이상 없으며 `ActiveSkillSlot`으로 대체되었습니다. 파일명만 `RuntimeAbility.cs`로 남아 있습니다.
 
 ### 스킬 추가 워크플로
 
 **캐릭터 액티브 스킬:**
-1. `CharacterActiveTemplate` 상속 클래스 작성 + `[System.Serializable]`
-2. `CharacterPreset` Inspector에서 `StartingSkills` 리스트 `+` 클릭
+1. `CharacterActiveSkill` 상속 클래스 작성 + `[System.Serializable]`
+2. `CharacterPreset` Inspector에서 `StartingActives` 리스트 `+` 클릭
 3. 타입 피커에서 해당 클래스 선택 → 인라인 편집
 
 **캐릭터 패시브 스킬:**
-1. `CharacterPassive` 상속 클래스 작성 + `[System.Serializable]`
-2. `CharacterPreset` Inspector에서 `StartingSkills` 리스트 `+` 클릭
+1. `CharacterPassiveSkill` 상속 클래스 작성 + `[System.Serializable]`
+2. `CharacterPreset` Inspector에서 `StartingPassives` 리스트 `+` 클릭
 3. 타입 피커에서 해당 클래스 선택 → 인라인 편집
 
 **몬스터 패시브:**
@@ -455,23 +515,25 @@ sequenceDiagram
 
 ### 런타임 구조
 
-*   **`RuntimeAbility`**: `CharacterPreset` → `CharacterStats` 생성 시 `CharacterSkillBase`를 래핑. 액티브는 `active.Clone()`(`MemberwiseClone`), 패시브는 `passive.Clone()`으로 복사본 생성.
-*   **`PassiveManager`**: `IPassive` 리스트로 캐릭터/몬스터 패시브를 통합 관리.
-*   **`StatusEffect`**: 런타임 버프/디버프. 자신이 부착된 유닛이 Source/Target이 될 때 `OnReact`를 통해 결과에 개입.
+*   **`ActiveSkillSlot`**: `CharacterPreset.CreateStats()`에서 각 `StartingActives` 항목을 래핑(`new ActiveSkillSlot(active)` → 생성자가 `skill.Clone()`으로 `RuntimeInstance` 생성). `CharacterStats.ActiveAbilities`에 저장.
+*   **`CharacterStats.PassiveInstances`**: `StartingPassives`를 `passive.Clone()`으로 복제해 저장 (`List<CharacterPassiveSkill>`).
+*   **`PassiveManager`**: `IPassive` 리스트로 캐릭터/몬스터 패시브를 통합 관리. `OnReact`를 직접 override하여 자식 패시브로 전파.
+*   **`StatusEffect`**: 런타임 버프/디버프. 자신이 부착된 유닛이 Source/Target이 될 때 타입 훅으로 결과에 개입. 지속시간은 **턴 시작 시**(`OnTurnEvent`에서 `Phase == TurnStart`) 감소.
+*   **모디파이어**: `ActiveSkillSlot.BuildEffectiveContext()`가 `skill.GenerateContext(...)`로 `CharacterModfierContext`(주의: 오탈자 `Modfier`)를 만든 뒤 `Owner.Stats.Modifiers.ApplyTo(ctx)`로 각 `CharacterModifier.OnRefreshSkill`을 적용(`IsCancelled` 시 중단). 예: `GreatswordWideSwing`은 `TargetCount += 1`, `TargetType = MultiEnemy`로만 변경.
 
 ### 예시: 데미지 계산 공식
 `OutputValue` = (`BaseDamage` + `DiceBonus`)
 -> **Reactor 1 (Passive)**: `OnCalculateOutput` -> `OutputValue += 5` (공격력 증가)
 -> **Reactor 2 (Target Defense Effect)**: `OnCalculateOutput` -> `OutputValue -= 2` (방어력 감소)
--> **Final Applied**: `Base + Dice + 5 - 2`
+-> **Final Applied**: `Base + Dice + 5 - 2` → `Unit.TakeDamage`
 
 ## 4. 구현된 캐릭터 목록
 
+현재 구현된 캐릭터는 정확히 4명입니다 (`Data/Character Preset/<Class>/`).
+
 | 캐릭터 | 액티브 | 패시브 | 비고 |
 |---|---|---|---|
-| 전사 (Warrior) | `WarriorGreatswordActive` | `BattleCryPassive` | |
+| 전사 (Warrior) | `WarriorGreatswordActive` | `BattleCryPassive` | 대검 광역 스윙 (모디파이어로 다중 타겟 확장) |
 | 로그 (Rogue) | `RogueAmbushActive` | `PositioningPassive` | 이동 거리 조건부 피해 증가 |
-| 연금술사 (Alchemist) | `AlchemistThrowActive` | `StableReactionPassive` | |
-| 마법사 (Mage) | `MageEnergyBallActive` | `FocusPassive` | |
-| 기상술사 (Meteorologist) | `WeatherForecastActive` | `MeteorologistCloudPassive` | 구름 타일 설치 |
-| 정찰병 (Scout) | `ScoutTrapRemoveActive` | `ScoutingPassive` | 이동 경로 아군 피해 버프, 함정→치유 타일 교체 |
+| 연금술사 (Alchemist) | `AlchemistThrowActive` | `ReagentPrepPassive` | 시약 준비 패시브 |
+| 마법사 (Mage) | `MageEnergyBallActive` | `FocusPassive` | 집중 스택 기반 강화 |

@@ -86,18 +86,21 @@ CharacterActionUI (스킬 카드 클릭)
 ```csharp
 private int                       _requiredCount;       // 목표 선택 개수
 private readonly List<LineRenderer> _confirmedLines;    // 확정된 선 오브젝트
-private readonly List<Vector3>      _confirmedPositions;// 선 시작점 체인
+private readonly List<Vector3>      _confirmedPositions;// 선 시작점 (시전자 위치만)
 private readonly List<Unit>         _pendingUnits;      // 누적된 유닛 선택
 private readonly List<TileData>     _pendingTiles;      // 누적된 타일 선택
 ```
 
-### 커서 선 (체인 방식)
+### 커서 선 (방사형 방식)
 
-매 프레임 커서 선의 **시작점이 마지막 확정 위치**로 갱신된다.  
-캐릭터 → 타겟1 → 타겟2 → 마우스 순서로 체인처럼 이어진다.
+모든 선의 **시작점은 항상 캐릭터 위치**다.  
+(`startPos = _confirmedPositions[0]` — `_confirmedPositions`에는 시전자 위치만 담긴다.)  
+확정선·커서선 모두 캐릭터에서 각 타겟(또는 마우스)으로 **방사형(radial)**으로 뻗는다. 타겟끼리 이어지는 체인이 아니다.
 
 ```
-캐릭터 ──(확정선)──▶ 타겟1 ──(확정선)──▶ 타겟2 ──(커서선)──▶ 마우스
+          ┌──(확정선)──▶ 타겟1
+캐릭터 ────┼──(확정선)──▶ 타겟2
+          └──(커서선)──▶ 마우스
 ```
 
 - **확정선**: 청록색 (`0.3, 0.8, 1.0`), 클릭마다 새 `LineRenderer` GameObject 생성
@@ -153,8 +156,7 @@ public override bool Execute(
 {
     foreach (var ally in targets)
     {
-        var context = new CombatContext(source, ally,
-            new CombatAction(skillName, ActionType.Heal, healAmount));
+        var context = new HealContext(source, ally, skillName, healAmount);
         CombatPipeline.Instance?.Process(context);
     }
     return true;

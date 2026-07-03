@@ -38,11 +38,9 @@ flowchart TD
     subgraph POST_GROUP [4. Post-Action / Reaction 단계]
         direction TB
         POST[반응 이벤트 처리]
-        POST_HIT[OnHit / OnDamaged]
-        POST_KILL[OnKill / OnDeath]
-        POST --> POST_HIT
-        POST --> POST_KILL
+        POST_HIT[OnHit]
+        POST_DONE[OnPostAction]
+        POST --> POST_HIT --> POST_DONE
     end
 
-    POST_HIT --> END[Action 종료]
-    POST_KILL --> END
+    POST_DONE --> END[Action 종료]
