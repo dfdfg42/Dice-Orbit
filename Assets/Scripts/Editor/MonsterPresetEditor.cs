@@ -157,7 +157,7 @@ public class MonsterPresetEditor : Editor
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Skill Data:", EditorStyles.boldLabel, GUILayout.Width(80));
             
-            if (GUILayout.Button(string.IsNullOrEmpty(currentTypeName) ? "Select Skill ¡å" : $"{displayName} ¡å", EditorStyles.popup))
+            if (GUILayout.Button(string.IsNullOrEmpty(currentTypeName) ? "Select Skill â–¼" : $"{displayName} â–¼", EditorStyles.popup))
             {
                 ShowTypeMenu(skillDataProp, typeof(DiceOrbit.Data.SkillData), true);
             }
@@ -236,7 +236,7 @@ public class MonsterPresetEditor : Editor
         var currentTypeName = property.managedReferenceFullTypename;
         var displayName = string.IsNullOrEmpty(currentTypeName) ? "(Not Assigned)" : currentTypeName.Split(".").Last();
 
-        if (GUILayout.Button(string.IsNullOrEmpty(currentTypeName) ? $"Select {label} ¡å" : $"{displayName} ¡å", EditorStyles.popup))
+        if (GUILayout.Button(string.IsNullOrEmpty(currentTypeName) ? $"Select {label} â–¼" : $"{displayName} â–¼", EditorStyles.popup))
         {
             ShowTypeMenu(property, baseType, true);
         }
