@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Pool;
 
 public class AudioManager : MonoBehaviour
 {
@@ -14,9 +15,16 @@ public class AudioManager : MonoBehaviour
     [Header("SFX")]
     [SerializeField] private AudioMixerGroup sfxMixerGroup;
     [SerializeField, Min(1)] private int sfxVoiceCount = 8;
+    [SerializeField] private int maxSfxVoiceCount = 16;
 
     private readonly AudioSource[] bgmSources = new AudioSource[2];
-    private readonly List<AudioSource> sfxSources = new List<AudioSource>();
+    
+    // 2D 전용 SFX 소스
+    private AudioSource sfx2DSource;
+    // 3D 전용 SFX 오브젝트 풀
+    private ObjectPool<AudioSource> sfx3DPool;
+    // 현재 활성화된(재생 중인) 3D SFX 소스들을 추적하여 볼륨 등 일괄 관리용
+    private readonly List<AudioSource> active3DSources = new List<AudioSource>();
 
     private Coroutine bgmFadeRoutine;
     private int activeBgmSourceIndex = -1;
@@ -26,6 +34,9 @@ public class AudioManager : MonoBehaviour
     public float BgmVolume => bgmVolume;
     public float SfxVolume => sfxVolume;
 
+    /// <summary>
+    /// 싱글톤 초기화 및 오디오 소스를 준비합니다. 씬 전환 시 파괴되지 않습니다.
+    /// </summary>
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -38,9 +49,13 @@ public class AudioManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         EnsureBgmSources();
-        EnsureSfxSources();
+        Ensure2DSfxSource();
+        Initialize3DSfxPool();
     }
 
+    /// <summary>
+    /// 지정된 BGM 클립을 재생합니다. 다른 BGM이 재생 중이면 크로스페이드를 수행합니다.
+    /// </summary>
     public void PlayBGM(AudioClip clip, bool loop = true, float fadeTime = -1f)
     {
         if (clip == null)
@@ -88,6 +103,9 @@ public class AudioManager : MonoBehaviour
         bgmFadeRoutine = StartCoroutine(CrossFadeBgmRoutine(currentSource, nextSource, fadeTime, nextSourceIndex));
     }
 
+    /// <summary>
+    /// 현재 재생 중인 BGM을 정지합니다. 부드럽게 정지하려면 페이드 아웃 시간을 지정할 수 있습니다.
+    /// </summary>
     public void StopBGM(float fadeOutTime = 0f)
     {
         var currentSource = GetActiveBgmSource();
@@ -111,6 +129,9 @@ public class AudioManager : MonoBehaviour
         bgmFadeRoutine = StartCoroutine(FadeOutBgmRoutine(currentSource, fadeOutTime));
     }
 
+    /// <summary>
+    /// 재생 중인 BGM을 일시 정지합니다.
+    /// </summary>
     public void PauseBGM()
     {
         var currentSource = GetActiveBgmSource();
@@ -120,6 +141,9 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 일시 정지된 BGM을 다시 재생합니다.
+    /// </summary>
     public void ResumeBGM()
     {
         var currentSource = GetActiveBgmSource();
@@ -129,38 +153,40 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    public AudioSource PlaySFX(AudioClip clip, float volume = 1f, float pitch = 1f)
+    /// <summary>
+    /// 2D 전용 효과음을 재생합니다. 볼륨과 피치를 조정할 수 있습니다.
+    /// </summary>
+    public void PlaySFX(AudioClip clip, float volume = 1f, float pitch = 1f)
     {
         if (clip == null)
         {
-            return null;
+            return;
         }
 
-        EnsureSfxSources();
+        Ensure2DSfxSource();
 
-        var source = GetAvailableSfxSource();
-        source.clip = clip;
-        source.loop = false;
-        source.pitch = pitch;
-        source.volume = Mathf.Clamp01(volume) * sfxVolume;
-        source.spatialBlend = 0f;
-        source.outputAudioMixerGroup = sfxMixerGroup;
-        source.Play();
-
-        return source;
+        sfx2DSource.pitch = pitch;
+        sfx2DSource.PlayOneShot(clip, Mathf.Clamp01(volume) * sfxVolume);
     }
 
-    public AudioSource PlaySFXAtPoint(AudioClip clip, Vector3 position, float volume = 1f, float pitch = 1f, float spatialBlend = 1f)
+    /// <summary>
+    /// 3D 공간상의 특정 위치에서 효과음을 재생합니다.
+    /// </summary>
+    public void PlaySFXAtPoint(AudioClip clip, Vector3 position, float volume = 1f, float pitch = 1f, float spatialBlend = 1f)
     {
         if (clip == null)
         {
-            return null;
+            return;
         }
 
-        EnsureSfxSources();
+        var source = sfx3DPool.Get();
+        if (source == null)
+        {
+            Debug.LogWarning("활성화된 3D SFX 소스가 없습니다.");
+            return;
+        }
 
-        var source = GetAvailableSfxSource();
-        source.transform.position = position;
+        source.transform.SetPositionAndRotation(position, Quaternion.identity);
         source.clip = clip;
         source.loop = false;
         source.pitch = pitch;
@@ -168,10 +194,14 @@ public class AudioManager : MonoBehaviour
         source.spatialBlend = Mathf.Clamp01(spatialBlend);
         source.outputAudioMixerGroup = sfxMixerGroup;
         source.Play();
+        active3DSources.Add(source);
 
-        return source;
+        StartCoroutine(Release3DSfxRoutine(source, clip.length));
     }
 
+    /// <summary>
+    /// 전체 BGM 볼륨을 설정합니다. 변경 시 현재 재생 중인 BGM에도 실시간으로 적용됩니다.
+    /// </summary>
     public void SetBGMVolume(float volume)
     {
         var previousVolume = bgmVolume;
@@ -200,18 +230,26 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 전체 SFX 볼륨을 설정합니다. 변경 시 현재 재생 중인 SFX 볼륨도 즉각적으로 업데이트됩니다.
+    /// </summary>
     public void SetSFXVolume(float volume)
     {
         var previousVolume = sfxVolume;
         sfxVolume = Mathf.Clamp01(volume);
 
+        if (sfx2DSource != null)
+        {
+            sfx2DSource.volume = sfxVolume;
+        }
+
         if (previousVolume <= 0f)
         {
-            for (var i = 0; i < sfxSources.Count; i++)
+            for (var i = 0; i < active3DSources.Count; i++)
             {
-                if (sfxSources[i] != null && sfxSources[i].isPlaying)
+                if (active3DSources[i] != null && active3DSources[i].isPlaying)
                 {
-                    sfxSources[i].volume = sfxVolume;
+                    active3DSources[i].volume = sfxVolume;
                 }
             }
 
@@ -219,15 +257,18 @@ public class AudioManager : MonoBehaviour
         }
 
         var ratio = sfxVolume / previousVolume;
-        for (var i = 0; i < sfxSources.Count; i++)
+        for (var i = 0; i < active3DSources.Count; i++)
         {
-            if (sfxSources[i] != null && sfxSources[i].isPlaying)
+            if (active3DSources[i] != null && active3DSources[i].isPlaying)
             {
-                sfxSources[i].volume *= ratio;
+                active3DSources[i].volume *= ratio;
             }
         }
     }
 
+    /// <summary>
+    /// BGM 재생을 위한 AudioSource들을 준비합니다 (크로스페이드를 위해 2개 사용).
+    /// </summary>
     private void EnsureBgmSources()
     {
         for (var i = 0; i < bgmSources.Length; i++)
@@ -251,24 +292,98 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    private void EnsureSfxSources()
+    /// <summary>
+    /// 2D 전용 SFX 소스를 준비합니다.
+    /// </summary>
+    private void Ensure2DSfxSource()
     {
-        while (sfxSources.Count < sfxVoiceCount)
+        if (sfx2DSource != null)
         {
-            var index = sfxSources.Count;
-            var child = new GameObject($"SFX Source {index}");
-            child.transform.SetParent(transform, false);
+            return;
+        }
 
-            var source = child.AddComponent<AudioSource>();
-            source.playOnAwake = false;
-            source.loop = false;
-            source.spatialBlend = 0f;
-            source.outputAudioMixerGroup = sfxMixerGroup;
+        var child = new GameObject("SFX 2D Source");
+        child.transform.SetParent(transform, false);
 
-            sfxSources.Add(source);
+        var source = child.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.loop = false;
+        source.spatialBlend = 0f;
+        source.outputAudioMixerGroup = sfxMixerGroup;
+        source.volume = sfxVolume;
+
+        sfx2DSource = source;
+    }
+
+    /// <summary>
+    /// 3D SFX 재생을 위한 오브젝트 풀을 초기화합니다.
+    /// </summary>
+    private void Initialize3DSfxPool()
+    {
+        if (sfx3DPool != null)
+        {
+            return;
+        }
+
+        sfx3DPool = new ObjectPool<AudioSource>(
+            CreatePooledObject,
+            ActivatePoolObject,
+            DeactivatePoolObject,
+            null,
+            false,
+            sfxVoiceCount,
+            maxSfxVoiceCount
+        );
+    }
+
+    /// <summary>
+    /// 풀에서 사용할 AudioSource를 생성합니다.
+    /// </summary>
+    private AudioSource CreatePooledObject()
+    {
+        var child = new GameObject("SFX 3D Source");
+        child.transform.SetParent(transform, false);
+
+        var source = child.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.loop = false;
+        source.spatialBlend = 1f;
+        source.outputAudioMixerGroup = sfxMixerGroup;
+
+        return source;
+    }
+
+    /// <summary>
+    /// 비활성화된 AudioSource가 활성화될 때 호출됩니다.
+    /// </summary>
+    private void ActivatePoolObject(AudioSource obj)
+    {
+        obj.gameObject.SetActive(true);
+    }
+
+    /// <summary>
+    /// 활성화된 AudioSource가 비활성화될 때 호출됩니다.
+    /// </summary>
+    private void DeactivatePoolObject(AudioSource obj)
+    {
+        obj.Stop();
+        obj.gameObject.SetActive(false);
+        active3DSources.Remove(obj);
+    }
+
+    private IEnumerator Release3DSfxRoutine(AudioSource source, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        
+        if (source != null && source.gameObject.activeSelf)
+        {
+            sfx3DPool.Release(source);
         }
     }
 
+    /// <summary>
+    /// 현재 BGM을 재생 중인 AudioSource를 반환합니다.
+    /// </summary>
     private AudioSource GetActiveBgmSource()
     {
         if (activeBgmSourceIndex < 0 || activeBgmSourceIndex >= bgmSources.Length)
@@ -279,6 +394,9 @@ public class AudioManager : MonoBehaviour
         return bgmSources[activeBgmSourceIndex];
     }
 
+    /// <summary>
+    /// 대기 중(다음 재생될)인 BGM AudioSource의 인덱스를 반환합니다.
+    /// </summary>
     private int GetInactiveBgmSourceIndex()
     {
         if (activeBgmSourceIndex < 0)
@@ -289,6 +407,9 @@ public class AudioManager : MonoBehaviour
         return activeBgmSourceIndex == 0 ? 1 : 0;
     }
 
+    /// <summary>
+    /// 현재 재생 중인 BGM AudioSource를 즉시 정지시킵니다.
+    /// </summary>
     private void StopActiveBgmSource()
     {
         var currentSource = GetActiveBgmSource();
@@ -301,21 +422,9 @@ public class AudioManager : MonoBehaviour
         activeBgmSourceIndex = -1;
     }
 
-    private AudioSource GetAvailableSfxSource()
-    {
-        for (var i = 0; i < sfxSources.Count; i++)
-        {
-            if (!sfxSources[i].isPlaying)
-            {
-                return sfxSources[i];
-            }
-        }
-
-        var source = sfxSources[0];
-        source.Stop();
-        return source;
-    }
-
+    /// <summary>
+    /// 이전 BGM에서 새 BGM으로 크로스페이드하는 코루틴입니다.
+    /// </summary>
     private IEnumerator CrossFadeBgmRoutine(AudioSource fromSource, AudioSource toSource, float duration, int toIndex)
     {
         var fromStartVolume = fromSource.volume;
@@ -337,6 +446,9 @@ public class AudioManager : MonoBehaviour
         bgmFadeRoutine = null;
     }
 
+    /// <summary>
+    /// BGM을 서서히 줄이며 정지시키는 코루틴입니다.
+    /// </summary>
     private IEnumerator FadeOutBgmRoutine(AudioSource source, float duration)
     {
         var startVolume = source.volume;
@@ -353,6 +465,9 @@ public class AudioManager : MonoBehaviour
         bgmFadeRoutine = null;
     }
 
+    /// <summary>
+    /// 싱글톤 인스턴스 해제 용도입니다.
+    /// </summary>
     private void OnDestroy()
     {
         if (Instance == this)
