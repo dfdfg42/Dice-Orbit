@@ -1,5 +1,12 @@
 # 타일 어트리뷰트 시각화 계획
 
+> **[2026-07-03 갱신 노트]** 이 `OnAttached`/`OnDetached` 훅 제안은 채택되지 않았습니다.
+> 타일 어트리뷰트 시각화는 대신 `UI.TileAttributeBubbleManager`로 구현되었습니다 —
+> `TileData.AddAttribute`/`RemoveAttribute`가 `TileAttributeBubbleManager.RefreshTile(this)`를 호출합니다.
+> `OnAttached`/`OnDetached` 훅도, `Resources/Tiles` 프리팹 규칙도 없으며,
+> 예시 서브클래스(`TurretTileAttribute`/`SmokeScreenTileAttribute`)는 만들어지지 않았습니다.
+> 아래 본문은 역사적 설계 기록으로 보존합니다.
+
 타일에 속성이 부여되었을 때 3D 오브젝트나 지속 VFX를 타일 위에 표시하기 위한 설계.
 
 ---

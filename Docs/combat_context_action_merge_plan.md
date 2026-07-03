@@ -1,5 +1,10 @@
 # CombatContext / CombatAction 병합 + 서브클래스 — 구현 계획
 
+> **⚠️ 상태 업데이트 (2026-07-03):** 이 계획은 **실행 완료**되었으나 최종 코드는 여기서 더 나아갔다. 리액터 분기는 `context is XContext` 패턴 매칭이 아니라 **타입별 DIM 훅**(`OnAttack`/`OnHeal`/`OnMove`/`OnTurnEvent`)으로 이전되었다 — 정확한 현행 문서는 [combat_reactor_dispatch.md](combat_reactor_dispatch.md) 참조.
+> **Step 5(ActionType shim 제거)는 하지 않았다** — `ActionType Type`은 마이그레이션 shim으로 `CombatContext` 기반에 **여전히 존재**한다.
+> 본문이 참조하는 `SampleMonster.cs`/`SampleTile.cs`는 **삭제됨(2026-07-03)**. 타일 지속시간 틱은 파이프라인 `TileTick` 방송이 아니라 **`CombatManager`의 직접 per-tick 호출**(~L545)로 수정되었다.
+> 아래 체크리스트 본문은 **역사적 기록**으로 그대로 보존한다.
+
 > **For agentic workers:** 이 계획은 task 단위로 실행한다. 각 task의 단계는 체크박스(`- [ ]`)로 추적.
 > 설계 근거: [combat_context_action_merge_design.md](combat_context_action_merge_design.md)
 

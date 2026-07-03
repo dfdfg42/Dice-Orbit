@@ -30,13 +30,13 @@ public override void OnUnequipped(Character character)
 }
 ```
 
-### ✅ [개편 후] `OnRefreshSkill(ModifiedSkillContext)` 도출 방식
-모디파이어가 장착 또는 해제될 때처럼 스킬 상태 갱신이 필요하다면 원본 스킬을 기반으로 `ModifiedSkillContext` 객체를 **새로 생성한 뒤 빈 도화지 위에 모디파이어 로직을 일괄 적용(덮어쓰기)** 합니다.
+### ✅ [개편 후] `OnRefreshSkill(CharacterModfierContext)` 도출 방식
+모디파이어가 장착 또는 해제될 때처럼 스킬 상태 갱신이 필요하다면 원본 스킬을 기반으로 `CharacterModfierContext` 객체를 **새로 생성한 뒤 빈 도화지 위에 모디파이어 로직을 일괄 적용(덮어쓰기)** 합니다.
 *   **장점:** 해제 시 원상복구(Revert) 코드를 짤 필요가 전혀 없습니다. `OnRefreshSkill` 한 곳에서 "더해질 값의 최종 형태"만 선언하면 시스템이 항상 새 컨텍스트로 계산을 보장합니다.
 
 ```csharp
 // 개편 후: GreatswordWideSwing (광역 참격)
-public override void OnRefreshSkill(ModifiedSkillContext context)
+public override void OnRefreshSkill(CharacterModfierContext context)
 {
     // C# 패턴 매칭(Downcasting)으로 전사 대검 스킬인지 안전하게 확인
     if (context is WarriorGreatswordModifiedContext gsContext)
@@ -44,7 +44,6 @@ public override void OnRefreshSkill(ModifiedSkillContext context)
         // 뺄 필요 없이, 이 모디파이어가 적용될 때 수행할 조작만 명시
         gsContext.TargetCount += 1;
         gsContext.TargetType = CharacterSkillTargetType.MultiEnemy;
-        gsContext.BaseDamageMultiplier -= 2; 
     }
 }
 ```
@@ -53,17 +52,17 @@ public override void OnRefreshSkill(ModifiedSkillContext context)
 
 ## 3. 핵심 변경 요소 및 구조
 
-1. **`ModifiedSkillContext` 추가 (Base 클래스)**
+1. **`CharacterModfierContext` 추가 (Base 클래스)**
    - 모든 스킬이 공유하는 핵심 데이터(`TargetType`, `TargetCount`, `PreviewStyle` 등)를 담는 객체입니다. 스킬 실행 전 타겟팅 범위를 그리는 UI 등에서 이 객체를 읽어갑니다.
-   - ModifiedSkillContext 대신 Skill에서 타겟팅 범위를 읽을 수 있게 수정할 예정입니다.
+   - CharacterModfierContext 대신 Skill에서 타겟팅 범위를 읽을 수 있게 수정할 예정입니다.
 
 2. **강타입(Typed) 서브 컨텍스트 (Derived 클래스)**
    - 캐릭터 전용 기믹 수치를 저장하기 위해 Base를 상속받아 생성합니다. 
    - 예: `WarriorGreatswordModifiedContext`는 대검 전용 기믹인 `BaseDamageMultiplier` 프로퍼티를 추가로 보유합니다.
    - 이를 통해 광역 공격으로 변경 등을 처리할 수 있습니다.
 
-3. **`ModifierManager.ApplyModifiersToContext()` 추가**
-   - 모디파이어 목록을 순회하며 `OnRefreshSkill`을 호출해 컨텍스트를 완성시키는 파이프라인 메서드입니다. 모디파이어의 변동이 생길 때 호출하여 컨텍스트를 새로고침합니다.
+3. **`ModifierManager.ApplyTo(CharacterModfierContext)` 추가**
+   - `IModifierManager`/`ModifierManager`에 정의되어 있으며, 모디파이어 목록을 순회하며 `OnRefreshSkill`을 호출해 컨텍스트를 완성시키는 파이프라인 메서드입니다(`context.IsCancelled`가 참이면 중단). 모디파이어의 변동이 생길 때 호출하여 컨텍스트를 새로고침합니다.
    - 스킬의 초기 상태를 선언하고 새로고침할 때 초기 상태에서 모디파이어를 적용하는 방식으로 개편할 예정입니다.
 
 4. **`CharacterActiveSkill.GenerateContext()` 추가**
@@ -72,6 +71,6 @@ public override void OnRefreshSkill(ModifiedSkillContext context)
 ## 4. 작업자 적용 지침 (Action Item)
 앞으로 새로운 기믹을 지닌 캐릭터 스킬과 시그니처 모디파이어를 제작하실 때는 다음 단계를 따라주세요.
 
-*   스킬의 기초 데이터 이외에 모디파이어로 변경될 수 있는 전용 수치가 있다면, `ModifiedSkillContext`를 상속받은 전용 컨텍스트(예: `MageFireballModifiedContext`)를 생성하세요.
+*   스킬의 기초 데이터 이외에 모디파이어로 변경될 수 있는 전용 수치가 있다면, `CharacterModfierContext`를 상속받은 전용 컨텍스트(예: `MageFireballModifiedContext`)를 생성하세요.
 *   `CharacterActiveSkill` 상속 클래스에서 `GenerateContext`를 _override_ 하여 해당 특수 컨텍스트를 반환하게 하세요.
 *   모디파이어 스크립트에서는 기존의 `OnEquipped` 대신 **`OnRefreshSkill`**을 오버라이드하여 캐스팅(`if (context is 전용_컨텍스트_이름)`) 후 속성을 조작하시면 됩니다!

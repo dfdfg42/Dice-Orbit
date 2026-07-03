@@ -1,5 +1,10 @@
 # 스킬 시스템 아키텍처 고도화 (Phase 2 - 완전 분리)
 
+> [!NOTE]
+> **현재 코드 반영 (2026-07-03):** 이 계획의 **의도(액티브/패시브 책임 분리)는 달성**되었으나, 구체적 설계는 다르게 구현되었습니다. ScriptableObject 계층(`SkillAsset`/`ActiveSkillAsset`/`PassiveSkillAsset`)은 폐기되고, `[SerializeReference]` 기반의 `[Serializable]` 클래스 `CharacterActiveSkill` / `CharacterPassiveSkill`로 대체되었습니다.
+> 아래 본문의 명칭 매핑: `CharacterActiveTemplate` → 실제 클래스명은 `CharacterActiveSkill`, `RuntimeAbility` → 실제 클래스명은 `ActiveSkillSlot`. `CharacterPreset`은 `StartingActives`/`StartingPassives` 두 개의 SerializeReference 리스트를 가집니다.
+> 정확한 최신 문서는 `Docs/skill_system_structure.md`를 참고하세요. (아래 원본 계획 본문은 이력 보존을 위해 그대로 둡니다.)
+
 이 계획서는 데이터 유실을 감수하더라도 객체지향적으로 가장 깔끔하고 확장성 있는 구조를 완성하기 위한 리팩터링 작업입니다. 기존의 단일 `CharacterSkill` SO를 폐기하고, 목적에 맞는 상속 구조로 완전히 분리합니다.
 
 ## User Review Required

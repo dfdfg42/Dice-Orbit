@@ -43,15 +43,17 @@
 - 몬스터: `Assets/Scripts/Core/Stage/BattleStage/Units/Monster/Monster.cs`
 	- 공격/피격/사망 시 Animator trigger/bool 호출
 - 조준 시작/종료:
-	- `Assets/Scripts/Core/Stage/BattleStage/BattleStageSystem/Combat/SkillTargetSelector.cs`
+	- `Assets/Scripts/Core/Stage/BattleStage/Units/Character/Character.cs`
+	- `spriteVisual?.SetAiming(...)` 호출 (3개 지점)
 
 ## 5) 런타임 생성 캐릭터 주의사항
 
-런타임 생성 캐릭터는 `CharacterSelectionUI`에서 Animator를 자동 추가합니다.
+런타임 생성 캐릭터는 `CharacterSpawner`에서 Animator를 자동 추가합니다.
 
-- 파일: `Assets/Scripts/UI/CharacterSelectionUI.cs`
+- 파일: `Assets/Scripts/Core/CharacterSpawner.cs`
+	- `AddComponent<Animator>()`로 런타임 추가
 - 캐릭터별 우선 필드: `CharacterPreset.AnimatorController`
-- 폴백 필드: `characterAnimatorController`
+- 폴백 필드: `[SerializeField] fallbackAnimatorController`
 
 즉, 캐릭터마다 다른 애니메이션을 쓰려면 각 프리셋 에셋에서 `AnimatorController`를 지정하면 됩니다.
 

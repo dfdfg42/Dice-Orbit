@@ -10,7 +10,11 @@
 |---|---|
 | [skill_system_structure.md](skill_system_structure.md) | 전투 도메인 클래스 다이어그램, Action Pipeline 전체 구조 |
 | [skill_targeting_system.md](skill_targeting_system.md) | 액티브 스킬 타겟 선택 시스템 (OneEnemy~MultiTile) |
+| [combat_reactor_dispatch.md](combat_reactor_dispatch.md) | ICombatReactor DIM 타입별 디스패치 (OnAttack/OnHeal/OnMove/OnTurnEvent) |
+| [modifireSystem.md](modifireSystem.md) | 스킬 런타임 갱신(Modifier) 시스템 — 휘발성 컨텍스트 캐싱 구조 |
 | [combat_floating_notification_system.md](combat_floating_notification_system.md) | 패시브/상태이상 발동 시 플로팅 알림 버블 |
+| [combat_context_action_merge_design.md](combat_context_action_merge_design.md) | CombatContext/CombatAction 병합 + 서브클래스 데이터모델 설계 |
+| [combat_context_action_merge_plan.md](combat_context_action_merge_plan.md) | CombatContext/CombatAction 병합 구현 계획 |
 | [Pipeline.md](Pipeline.md) | 전투 파이프라인 플로차트 (mermaid) |
 | [TurnSystem.md](TurnSystem.md) | 턴 시스템 플로차트 (mermaid) |
 
@@ -61,5 +65,5 @@
 | 문서 | 내용 |
 |---|---|
 | [implementation_plan.md](implementation_plan.md) | 스킬 시스템 리팩토링 계획 — **완료** |
-| [task.md](task.md) | 리팩토링 태스크 목록 — **완료** |
+| [deadcode_audit_2026-07.md](deadcode_audit_2026-07.md) | Assets/Scripts 레거시/데드코드 감사 리포트 (2026-07) |
 | [project_structure.md](project_structure.md) | 초기 프로젝트 구조 개요 |

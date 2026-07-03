@@ -1,5 +1,7 @@
 # 레거시/데드코드 감사 리포트 (Assets/Scripts 전체)
 
+> **업데이트 2026-07-03**: 이 리포트 이후 Tier 1-B 항목 일부가 실제 삭제됨 — `SampleMonster.cs`(`SampleAttack`/`SampleDeath`/`SamplePassive`), `SampleTile.cs`(`SampleTileAttribute`), `HoneyTile.cs`(`HoneyTileAttribute`/`HoneyDebuff`). Honey 로직은 이제 `Wave2/HoneyPawTile.cs`에 존재. 나머지 Tier-1 항목은 아직 미조치(un-actioned). 아래 티어별 본문은 원본 그대로 유지.
+
 > 작성일 2026-07-02 · 브랜치 `refactor/combat-context-merge-20260621`
 > 방식: 9개 폴더 청크 finder → 청크별 adversarial verifier(전체 트리 grep + `.cs.meta guid` → 씬/프리팹/에셋 조회) → whole-file/public 삭제 건은 독립 refuter로 재검증.
 > **상태: 리포트 전용. 아직 아무것도 삭제하지 않음.** 아래 Tier를 승인하면 삭제 진행.
