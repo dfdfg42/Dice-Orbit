@@ -14,6 +14,6 @@ namespace DiceOrbit.Systems.Artifact
             this.data = data;
         }
 
-        public abstract void OnReact(CombatTrigger trigger, CombatContext context);
+        // OnReact는 ICombatReactor의 기본 디스패치(DIM)를 사용. 자식은 OnAttack 등 훅을 구현.
     }
 }

@@ -164,13 +164,11 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaPriest
             return null;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
-            if (context?.Action == null) return;
-
             // 턴 시작 시점 실행
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.OnStartTurn &&
+                context.Phase == EventPhase.TurnStart &&
                 context.SourceUnit == owner)
             {
                 var aliveCharacters = PartyManager.Instance?.GetAliveCharacters();
@@ -222,12 +220,9 @@ namespace DiceOrbit.Systems.Effects
             IsStackable = false;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            base.OnReact(trigger, context);
-            if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.Attack &&
-                context.SourceUnit == Owner)
+            if (trigger == CombatTrigger.OnPreAction && context.SourceUnit == Owner)
             {
                 context.OutputValue += context.OutputValue * (Value / 100f);
             }

@@ -95,10 +95,10 @@ namespace DiceOrbit.Data
             {
                 if (target == null || !target.IsAlive) continue;
 
-                var context = new CombatContext(
+                var context = new AttackContext(
                     source,
                     target,
-                    new CombatAction(SkillName, ActionType.Attack, damage)
+                    SkillName, damage
                 );
                 CombatPipeline.Instance?.Process(context);
 
@@ -124,10 +124,10 @@ namespace DiceOrbit.Data
             foreach (var character in targets)
             {
                 if (character == null || !character.IsAlive) continue;
-                var context = new CombatContext(
+                var context = new AttackContext(
                     source,
                     character,
-                    new CombatAction(SkillName, ActionType.Attack, damage)
+                    SkillName, damage
                 );
                 CombatPipeline.Instance?.Process(context);
                 Debug.Log($"[{SkillName}] {source.name} attacks {character.name} on tile for {damage} damage");

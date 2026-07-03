@@ -21,11 +21,11 @@ namespace DiceOrbit.Data
 
         // ICombatReactor implementation
         public virtual int Priority => 20;
-        public virtual void OnReact(CombatTrigger trigger, CombatContext context)
+        public virtual void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             //턴 시작 시 임시 방어도를 깎는다
-            if (context.Action.Type == ActionType.OnStartTurn && // TODO : owner를 할당시킨 후, context.SourceUnit == Owner로 바꿔야 함(매우 중요)
-                trigger == CombatTrigger.OnPreAction && 
+            if (context.Phase == EventPhase.TurnStart && // TODO : owner를 할당시킨 후, context.SourceUnit == Owner로 바꿔야 함(매우 중요)
+                trigger == CombatTrigger.OnPreAction &&
                 context.SourceUnit is Monster &&
                 this is MonsterStats)
             {

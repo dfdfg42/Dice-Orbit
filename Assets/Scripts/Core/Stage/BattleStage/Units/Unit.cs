@@ -62,8 +62,7 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"{name} Start Turn");
 
-            var action = new Pipeline.CombatAction("Turn Start", Pipeline.ActionType.OnStartTurn, 0);
-            var context = new Pipeline.CombatContext(this, this, action);
+            var context = new Pipeline.TurnEventContext(this, this, Pipeline.EventPhase.TurnStart);
             Pipeline.CombatPipeline.Instance?.Process(context);
         }
 
@@ -76,8 +75,7 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"[Unit] End Turn");
 
-            var action = new Pipeline.CombatAction("Turn End", Pipeline.ActionType.OnEndTurn, 0);
-            var context = new Pipeline.CombatContext(this, this, action);
+            var context = new Pipeline.TurnEventContext(this, this, Pipeline.EventPhase.TurnEnd);
 
             if (Pipeline.CombatPipeline.Instance != null)
             {

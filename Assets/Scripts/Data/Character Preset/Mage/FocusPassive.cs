@@ -42,28 +42,30 @@ namespace DiceOrbit.Data.Passives
             hpAtTurnStart = -1;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        // 공격받으면 집중 감소
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            if (trigger == CombatTrigger.OnPostAction && context.Action.Type == ActionType.Attack)
+            if (owner == null) return;
+            if (trigger != CombatTrigger.OnPostAction) return;
+            if (context.Target != owner) return;
+            ReduceFocus();
+        }
+
+        // 턴 종료 시 체력 손실 여부로 확인
+        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        {
+            if (owner == null) return;
+            if (trigger != CombatTrigger.OnPostAction || context.Phase != EventPhase.TurnEnd) return;
+            if (context.SourceUnit != owner) return;
+            if (owner.Stats == null) return;
+
+            bool lostHP = hpAtTurnStart >= 0 && owner.Stats.CurrentHP < hpAtTurnStart;
+            if (!lostHP)
             {
-                if (context.Target != owner) return;
-                ReduceFocus();
+                GainFocus();
             }
 
-            // 턴 종료 시 체력 손실 여부로 확인
-            if (trigger == CombatTrigger.OnPostAction && context.Action.Type == ActionType.OnEndTurn)
-            {
-                if (owner == null || context == null || context.Action == null) return;
-                if (context.SourceUnit != owner) return;
-                if (owner.Stats == null) return;
-                bool lostHP = hpAtTurnStart >= 0 && owner.Stats.CurrentHP < hpAtTurnStart;
-                if (!lostHP)
-                {
-                    GainFocus();
-                }
-
-                hpAtTurnStart = owner.Stats.CurrentHP;
-            }
+            hpAtTurnStart = owner.Stats.CurrentHP;
         }
 
         private void GainFocus()

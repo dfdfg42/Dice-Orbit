@@ -184,9 +184,8 @@ namespace DiceOrbit.Core
 
                 if (Core.Pipeline.CombatPipeline.Instance != null)
                 {
-                    var action = new Core.Pipeline.CombatAction("Party Heal", Core.Pipeline.ActionType.Heal, amount);
-                    action.AddTag("Party");
-                    var context = new Core.Pipeline.CombatContext(null, character, action);
+                    var context = new Core.Pipeline.HealContext(null, character, "Party Heal", amount);
+                    context.AddTag("Party");
                     Core.Pipeline.CombatPipeline.Instance.Process(context);
                 }
                 else

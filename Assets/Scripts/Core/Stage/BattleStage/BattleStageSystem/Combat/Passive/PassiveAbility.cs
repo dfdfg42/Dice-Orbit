@@ -88,10 +88,8 @@ namespace DiceOrbit.Data.Passives
             return (PassiveAbility)this.MemberwiseClone();
         }
 
-        /// <summary>
-        /// 전투 파이프라인 반응 로직
-        /// </summary>
-        public abstract void OnReact(CombatTrigger trigger, CombatContext context);
+        // OnReact는 ICombatReactor의 기본 디스패치(default interface method)를 사용한다.
+        // 자식은 OnAttack / OnHeal / OnMove / OnTurnEvent 훅 중 필요한 것만 구현한다.
 
         /// <summary>
         /// 캐릭터가 선택(패널 표시)되었을 때 호출됩니다.

@@ -77,35 +77,25 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaKnight
             isStackable = false;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            if (context?.Action == null) return;
+            if (trigger != CombatTrigger.OnPreAction) return;
 
             // 방어 (입는 피해량 처리)
-            if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.Attack && 
-                context.Target == owner)
+            if (context.Target == owner && context.SourceUnit is Character attacker)
             {
-                if (context.SourceUnit is Character c)
+                if (attacker.CurrentTile.TileIndex % 2 == 1) // 공격하는 적이 홀수 타일에 있을 때
                 {
-                    if (c.CurrentTile.TileIndex % 2 == 1) // 공격하는 적이 홀수 타일에 있을 때
-                    {
-                        context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageTakenMultiplier); // 입는 피해량 30% 증가
-                    }
+                    context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageTakenMultiplier); // 입는 피해량 30% 증가
                 }
             }
 
             // 공격 (입히는 피해량 처리)
-            if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.Attack &&
-                context.SourceUnit == owner)
+            if (context.SourceUnit == owner && context.Target is Character victim)
             {
-                if (context.Target is Character c)
+                if (victim.CurrentTile.TileIndex % 2 == 0) // 공격받는 적이 짝수 타일에 있을 때
                 {
-                    if (c.CurrentTile.TileIndex % 2 == 0) // 공격받는 적이 짝수 타일에 있을 때
-                    {
-                        context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageDealtMultiplier); // 입히는 피해량 30% 증가
-                    }
+                    context.OutputValue = Mathf.RoundToInt(context.OutputValue * damageDealtMultiplier); // 입히는 피해량 30% 증가
                 }
             }
         }

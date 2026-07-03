@@ -25,29 +25,24 @@ namespace DiceOrbit.Data.Passives
             movedDistanceThisTurn = 0;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        // 턴 시작 시 이동 거리 초기화
+        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
-            if (context == null || context.Action == null) return;
-
-            // 턴 시작 시 이동 거리 초기화
-            if (trigger == CombatTrigger.OnPreAction && context.Action.Type == ActionType.OnStartTurn)
-            {
+            if (trigger == CombatTrigger.OnPreAction && context.Phase == EventPhase.TurnStart)
                 movedDistanceThisTurn = 0;
-                return;
-            }
+        }
 
-            // 이동 누적
-            if ((trigger == CombatTrigger.OnPostAction || trigger == CombatTrigger.OnActionSuccess) &&
-                context.Action.Type == ActionType.Move &&
-                context.SourceUnit == owner)
-            {
-                movedDistanceThisTurn += Mathf.RoundToInt(context.Action.BaseValue);
-                return;
-            }
+        // 이동 누적
+        public void OnMove(CombatTrigger trigger, MoveContext context)
+        {
+            if (trigger == CombatTrigger.OnPostAction && context.SourceUnit == owner)
+                movedDistanceThisTurn += context.Steps;
+        }
 
-            // 다음 공격에 누적 이동량만큼 피해 증가, 이후 소모
+        // 다음 공격에 누적 이동량만큼 피해 증가, 이후 소모
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        {
             if (trigger == CombatTrigger.OnCalculateOutput &&
-                context.Action.Type == ActionType.Attack &&
                 context.SourceUnit == owner &&
                 movedDistanceThisTurn > 0)
             {

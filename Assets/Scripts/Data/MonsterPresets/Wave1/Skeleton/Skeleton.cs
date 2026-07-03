@@ -127,7 +127,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
             PlantBones();
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context) { }
+        // 전투 반응 없음 (뼈 설치는 WaveManager.OnWaveStart 구독으로 처리)
 
         private void PlantBones()
         {

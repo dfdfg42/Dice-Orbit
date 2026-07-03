@@ -115,10 +115,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
                 if (character == null || !character.IsAlive) continue;
                 if (character.CurrentTile == null || !affectedTiles.Contains(character.CurrentTile)) continue;
 
-                var action = new CombatAction(SkillName, ActionType.Attack, damage);
-                if (vfxProfile != null) action.AddTag("CustomVfx");
-
-                var context = new CombatContext(source, character, action);
+                var context = new AttackContext(source, character, SkillName, damage);
+                if (vfxProfile != null) context.AddTag("CustomVfx");
                 CombatPipeline.Instance?.Process(context);
 
                 if (context.IsEffected) VfxManager.PlayHit(vfxProfile, character);
@@ -171,9 +169,9 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public override string GetDynamicDescription()
             => $"매 턴 시작 시 무작위 타일 {minesPerTurn}개에 {mineDamage} 피해 지뢰 설치 (중첩 가능)";
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
-            if (context.Action.Type == ActionType.OnStartTurn && context.SourceUnit == owner && trigger == CombatTrigger.OnPreAction)
+            if (context.Phase == EventPhase.TurnStart && context.SourceUnit == owner && trigger == CombatTrigger.OnPreAction)
             {
                 PlantMines();
             }

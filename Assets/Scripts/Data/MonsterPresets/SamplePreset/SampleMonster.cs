@@ -9,50 +9,48 @@ using DiceOrbit.Data.Monsters;
 namespace DiceOrbit.Data.MonsterPresets.SamplePreset
 {
     // ==========================================
-    // 1. »ùÇÃ ½ºÅ³ ±¸Çö
+    // 1. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ ï¿½ï¿½ï¿½ï¿½
     // ==========================================
     /// <summary>
-    /// ¸ó½ºÅÍ°¡ »ç¿ëÇÒ ½ºÅ³ÀÔ´Ï´Ù. SkillData¸¦ »ó¼Ó¹Þ½À´Ï´Ù.
-    /// ¿¡µðÅÍÀÇ "AI Pattern" ¼½¼Ç¿¡¼­ ¼³Á¤ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+    /// ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ï¿½Ô´Ï´ï¿½. SkillDataï¿½ï¿½ ï¿½ï¿½Ó¹Þ½ï¿½ï¿½Ï´ï¿½.
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "AI Pattern" ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½.
     /// </summary>
     [System.Serializable]
     public class SampleAttack : SkillData
     {
         [Header("Skill Settings")]
-        [Tooltip("½ºÅ³ »ç¿ë ½Ã ÀÔÈú ÇÇÇØ·®")]
+        [Tooltip("ï¿½ï¿½Å³ ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ø·ï¿½")]
         [SerializeField] private int damage = 10;
 
         /// <summary>
-        /// »ý¼ºÀÚ¿¡¼­´Â ½ºÅ³ÀÇ ÀÌ¸§°ú ¼³¸íÀ» ÃÊ±âÈ­ÇØ¾ß ÇÕ´Ï´Ù.
-        /// ÀÌ¸¦ »ý·«ÇÏ¸é °ÔÀÓ ³» ÅøÆÁ µî¿¡¼­ ³»¿ëÀÌ ºñ¾îº¸ÀÔ´Ï´Ù.
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ï¿½ï¿½ ï¿½Ì¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ï¿½Ø¾ï¿½ ï¿½Õ´Ï´ï¿½.
+        /// ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½î¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½îº¸ï¿½Ô´Ï´ï¿½.
         /// </summary>
         public SampleAttack()
         {
-            skillName = "»ùÇÃ °ø°Ý";
-            description = "´ë»ó¿¡°Ô µ¥¹ÌÁö¸¦ ÀÔÈ÷´Â »ùÇÃ ½ºÅ³ÀÔ´Ï´Ù.";
+            skillName = "ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½";
+            description = "ï¿½ï¿½ó¿¡°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ï¿½Ô´Ï´ï¿½.";
         }
 
         /// <summary>
-        /// ½ÇÁ¦ ½ºÅ³ÀÌ ¹ßµ¿µÉ ¶§ ½ÇÇàµÇ´Â ·ÎÁ÷ÀÔ´Ï´Ù.
+        /// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å³ï¿½ï¿½ ï¿½ßµï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.
         /// </summary>
-        /// <param name="source">½ºÅ³À» »ç¿ëÇÏ´Â ÁÖÃ¼ (¸ó½ºÅÍ)</param>
-        /// <param name="targetUnits">Å¸°ÙÆÃ µÈ À¯´Öµé ¸®½ºÆ®</param>
-        /// <param name="targetTiles">Å¸°ÙÆÃ µÈ Å¸ÀÏµé ¸®½ºÆ®</param>
-        /// <param name="diceValue">½ºÅ³ ¹ßµ¿ ½Ã °è»êµÈ ÁÖ»çÀ§ °ª (ÇÊ¿ä½Ã »ç¿ë)</param>
+        /// <param name="source">ï¿½ï¿½Å³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½Ã¼ (ï¿½ï¿½ï¿½ï¿½)</param>
+        /// <param name="targetUnits">Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Öµï¿½ ï¿½ï¿½ï¿½ï¿½Æ®</param>
+        /// <param name="targetTiles">Å¸ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Å¸ï¿½Ïµï¿½ ï¿½ï¿½ï¿½ï¿½Æ®</param>
+        /// <param name="diceValue">ï¿½ï¿½Å³ ï¿½ßµï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö»ï¿½ï¿½ï¿½ ï¿½ï¿½ (ï¿½Ê¿ï¿½ï¿½ ï¿½ï¿½ï¿½)</param>
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
             foreach (var target in targetUnits)
             {
                 if (target == null || !target.IsAlive) continue;
 
-                // 1. °ø°Ý Á¤º¸¸¦ ´ãÀ» CombatAction »ý¼º
-                // (ÀÌ¸§, Å¸ÀÔ, ¸Å°³º¯¼ö(damage µî))
-                var action = new CombatAction(SkillName, ActionType.Attack, damage);
+                // 1. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ CombatAction ï¿½ï¿½ï¿½ï¿½
+                // (ï¿½Ì¸ï¿½, Å¸ï¿½ï¿½, ï¿½Å°ï¿½ï¿½ï¿½ï¿½ï¿½(damage ï¿½ï¿½))
+                // 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ CombatContext ï¿½ï¿½ï¿½ï¿½
+                var context = new AttackContext(source, target, SkillName, damage);
                 
-                // 2. ÆÄÀÌÇÁ¶óÀÎ¿¡ Àü´ÞÇÒ CombatContext »ý¼º
-                var context = new CombatContext(source, target, action);
-                
-                // 3. ÀüÅõ ÆÄÀÌÇÁ¶óÀÎ(CombatPipeline)À» ÅëÇØ Ã³¸®¸¦ ¿ä«Š (ÆÐ½Ãºê µîÀÌ Áß°£¿¡ °³ÀÔÇÒ ¼ö ÀÖÀ½)
+                // 3. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(CombatPipeline)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½ï¿½ ï¿½ä«Š (ï¿½Ð½Ãºï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
                 CombatPipeline.Instance?.Process(context);
 
                 Debug.Log($"[{SkillName}] {source.name} attacks {target.name} for {damage} damage");
@@ -61,10 +59,10 @@ namespace DiceOrbit.Data.MonsterPresets.SamplePreset
     }
 
     // ==========================================
-    // 2. »ùÇÃ »ç¸Á È¿°ú ±¸Çö
+    // 2. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     // ==========================================
     /// <summary>
-    /// ¸ó½ºÅÍ°¡ »ç¸ÁÇßÀ» ¶§ ¹ß»ýÇÏ´Â È¿°úÀÔ´Ï´Ù. DeathEffect¸¦ »ó¼Ó¹Þ½À´Ï´Ù.
+    /// ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ß»ï¿½ï¿½Ï´ï¿½ È¿ï¿½ï¿½ï¿½Ô´Ï´ï¿½. DeathEffectï¿½ï¿½ ï¿½ï¿½Ó¹Þ½ï¿½ï¿½Ï´ï¿½.
     /// </summary>
     [System.Serializable]
     public class SampleDeath : DeathEffect
@@ -72,61 +70,61 @@ namespace DiceOrbit.Data.MonsterPresets.SamplePreset
         public SampleDeath()
         {
             effectName = "Sample Death";
-            description = "¸ó½ºÅÍ°¡ Á×À» ¶§ ¹ßµ¿ÇÏ´Â »ùÇÃ È¿°úÀÔ´Ï´Ù.";
+            description = "ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ßµï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ï¿½Ô´Ï´ï¿½.";
         }
 
         /// <summary>
-        /// »ç¸Á È¿°ú°¡ ¹ßµ¿µÇ´Â ·ÎÁ÷ÀÔ´Ï´Ù.
+        /// ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ï¿½ï¿½ ï¿½ßµï¿½ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ô´Ï´ï¿½.
         /// </summary>
-        /// <param name="deadMonster">Á×Àº ¸ó½ºÅÍ À¯´Ö °´Ã¼</param>
+        /// <param name="deadMonster">ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼</param>
         public override void Execute(Monster deadMonster)
         {
-            // ¿¹½Ã: ¸ó½ºÅÍ°¡ Á×À» ¶§ ¸Ê¿¡ ¼³Ä¡ÇÑ Æ¯Á¤ Å¸ÀÏ È¿°ú¸¦ ¸ðµÎ Áö¿î´Ù°Å³ª ¾Æ±º¿¡°Ô ¹öÇÁ¸¦ ÁÙ ¼ö ÀÖ½À´Ï´Ù.
+            // ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½Í°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ê¿ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ Æ¯ï¿½ï¿½ Å¸ï¿½ï¿½ È¿ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ù°Å³ï¿½ ï¿½Æ±ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½.
             Debug.Log($"[SampleDeath] {deadMonster.name} died! Executing death effect...");
         }
     }
 
     // ==========================================
-    // 3. »ùÇÃ ÆÐ½Ãºê ±¸Çö
+    // 3. ï¿½ï¿½ï¿½ï¿½ ï¿½Ð½Ãºï¿½ ï¿½ï¿½ï¿½ï¿½
     // ==========================================
     /// <summary>
-    /// Á¶°ÇÀÌ ¸ÂÀ» ¶§ ÀÚµ¿À¸·Î ¹ßµ¿µÇ´Â ÆÐ½ÃºêÀÔ´Ï´Ù. PassiveAbility¸¦ »ó¼Ó¹Þ½À´Ï´Ù.
-    /// ¿¡µðÅÍÀÇ "Starting Passives" ¼½¼Ç¿¡ Ãß°¡ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ßµï¿½ï¿½Ç´ï¿½ ï¿½Ð½Ãºï¿½ï¿½Ô´Ï´ï¿½. PassiveAbilityï¿½ï¿½ ï¿½ï¿½Ó¹Þ½ï¿½ï¿½Ï´ï¿½.
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "Starting Passives" ï¿½ï¿½ï¿½Ç¿ï¿½ ï¿½ß°ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½.
     /// </summary>
     [System.Serializable]
     public class SamplePassive : PassiveAbility
     {
         [Header("Passive Settings")]
-        [Tooltip("¸Å ÅÏ È¸º¹ÇÒ Ã¼·Â")]
+        [Tooltip("ï¿½ï¿½ ï¿½ï¿½ È¸ï¿½ï¿½ï¿½ï¿½ Ã¼ï¿½ï¿½")]
         [SerializeField] private int healAmount = 5;
 
         public SamplePassive()
         {
-            passiveName = "Àç»ý";
-            description = "¸Å ÅÏ ½ÃÀÛ ½Ã Ã¼·ÂÀ» È¸º¹ÇÕ´Ï´Ù.";
+            passiveName = "ï¿½ï¿½ï¿½";
+            description = "ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Ã¼ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ï¿½Õ´Ï´ï¿½.";
             
-            // Priority(¿ì¼±¼øÀ§)°¡ ³ôÀ»¼ö·Ï °°Àº Å¸ÀÌ¹Ö¿¡ °ãÃÆÀ» ¶§ ¸ÕÀú ½ÇÇàµË´Ï´Ù.
+            // Priority(ï¿½ì¼±ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½Ì¹Ö¿ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ë´Ï´ï¿½.
             priority = 10; 
             
-            // stackableÀÌ false¸é ÁßÃ¸µÇÁö ¾Ê½À´Ï´Ù (µ¿ÀÏ È¿°ú ºÒ°¡).
+            // stackableï¿½ï¿½ falseï¿½ï¿½ ï¿½ï¿½Ã¸ï¿½ï¿½ï¿½ï¿½ ï¿½Ê½ï¿½ï¿½Ï´ï¿½ (ï¿½ï¿½ï¿½ï¿½ È¿ï¿½ï¿½ ï¿½Ò°ï¿½).
             isStackable = false;
         }
 
         /// <summary>
-        /// ÀüÅõ Áß¿¡ ¹ß»ýÇÏ´Â °¢Á¾ ÀÌº¥Æ®(CombatTrigger) ½ÅÈ£¸¦ °¨ÁöÇÏ°í ¹ÝÀÀÇÕ´Ï´Ù.
+        /// ï¿½ï¿½ï¿½ï¿½ ï¿½ß¿ï¿½ ï¿½ß»ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ®(CombatTrigger) ï¿½ï¿½È£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
         /// </summary>
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
-            // ¿¹¿Ü 1) ¸Æ¶ôÀÌ³ª ¾×¼ÇÀÌ ºñ¾î ÀÖÀ¸¸é ¹«½Ã
-            if (context?.Action == null) return;
+            // ï¿½ï¿½ï¿½ï¿½ 1) ï¿½Æ¶ï¿½ï¿½Ì³ï¿½ ï¿½×¼ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+            if (context == null) return;
 
-            // ¿¹¿Ü 2) ³»°¡ ÀÏÀ¸Å²(ourceUnit == owner) ÀÌº¥Æ®ÀÌ¸é¼­,
-            //         "ÅÏ ½ÃÀÛ" ½ÃÁ¡ÀÇ ¾×¼Ç(ActionType.OnStartTurn)ÀÌ "½ÇÇàµÇ±â Á÷Àü"(OnPreAction)ÀÏ ¶§ °¨ÁöÇÕ´Ï´Ù.
+            // ï¿½ï¿½ï¿½ï¿½ 2) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Å²(ourceUnit == owner) ï¿½Ìºï¿½Æ®ï¿½Ì¸é¼­,
+            //         "ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½" ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½×¼ï¿½(ActionType.OnStartTurn)ï¿½ï¿½ "ï¿½ï¿½ï¿½ï¿½Ç±ï¿½ ï¿½ï¿½ï¿½ï¿½"(OnPreAction)ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
             if (trigger == CombatTrigger.OnPreAction &&
-                context.Action.Type == ActionType.OnStartTurn && 
+                context.Phase == EventPhase.TurnStart &&
                 context.SourceUnit == owner)
             {
-                Debug.Log($"[SamplePassive] ÅÏ ½ÃÀÛ Æ®¸®°Å ¹ßµ¿ - Èú Àû¿ë");
+                Debug.Log($"[SamplePassive] ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ßµï¿½ - ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½");
                 owner.Heal(healAmount);
             }
         }

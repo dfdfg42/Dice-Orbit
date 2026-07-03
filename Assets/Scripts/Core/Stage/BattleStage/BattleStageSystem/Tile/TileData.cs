@@ -187,13 +187,7 @@ namespace DiceOrbit.Data
             {
                 attribute.OnReact(trigger, context);
             }
-
-            // 턴 시작 시, 반응 처리 후 만료된 속성 정리
-            if (context.Action.Type==ActionType.OnStartTurn && context.IsTiling == true)
-            {
-                Debug.Log($"[TileData] Processing OnStartTurn reactions for Tile #{tileIndex}. Checking for expired attributes...");
-                CleanupExpiredAttributes();
-            }
+            // 지속시간 감소/만료 정리는 TickTurnEnd()(직접 틱)에서 처리한다.
         }
 
         private void CleanupExpiredAttributes()

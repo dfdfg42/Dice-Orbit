@@ -21,15 +21,12 @@ namespace DiceOrbit.Systems.Effects
             IsStackable = false;
         }
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
-            base.OnReact(trigger, context);
-            if (Owner == null || context?.Action == null) return;
+            if (Owner == null) return;
 
             // 내가 피해를 받는 쪽일 때 받는 피해량 증가
-            if (trigger == CombatTrigger.OnCalculateOutput &&
-                context.Action.Type == ActionType.Attack &&
-                context.Target == Owner)
+            if (trigger == CombatTrigger.OnCalculateOutput && context.Target == Owner)
             {
                 context.OutputValue *= 1f + (Value / 100f);
             }
@@ -130,12 +127,12 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.FrostTotem
         public override string GetDynamicDescription()
             => $"턴 종료 시 이동하지 않은 적에게 받는 피해 +{damageIncreasePercent}% ({duration}턴)";
 
-        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
-            if (context?.Action == null || owner == null) return;
+            if (owner == null) return;
 
             if (trigger == CombatTrigger.OnPostAction &&
-                context.Action.Type == ActionType.OnEndTurn &&
+                context.Phase == EventPhase.TurnEnd &&
                 context.SourceUnit == owner)
             {
                 ApplyFrostbiteToNonMovers();

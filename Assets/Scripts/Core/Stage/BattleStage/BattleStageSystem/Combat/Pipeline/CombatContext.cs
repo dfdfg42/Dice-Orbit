@@ -1,46 +1,85 @@
-using UnityEngine;
-using DiceOrbit.Data; // EffectType 등이 있다면 필요
+using System.Collections.Generic;
+using DiceOrbit.Data; // EffectType
 
 namespace DiceOrbit.Core.Pipeline
 {
+    public enum EventPhase { TurnStart, TurnEnd, TileTick }
+
     /// <summary>
-    /// 파이프라인을 통과하며 데이터를 공유하는 컨텍스트
+    /// 파이프라인을 통과하는 봉투(본체). NotifyReactors가 나르는 타입.
     /// </summary>
-    public class CombatContext
+    public abstract class CombatContext
     {
-        public Unit SourceUnit; // (Character or Monster)
-        public Unit Target;     // (Character or Monster)
+        public Unit SourceUnit;
+        public Unit Target;
+        public bool IsCancelled;
+        public bool IsSimulation;
+        public ActionType Type;     // 마이그레이션 shim — 모든 리액터 이전 후 제거 예정
 
-        public CombatAction Action;     // 수행 중인 액션
-        public float OutputValue;       // 최종 결과값 (데미지/힐량)
-        public bool IsCancelled;        // 액션 취소 여부
-        public bool IsEffected;         // 영향을 끼쳤는지 (추가 가능)
-        public bool IsTiling;
-        public bool IsSimulation;       // 예상 피해량 미리보기용. true면 반응자가 부수효과(Notify, 스택 소비 등)를 건너뛰어야 함.
-
-        // 생성자
-        public CombatContext(Unit source, Unit target, CombatAction action)
+        protected CombatContext(Unit source, Unit target, ActionType type)
         {
             SourceUnit = source;
             Target = target;
-            Action = action;
-            OutputValue = action.BaseValue;
-            IsCancelled = false;
-            IsEffected= false;
-            IsTiling = false;
+            Type = type;
+        }
+    }
+
+    /// <summary>효과 행위 공통 (공격/힐) — 레시피 + 계산상태.</summary>
+    public abstract class EffectContext : CombatContext
+    {
+        public string Name;
+        public float BaseValue;
+        public float OutputValue;
+        public HashSet<string> Tags = new HashSet<string>();
+        public List<ActionEffectInfo> Effects = new List<ActionEffectInfo>();
+
+        protected EffectContext(Unit source, Unit target, ActionType type, string name, float baseValue)
+            : base(source, target, type)
+        {
+            Name = name;
+            BaseValue = baseValue;
+            OutputValue = baseValue;
         }
 
-        /// <summary>
-        /// 상태이상을 타겟에게 부여하는 유틸리티 메서드 (일관성 확보)
-        /// </summary>
-        public void AddEffectToTarget(DiceOrbit.Data.EffectType type, int value, int duration)
+        public void AddTag(string tag) => Tags.Add(tag);
+        public bool HasTag(string tag) => Tags.Contains(tag);
+        public void AddEffect(EffectType type, int value, int duration)
+            => Effects.Add(new ActionEffectInfo(type, value, duration));
+    }
+
+    public sealed class AttackContext : EffectContext
+    {
+        public bool IsEffected;
+        public AttackContext(Unit source, Unit target, string name, float baseValue)
+            : base(source, target, ActionType.Attack, name, baseValue) { }
+    }
+
+    public sealed class HealContext : EffectContext
+    {
+        public HealContext(Unit source, Unit target, string name, float baseValue)
+            : base(source, target, ActionType.Heal, name, baseValue) { }
+    }
+
+    /// <summary>이동 사건 — 걸음 수만 운반.</summary>
+    public sealed class MoveContext : CombatContext
+    {
+        public int Steps;
+        public MoveContext(Unit source, Unit target, int steps)
+            : base(source, target, ActionType.Move) { Steps = steps; }
+    }
+
+    /// <summary>턴시작/종료/타일틱 사건 — 숫자 없음.</summary>
+    public sealed class TurnEventContext : CombatContext
+    {
+        public EventPhase Phase;
+        public TurnEventContext(Unit source, Unit target, EventPhase phase)
+            : base(source, target, PhaseToType(phase)) { Phase = phase; }
+
+        private static ActionType PhaseToType(EventPhase phase) => phase switch
         {
-            // 타겟이 캐릭터인지 몬스터인지 확인 후 적용
-            // 여기서 StatusEffectManager 호출 (구현 필요)
-            // 예: StatusEffectManager.Instance.AddEffect(Target, type, value, duration);
-            
-            // 임시 로그
-            Debug.Log($"[Pipeline] Request to add effect {type} (Val:{value}, Dur:{duration}) to {Target}");
-        }
+            EventPhase.TurnStart => ActionType.OnStartTurn,
+            EventPhase.TurnEnd   => ActionType.OnEndTurn,
+            _                    => ActionType.None, // TileTick
+        };
     }
 }

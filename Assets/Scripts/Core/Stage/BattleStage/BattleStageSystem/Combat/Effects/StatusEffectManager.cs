@@ -77,11 +77,11 @@ namespace DiceOrbit.Systems.Effects
             // 각 효과의 반응 로직 실행 (StatusEffect가 스스로 Duration 관리)
             foreach (var effect in activeEffects.Values.ToList())
             {
-                effect.OnReact(trigger, context);
+                ((ICombatReactor)effect).OnReact(trigger, context);
             }
 
             // 턴 시작 시, 반응 처리 후 만료된 효과 정리
-            if (context.Action.Type==ActionType.OnStartTurn && context.SourceUnit == owner)
+            if (context is TurnEventContext { Phase: EventPhase.TurnStart } && context.SourceUnit == owner)
             {
                 CleanupExpiredEffects();
             }
