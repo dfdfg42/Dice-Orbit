@@ -68,7 +68,65 @@ public override void OnRefreshSkill(CharacterModfierContext context)
 4. **`CharacterActiveSkill.GenerateContext()` 추가**
    - 원형(Template) 스킬 클래스가 자신의 초기 상태를 담은(Base 혹은 Derived) 컨텍스트를 생성하여 내보냅니다.
 
-## 4. 작업자 적용 지침 (Action Item)
+## 4. 현재 구조 상세 (Current Architecture)
+
+> 위 개편이 **실제 반영된 현재 코드 기준** 동작이다. 새 모디파이어를 만들 때 이 절을 참고하면 된다.
+
+### 4.1 모디파이어 2종류
+장착되는 모디파이어는 `ModifierCategory`로 두 갈래이며, **바꾸는 대상**과 **훅**이 다르다.
+
+| 종류 | 무엇을 바꾸나 | 훅 | 예시 |
+|---|---|---|---|
+| **Signature** | 특정 스킬의 **구조** (타겟 종류/수, 전용 배율 등) | `OnRefreshSkill(CharacterModfierContext)` — 전용 컨텍스트로 다운캐스팅 후 조작 | `GreatswordWideSwing` (대검 대상 수 +1) |
+| **Generic** | 모든 공격의 **결과 수치**(`OutputValue`) | `OnAttackWithActive(AttackContext)` — 파이프라인 리액터 훅(`OnCalculateOutput`) | `SharpBladeModifier`(+고정), `BerserkModifier`(+%), `GiantStrengthModifier` |
+
+### 4.2 클래스 구성
+- **`CharacterModifier`** (`Units/Character/Modifiers/CharacterModifier.cs`) — 추상 베이스이자 `ICombatReactor`. `ModifierName/Description/Icon/Category/Priority/owner` + 두 훅: `OnRefreshSkill`(구조 변경)과 `OnAttack`→`OnAttackWithActive`(수치 변경, `SourceUnit==owner && OnCalculateOutput`일 때만). 제시/장착 가능 여부는 `CanApplyTo(Character)`.
+- **`ModifierManager : IModifierManager`** (`.../Modifiers/ModifierManager.cs`) — 캐릭터에 장착된 모디파이어 컨테이너. `Add/Remove/Modifiers`, `ApplyTo(ctx)`(장착 순서대로 `OnRefreshSkill` 일괄 적용, `ctx.IsCancelled` 시 중단), `CollectReactors(list)`(Generic 훅을 파이프라인 리액터로 등록).
+- **`CharacterModfierContext`** (`Combat/Pipeline/CharacterModfierContext.cs`) — 스킬의 초기 타게팅값(`TargetType/TargetCount/PreviewStyle`)을 담는 "도화지". 생성자가 스킬의 기본값으로 채운다. 파생: `WarriorGreatswordModifiedContext`(전용 `BaseDamageMultiplier`, 기본 1).
+- **`CharacterActiveSkill.GenerateContext(source, slot)`** — 스킬이 자기 초기 컨텍스트를 만든다. 기본은 `CharacterModfierContext`; 전용 기믹이 있으면 override해 파생 컨텍스트를 반환(예: `WarriorGreatswordActive`).
+- **`ModifierRegistry`** (`Data/Modifiers/ModifierRegistry.cs`) — 보상 풀(정적 팩토리 배열). `GetRandomChoicesFor(character, count)`가 `CanApplyTo`로 거른 뒤 셔플해 제시하고, `ModifierManager.Add`로 장착된다.
+
+### 4.3 런타임 흐름 — 도화지는 매번 새로
+Signature와 Generic은 **적용 경로가 서로 다르다.**
+
+- **Signature (타게팅/미리보기 시, 지연 평가):** `ActiveSkillSlot`의 `TargetType/TargetCount/PreviewStyle` 게터가 읽힐 때마다 `BuildEffectiveContext()`가 돈다 → `skill.GenerateContext(owner, slot)`로 **새 도화지**를 만들고 → `owner.Stats.Modifiers.ApplyTo(ctx)`로 장착 모디파이어들의 `OnRefreshSkill`을 덧칠 → 완성된 유효값을 반환. 원본 스킬 인스턴스는 **절대 변형되지 않으며**, 장착/해제 시 되돌리는(Revert) 코드가 필요 없다(항상 새로 계산).
+- **Generic (전투 실행 시, 파이프라인):** `Character`가 리액터를 수집할 때 `Modifiers.CollectReactors(list)`로 모디파이어들이 리액터로 등록된다 → `CombatPipeline.Process` 중 `OnCalculateOutput`에서 각 모디파이어의 `OnAttack`이 불려 `OutputValue`를 조정.
+
+```mermaid
+flowchart TD
+    subgraph Targeting["타게팅/미리보기 (Signature)"]
+      G["ActiveSkillSlot.TargetType 등 게터"] --> BEC[BuildEffectiveContext]
+      BEC --> GEN["skill.GenerateContext() : 새 도화지"]
+      GEN --> APP["Modifiers.ApplyTo() : 각 OnRefreshSkill 덧칠"]
+      APP --> EFF[유효 타게팅값 반환]
+    end
+    subgraph Combat["전투 실행 (Generic)"]
+      P[CombatPipeline.Process] --> C[OnCalculateOutput]
+      C --> OA["각 모디파이어 OnAttack -> OnAttackWithActive"]
+      OA --> OUT[OutputValue 조정]
+    end
+```
+
+### 4.4 두 경로 예시
+```csharp
+// Signature: 대검 스킬의 '구조'를 바꿈 (GreatswordWideSwing)
+public override void OnRefreshSkill(CharacterModfierContext context) {
+    if (context is WarriorGreatswordModifiedContext gs) {   // 대검 전용 컨텍스트일 때만
+        gs.TargetCount += 1;                                // 대상 수 +1 (도화지 위 조작)
+        gs.TargetType   = CharacterSkillTargetType.MultiEnemy;
+    }
+}
+public override bool CanApplyTo(Character c)                // 대검 보유자에게만 제시/장착
+    => c?.Stats?.ActiveAbilities?.Any(s => s?.BaseSkill is WarriorGreatswordActive) ?? false;
+
+// Generic: 모든 공격의 '수치'를 바꿈 (SharpBladeModifier)
+protected override void OnAttackWithActive(AttackContext context) {
+    context.OutputValue += bonusDamage;                     // 파이프라인 OnCalculateOutput에서 가산
+}
+```
+
+## 5. 작업자 적용 지침 (Action Item)
 앞으로 새로운 기믹을 지닌 캐릭터 스킬과 시그니처 모디파이어를 제작하실 때는 다음 단계를 따라주세요.
 
 *   스킬의 기초 데이터 이외에 모디파이어로 변경될 수 있는 전용 수치가 있다면, `CharacterModfierContext`를 상속받은 전용 컨텍스트(예: `MageFireballModifiedContext`)를 생성하세요.
