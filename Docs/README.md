@@ -2,19 +2,18 @@
 
 ---
 
-## 🏗 시스템 설계
+## 🏗 시스템 설계 (현재 구조)
 
-핵심 게임플레이 시스템의 구조와 작동 방식.
+핵심 게임플레이 시스템이 **현재 어떻게 동작하는지** 설명하는 문서.
 
 | 문서 | 내용 |
 |---|---|
-| [skill_system_structure.md](skill_system_structure.md) | 전투 도메인 클래스 다이어그램, Action Pipeline 전체 구조 |
+| [project_structure.md](project_structure.md) | 스크립트 폴더 구조 + 전투 아키텍처 개요 |
+| [skill_system_structure.md](skill_system_structure.md) | 전투 도메인 클래스 다이어그램, 스킬/패시브/컨텍스트 구조 |
 | [skill_targeting_system.md](skill_targeting_system.md) | 액티브 스킬 타겟 선택 시스템 (OneEnemy~MultiTile) |
 | [combat_reactor_dispatch.md](combat_reactor_dispatch.md) | ICombatReactor DIM 타입별 디스패치 (OnAttack/OnHeal/OnMove/OnTurnEvent) |
-| [modifireSystem.md](modifireSystem.md) | 스킬 런타임 갱신(Modifier) 시스템 — 휘발성 컨텍스트 캐싱 구조 |
+| [modifireSystem.md](modifireSystem.md) | 스킬 런타임 갱신(Modifier) 시스템 — Signature/Generic, 휘발성 컨텍스트 |
 | [combat_floating_notification_system.md](combat_floating_notification_system.md) | 패시브/상태이상 발동 시 플로팅 알림 버블 |
-| [combat_context_action_merge_design.md](combat_context_action_merge_design.md) | CombatContext/CombatAction 병합 + 서브클래스 데이터모델 설계 |
-| [combat_context_action_merge_plan.md](combat_context_action_merge_plan.md) | CombatContext/CombatAction 병합 구현 계획 |
 | [Pipeline.md](Pipeline.md) | 전투 파이프라인 플로차트 (mermaid) |
 | [TurnSystem.md](TurnSystem.md) | 턴 시스템 플로차트 (mermaid) |
 
@@ -40,13 +39,17 @@
 
 ---
 
-## 📐 구현 계획
+## 📐 설계안 · 구현 계획 (기록)
 
-아직 구현되지 않은 기능의 설계 메모.
+특정 변경을 위한 **시점 기록물**(설계안 / 구현 계획). 현재 코드가 아니라 "그때의 계획"을 담고 있으므로, 각 문서 상단의 갱신 노트를 함께 볼 것. 현재 동작은 위 *시스템 설계* 문서를 참고.
 
 | 문서 | 내용 | 상태 |
 |---|---|---|
-| [tile_attribute_visual_plan.md](tile_attribute_visual_plan.md) | 타일 속성 3D 오브젝트/VFX 부착 구조 | 미구현 |
+| [combat_context_action_merge_design.md](combat_context_action_merge_design.md) | CombatContext/CombatAction 병합 + 서브클래스 데이터모델 **설계안** | 구현됨 (리액터는 이후 DIM으로 발전 → combat_reactor_dispatch.md) |
+| [combat_context_action_merge_plan.md](combat_context_action_merge_plan.md) | 위 병합의 단계별 **구현 계획** | 완료 |
+| [implementation_plan.md](implementation_plan.md) | 스킬 시스템 Active/Passive 분리 리팩토링 계획 | 완료 (SkillAsset안 → CharacterActiveSkill로 대체) |
+| [AttackDesign.md](AttackDesign.md) | 공격 의도 표시 설계 매트릭스 | 대부분 구현됨 (→ skill_targeting_system.md) |
+| [tile_attribute_visual_plan.md](tile_attribute_visual_plan.md) | 타일 속성 3D 오브젝트/VFX 부착 구조 제안 | 미채택 (→ TileAttributeBubbleManager) |
 
 ---
 
@@ -56,14 +59,11 @@
 |---|---|
 | [combat_pipeline_matrix.csv](combat_pipeline_matrix.csv) | 전투 파이프라인 트리거 매트릭스 |
 | [skill_authoring_sheet_template.csv](skill_authoring_sheet_template.csv) | 스킬 제작 시트 템플릿 |
-| [AttackDesign.md](AttackDesign.md) | 공격 의도 표시 설계 테이블 |
 
 ---
 
-## 🗄 보관 (완료/폐기)
+## 🗄 보관 (감사·리포트)
 
 | 문서 | 내용 |
 |---|---|
-| [implementation_plan.md](implementation_plan.md) | 스킬 시스템 리팩토링 계획 — **완료** |
 | [deadcode_audit_2026-07.md](deadcode_audit_2026-07.md) | Assets/Scripts 레거시/데드코드 감사 리포트 (2026-07) |
-| [project_structure.md](project_structure.md) | 초기 프로젝트 구조 개요 |
