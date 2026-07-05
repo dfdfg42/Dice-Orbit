@@ -76,9 +76,13 @@ namespace DiceOrbit.Visuals
             }
             _lifted.Clear();
 
-            // 색 오버레이도 원위치
+            // 색 오버레이 + 속성 아이콘 버블도 원위치
             foreach (var tile in _currentTiles)
-                if (tile != null) MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, 0f);
+            {
+                if (tile == null) continue;
+                MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, 0f);
+                UI.TileAttributeBubbleManager.Instance?.SetLiftOffset(tile, 0f);
+            }
 
             _currentTiles.Clear();
             _current = null;
@@ -138,12 +142,14 @@ namespace DiceOrbit.Visuals
                 float lift = liftHeight * k;
                 ghost.position = basePos + Vector3.up * lift;
                 MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, lift);   // 색 오버레이 동승
+                UI.TileAttributeBubbleManager.Instance?.SetLiftOffset(tile, lift);    // 속성 아이콘 동승
                 yield return null;
             }
             if (ghost != null)
             {
                 ghost.position = basePos + Vector3.up * liftHeight;
                 MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, liftHeight);
+                UI.TileAttributeBubbleManager.Instance?.SetLiftOffset(tile, liftHeight);
             }
         }
     }

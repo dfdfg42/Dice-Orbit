@@ -22,6 +22,22 @@ namespace DiceOrbit.UI
 
         private readonly Dictionary<TileData, TileAttributeBubbleUI> activeBubbles = new Dictionary<TileData, TileAttributeBubbleUI>();
         private readonly HashSet<TileAttributeType> missingMappingLogged = new HashSet<TileAttributeType>();
+        private readonly Dictionary<TileData, float> _liftOffsets = new Dictionary<TileData, float>();   // 타일 리프트 연출 연동
+
+        /// <summary>
+        /// 타일 버블(속성 아이콘)을 위로 띄우는 오프셋 지정 (타일 리프트 연출과 함께 움직이도록).
+        /// 0이면 원위치. RefreshTile이 일어나도 오프셋은 유지된다.
+        /// </summary>
+        public void SetLiftOffset(TileData tile, float height)
+        {
+            if (tile == null) return;
+
+            if (height > 0f) _liftOffsets[tile] = height;
+            else _liftOffsets.Remove(tile);
+
+            if (activeBubbles.TryGetValue(tile, out var bubble) && bubble != null)
+                bubble.SetLiftOffset(height);
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void Bootstrap()
@@ -150,6 +166,10 @@ namespace DiceOrbit.UI
                 iconData,
                 primaryLabel
             );
+
+            // 리프트 중인 타일이면 재배치 후에도 띄운 상태 유지
+            if (_liftOffsets.TryGetValue(tile, out float liftOffset))
+                bubble.SetLiftOffset(liftOffset);
         }
 
         private TileAttributeBubbleUI GetOrCreateBubble(TileData tile)

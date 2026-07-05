@@ -33,6 +33,15 @@ namespace DiceOrbit.UI
 
         private Transform target;
         private readonly List<SpriteRenderer> iconRenderers = new List<SpriteRenderer>();
+        private int _lastIconCount;
+        private float _liftOffset;   // 타일 리프트 연출 연동 (IntentTileLiftEffect)
+
+        /// <summary>타일 리프트 연출 연동: 아이콘들을 위로 띄운다. 0이면 원위치.</summary>
+        public void SetLiftOffset(float height)
+        {
+            _liftOffset = Mathf.Max(0f, height);
+            PlaceIcons(_lastIconCount);
+        }
 
         public void Setup(Transform followTarget, Sprite bubbleSprite, IReadOnlyList<BubbleIconData> icons, string label)
         {
@@ -40,6 +49,7 @@ namespace DiceOrbit.UI
             target = followTarget;
 
             int iconCount = icons != null ? icons.Count : 0;
+            _lastIconCount = iconCount;
             EnsureIconRenderers(iconCount);
 
             for (int i = 0; i < iconRenderers.Count; i++)
@@ -79,7 +89,7 @@ namespace DiceOrbit.UI
                 if (r == null || !r.gameObject.activeSelf) continue;
 
                 float centered = placed - ((iconCount - 1) * 0.5f);
-                Vector3 pos = edgeCenter + tangent * (centered * iconSpacing) + Vector3.up * lift;
+                Vector3 pos = edgeCenter + tangent * (centered * iconSpacing) + Vector3.up * (lift + _liftOffset);
                 r.transform.SetPositionAndRotation(pos, rot);
                 r.transform.localScale = Vector3.one * iconScale;
                 placed++;
