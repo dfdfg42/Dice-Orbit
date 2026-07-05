@@ -94,19 +94,41 @@ namespace DiceOrbit.UI
             if (_selection != null) _selection.enabled = visible;   // 호버/핀 갱신 중지
             enabled = visible;                                       // 렌더 루프 중지
 
-            if (!visible) Visuals.PassiveRangeIndicator.Instance?.Hide();   // 패널 숨김 시 브래킷도 제거
+            if (!visible)
+            {
+                // 패널 숨김 시 월드 인디케이터도 제거
+                Visuals.PassiveRangeIndicator.Instance?.Hide();
+                Visuals.IntentTileLiftEffect.Instance?.Hide();
+            }
             if (visible) _lastTargetKey = new object();              // 다시 켜질 때 강제 리렌더
         }
 
-        /// <summary>조회 대상이 캐릭터면 패시브 범위 브래킷 표시, 아니면 숨김.</summary>
-        private static void SyncPassiveRange(IBattleInfoProvider unit)
+        /// <summary>
+        /// 조회 대상별 월드 인디케이터 동기화.
+        /// 캐릭터 → 패시브 범위 브래킷 / 몬스터 → 공격 예정 타일 리프트 / 그 외 → 모두 숨김.
+        /// </summary>
+        private static void SyncWorldIndicators(IBattleInfoProvider unit)
         {
             Visuals.PassiveRangeIndicator.EnsureInstance();
-            var indicator = Visuals.PassiveRangeIndicator.Instance;
-            if (indicator == null) return;
+            Visuals.IntentTileLiftEffect.EnsureInstance();
+            var brackets = Visuals.PassiveRangeIndicator.Instance;
+            var lift = Visuals.IntentTileLiftEffect.Instance;
 
-            if (unit is Core.Character ch) indicator.Show(ch);
-            else indicator.Hide();
+            if (unit is Core.Character ch)
+            {
+                brackets?.Show(ch);
+                lift?.Hide();
+            }
+            else if (unit is Core.Monster m)
+            {
+                lift?.Show(m);
+                brackets?.Hide();
+            }
+            else
+            {
+                brackets?.Hide();
+                lift?.Hide();
+            }
         }
 
         /// <summary>패널 캔버스 정렬값 적용. 액션 패널 등 팝업이 항상 패널 위에 그려지게 한다.</summary>
@@ -160,8 +182,8 @@ namespace DiceOrbit.UI
             var unit = _selection.CurrentUnit;
             if (unit is Component c && c == null) unit = null;   // 파괴된 유닛 방어
 
-            // 패시브 범위 브래킷 연동: 조회 중인 캐릭터만 표시 (몬스터/타일/빈 상태는 숨김)
-            SyncPassiveRange(unit);
+            // 월드 인디케이터 연동: 캐릭터 → 패시브 브래킷 / 몬스터 → 공격 타일 리프트
+            SyncWorldIndicators(unit);
 
             if (unit != null)
             {
