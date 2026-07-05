@@ -94,7 +94,19 @@ namespace DiceOrbit.UI
             if (_selection != null) _selection.enabled = visible;   // 호버/핀 갱신 중지
             enabled = visible;                                       // 렌더 루프 중지
 
+            if (!visible) Visuals.PassiveRangeIndicator.Instance?.Hide();   // 패널 숨김 시 브래킷도 제거
             if (visible) _lastTargetKey = new object();              // 다시 켜질 때 강제 리렌더
+        }
+
+        /// <summary>조회 대상이 캐릭터면 패시브 범위 브래킷 표시, 아니면 숨김.</summary>
+        private static void SyncPassiveRange(IBattleInfoProvider unit)
+        {
+            Visuals.PassiveRangeIndicator.EnsureInstance();
+            var indicator = Visuals.PassiveRangeIndicator.Instance;
+            if (indicator == null) return;
+
+            if (unit is Core.Character ch) indicator.Show(ch);
+            else indicator.Hide();
         }
 
         /// <summary>패널 캔버스 정렬값 적용. 액션 패널 등 팝업이 항상 패널 위에 그려지게 한다.</summary>
@@ -147,6 +159,9 @@ namespace DiceOrbit.UI
 
             var unit = _selection.CurrentUnit;
             if (unit is Component c && c == null) unit = null;   // 파괴된 유닛 방어
+
+            // 패시브 범위 브래킷 연동: 조회 중인 캐릭터만 표시 (몬스터/타일/빈 상태는 숨김)
+            SyncPassiveRange(unit);
 
             if (unit != null)
             {

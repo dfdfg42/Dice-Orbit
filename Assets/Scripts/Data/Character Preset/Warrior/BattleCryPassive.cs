@@ -8,7 +8,7 @@ using UnityEngine;
 namespace DiceOrbit.Data.Passives
 {
     [System.Serializable]
-    public class BattleCryPassive : CharacterPassiveSkill
+    public class BattleCryPassive : CharacterPassiveSkill, IPassiveRangeProvider
     {
         [Header("Designer Tuning")]
         [Tooltip("인접(좌우 1칸) 아군 1명당 피해 증가율(%). 예: 50은 +50%")]
@@ -21,19 +21,22 @@ namespace DiceOrbit.Data.Passives
             return $"좌우 1칸 아군 1명당 피해 +{bonusPercentPerAlly:0.#}%";
         }
 
-        public override void Initialize(Unit ownerUnit)
-        {
-            base.Initialize(ownerUnit);
-            if (owner is Character character && character.CurrentTile != null)
-                RefreshRangePreview(character.CurrentTile);
-        }
-
-        public override void OnOwnerMoved(TileData newTile)
-        {
-            RefreshRangePreview(newTile);
-        }
-
         protected override void ApplyLevel(int level) { }
+
+        /// <summary>
+        /// 패시브 영향 범위 = 좌우 인접 타일. PassiveRangeIndicator가 조회 시 브래킷 표시에 사용.
+        /// (구 방식: 상시 회전 트레일 → 조회 시 브래킷으로 대체, 2026-07)
+        /// </summary>
+        public IReadOnlyList<TileData> GetRangeTiles()
+        {
+            var tiles = new List<TileData>();
+            var center = (owner as Character)?.CurrentTile;
+            if (center == null) return tiles;
+
+            if (center.PreviousTile != null) tiles.Add(center.PreviousTile);
+            if (center.NextTile != null) tiles.Add(center.NextTile);
+            return tiles;
+        }
 
         public void OnAttack(CombatTrigger trigger, AttackContext context)
         {
@@ -73,17 +76,5 @@ namespace DiceOrbit.Data.Passives
             return count;
         }
 
-        private void RefreshRangePreview(TileData centerTile)
-        {
-            TileSkillPreviewManager.EnsureInstance();
-            var manager = TileSkillPreviewManager.Instance;
-            if (manager == null || centerTile == null) return;
-
-            var tiles = new List<TileData>();
-            if (centerTile.PreviousTile != null) tiles.Add(centerTile.PreviousTile);
-            if (centerTile.NextTile != null) tiles.Add(centerTile.NextTile);
-
-            manager.ShowPassiveRange(owner, tiles, TilePreviewStyle.Buff);
-        }
     }
 }
