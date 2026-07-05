@@ -325,18 +325,19 @@ namespace DiceOrbit.UI
             bg.color = new Color(0.08f, 0.08f, 0.11f, 0.96f);   // raycastTarget=true 유지 → 패널 위 3D 호버 차단
 
             // ── 고정 섹션 슬롯 (패널 내 앵커 비율) ──
-            // Header 0.87~1.00
-            var header = CreateRect("Header", panel, new Vector2(0.03f, 0.87f), new Vector2(0.97f, 0.995f));
+            // Header 0.88~1.00
+            var header = CreateRect("Header", panel, new Vector2(0.03f, 0.88f), new Vector2(0.97f, 0.995f));
             nameText   = CreateTmp("NameText",   header, new Vector2(0f, 0.55f), new Vector2(1f, 1f),    26f, Color.white, FontStyles.Bold);
             hpText     = CreateTmp("HpText",     header, new Vector2(0f, 0.30f), new Vector2(1f, 0.55f), 18f, InfoPanelRows.HpColor, FontStyles.Normal);
             flavorText = CreateTmp("FlavorText", header, new Vector2(0f, 0f),    new Vector2(1f, 0.30f), 13f, InfoPanelRows.MutedColor, FontStyles.Italic);
 
-            // 섹션: 액티브 0.60~0.87 / 패시브 0.38~0.60 / 상태이상 0.22~0.38 / 타일 0.00~0.22
-            activesContainer  = CreateSection("ActivesSection",  panel, "액티브",   0.60f, 0.87f);
+            // 섹션: 액티브 0.64~0.88 / 패시브 0.44~0.64 / 상태이상 0.30~0.44 / 타일 0.14~0.30 / 키워드 0.00~0.14
+            activesContainer  = CreateSection("ActivesSection",  panel, "액티브",   0.64f, 0.88f);
             activesTitle      = activesContainer.parent.Find("Title").GetComponent<TextMeshProUGUI>();
-            passivesContainer = CreateSection("PassivesSection", panel, "패시브",   0.38f, 0.60f);
-            statusesContainer = CreateSection("StatusesSection", panel, "상태이상", 0.22f, 0.38f);
-            tileContainer     = CreateSection("TileSection",     panel, "밟고 있는 타일", 0.00f, 0.22f);
+            passivesContainer = CreateSection("PassivesSection", panel, "패시브",   0.44f, 0.64f);
+            statusesContainer = CreateSection("StatusesSection", panel, "상태이상", 0.30f, 0.44f);
+            tileContainer     = CreateSection("TileSection",     panel, "밟고 있는 타일", 0.14f, 0.30f);
+            keywordsContainer = CreateSection("KeywordsSection", panel, "키워드",   0.00f, 0.14f);
 
             // 타일 섹션 부속: 카드 이미지(왼쪽) + 메타 텍스트
             var tileSection = tileContainer.parent;
@@ -368,6 +369,38 @@ namespace DiceOrbit.UI
             }
 #endif
             Debug.Log("[BattleInfoPanelUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
+        }
+
+        /// <summary>
+        /// [에디터] 이미 생성한 레이아웃에 키워드 섹션만 추가한다 (기존 스타일링 보존).
+        /// 패널 하단(0~0.14)에 생성되므로 기존 타일 섹션과 겹치면 씬에서 재배치할 것.
+        /// </summary>
+        [ContextMenu("키워드 섹션만 추가")]
+        private void AddKeywordsSection()
+        {
+            if (keywordsContainer != null)
+            {
+                Debug.LogWarning("[BattleInfoPanelUI] keywordsContainer가 이미 배선돼 있습니다.");
+                return;
+            }
+
+            var panel = transform.Find("InfoPanelCanvas/Panel");
+            if (panel == null)
+            {
+                Debug.LogWarning("[BattleInfoPanelUI] InfoPanelCanvas/Panel을 찾을 수 없습니다. 먼저 [기본 레이아웃 생성]을 실행하세요.");
+                return;
+            }
+
+            keywordsContainer = CreateSection("KeywordsSection", panel, "키워드", 0.00f, 0.14f);
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                UnityEditor.EditorUtility.SetDirty(this);
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+            }
+#endif
+            Debug.Log("[BattleInfoPanelUI] 키워드 섹션 추가 완료 — 기존 섹션과 겹치면 씬에서 위치를 조정하세요.");
         }
 
         /// <summary>섹션 슬롯 생성: 고정 타이틀 + 내용 컨테이너(세로 쌓기, 넘침 클리핑). 내용 컨테이너를 반환.</summary>
