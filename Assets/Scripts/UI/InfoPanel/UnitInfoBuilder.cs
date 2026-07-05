@@ -123,7 +123,10 @@ namespace DiceOrbit.UI
             foreach (var attr in tile.GetAttributes())
             {
                 if (attr == null) continue;
-                list.Add(new TileAttributeInfo(attr.Type, attr.Value, attr.Duration));
+                list.Add(new TileAttributeInfo(
+                    attr.Type, attr.Value, attr.Duration,
+                    attr.GetDisplayName(),      // 한국어 이름 (서브클래스가 제공)
+                    attr.GetDescription()));    // 효과 설명 (Bone/Reagent/Honey 등이 오버라이드)
             }
             return new TileInfoData(tile.TileIndex, tile.Type, list);
         }
@@ -140,7 +143,7 @@ namespace DiceOrbit.UI
                 if (skill == null) continue;
                 result.Add(new SkillInfoData(
                     skill.SkillName,
-                    skill.requirement?.GetDescription() ?? string.Empty,
+                    skill.FormatDiceCondition(),   // 한국어 문구 ("주사위 4 이상" 등) — GetDescription()은 영문 디버그용
                     skill.GetDynamicDescription() ?? string.Empty,
                     slot.CurrentLevel));
             }

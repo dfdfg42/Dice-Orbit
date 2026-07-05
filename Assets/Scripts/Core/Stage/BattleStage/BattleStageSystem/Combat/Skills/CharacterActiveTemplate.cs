@@ -59,8 +59,8 @@ namespace DiceOrbit.Data.Skills
         /// </summary>
         public virtual string GetDynamicDescription() => Description;
 
-        /// <summary>주사위 요구 조건을 한국어 문구로 변환.</summary>
-        protected string FormatDiceCondition()
+        /// <summary>주사위 요구 조건을 한국어 문구로 변환. (정보 패널 등 UI 표시용으로도 사용)</summary>
+        public string FormatDiceCondition()
         {
             if (requirement == null) return string.Empty;
 

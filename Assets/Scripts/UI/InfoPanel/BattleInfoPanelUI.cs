@@ -228,22 +228,22 @@ namespace DiceOrbit.UI
                 tileCardImage.enabled = sprite != null;
             }
 
-            // 속성별 행: 아이콘 + 라벨 + x스택 (nT) + 설명 — 항상 표시 (스펙 §5.1)
-            // 아이콘은 월드 버블 UI와 동일 (TileAttributeVisualDatabase)
+            // 속성별 행: 아이콘 + 이름 + x스택 (nT) + 설명 — 항상 표시 (스펙 §5.1)
+            // 이름/설명은 속성 인스턴스 제공 (Bone/Reagent 등 오버라이드), 아이콘은 월드 버블과 동일 DB
             foreach (var a in t.Attributes)
             {
-                string label = a.Type.ToString();
+                string label = !string.IsNullOrWhiteSpace(a.DisplayName) ? a.DisplayName : a.Type.ToString();
+                string desc = a.Description ?? "";
                 Color tint = Color.white;
-                string desc = "";
                 Sprite icon = null;
                 if (attributeVisuals != null && attributeVisuals.TryGet(a.Type, out var entry))
                 {
-                    if (!string.IsNullOrWhiteSpace(entry.shortLabel)) label = entry.shortLabel;
                     tint = entry.iconTint;
-                    desc = entry.description ?? "";
                     icon = entry.icon;
+                    // DB에 설명을 채웠으면 그것이 우선 (수동 오버라이드용)
+                    if (!string.IsNullOrWhiteSpace(entry.description)) desc = entry.description;
                 }
-                string dur = a.Duration < 0 ? "(∞T)" : $"({a.Duration}T)";
+                string dur = a.Duration < 0 ? "" : $"({a.Duration}T)";   // 영구는 지속턴 표기 생략
                 string stack = a.Value > 0 ? $"x{a.Value}" : "";
                 AddEntry(tileContainer, label, $"{stack} {dur}".Trim(), desc, tint, icon, tint);
             }

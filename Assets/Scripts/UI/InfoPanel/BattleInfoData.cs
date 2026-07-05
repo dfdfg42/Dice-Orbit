@@ -70,16 +70,19 @@ namespace DiceOrbit.UI
         }
     }
 
-    /// <summary>타일 속성 1개의 원시 데이터. 아이콘/설명은 렌더 계층이 TileAttributeVisualDatabase에서 조회.</summary>
+    /// <summary>타일 속성 1개의 데이터. 이름/설명은 속성 인스턴스가 스스로 제공 (서브클래스 오버라이드), 아이콘은 렌더 계층이 DB 조회.</summary>
     public readonly struct TileAttributeInfo
     {
         public readonly TileAttributeType Type;
         public readonly int Value;
         public readonly int Duration;               // -1 = 영구
+        public readonly string DisplayName;         // GetDisplayName() — 한국어 이름
+        public readonly string Description;         // GetDescription() — 속성 효과 설명
 
-        public TileAttributeInfo(TileAttributeType type, int value, int duration)
+        public TileAttributeInfo(TileAttributeType type, int value, int duration, string displayName, string description)
         {
             Type = type; Value = value; Duration = duration;
+            DisplayName = displayName; Description = description;
         }
     }
 
