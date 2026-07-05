@@ -3886,14 +3886,13 @@ GameObject:
   - component: {fileID: 1194948526}
   - component: {fileID: 1194948525}
   - component: {fileID: 1194948524}
-  - component: {fileID: 1194948523}
   m_Layer: 0
   m_Name: Panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1194948522
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3913,22 +3912,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1194948523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1194948521}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a36794693975c247813108310550179, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.GlossaryContainerUI
-  cardPrefab: {fileID: 8923523254599365215, guid: f816266f23b79914899cfd3a9dbcf462, type: 3}
-  sideOffset: 14
-  minWidth: 220
-  maxWidth: 420
 --- !u!114 &1194948524
 MonoBehaviour:
   m_ObjectHideFlags: 0

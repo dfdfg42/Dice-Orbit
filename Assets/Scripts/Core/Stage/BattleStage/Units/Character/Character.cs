@@ -11,7 +11,7 @@ namespace DiceOrbit.Core
     /// <summary>
     /// 게임 캐릭터 (플레이어)
     /// </summary>
-    public class Character : Unit<CharacterStats>, UI.IHoverTooltipProvider, UI.IBattleInfoProvider
+    public class Character : Unit<CharacterStats>, UI.IBattleInfoProvider
     {
         public static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
 
@@ -487,85 +487,8 @@ namespace DiceOrbit.Core
             }
         }
 
-        public UI.HoverTooltipData GetHoverTooltipData()
-        {
-            return new UI.HoverTooltipData(BuildCharacterTooltipText(), BuildStatusTooltipData(), BuildPassiveTooltipData());
-        }
-
         /// <summary>정보 패널용 구조화 데이터 (빌드 로직은 UnitInfoBuilder로 단일화).</summary>
         public UI.UnitInfoData GetBattleInfo() => UI.UnitInfoBuilder.Build(this);
-
-        private string BuildCharacterTooltipText()
-        {
-            var sb = new StringBuilder();
-
-            // 이름 강조 (크기, 굵기)
-            string characterName = stat != null && !string.IsNullOrWhiteSpace(stat.CharacterName)
-                ? stat.CharacterName
-                : name;
-
-            sb.AppendLine($"<size=115%><b>{characterName}</b></size>");
-            sb.AppendLine(); // 빈 줄로 구분
-
-            // 프로필 설명 추가
-            string profileDescription = stat?.SourcePreset != null
-                ? stat.SourcePreset.Description
-                : string.Empty;
-            if (!string.IsNullOrWhiteSpace(profileDescription))
-            {
-                sb.AppendLine($"<color=#D4D4D4>{profileDescription.Trim()}</color>");
-            }
-
-            return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
-        }
-
-        private List<UI.TooltipKeywordFormatter.KeywordDisplayData> BuildPassiveTooltipData()
-        {
-            var passivesList = new List<UI.TooltipKeywordFormatter.KeywordDisplayData>();
-            if (passives == null || passives.ActivePassives.Count == 0) return passivesList;
-
-            foreach (var passive in passives.ActivePassives)
-            {
-                if (passive == null) continue;
-
-                string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
-                if (passive.CurrentLevel > 0)
-                {
-                    passiveName += $" (Lv.{passive.CurrentLevel})";
-                }
-
-                // 패시브 효과 수치 텍스트 빌드 (다형성 활용)
-                string effText = passive.GetDynamicDescription();
-                // 추가 설명이 있다면 합침
-                string desc = effText;
-                if (!string.IsNullOrWhiteSpace(passive.Description))
-                    desc = $"{effText}\n<color=#B3B3B3>{passive.Description}</color>";
-
-                // 패시브 카드는 약간 붉은빛 주황색 기본 제공 (Inspector에서 색을 지정 안했으므로 코드로 하드코딩)
-                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f);
-
-                passivesList.Add(new UI.TooltipKeywordFormatter.KeywordDisplayData(passiveName, desc.Trim(), passiveColor, null));
-            }
-
-            return passivesList;
-        }
-
-        private List<UI.TooltipKeywordFormatter.StatusDisplayData> BuildStatusTooltipData()
-        {
-            var statuses = new List<UI.TooltipKeywordFormatter.StatusDisplayData>();
-            if (statusEffects == null) return statuses;
-
-            var effects = statusEffects.GetActiveEffects();
-            if (effects == null || effects.Count == 0) return statuses;
-
-            foreach (var effect in effects)
-            {
-                if (effect == null) continue;
-                statuses.Add(UI.TooltipKeywordFormatter.BuildStatusDisplayData(effect.Type.ToString(), effect.Value, effect.Duration));
-            }
-
-            return statuses;
-        }
 
         public override void CollectReactors(List<Pipeline.ICombatReactor> list)
         {

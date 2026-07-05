@@ -276,13 +276,14 @@ namespace DiceOrbit.UI
         {
             if (character == null) return;
 
-            HoverTooltipUI.EnsureInstance();
-            HoverTooltipUI.Instance?.ShowPinned(character.GetHoverTooltipData());
+            // 캐릭터 상세는 정보 패널이 담당 (구 툴팁 철거 후 이관)
+            BattleInfoPanelUI.EnsureInstance();
+            BattleInfoPanelUI.Instance?.ShowUnitExternal(character);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            HoverTooltipUI.Instance?.HidePinned();
+            BattleInfoPanelUI.Instance?.ClearUnitExternal(character);
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -296,7 +297,7 @@ namespace DiceOrbit.UI
 
         private void OnDisable()
         {
-            HoverTooltipUI.Instance?.HidePinned();
+            BattleInfoPanelUI.Instance?.ClearUnitExternal(character);
         }
     }
 }

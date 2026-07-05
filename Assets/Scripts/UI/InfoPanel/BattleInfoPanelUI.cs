@@ -40,6 +40,12 @@ namespace DiceOrbit.UI
             }
         }
 
+        /// <summary>UI 요소(파티 로스터 등)가 특정 유닛을 패널에 임시 표시. 벗어나면 ClearUnitExternal 호출.</summary>
+        public void ShowUnitExternal(IBattleInfoProvider unit) => _selection?.SetExternalHover(unit);
+
+        /// <summary>ShowUnitExternal로 지정한 표시를 해제.</summary>
+        public void ClearUnitExternal(IBattleInfoProvider unit) => _selection?.ClearExternalHover(unit);
+
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }

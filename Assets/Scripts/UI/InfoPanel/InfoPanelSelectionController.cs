@@ -16,21 +16,34 @@ namespace DiceOrbit.UI
     public class InfoPanelSelectionController : MonoBehaviour
     {
         private Camera _cachedCamera;
+        private IBattleInfoProvider _externalHover;   // UI 요소(파티 로스터 등)가 지정한 호버 대상
 
         public IBattleInfoProvider PinnedUnit  { get; private set; }
         public IBattleInfoProvider HoveredUnit { get; private set; }
         public TileData            HoveredTile { get; private set; }   // 유닛 없이 타일만 호버
 
-        /// <summary>패널이 렌더링해야 할 현재 유닛 (호버 우선, 없으면 핀).</summary>
+        /// <summary>패널이 렌더링해야 할 현재 유닛 (UI 지정 > 월드 호버 > 핀).</summary>
         public IBattleInfoProvider CurrentUnit
         {
             get
             {
+                // 파괴된 참조 정리 (UnityEngine.Object 널 체크)
+                if (_externalHover is Component ec && ec == null) _externalHover = null;
+                if (PinnedUnit is Component pc && pc == null) PinnedUnit = null;
+
+                if (_externalHover != null) return _externalHover;
                 if (HoveredUnit != null) return HoveredUnit;
-                // 핀 대상이 파괴된 경우 정리 (UnityEngine.Object 널 체크)
-                if (PinnedUnit is Component c && c == null) PinnedUnit = null;
                 return PinnedUnit;
             }
+        }
+
+        /// <summary>UI 요소(파티 로스터 등)가 특정 유닛을 패널에 임시 표시하도록 지정.</summary>
+        public void SetExternalHover(IBattleInfoProvider unit) => _externalHover = unit;
+
+        /// <summary>지정했던 UI 호버를 해제 (다른 UI가 이미 덮어썼으면 무시).</summary>
+        public void ClearExternalHover(IBattleInfoProvider unit)
+        {
+            if (ReferenceEquals(_externalHover, unit)) _externalHover = null;
         }
 
         private void Update()
