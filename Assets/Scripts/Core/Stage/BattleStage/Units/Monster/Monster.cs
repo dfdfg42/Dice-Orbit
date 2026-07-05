@@ -12,7 +12,7 @@ namespace DiceOrbit.Core
     /// 몬스터 (중앙 구역)
     /// AI + Skills + Managers 통합 구현
     /// </summary>
-    public class Monster : Unit<MonsterStats>, UI.IHoverTooltipProvider
+    public class Monster : Unit<MonsterStats>, UI.IHoverTooltipProvider, UI.IBattleInfoProvider
     {
         [Header("Animation")]
         [SerializeField] private Animator animator;
@@ -383,6 +383,9 @@ namespace DiceOrbit.Core
         {
             return new UI.HoverTooltipData(BuildMonsterTooltipText(), BuildStatusTooltipData(), BuildPassiveTooltipData());
         }
+
+        /// <summary>정보 패널용 구조화 데이터 (빌드 로직은 UnitInfoBuilder로 단일화).</summary>
+        public UI.UnitInfoData GetBattleInfo() => UI.UnitInfoBuilder.Build(this);
 
         private List<UI.TooltipKeywordFormatter.KeywordDisplayData> BuildPassiveTooltipData()
         {

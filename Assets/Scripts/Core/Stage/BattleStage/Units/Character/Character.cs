@@ -11,7 +11,7 @@ namespace DiceOrbit.Core
     /// <summary>
     /// 게임 캐릭터 (플레이어)
     /// </summary>
-    public class Character : Unit<CharacterStats>, UI.IHoverTooltipProvider
+    public class Character : Unit<CharacterStats>, UI.IHoverTooltipProvider, UI.IBattleInfoProvider
     {
         public static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
 
@@ -491,6 +491,9 @@ namespace DiceOrbit.Core
         {
             return new UI.HoverTooltipData(BuildCharacterTooltipText(), BuildStatusTooltipData(), BuildPassiveTooltipData());
         }
+
+        /// <summary>정보 패널용 구조화 데이터 (빌드 로직은 UnitInfoBuilder로 단일화).</summary>
+        public UI.UnitInfoData GetBattleInfo() => UI.UnitInfoBuilder.Build(this);
 
         private string BuildCharacterTooltipText()
         {
