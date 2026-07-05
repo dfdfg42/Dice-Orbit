@@ -16,6 +16,7 @@ namespace DiceOrbit.UI
             public Sprite icon;
             public Color iconTint = Color.white;
             public string shortLabel;
+            [TextArea(2, 4)] public string description;   // 정보 패널 타일 속성 행에 표시할 설명
         }
 
         [SerializeField] private List<Entry> entries = new List<Entry>();
