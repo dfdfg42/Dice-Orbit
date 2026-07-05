@@ -17,6 +17,12 @@ namespace DiceOrbit.Core
             else Destroy(gameObject);
         }
 
+        private void Start()
+        {
+            // 전투 정보 패널 부트스트랩 (씬에 없으면 코드로 생성)
+            BattleInfoPanelUI.EnsureInstance();
+        }
+
         public void PrepareSkill(Character source, int skillIndex, DiceData dice)
         {
             if (source == null || dice == null) return;
