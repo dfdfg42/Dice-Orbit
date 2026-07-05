@@ -21,7 +21,7 @@ namespace DiceOrbit.Visuals
         public static IntentTileLiftEffect Instance { get; private set; }
 
         [Header("리프트 모양")]
-        [SerializeField] private float liftHeight = 0.18f;
+        [SerializeField] private float liftHeight = 0.3f;
         [SerializeField] private float liftDuration = 0.12f;   // 올라가는 데 걸리는 시간 (ease-out)
 
         private Monster _current;
@@ -75,6 +75,11 @@ namespace DiceOrbit.Visuals
                 if (ghost != null) Destroy(ghost);
             }
             _lifted.Clear();
+
+            // 색 오버레이도 원위치
+            foreach (var tile in _currentTiles)
+                if (tile != null) MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, 0f);
+
             _currentTiles.Clear();
             _current = null;
         }
@@ -119,10 +124,10 @@ namespace DiceOrbit.Visuals
             renderer.enabled = false;                        // 원본은 숨김 (트랜스폼 무변경)
             _lifted.Add((renderer, ghost));
 
-            StartCoroutine(AnimateLift(ghost.transform, src.position));
+            StartCoroutine(AnimateLift(ghost.transform, src.position, tile));
         }
 
-        private IEnumerator AnimateLift(Transform ghost, Vector3 basePos)
+        private IEnumerator AnimateLift(Transform ghost, Vector3 basePos, TileData tile)
         {
             float elapsed = 0f;
             while (ghost != null && elapsed < liftDuration)
@@ -130,11 +135,16 @@ namespace DiceOrbit.Visuals
                 elapsed += Time.deltaTime;
                 float k = Mathf.Clamp01(elapsed / liftDuration);
                 k = 1f - (1f - k) * (1f - k);                // ease-out
-                ghost.position = basePos + Vector3.up * (liftHeight * k);
+                float lift = liftHeight * k;
+                ghost.position = basePos + Vector3.up * lift;
+                MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, lift);   // 색 오버레이 동승
                 yield return null;
             }
             if (ghost != null)
+            {
                 ghost.position = basePos + Vector3.up * liftHeight;
+                MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, liftHeight);
+            }
         }
     }
 }
