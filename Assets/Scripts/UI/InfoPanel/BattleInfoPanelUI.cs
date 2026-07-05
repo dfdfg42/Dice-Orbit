@@ -51,6 +51,10 @@ namespace DiceOrbit.UI
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
         [SerializeField] private float refreshInterval = 0.5f;
 
+        [Header("정렬")]
+        [Tooltip("사이드바는 배경 레이어 — 일반 UI(0)와 팝업(캐릭터 액션 패널 등)이 항상 위에 그려지도록 음수 유지")]
+        [SerializeField] private int panelSortingOrder = -5;
+
         private InfoPanelSelectionController _selection;
         private float _nextRefresh;
         private object _lastTargetKey;          // 대상 변경 감지용
@@ -93,6 +97,14 @@ namespace DiceOrbit.UI
             if (visible) _lastTargetKey = new object();              // 다시 켜질 때 강제 리렌더
         }
 
+        /// <summary>패널 캔버스 정렬값 적용. 액션 패널 등 팝업이 항상 패널 위에 그려지게 한다.</summary>
+        private void ApplyPanelSortingOrder()
+        {
+            var canvasTr = transform.Find("InfoPanelCanvas");
+            var canvas = canvasTr != null ? canvasTr.GetComponent<Canvas>() : null;
+            if (canvas != null) canvas.sortingOrder = panelSortingOrder;
+        }
+
         /// <summary>UI 요소(파티 로스터 등)가 특정 유닛을 패널에 임시 표시. 벗어나면 ClearUnitExternal 호출.</summary>
         public void ShowUnitExternal(IBattleInfoProvider unit) => _selection?.SetExternalHover(unit);
 
@@ -109,6 +121,9 @@ namespace DiceOrbit.UI
 
             if (attributeVisuals == null)
                 attributeVisuals = Resources.Load<TileAttributeVisualDatabase>("UI/TileAttributeVisualDatabase");
+
+            // 씬에 저장된 캔버스에도 최신 정렬값 강제 (기존 생성 레이아웃의 100 등 옛 값 교정)
+            ApplyPanelSortingOrder();
         }
 
         private void Update()
@@ -346,7 +361,7 @@ namespace DiceOrbit.UI
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 100;                       // 툴팁(30000)보다 아래, 일반 UI보다 위
+            canvas.sortingOrder = panelSortingOrder;         // 배경 레이어 — 일반 UI/팝업이 항상 위
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
