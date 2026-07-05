@@ -38,6 +38,7 @@ namespace DiceOrbit.Core
         private MonsterSkill nextSkill;
         private AttackIntent nextIntent; // 다음 턴에 사용할 AttackIntent
         public AttackIntent CurrentIntent => nextIntent; // AttackIntent 타입으로 반환
+        public MonsterSkill NextSkill => nextSkill;      // 정보 패널 "다음 행동" 표시용
 
         // 사망 이벤트 (WaveManager 등에서 구독)
         public event System.Action<Monster> OnDeath;

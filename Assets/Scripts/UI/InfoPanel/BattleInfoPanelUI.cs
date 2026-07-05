@@ -28,6 +28,7 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI flavorText;
 
         [Header("섹션 컨테이너 슬롯 (씬에서 배치 — 내용 행이 이 안에 생성됨)")]
+        [SerializeField] private TextMeshProUGUI activesTitle;      // 액티브 섹션 제목 (캐릭터 "액티브" / 몬스터 "다음 행동"으로 교체됨)
         [SerializeField] private RectTransform activesContainer;
         [SerializeField] private RectTransform passivesContainer;
         [SerializeField] private RectTransform statusesContainer;
@@ -131,6 +132,7 @@ namespace DiceOrbit.UI
             SetText(hpText, "");
             SetText(flavorText, "");
             SetText(tileMetaText, "");
+            SetText(ResolveActivesTitle(), "액티브");   // 기본 라벨로 복원
             ClearContainer(activesContainer);
             ClearContainer(passivesContainer);
             ClearContainer(statusesContainer);
@@ -145,6 +147,10 @@ namespace DiceOrbit.UI
             SetText(nameText, d.Name);
             SetText(hpText, $"HP {d.CurrentHp}/{d.MaxHp}" + (d.Armor > 0 ? $"   방어도 {d.Armor}" : ""));
             SetText(flavorText, d.FlavorText);
+
+            // 액티브 섹션 제목: 캐릭터 "액티브" / 몬스터 "다음 행동" (빌더가 결정)
+            if (!string.IsNullOrWhiteSpace(d.ActivesLabel))
+                SetText(ResolveActivesTitle(), d.ActivesLabel);
 
             // ── Actives ──
             if (d.Actives != null)
@@ -267,6 +273,18 @@ namespace DiceOrbit.UI
                 InfoPanelRows.AddText(container, desc, 13f, InfoPanelRows.MutedColor);
         }
 
+        /// <summary>
+        /// 액티브 섹션 타이틀 TMP를 찾는다. Inspector 배선이 우선, 없으면
+        /// 기본 레이아웃 관례(activesContainer의 형제 "Title")로 폴백 — 이미 생성한 레이아웃도 재배선 없이 동작.
+        /// </summary>
+        private TextMeshProUGUI ResolveActivesTitle()
+        {
+            if (activesTitle != null) return activesTitle;
+            var title = activesContainer != null ? activesContainer.parent?.Find("Title") : null;
+            activesTitle = title != null ? title.GetComponent<TextMeshProUGUI>() : null;
+            return activesTitle;
+        }
+
         private static string JoinLines(string a, string b)
         {
             bool hasA = !string.IsNullOrWhiteSpace(a);
@@ -315,6 +333,7 @@ namespace DiceOrbit.UI
 
             // 섹션: 액티브 0.60~0.87 / 패시브 0.38~0.60 / 상태이상 0.22~0.38 / 타일 0.00~0.22
             activesContainer  = CreateSection("ActivesSection",  panel, "액티브",   0.60f, 0.87f);
+            activesTitle      = activesContainer.parent.Find("Title").GetComponent<TextMeshProUGUI>();
             passivesContainer = CreateSection("PassivesSection", panel, "패시브",   0.38f, 0.60f);
             statusesContainer = CreateSection("StatusesSection", panel, "상태이상", 0.22f, 0.38f);
             tileContainer     = CreateSection("TileSection",     panel, "밟고 있는 타일", 0.00f, 0.22f);

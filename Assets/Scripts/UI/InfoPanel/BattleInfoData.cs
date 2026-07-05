@@ -12,16 +12,19 @@ namespace DiceOrbit.UI
         public readonly int MaxHp;
         public readonly int Armor;
         public readonly string FlavorText;                                   // 프로필 원문 (서식 없음)
+        public readonly string ActivesLabel;                                 // 액티브 섹션 제목 (캐릭터 "액티브" / 몬스터 "다음 행동")
         public readonly IReadOnlyList<SkillInfoData> Actives;
         public readonly IReadOnlyList<PassiveInfoData> Passives;
         public readonly IReadOnlyList<TooltipKeywordFormatter.StatusDisplayData> Statuses;
         public readonly TileInfoData? CurrentTile;                            // 몬스터는 null
 
         public UnitInfoData(string name, int currentHp, int maxHp, int armor, string flavorText,
+            string activesLabel,
             IReadOnlyList<SkillInfoData> actives, IReadOnlyList<PassiveInfoData> passives,
             IReadOnlyList<TooltipKeywordFormatter.StatusDisplayData> statuses, TileInfoData? currentTile)
         {
             Name = name; CurrentHp = currentHp; MaxHp = maxHp; Armor = armor; FlavorText = flavorText;
+            ActivesLabel = activesLabel;
             Actives = actives; Passives = passives; Statuses = statuses; CurrentTile = currentTile;
         }
     }
