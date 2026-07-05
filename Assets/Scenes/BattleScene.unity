@@ -2380,7 +2380,7 @@ MonoBehaviour:
   orbitManager: {fileID: 1279481569}
   centerZone: {fileID: 0}
   mainCamera: {fileID: 330585545}
-  cameraPosition: {x: 9, y: 25, z: -20}
+  cameraPosition: {x: 5, y: 25, z: -20}
   cameraAngle: 60
 --- !u!224 &553955369 stripped
 RectTransform:
