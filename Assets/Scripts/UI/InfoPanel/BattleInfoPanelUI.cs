@@ -69,6 +69,30 @@ namespace DiceOrbit.UI
                                  "우클릭 → [기본 레이아웃 생성]으로 셋업해주세요.");
         }
 
+        /// <summary>
+        /// 패널 전체 표시/숨김. 전체 화면 UI(보상/모집/결과 등)가 열릴 때 false, 닫힐 때 true.
+        /// 숨김 중에는 호버/핀 갱신도 멈춘다.
+        /// </summary>
+        public static void SetVisible(bool visible)
+        {
+            if (Instance == null) return;
+            Instance.SetPanelVisible(visible);
+        }
+
+        private GameObject _canvasRoot;
+
+        private void SetPanelVisible(bool visible)
+        {
+            if (_canvasRoot == null)
+                _canvasRoot = transform.Find("InfoPanelCanvas")?.gameObject;
+
+            if (_canvasRoot != null) _canvasRoot.SetActive(visible);
+            if (_selection != null) _selection.enabled = visible;   // 호버/핀 갱신 중지
+            enabled = visible;                                       // 렌더 루프 중지
+
+            if (visible) _lastTargetKey = new object();              // 다시 켜질 때 강제 리렌더
+        }
+
         /// <summary>UI 요소(파티 로스터 등)가 특정 유닛을 패널에 임시 표시. 벗어나면 ClearUnitExternal 호출.</summary>
         public void ShowUnitExternal(IBattleInfoProvider unit) => _selection?.SetExternalHover(unit);
 

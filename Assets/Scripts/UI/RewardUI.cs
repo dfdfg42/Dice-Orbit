@@ -43,6 +43,8 @@ namespace DiceOrbit.UI
             gameObject.SetActive(true);
             EnsureBuilt();
 
+            BattleInfoPanelUI.SetVisible(false);   // 보상/모집 화면 동안 정보 패널 숨김
+
             GoldManager.EnsureInstance().AddGold(goldPerReward);
             RefreshGold();
 
@@ -53,7 +55,11 @@ namespace DiceOrbit.UI
             ShowUpgradePanel(false);
         }
 
-        public void Hide() => gameObject.SetActive(false);
+        public void Hide()
+        {
+            gameObject.SetActive(false);
+            BattleInfoPanelUI.SetVisible(true);    // 전투 복귀 시 정보 패널 복원
+        }
 
         private void RefreshGold()
         {
