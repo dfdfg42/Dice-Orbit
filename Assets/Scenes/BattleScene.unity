@@ -2380,7 +2380,7 @@ MonoBehaviour:
   orbitManager: {fileID: 1279481569}
   centerZone: {fileID: 0}
   mainCamera: {fileID: 330585545}
-  cameraPosition: {x: 0, y: 25, z: -20}
+  cameraPosition: {x: 9, y: 25, z: -20}
   cameraAngle: 60
 --- !u!224 &553955369 stripped
 RectTransform:
@@ -3859,7 +3859,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 20, y: 230}
-  m_SizeDelta: {x: 410, y: 125}
+  m_SizeDelta: {x: 340, y: 100}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &835049233
 MonoBehaviour:
@@ -4716,8 +4716,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.7, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 41.689697, y: 0}
+  m_SizeDelta: {x: -83.3793, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1084498147
 MonoBehaviour:
@@ -4732,15 +4732,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.08, b: 0.11, a: 0.96}
+  m_Color: {r: 0.3962264, g: 0.3962264, b: 0.3962264, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 2a48715af2029e94c9cff5eb68ce8313, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
