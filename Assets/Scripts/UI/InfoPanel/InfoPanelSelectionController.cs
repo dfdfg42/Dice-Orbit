@@ -21,6 +21,17 @@ namespace DiceOrbit.UI
         public IBattleInfoProvider PinnedUnit  { get; private set; }
         public IBattleInfoProvider HoveredUnit { get; private set; }
         public TileData            HoveredTile { get; private set; }   // 유닛 없이 타일만 호버
+        public TileData            PinnedTile  { get; private set; }   // 클릭 고정된 타일
+
+        /// <summary>패널이 렌더링해야 할 현재 타일 (유닛이 없을 때만 의미. 호버 우선, 없으면 핀).</summary>
+        public TileData CurrentTile
+        {
+            get
+            {
+                if (PinnedTile == null) return HoveredTile;   // 파괴 체크 겸 (UnityEngine null)
+                return HoveredTile != null ? HoveredTile : PinnedTile;
+            }
+        }
 
         /// <summary>패널이 렌더링해야 할 현재 유닛 (UI 지정 > 월드 호버 > 핀).</summary>
         public IBattleInfoProvider CurrentUnit
@@ -78,14 +89,27 @@ namespace DiceOrbit.UI
             bool targeting = SkillTargetSelector.Instance != null && SkillTargetSelector.Instance.IsSelectingTarget;
             if (targeting) return;
 
-            if (Mouse.current.leftButton.wasPressedThisFrame && !overUI && HoveredUnit != null)
+            if (Mouse.current.leftButton.wasPressedThisFrame && !overUI)
             {
-                // 같은 대상 재클릭 = 해제, 다른 대상 = 새로 고정
-                PinnedUnit = ReferenceEquals(PinnedUnit, HoveredUnit) ? null : HoveredUnit;
+                if (HoveredUnit != null)
+                {
+                    // 같은 대상 재클릭 = 해제, 다른 대상 = 새로 고정 (유닛 핀이 타일 핀보다 우선)
+                    PinnedUnit = ReferenceEquals(PinnedUnit, HoveredUnit) ? null : HoveredUnit;
+                    PinnedTile = null;
+                }
+                else if (HoveredTile != null)
+                {
+                    // 타일 클릭 고정 (재클릭 = 해제)
+                    PinnedTile = ReferenceEquals(PinnedTile, HoveredTile) ? null : HoveredTile;
+                    PinnedUnit = null;
+                }
             }
 
             if (Mouse.current.rightButton.wasPressedThisFrame)
+            {
                 PinnedUnit = null;
+                PinnedTile = null;
+            }
         }
 
         private Camera GetCamera()

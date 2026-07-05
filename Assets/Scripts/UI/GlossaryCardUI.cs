@@ -99,6 +99,20 @@ namespace DiceOrbit.UI
                 descText.text = description;
         }
 
+        /// <summary>
+        /// 카드에 아이콘을 표시합니다 (SetStatus 이후 호출용 — 상태이상 양식 + 아이콘 조합).
+        /// 정보 패널의 타일 속성 행 등에서 사용.
+        /// </summary>
+        public void SetIcon(Sprite icon, Color tint)
+        {
+            if (iconImage == null) return;
+
+            bool hasIcon = icon != null;
+            iconImage.sprite = icon;
+            iconImage.color = tint;
+            iconImage.gameObject.SetActive(hasIcon);
+        }
+
         // ═══════════════════════════════════════════════════════
         // 내부 헬퍼
         // ═══════════════════════════════════════════════════════

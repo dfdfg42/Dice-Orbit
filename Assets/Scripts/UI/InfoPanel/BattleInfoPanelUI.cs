@@ -89,7 +89,7 @@ namespace DiceOrbit.UI
 
         private void Update()
         {
-            object key = (object)_selection.CurrentUnit ?? _selection.HoveredTile;
+            object key = (object)_selection.CurrentUnit ?? _selection.CurrentTile;
             bool targetChanged = !ReferenceEquals(key, _lastTargetKey);
             if (!targetChanged && Time.unscaledTime < _nextRefresh) return;
 
@@ -116,10 +116,11 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            if (_selection.HoveredTile != null)
+            var tile = _selection.CurrentTile;
+            if (tile != null)
             {
                 if (emptyState != null) emptyState.SetActive(false);
-                RenderTile(_selection.HoveredTile.GetTileInfo());
+                RenderTile(tile.GetTileInfo());
                 return;
             }
 
@@ -203,21 +204,24 @@ namespace DiceOrbit.UI
                 tileCardImage.enabled = sprite != null;
             }
 
-            // 속성별 행: 라벨 + x스택 (nT) + 설명 — 항상 표시 (스펙 §5.1)
+            // 속성별 행: 아이콘 + 라벨 + x스택 (nT) + 설명 — 항상 표시 (스펙 §5.1)
+            // 아이콘은 월드 버블 UI와 동일 (TileAttributeVisualDatabase)
             foreach (var a in t.Attributes)
             {
                 string label = a.Type.ToString();
                 Color tint = Color.white;
                 string desc = "";
+                Sprite icon = null;
                 if (attributeVisuals != null && attributeVisuals.TryGet(a.Type, out var entry))
                 {
                     if (!string.IsNullOrWhiteSpace(entry.shortLabel)) label = entry.shortLabel;
                     tint = entry.iconTint;
                     desc = entry.description ?? "";
+                    icon = entry.icon;
                 }
                 string dur = a.Duration < 0 ? "(∞T)" : $"({a.Duration}T)";
                 string stack = a.Value > 0 ? $"x{a.Value}" : "";
-                AddEntry(tileContainer, label, $"{stack} {dur}".Trim(), desc, tint);
+                AddEntry(tileContainer, label, $"{stack} {dur}".Trim(), desc, tint, icon, tint);
             }
         }
 
@@ -255,8 +259,12 @@ namespace DiceOrbit.UI
             InfoPanelRows.Clear(container);
         }
 
-        /// <summary>항목 1개(제목/메타/설명)를 컨테이너에 추가. cardPrefab이 있으면 카드로, 없으면 텍스트 행으로.</summary>
-        private void AddEntry(RectTransform container, string title, string meta, string desc, Color titleColor)
+        /// <summary>
+        /// 항목 1개(제목/메타/설명)를 컨테이너에 추가. cardPrefab이 있으면 카드로, 없으면 텍스트 행으로.
+        /// icon이 있으면 제목 행 왼쪽에 아이콘 표시 (타일 속성 등).
+        /// </summary>
+        private void AddEntry(RectTransform container, string title, string meta, string desc, Color titleColor,
+            Sprite icon = null, Color? iconTint = null)
         {
             if (container == null) return;
 
@@ -264,11 +272,12 @@ namespace DiceOrbit.UI
             {
                 var card = Instantiate(cardPrefab, container);
                 card.SetStatus(title, meta, "", desc, titleColor);
+                if (icon != null) card.SetIcon(icon, iconTint ?? Color.white);
                 return;
             }
 
             string line = string.IsNullOrWhiteSpace(meta) ? title : $"{title}  {meta}";
-            InfoPanelRows.AddText(container, line, 16f, titleColor, FontStyles.Bold);
+            InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 16f, titleColor, FontStyles.Bold);
             if (!string.IsNullOrWhiteSpace(desc))
                 InfoPanelRows.AddText(container, desc, 13f, InfoPanelRows.MutedColor);
         }

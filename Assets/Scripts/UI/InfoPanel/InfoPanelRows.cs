@@ -30,6 +30,41 @@ namespace DiceOrbit.UI
         public static void AddSectionTitle(Transform parent, string title)
             => AddText(parent, title, 20f, SectionTitleColor, FontStyles.Bold);
 
+        /// <summary>아이콘 + 텍스트 가로 행 (타일 속성 등). icon이 null이면 텍스트만.</summary>
+        public static void AddIconTextRow(Transform parent, Sprite icon, Color iconTint,
+            string text, float size, Color color, FontStyles style = FontStyles.Normal)
+        {
+            if (icon == null)
+            {
+                AddText(parent, text, size, color, style);
+                return;
+            }
+
+            var row = new GameObject("IconRow", typeof(RectTransform));
+            row.transform.SetParent(parent, false);
+            var layout = row.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 6f;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childAlignment = TextAnchor.MiddleLeft;
+
+            var iconGo = new GameObject("Icon", typeof(RectTransform));
+            iconGo.transform.SetParent(row.transform, false);
+            var img = iconGo.AddComponent<Image>();
+            img.sprite = icon;
+            img.color = iconTint;
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            var le = iconGo.AddComponent<LayoutElement>();
+            le.preferredWidth = 22f;
+            le.preferredHeight = 22f;
+
+            var tmp = AddText(row.transform, text, size, color, style);
+            tmp.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+        }
+
         public static void AddDivider(Transform parent)
         {
             var go = new GameObject("Divider", typeof(RectTransform));
