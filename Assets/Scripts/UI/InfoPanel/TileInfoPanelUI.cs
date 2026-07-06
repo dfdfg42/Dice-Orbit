@@ -21,7 +21,7 @@ namespace DiceOrbit.UI
         [SerializeField] private RectTransform stack;               // 타일 카드 + 속성 카드들이 쌓이는 곳
         [SerializeField] private Image tileImage;                   // 타일 그림
         [SerializeField] private RectTransform tileIconRow;         // 그림 안 위쪽 아이콘 행
-        [SerializeField] private TextMeshProUGUI tileMetaText;      // "#3  Normal"
+        // (타일 인덱스/타입 메타 텍스트는 제거 — 개발자용 정보라 유저에게 불필요)
 
         [Header("스킨")]
         [SerializeField] private Sprite normalTileSprite;
@@ -73,9 +73,6 @@ namespace DiceOrbit.UI
 
         private void SetTileVisual(TileInfoData t)
         {
-            if (tileMetaText != null)
-                tileMetaText.text = $"#{t.TileIndex}  {t.Type}";
-
             if (tileImage != null)
             {
                 var sprite = t.Type == Data.TileType.LevelUp ? levelUpTileSprite : normalTileSprite;
@@ -248,8 +245,8 @@ namespace DiceOrbit.UI
             var imgRect = new GameObject("TileImage", typeof(RectTransform));
             imgRect.transform.SetParent(tileCard.transform, false);
             var imgRt = (RectTransform)imgRect.transform;
-            imgRt.anchorMin = new Vector2(0.10f, 0.22f);
-            imgRt.anchorMax = new Vector2(0.90f, 0.94f);
+            imgRt.anchorMin = new Vector2(0.10f, 0.08f);   // 메타 텍스트 제거로 아래까지 확장
+            imgRt.anchorMax = new Vector2(0.90f, 0.92f);
             imgRt.offsetMin = Vector2.zero; imgRt.offsetMax = Vector2.zero;
             tileImage = imgRect.AddComponent<Image>();
             tileImage.preserveAspect = false;
@@ -269,19 +266,6 @@ namespace DiceOrbit.UI
             iconLayout.childForceExpandHeight = false;
             iconLayout.childControlWidth = true;    // LayoutElement 크기(iconSize)가 실제로 적용되게
             iconLayout.childControlHeight = true;   // (안 켜면 기본 100x100으로 뜸)
-
-            // 메타 텍스트 (카드 아래쪽)
-            var metaGo = new GameObject("TileMetaText", typeof(RectTransform));
-            metaGo.transform.SetParent(tileCard.transform, false);
-            var metaRt = (RectTransform)metaGo.transform;
-            metaRt.anchorMin = new Vector2(0.05f, 0.02f);
-            metaRt.anchorMax = new Vector2(0.95f, 0.20f);
-            metaRt.offsetMin = Vector2.zero; metaRt.offsetMax = Vector2.zero;
-            tileMetaText = metaGo.AddComponent<TextMeshProUGUI>();
-            tileMetaText.fontSize = 15f;
-            tileMetaText.color = InfoPanelRows.MutedColor;
-            tileMetaText.alignment = TextAlignmentOptions.Center;
-            tileMetaText.raycastTarget = false;
 
             rootCanvas.SetActive(false);
 
