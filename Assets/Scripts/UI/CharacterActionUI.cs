@@ -344,9 +344,7 @@ namespace DiceOrbit.UI
             var path = GetMovePath();
             if (path.Count == 0) return;
 
-            // 목적지: 회전 트레일 (액션 프리뷰 언어) / 경유: 방향 체브론 (밟는 타일 + 방향 표시)
-            TileSkillPreviewManager.EnsureInstance();
-            TileSkillPreviewManager.Instance?.ShowPreview(new[] { path[path.Count - 1] }, TilePreviewStyle.Neutral);
+            // 경유: 방향 체브론 / 목적지: 소나 핑 + 리프트 (회전 트레일은 스킬 조준 전용으로 분리)
             MovePathPreview.EnsureInstance();
             MovePathPreview.Instance?.Show(path);
         }

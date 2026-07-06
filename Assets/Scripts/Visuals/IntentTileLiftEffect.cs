@@ -8,12 +8,10 @@ namespace DiceOrbit.Visuals
 {
     /// <summary>
     /// 몬스터 조회(호버/핀) 시 그 몬스터가 공격할 타일을 살짝 띄워 강조.
+    /// 리프트 본체는 TileLift 공용 헬퍼 (고스트 방식 — TileData 트랜스폼 무변경,
+    /// 색 오버레이/속성 아이콘 동승 포함).
     ///
-    /// 실제 TileData 트랜스폼은 절대 건드리지 않는다 — 캐릭터 배치/이동/코너 계산이
-    /// tile.Position을 참조하기 때문. 대신 메시 고스트를 복제해 띄우고
-    /// 원본 렌더러를 잠시 끄는 방식으로 "타일이 떠오른" 착시를 만든다.
-    ///
-    /// 시각 채널: 움직임(리프트) = 위험 포커스 전용.
+    /// 시각 채널: 움직임(리프트) = 포커스 강조 전용.
     /// 아군 패시브 범위(PassiveRangeIndicator 브래킷)와 언어가 겹치지 않는다.
     /// </summary>
     public class IntentTileLiftEffect : MonoBehaviour
@@ -26,7 +24,7 @@ namespace DiceOrbit.Visuals
 
         private Monster _current;
         private readonly HashSet<TileData> _currentTiles = new();
-        private readonly List<(MeshRenderer original, GameObject ghost)> _lifted = new();
+        private readonly List<TileLift.LiftHandle> _lifted = new();
 
         private void Awake()
         {
@@ -56,7 +54,12 @@ namespace DiceOrbit.Visuals
             foreach (var t in tiles) _currentTiles.Add(t);
 
             foreach (var tile in tiles)
-                LiftTile(tile);
+            {
+                var handle = TileLift.Lift(tile, transform);
+                if (handle == null) continue;   // 렌더러 없음 or 다른 리프트가 소유 중
+                _lifted.Add(handle);
+                StartCoroutine(AnimateLift(handle));
+            }
         }
 
         public void Hide()
@@ -69,21 +72,9 @@ namespace DiceOrbit.Visuals
         private void Clear()
         {
             StopAllCoroutines();
-            foreach (var (original, ghost) in _lifted)
-            {
-                if (original != null) original.enabled = true;
-                if (ghost != null) Destroy(ghost);
-            }
+            foreach (var handle in _lifted)
+                handle?.Release();
             _lifted.Clear();
-
-            // 색 오버레이 + 속성 아이콘 버블도 원위치
-            foreach (var tile in _currentTiles)
-            {
-                if (tile == null) continue;
-                MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, 0f);
-                UI.TileAttributeBubbleManager.Instance?.SetLiftOffset(tile, 0f);
-            }
-
             _currentTiles.Clear();
             _current = null;
         }
@@ -106,51 +97,18 @@ namespace DiceOrbit.Visuals
             return set;
         }
 
-        private void LiftTile(TileData tile)
-        {
-            var renderer = tile.GetComponentInChildren<MeshRenderer>();
-            var filter   = tile.GetComponentInChildren<MeshFilter>();
-            if (renderer == null || filter == null || filter.sharedMesh == null) return;
-
-            // 원본 포즈 그대로 고스트 생성
-            var ghost = new GameObject("_TileLiftGhost");
-            ghost.transform.SetParent(transform, true);
-            var src = filter.transform;
-            ghost.transform.SetPositionAndRotation(src.position, src.rotation);
-            ghost.transform.localScale = src.lossyScale;
-
-            var mf = ghost.AddComponent<MeshFilter>();
-            mf.sharedMesh = filter.sharedMesh;
-            var mr = ghost.AddComponent<MeshRenderer>();
-            mr.sharedMaterials = renderer.sharedMaterials;   // 현재 머티리얼(타입/하이라이트) 그대로
-            mr.shadowCastingMode = renderer.shadowCastingMode;
-
-            renderer.enabled = false;                        // 원본은 숨김 (트랜스폼 무변경)
-            _lifted.Add((renderer, ghost));
-
-            StartCoroutine(AnimateLift(ghost.transform, src.position, tile));
-        }
-
-        private IEnumerator AnimateLift(Transform ghost, Vector3 basePos, TileData tile)
+        private IEnumerator AnimateLift(TileLift.LiftHandle handle)
         {
             float elapsed = 0f;
-            while (ghost != null && elapsed < liftDuration)
+            while (elapsed < liftDuration)
             {
                 elapsed += Time.deltaTime;
                 float k = Mathf.Clamp01(elapsed / liftDuration);
                 k = 1f - (1f - k) * (1f - k);                // ease-out
-                float lift = liftHeight * k;
-                ghost.position = basePos + Vector3.up * lift;
-                MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, lift);   // 색 오버레이 동승
-                UI.TileAttributeBubbleManager.Instance?.SetLiftOffset(tile, lift);    // 속성 아이콘 동승
+                handle.SetHeight(liftHeight * k);
                 yield return null;
             }
-            if (ghost != null)
-            {
-                ghost.position = basePos + Vector3.up * liftHeight;
-                MonsterTileColorOverlayManager.Instance?.SetLiftOffset(tile, liftHeight);
-                UI.TileAttributeBubbleManager.Instance?.SetLiftOffset(tile, liftHeight);
-            }
+            handle.SetHeight(liftHeight);
         }
     }
 }
