@@ -185,6 +185,10 @@ namespace DiceOrbit.UI
             // 버튼 활성화는 턴 예산/상태를 함께 고려해 갱신합니다.
             RefreshActionButtonsState();
             RefreshSkillButtonPreview();
+
+            // 스킬 목록이 열려 있으면 사용 가능 표시(붉은 틴트)를 새 주사위 값으로 갱신
+            if (skillSelectPanel != null && skillSelectPanel.activeSelf)
+                PopulateSkillList(currentCharacter);
         }
 
         public void OnDiceDeselected(DiceData dice)
@@ -397,6 +401,15 @@ namespace DiceOrbit.UI
                 var imgs = go.GetComponentsInChildren<Image>();
                 if (imgs.Length > 1 && runtimeAbility.BaseSkill != null && runtimeAbility.BaseSkill.icon != null) imgs[1].sprite = runtimeAbility.BaseSkill.icon;
 
+                // 현재 주사위로 사용 불가한 스킬은 붉게 표시 (조건 미충족을 클릭 전에 인지)
+                bool canUse = currentDice != null && runtimeAbility.CanUse(currentDice.Value);
+                if (!canUse)
+                {
+                    var unusableTint = new Color(1f, 0.4f, 0.4f, 1f);
+                    foreach (var img in imgs) img.color = unusableTint;
+                    if (txt != null) txt.color = new Color(1f, 0.55f, 0.55f, 1f);
+                }
+
                 var hoverPreview = go.GetComponent<SkillPreviewHoverUI>();
                 if (hoverPreview == null) hoverPreview = go.AddComponent<SkillPreviewHoverUI>();
                 hoverPreview.SetPreview(BuildSkillHoverText(runtimeAbility));
@@ -445,7 +458,7 @@ namespace DiceOrbit.UI
             string condition = BuildRequirementText(activeSkill?.requirement);
             if (diceValue > 0)
             {
-                lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "사용 불가")})");
+                lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "<color=#FF6B6B>사용 불가</color>")})");
             }
             else
             {
