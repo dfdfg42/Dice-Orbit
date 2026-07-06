@@ -97,6 +97,16 @@ namespace DiceOrbit.UI
             // 그림 안 위쪽 아이콘 (인게임 타일 버블과 같은 감각)
             if (tileIconRow != null)
             {
+                // 씬에 옛 설정이 박제돼 있어도 크기 제어가 먹도록 런타임에 강제 교정
+                var rowLayout = tileIconRow.GetComponent<HorizontalLayoutGroup>();
+                if (rowLayout != null)
+                {
+                    rowLayout.childControlWidth = true;
+                    rowLayout.childControlHeight = true;
+                    rowLayout.childForceExpandWidth = false;
+                    rowLayout.childForceExpandHeight = false;
+                }
+
                 InfoPanelRows.Clear(tileIconRow);
                 foreach (var a in t.Attributes)
                 {
@@ -104,6 +114,11 @@ namespace DiceOrbit.UI
 
                     var iconGo = new GameObject("AttrIcon", typeof(RectTransform));
                     iconGo.transform.SetParent(tileIconRow, false);
+
+                    // 크기를 RectTransform에도 직접 지정 (레이아웃 설정과 무관하게 보장)
+                    var rect = (RectTransform)iconGo.transform;
+                    rect.sizeDelta = new Vector2(iconSize, iconSize);
+
                     var img = iconGo.AddComponent<Image>();
                     img.sprite = e.icon;
                     img.color = e.iconTint;
