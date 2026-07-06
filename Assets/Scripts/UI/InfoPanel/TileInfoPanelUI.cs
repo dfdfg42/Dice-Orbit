@@ -28,6 +28,7 @@ namespace DiceOrbit.UI
         [SerializeField] private Sprite levelUpTileSprite;
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
         [SerializeField] private float panelWidth = 300f;
+        [SerializeField] private float iconSize = 22f;              // 타일 그림 안 속성 아이콘 크기
         [Tooltip("정보 패널 왼쪽 경계의 화면 X 비율 (BattleInfoPanelUI 폭 30% 기준 = 0.70)")]
         [SerializeField, Range(0.4f, 1f)] private float dockAnchorX = 0.70f;
         [SerializeField] private Vector2 screenOffset = new Vector2(-16f, -16f);   // 도킹 지점 기준 (왼쪽/아래로)
@@ -109,8 +110,8 @@ namespace DiceOrbit.UI
                     img.preserveAspect = true;
                     img.raycastTarget = false;
                     var le = iconGo.AddComponent<LayoutElement>();
-                    le.preferredWidth = 34f;
-                    le.preferredHeight = 34f;
+                    le.preferredWidth = iconSize;
+                    le.preferredHeight = iconSize;
                 }
             }
         }
@@ -251,6 +252,8 @@ namespace DiceOrbit.UI
             iconLayout.childAlignment = TextAnchor.MiddleCenter;
             iconLayout.childForceExpandWidth = false;
             iconLayout.childForceExpandHeight = false;
+            iconLayout.childControlWidth = true;    // LayoutElement 크기(iconSize)가 실제로 적용되게
+            iconLayout.childControlHeight = true;   // (안 켜면 기본 100x100으로 뜸)
 
             // 메타 텍스트 (카드 아래쪽)
             var metaGo = new GameObject("TileMetaText", typeof(RectTransform));
