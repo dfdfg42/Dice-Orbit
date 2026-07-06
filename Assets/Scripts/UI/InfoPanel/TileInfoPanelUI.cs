@@ -28,7 +28,9 @@ namespace DiceOrbit.UI
         [SerializeField] private Sprite levelUpTileSprite;
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
         [SerializeField] private float panelWidth = 300f;
-        [SerializeField] private Vector2 screenOffset = new Vector2(20f, -20f);   // 좌상단 기준
+        [Tooltip("정보 패널 왼쪽 경계의 화면 X 비율 (BattleInfoPanelUI 폭 30% 기준 = 0.70)")]
+        [SerializeField, Range(0.4f, 1f)] private float dockAnchorX = 0.70f;
+        [SerializeField] private Vector2 screenOffset = new Vector2(-16f, -16f);   // 도킹 지점 기준 (왼쪽/아래로)
 
         private void Awake()
         {
@@ -198,12 +200,12 @@ namespace DiceOrbit.UI
             canvasGo.AddComponent<GraphicRaycaster>();
             rootCanvas = canvasGo;
 
-            // 좌상단 스택 (타일 카드 + 속성 카드들)
+            // 정보 패널 왼쪽에 붙는 스택 (타일 카드 + 속성 카드들) — 오른쪽 위, 패널 경계 기준
             var stackGo = new GameObject("Stack", typeof(RectTransform));
             stackGo.transform.SetParent(canvasGo.transform, false);
             stack = (RectTransform)stackGo.transform;
-            stack.anchorMin = stack.anchorMax = new Vector2(0f, 1f);
-            stack.pivot = new Vector2(0f, 1f);
+            stack.anchorMin = stack.anchorMax = new Vector2(dockAnchorX, 1f);   // 패널 왼쪽 경계에 도킹
+            stack.pivot = new Vector2(1f, 1f);                                   // 오른쪽 위 피벗 → 경계에서 왼쪽으로 전개
             stack.anchoredPosition = screenOffset;
             stack.sizeDelta = new Vector2(panelWidth, 0f);
             var layout = stackGo.AddComponent<VerticalLayoutGroup>();
