@@ -188,7 +188,9 @@ namespace DiceOrbit.UI
             if (unit != null)
             {
                 if (emptyState != null) emptyState.SetActive(false);
-                RenderUnit(unit.GetBattleInfo());
+                var d = unit.GetBattleInfo();
+                SetSectionVisibility(unitSections: true, tileSection: d.CurrentTile.HasValue);   // 몬스터는 타일 섹션 숨김
+                RenderUnit(d);
                 return;
             }
 
@@ -196,10 +198,12 @@ namespace DiceOrbit.UI
             if (tile != null)
             {
                 if (emptyState != null) emptyState.SetActive(false);
+                SetSectionVisibility(unitSections: false, tileSection: true);   // 타일 단독 뷰: 타일 효과만
                 RenderTile(tile.GetTileInfo());
                 return;
             }
 
+            SetSectionVisibility(unitSections: false, tileSection: false);      // 빈 상태: 안내 문구만
             if (emptyState != null) emptyState.SetActive(true);
         }
 
@@ -322,6 +326,37 @@ namespace DiceOrbit.UI
         // ═══════════════════════════════════════════════════════
         // 슬롯 채우기 헬퍼
         // ═══════════════════════════════════════════════════════
+
+        /// <summary>
+        /// 조회 대상에 맞는 섹션만 표시.
+        /// 유닛 뷰: 헤더+액티브+패시브+상태이상+키워드 / 타일 뷰: 타일 섹션만 / 빈 상태: 전부 숨김.
+        /// 섹션 위치는 고정(앵커)이므로 숨겨도 다른 섹션이 밀리지 않는다.
+        /// </summary>
+        private void SetSectionVisibility(bool unitSections, bool tileSection)
+        {
+            // 헤더(이름/HP/설명): nameText의 부모 오브젝트를 통째로 토글
+            if (nameText != null && nameText.transform.parent != null)
+                SetActiveIfChanged(nameText.transform.parent.gameObject, unitSections);
+
+            ToggleSection(activesContainer, unitSections);
+            ToggleSection(passivesContainer, unitSections);
+            ToggleSection(statusesContainer, unitSections);
+            ToggleSection(keywordsContainer, unitSections);
+            ToggleSection(tileContainer, tileSection);
+        }
+
+        /// <summary>컨테이너의 부모(섹션 루트: 타이틀 포함)를 토글.</summary>
+        private static void ToggleSection(RectTransform container, bool active)
+        {
+            if (container == null) return;
+            var go = container.parent != null ? container.parent.gameObject : container.gameObject;
+            SetActiveIfChanged(go, active);
+        }
+
+        private static void SetActiveIfChanged(GameObject go, bool active)
+        {
+            if (go != null && go.activeSelf != active) go.SetActive(active);
+        }
 
         private static void SetText(TextMeshProUGUI target, string value)
         {
