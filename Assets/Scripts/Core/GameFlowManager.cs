@@ -402,12 +402,12 @@ namespace DiceOrbit.Core
                 return;
             }
 
-            // 레벨업 타일에서는 항상 액티브 1개 + 패시브 1개를 자동 강화합니다.
-            pendingLevelUpCharacter.LevelUpCharacter();
-
-            // 레벨업 상태는 일시 상태이므로 즉시 전투 흐름으로 복귀합니다.
+            // 레벨업 = 모디파이어 3택1 (구 스킬/패시브 자동 레벨업 대체 — 성장은 전부 모디파이어, 기획 REV05)
+            var character = pendingLevelUpCharacter;
             pendingLevelUpCharacter = null;
-            ChangeState(GameState.Combat);
+
+            UI.LevelUpChoiceUI.EnsureInstance();
+            UI.LevelUpChoiceUI.Instance.Show(character, () => ChangeState(GameState.Combat));
         }
     }
 }
