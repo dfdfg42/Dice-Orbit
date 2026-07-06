@@ -31,6 +31,7 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI activesTitle;      // 액티브 섹션 제목 (캐릭터 "액티브" / 몬스터 "다음 행동"으로 교체됨)
         [SerializeField] private RectTransform activesContainer;
         [SerializeField] private RectTransform passivesContainer;
+        [SerializeField] private RectTransform modifiersContainer;   // 장착 모디파이어
         [SerializeField] private RectTransform statusesContainer;
         [SerializeField] private RectTransform tileContainer;
         [SerializeField] private RectTransform keywordsContainer;   // 선택 (기본 레이아웃엔 미생성)
@@ -189,7 +190,8 @@ namespace DiceOrbit.UI
             {
                 if (emptyState != null) emptyState.SetActive(false);
                 var d = unit.GetBattleInfo();
-                SetSectionVisibility(unitSections: true, tileSection: d.CurrentTile.HasValue);   // 몬스터는 타일 섹션 숨김
+                bool hasModifiers = d.Modifiers != null && d.Modifiers.Count > 0;
+                SetSectionVisibility(unitSections: true, tileSection: d.CurrentTile.HasValue, modifiersSection: hasModifiers);
                 RenderUnit(d);
                 return;
             }
@@ -198,12 +200,12 @@ namespace DiceOrbit.UI
             if (tile != null)
             {
                 if (emptyState != null) emptyState.SetActive(false);
-                SetSectionVisibility(unitSections: false, tileSection: true);   // 타일 단독 뷰: 타일 효과만
+                SetSectionVisibility(unitSections: false, tileSection: true, modifiersSection: false);   // 타일 단독 뷰: 타일 효과만
                 RenderTile(tile.GetTileInfo());
                 return;
             }
 
-            SetSectionVisibility(unitSections: false, tileSection: false);      // 빈 상태: 안내 문구만
+            SetSectionVisibility(unitSections: false, tileSection: false, modifiersSection: false);      // 빈 상태: 안내 문구만
             if (emptyState != null) emptyState.SetActive(true);
         }
 
@@ -216,6 +218,7 @@ namespace DiceOrbit.UI
             SetText(ResolveActivesTitle(), "액티브");   // 기본 라벨로 복원
             ClearContainer(activesContainer);
             ClearContainer(passivesContainer);
+            ClearContainer(modifiersContainer);
             ClearContainer(statusesContainer);
             ClearContainer(tileContainer);
             ClearContainer(keywordsContainer);
@@ -239,8 +242,19 @@ namespace DiceOrbit.UI
                 foreach (var a in d.Actives)
                 {
                     string title = a.Level > 1 ? $"{a.Name}  Lv.{a.Level}" : a.Name;   // "Lv." 접두어는 렌더 계층 담당
+
+                    // 메타: 주사위 조건 + 유효 대상 (모디파이어 반영값 — 광역 참격 장착 시 "적 2명")
+                    string meta = a.DiceCondition ?? "";
+                    if (!string.IsNullOrWhiteSpace(a.TargetLabel))
+                        meta = string.IsNullOrWhiteSpace(meta) ? a.TargetLabel : $"{meta} · {a.TargetLabel}";
+
+                    // 설명 + 이 스킬에 적용 중인 모디파이어 효과 라인 (보라색)
                     string desc = string.IsNullOrWhiteSpace(a.DynamicDescription) ? "" : a.DynamicDescription;
-                    AddEntry(activesContainer, title, a.DiceCondition, desc, Color.white);
+                    if (a.ModifierLines != null)
+                        foreach (var line in a.ModifierLines)
+                            desc = JoinLines(desc, $"<color={InfoPanelRows.ModifierColorHex}>{line}</color>");
+
+                    AddEntry(activesContainer, title, meta, desc, Color.white);
                 }
             }
 
@@ -252,6 +266,16 @@ namespace DiceOrbit.UI
                     string title = p.Level > 0 ? $"{p.Name}  Lv.{p.Level}" : p.Name;
                     string desc = JoinLines(p.DynamicEffect, p.FlavorText);
                     AddEntry(passivesContainer, title, "", desc, InfoPanelRows.PassiveColor);
+                }
+            }
+
+            // ── Modifiers (장착 모디파이어) ──
+            if (d.Modifiers != null)
+            {
+                foreach (var m in d.Modifiers)
+                {
+                    string title = m.Count > 1 ? $"{m.Name} ×{m.Count}" : m.Name;
+                    AddEntry(modifiersContainer, title, "", m.Description, InfoPanelRows.ModifierColor);
                 }
             }
 
@@ -332,7 +356,7 @@ namespace DiceOrbit.UI
         /// 유닛 뷰: 헤더+액티브+패시브+상태이상+키워드 / 타일 뷰: 타일 섹션만 / 빈 상태: 전부 숨김.
         /// 섹션 위치는 고정(앵커)이므로 숨겨도 다른 섹션이 밀리지 않는다.
         /// </summary>
-        private void SetSectionVisibility(bool unitSections, bool tileSection)
+        private void SetSectionVisibility(bool unitSections, bool tileSection, bool modifiersSection)
         {
             // 헤더(이름/HP/설명): nameText의 부모 오브젝트를 통째로 토글
             if (nameText != null && nameText.transform.parent != null)
@@ -340,6 +364,7 @@ namespace DiceOrbit.UI
 
             ToggleSection(activesContainer, unitSections);
             ToggleSection(passivesContainer, unitSections);
+            ToggleSection(modifiersContainer, modifiersSection);   // 장착한 게 있을 때만
             ToggleSection(statusesContainer, unitSections);
             ToggleSection(keywordsContainer, unitSections);
             ToggleSection(tileContainer, tileSection);
@@ -451,13 +476,14 @@ namespace DiceOrbit.UI
             hpText     = CreateTmp("HpText",     header, new Vector2(0f, 0.30f), new Vector2(1f, 0.55f), 18f, InfoPanelRows.HpColor, FontStyles.Normal);
             flavorText = CreateTmp("FlavorText", header, new Vector2(0f, 0f),    new Vector2(1f, 0.30f), 13f, InfoPanelRows.MutedColor, FontStyles.Italic);
 
-            // 섹션: 액티브 0.64~0.88 / 패시브 0.44~0.64 / 상태이상 0.30~0.44 / 타일 0.14~0.30 / 키워드 0.00~0.14
-            activesContainer  = CreateSection("ActivesSection",  panel, "액티브",   0.64f, 0.88f);
-            activesTitle      = activesContainer.parent.Find("Title").GetComponent<TextMeshProUGUI>();
-            passivesContainer = CreateSection("PassivesSection", panel, "패시브",   0.44f, 0.64f);
-            statusesContainer = CreateSection("StatusesSection", panel, "상태이상", 0.30f, 0.44f);
-            tileContainer     = CreateSection("TileSection",     panel, "밟고 있는 타일", 0.14f, 0.30f);
-            keywordsContainer = CreateSection("KeywordsSection", panel, "키워드",   0.00f, 0.14f);
+            // 섹션: 액티브 0.66~0.88 / 패시브 0.48~0.66 / 모디파이어 0.36~0.48 / 상태이상 0.24~0.36 / 타일 0.12~0.24 / 키워드 0.00~0.12
+            activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.66f, 0.88f);
+            activesTitle       = activesContainer.parent.Find("Title").GetComponent<TextMeshProUGUI>();
+            passivesContainer  = CreateSection("PassivesSection",  panel, "패시브",     0.48f, 0.66f);
+            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.36f, 0.48f);
+            statusesContainer  = CreateSection("StatusesSection",  panel, "상태이상",   0.24f, 0.36f);
+            tileContainer      = CreateSection("TileSection",      panel, "밟고 있는 타일", 0.12f, 0.24f);
+            keywordsContainer  = CreateSection("KeywordsSection",  panel, "키워드",     0.00f, 0.12f);
 
             // 타일 섹션 부속: 카드 이미지(왼쪽) + 메타 텍스트
             var tileSection = tileContainer.parent;
@@ -489,6 +515,38 @@ namespace DiceOrbit.UI
             }
 #endif
             Debug.Log("[BattleInfoPanelUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
+        }
+
+        /// <summary>
+        /// [에디터] 이미 생성한 레이아웃에 모디파이어 섹션만 추가한다 (기존 스타일링 보존).
+        /// 패널 중단(0.36~0.48)에 생성되므로 기존 섹션과 겹치면 씬에서 재배치할 것.
+        /// </summary>
+        [ContextMenu("모디파이어 섹션만 추가")]
+        private void AddModifiersSection()
+        {
+            if (modifiersContainer != null)
+            {
+                Debug.LogWarning("[BattleInfoPanelUI] modifiersContainer가 이미 배선돼 있습니다.");
+                return;
+            }
+
+            var panel = transform.Find("InfoPanelCanvas/Panel");
+            if (panel == null)
+            {
+                Debug.LogWarning("[BattleInfoPanelUI] InfoPanelCanvas/Panel을 찾을 수 없습니다. 먼저 [기본 레이아웃 생성]을 실행하세요.");
+                return;
+            }
+
+            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.36f, 0.48f);
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                UnityEditor.EditorUtility.SetDirty(this);
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+            }
+#endif
+            Debug.Log("[BattleInfoPanelUI] 모디파이어 섹션 추가 완료 — 기존 섹션과 겹치면 씬에서 위치를 조정하세요.");
         }
 
         /// <summary>

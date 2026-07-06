@@ -15,17 +15,33 @@ namespace DiceOrbit.UI
         public readonly string ActivesLabel;                                 // 액티브 섹션 제목 (캐릭터 "액티브" / 몬스터 "다음 행동")
         public readonly IReadOnlyList<SkillInfoData> Actives;
         public readonly IReadOnlyList<PassiveInfoData> Passives;
+        public readonly IReadOnlyList<ModifierInfoData> Modifiers;           // 장착 모디파이어 (몬스터는 빈 목록)
         public readonly IReadOnlyList<TooltipKeywordFormatter.StatusDisplayData> Statuses;
         public readonly TileInfoData? CurrentTile;                            // 몬스터는 null
 
         public UnitInfoData(string name, int currentHp, int maxHp, int armor, string flavorText,
             string activesLabel,
             IReadOnlyList<SkillInfoData> actives, IReadOnlyList<PassiveInfoData> passives,
+            IReadOnlyList<ModifierInfoData> modifiers,
             IReadOnlyList<TooltipKeywordFormatter.StatusDisplayData> statuses, TileInfoData? currentTile)
         {
             Name = name; CurrentHp = currentHp; MaxHp = maxHp; Armor = armor; FlavorText = flavorText;
             ActivesLabel = activesLabel;
-            Actives = actives; Passives = passives; Statuses = statuses; CurrentTile = currentTile;
+            Actives = actives; Passives = passives; Modifiers = modifiers;
+            Statuses = statuses; CurrentTile = currentTile;
+        }
+    }
+
+    /// <summary>장착 모디파이어 1종의 패널 표시 데이터. 같은 종류 중복 장착은 Count로 그룹핑.</summary>
+    public readonly struct ModifierInfoData
+    {
+        public readonly string Name;
+        public readonly string Description;
+        public readonly int Count;          // 중복 장착 수 (1이면 단일)
+
+        public ModifierInfoData(string name, string description, int count)
+        {
+            Name = name; Description = description; Count = count;
         }
     }
 
@@ -33,13 +49,17 @@ namespace DiceOrbit.UI
     public readonly struct SkillInfoData
     {
         public readonly string Name;
-        public readonly string DiceCondition;       // 예: "주사위 4 이상" (requirement.GetDescription())
+        public readonly string DiceCondition;       // 예: "주사위 4 이상" (FormatDiceCondition())
         public readonly string DynamicDescription;  // GetDynamicDescription() 결과 원문
         public readonly int Level;
+        public readonly string TargetLabel;         // 유효 대상 (모디파이어 반영 — 슬롯 게터 기준). 예: "적 2명"
+        public readonly IReadOnlyList<string> ModifierLines;   // 이 스킬에 적용 중인 모디파이어 효과 라인 (×N 그룹핑)
 
-        public SkillInfoData(string name, string diceCondition, string dynamicDescription, int level)
+        public SkillInfoData(string name, string diceCondition, string dynamicDescription, int level,
+            string targetLabel = "", IReadOnlyList<string> modifierLines = null)
         {
             Name = name; DiceCondition = diceCondition; DynamicDescription = dynamicDescription; Level = level;
+            TargetLabel = targetLabel; ModifierLines = modifierLines;
         }
     }
 

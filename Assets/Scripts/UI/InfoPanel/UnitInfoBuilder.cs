@@ -24,6 +24,7 @@ namespace DiceOrbit.UI
                 activesLabel: "액티브",
                 actives: BuildActives(s),
                 passives: BuildPassives(ch.Passives),
+                modifiers: BuildModifiers(s),
                 statuses: BuildStatuses(ch.StatusEffects),
                 currentTile: ch.CurrentTile != null ? Build(ch.CurrentTile) : (TileInfoData?)null);
         }
@@ -40,6 +41,7 @@ namespace DiceOrbit.UI
                 activesLabel: "다음 행동",
                 actives: BuildMonsterIntent(m),
                 passives: BuildPassives(m.Passives),
+                modifiers: System.Array.Empty<ModifierInfoData>(),   // 모디파이어는 캐릭터 전용
                 statuses: BuildStatuses(m.StatusEffects),
                 currentTile: null);   // 몬스터는 타일 추적 없음 (Character.CurrentTile만 존재)
         }
@@ -219,7 +221,83 @@ namespace DiceOrbit.UI
                     skill.SkillName,
                     skill.FormatDiceCondition(),   // 한국어 문구 ("주사위 4 이상" 등) — GetDescription()은 영문 디버그용
                     skill.GetDynamicDescription() ?? string.Empty,
-                    slot.CurrentLevel));
+                    slot.CurrentLevel,
+                    // 유효 대상: 슬롯 게터 = 도화지(모디파이어) 적용값. 광역 참격 장착 시 "적 2명"으로 바뀜
+                    BuildTargetLabel(slot.TargetType, slot.TargetCount),
+                    BuildSkillModifierLines(stats?.Modifiers?.Modifiers, skill)));
+            }
+            return result;
+        }
+
+        /// <summary>유효 타게팅을 한국어 라벨로 (모디파이어 반영된 값 기준).</summary>
+        private static string BuildTargetLabel(Data.Skills.CharacterSkillTargetType type, int count)
+        {
+            return type switch
+            {
+                Data.Skills.CharacterSkillTargetType.None       => "즉시 발동",
+                Data.Skills.CharacterSkillTargetType.OneEnemy   => "적 1명",
+                Data.Skills.CharacterSkillTargetType.AllEnemies => "모든 적",
+                Data.Skills.CharacterSkillTargetType.OneAlly    => "아군 1명",
+                Data.Skills.CharacterSkillTargetType.AllAllies  => "모든 아군",
+                Data.Skills.CharacterSkillTargetType.OneTile    => "타일 1칸",
+                Data.Skills.CharacterSkillTargetType.AllTiles   => "모든 타일",
+                Data.Skills.CharacterSkillTargetType.MultiEnemy => $"적 {count}명",
+                Data.Skills.CharacterSkillTargetType.MultiAlly  => $"아군 {count}명",
+                Data.Skills.CharacterSkillTargetType.MultiTile  => $"타일 {count}칸",
+                _ => string.Empty,
+            };
+        }
+
+        /// <summary>이 스킬에 적용 중인 모디파이어 효과 라인 (GetSkillLine, 같은 라인은 ×N 그룹핑).</summary>
+        private static IReadOnlyList<string> BuildSkillModifierLines(
+            IReadOnlyList<Data.Modifiers.CharacterModifier> mods, Data.Skills.CharacterActiveSkill skill)
+        {
+            if (mods == null || skill == null) return System.Array.Empty<string>();
+
+            // 등장 순서 유지하며 같은 라인 카운트
+            var order = new List<string>();
+            var counts = new Dictionary<string, int>();
+            foreach (var m in mods)
+            {
+                if (m == null) continue;
+                string line = m.GetSkillLine(skill);
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                if (counts.ContainsKey(line)) counts[line]++;
+                else { counts[line] = 1; order.Add(line); }
+            }
+
+            if (order.Count == 0) return System.Array.Empty<string>();
+
+            var result = new List<string>(order.Count);
+            foreach (var line in order)
+                result.Add(counts[line] > 1 ? $"{line} ×{counts[line]}" : line);
+            return result;
+        }
+
+        /// <summary>장착 모디파이어 목록 (같은 이름은 ×N 그룹핑, 장착 순서 유지).</summary>
+        private static IReadOnlyList<ModifierInfoData> BuildModifiers(CharacterStats stats)
+        {
+            var result = new List<ModifierInfoData>();
+            var mods = stats?.Modifiers?.Modifiers;
+            if (mods == null) return result;
+
+            var order = new List<string>();
+            var counts = new Dictionary<string, (int count, string desc)>();
+            foreach (var m in mods)
+            {
+                if (m == null) continue;
+                string name = m.ModifierName ?? "Unknown";
+
+                if (counts.TryGetValue(name, out var entry))
+                    counts[name] = (entry.count + 1, entry.desc);
+                else { counts[name] = (1, m.Description ?? string.Empty); order.Add(name); }
+            }
+
+            foreach (var name in order)
+            {
+                var (count, desc) = counts[name];
+                result.Add(new ModifierInfoData(name, desc, count));
             }
             return result;
         }

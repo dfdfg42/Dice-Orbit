@@ -12,6 +12,10 @@ namespace DiceOrbit.UI
         public static readonly Color MutedColor        = new Color(0.7f, 0.7f, 0.7f);
         public static readonly Color HpColor           = new Color(0.95f, 0.5f, 0.5f);
         public static readonly Color DiceColor         = new Color(0.62f, 0.9f, 1f);
+        public static readonly Color ModifierColor     = new Color(0.75f, 0.62f, 1f); // 모디파이어(강화) — 보라 계열
+
+        /// <summary>모디파이어 효과 라인용 리치텍스트 색 (스킬 설명에 인라인 삽입 시).</summary>
+        public const string ModifierColorHex = "#BF9EFF";
 
         public static TextMeshProUGUI AddText(Transform parent, string text, float size,
             Color color, FontStyles style = FontStyles.Normal)
