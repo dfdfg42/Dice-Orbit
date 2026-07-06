@@ -45,35 +45,33 @@ namespace DiceOrbit.UI
         }
     }
 
-    /// <summary>액티브 스킬 1개의 패널 표시 데이터.</summary>
+    /// <summary>액티브 스킬 1개의 패널 표시 데이터. (레벨 개념 없음 — 성장은 모디파이어)</summary>
     public readonly struct SkillInfoData
     {
         public readonly string Name;
         public readonly string DiceCondition;       // 예: "주사위 4 이상" (FormatDiceCondition())
         public readonly string DynamicDescription;  // GetDynamicDescription() 결과 원문
-        public readonly int Level;
         public readonly string TargetLabel;         // 유효 대상 (모디파이어 반영 — 슬롯 게터 기준). 예: "적 2명"
         public readonly IReadOnlyList<string> ModifierLines;   // 이 스킬에 적용 중인 모디파이어 효과 라인 (×N 그룹핑)
 
-        public SkillInfoData(string name, string diceCondition, string dynamicDescription, int level,
+        public SkillInfoData(string name, string diceCondition, string dynamicDescription,
             string targetLabel = "", IReadOnlyList<string> modifierLines = null)
         {
-            Name = name; DiceCondition = diceCondition; DynamicDescription = dynamicDescription; Level = level;
+            Name = name; DiceCondition = diceCondition; DynamicDescription = dynamicDescription;
             TargetLabel = targetLabel; ModifierLines = modifierLines;
         }
     }
 
-    /// <summary>패시브 1개의 패널 표시 데이터. 이름/레벨/효과/원문을 필드로 분리 (문자열 접합 금지).</summary>
+    /// <summary>패시브 1개의 패널 표시 데이터. 이름/효과/원문을 필드로 분리 (문자열 접합 금지).</summary>
     public readonly struct PassiveInfoData
     {
         public readonly string Name;
-        public readonly int Level;
         public readonly string DynamicEffect;       // GetDynamicDescription() — 현재 유효 수치
         public readonly string FlavorText;          // Description 원문
 
-        public PassiveInfoData(string name, int level, string dynamicEffect, string flavorText)
+        public PassiveInfoData(string name, string dynamicEffect, string flavorText)
         {
-            Name = name; Level = level; DynamicEffect = dynamicEffect; FlavorText = flavorText;
+            Name = name; DynamicEffect = dynamicEffect; FlavorText = flavorText;
         }
     }
 

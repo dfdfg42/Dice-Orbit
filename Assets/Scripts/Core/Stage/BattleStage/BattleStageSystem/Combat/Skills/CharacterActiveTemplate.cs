@@ -28,7 +28,6 @@ namespace DiceOrbit.Data.Skills
         [SerializeField] protected string skillName = "";
         [SerializeField, TextArea(2, 4)] protected string description = "";
         [SerializeField] public Sprite icon;
-        [SerializeField] public int maxLevel = 1;
 
         [Header("Requirement")]
         [SerializeField] public DiceRequirement requirement = new DiceRequirement();
@@ -44,7 +43,6 @@ namespace DiceOrbit.Data.Skills
 
         public string SkillName   => skillName;
         public string Description => description;
-        public virtual int MaxLevel => Mathf.Max(1, maxLevel);
 
         public CharacterSkillTargetType TargetType => targetType;
         public TilePreviewStyle PreviewStyle       => previewStyle;

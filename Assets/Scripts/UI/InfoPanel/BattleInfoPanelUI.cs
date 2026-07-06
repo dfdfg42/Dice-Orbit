@@ -243,7 +243,7 @@ namespace DiceOrbit.UI
             {
                 foreach (var a in d.Actives)
                 {
-                    string title = a.Level > 1 ? $"{a.Name}  Lv.{a.Level}" : a.Name;   // "Lv." 접두어는 렌더 계층 담당
+                    string title = a.Name;
 
                     // 메타: 주사위 조건 + 유효 대상 (모디파이어 반영값 — 광역 참격 장착 시 "적 2명")
                     string meta = a.DiceCondition ?? "";
@@ -265,9 +265,8 @@ namespace DiceOrbit.UI
             {
                 foreach (var p in d.Passives)
                 {
-                    string title = p.Level > 0 ? $"{p.Name}  Lv.{p.Level}" : p.Name;
                     string desc = JoinLines(p.DynamicEffect, p.FlavorText);
-                    AddEntry(passivesContainer, title, "", desc, InfoPanelRows.PassiveColor);
+                    AddEntry(passivesContainer, p.Name, "", desc, InfoPanelRows.PassiveColor);
                 }
             }
 

@@ -9,10 +9,10 @@ namespace DiceOrbit.Core
         CharacterSelection, // 캐릭터 선택
         Combat,             // 전투 중
         Shop,               // 상점
-        LevelUp,            // 스킬 선택 (레벨업)
         Victory,            // 승리
         GameOver,           // 패배
         Recruit,            // 모집
         Reward              // 보상
+        // (LevelUp 상태는 유산으로 철거 — 성장은 웨이브 클리어 보상 모디파이어로 일원화)
     }
 }

@@ -299,7 +299,7 @@ namespace DiceOrbit.UI
                 var text = skillButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (text != null)
                 {
-                    text.text = $"{runtimeAbility.BaseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})";
+                    text.text = runtimeAbility.BaseSkill.SkillName;
                 }
             }
             else
@@ -398,8 +398,7 @@ namespace DiceOrbit.UI
                 var txt = go.GetComponentInChildren<TextMeshProUGUI>();
                 if (txt != null)
                 {
-                    var skillName = runtimeAbility.BaseSkill != null ? runtimeAbility.BaseSkill.SkillName : "Unknown Skill";
-                    txt.text = $"{skillName} (Lv.{runtimeAbility.CurrentLevel})";
+                    txt.text = runtimeAbility.BaseSkill != null ? runtimeAbility.BaseSkill.SkillName : "Unknown Skill";
                 }
 
                 var imgs = go.GetComponentsInChildren<Image>();
@@ -436,7 +435,7 @@ namespace DiceOrbit.UI
             var baseSkill = runtimeAbility.BaseSkill;
             var lines = new List<string>
             {
-                $"{baseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})"
+                baseSkill.SkillName
             };
 
             string description = baseSkill.Description;

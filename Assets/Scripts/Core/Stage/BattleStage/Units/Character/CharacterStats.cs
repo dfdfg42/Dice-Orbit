@@ -8,19 +8,8 @@ namespace DiceOrbit.Data
     [System.Serializable]
     public class CharacterStats : UnitStats
     {
-        private static readonly int[] MaxHpIncreaseByLevel =
-        {
-            10,10,10,10,10,10,10,10,10,10,
-            10,10,10,10,10,10,10,10,10,10,
-            5,5,5,5,5,5,5,5,5,5,
-            5,5,5,5,5,
-            3,3,3,3,3,3,3,3,3,3,
-            2,2,2,2,2,
-        };
-
         [Header("Basic Info")]
         public string CharacterName = "Hero";
-        public int Level = 1;
 
         [Header("Skills")]
         public List<ActiveSkillSlot>   ActiveAbilities  = new List<ActiveSkillSlot>();
@@ -46,26 +35,7 @@ namespace DiceOrbit.Data
             return ActiveAbilities[index];
         }
 
-        public void LevelUp()
-        {
-            int hpIncrease = GetMaxHpIncreaseForLevel(Level);
-            Level++;
-            MaxHP    += hpIncrease;
-            CurrentHP += hpIncrease;
-            Debug.Log($"{CharacterName} leveled up to {Level}! HP +{hpIncrease} => {MaxHP}");
-        }
-
-        public static int GetMaxHpIncreaseForLevel(int level)
-        {
-            return GetCurveValue(MaxHpIncreaseByLevel, level);
-        }
-
-        private static int GetCurveValue(int[] curve, int level)
-        {
-            if (curve == null || curve.Length == 0) return 0;
-            int idx = Mathf.Clamp(Mathf.Max(1, level) - 1, 0, curve.Length - 1);
-            return curve[idx];
-        }
+        // (캐릭터 레벨/HP 성장 커브는 철거됨 — 성장은 전부 모디파이어로, 기획 REV05)
 
         public bool canMove() => BindDebuff == 0;
     }

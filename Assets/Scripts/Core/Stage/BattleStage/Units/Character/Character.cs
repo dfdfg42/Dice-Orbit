@@ -135,23 +135,7 @@ namespace DiceOrbit.Core
             }
         }
 
-        public void SyncPassiveLevelsFromRuntime()
-        {
-            if (stat == null) return;
-
-            foreach (var passive in stat.PassiveInstances)
-                passive?.SetLevel(passive.CurrentLevel);
-        }
-
-        public void LevelUpCharacter()
-        {
-            if (stat == null) return;
-
-            stat.LevelUp();
-            CharacterProgressionService.ApplyLevelUp(this);
-
-            Debug.Log($"[Character] {stat.CharacterName} leveled up -> Lv.{stat.Level}");
-        }
+        // (캐릭터/스킬/패시브 레벨 시스템은 철거됨 — 성장은 전부 모디파이어로, 기획 REV05)
 
         protected override void Awake()
         {

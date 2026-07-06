@@ -9,17 +9,14 @@ namespace DiceOrbit.Data.Skills
     public class ActiveSkillSlot
     {
         [SerializeReference] public CharacterActiveSkill BaseSkill;
-        public int CurrentLevel;
 
         [NonSerialized] public CharacterActiveSkill RuntimeInstance;
         // 유효 타게팅(모디파이어 반영) 계산을 위해 소유 캐릭터 참조. Character.InitializeStats에서 주입.
         [NonSerialized] public Character Owner;
 
-        public ActiveSkillSlot(CharacterActiveSkill skill, int initialLevel = 1)
+        public ActiveSkillSlot(CharacterActiveSkill skill)
         {
             BaseSkill       = skill;
-            int max         = skill != null ? Mathf.Max(1, skill.MaxLevel) : 1;
-            CurrentLevel    = Mathf.Clamp(initialLevel, 1, max);
             RuntimeInstance = skill?.Clone();
         }
 
@@ -45,14 +42,7 @@ namespace DiceOrbit.Data.Skills
         public string          GetDescription() => BaseSkill?.Description ?? string.Empty;
         public DiceRequirement GetRequirement() => BaseSkill?.requirement;
 
-        public bool IsMaxLevel => BaseSkill == null || CurrentLevel >= BaseSkill.MaxLevel;
-
-        public bool TryUpgrade()
-        {
-            if (BaseSkill == null || IsMaxLevel) return false;
-            CurrentLevel++;
-            return true;
-        }
+        // (스킬 레벨/업그레이드 시스템은 철거됨 — 성장은 전부 모디파이어로, 기획 REV05)
 
         public bool CanUse(int diceValue) => BaseSkill?.CanUse(diceValue) ?? false;
 

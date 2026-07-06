@@ -87,7 +87,7 @@ namespace DiceOrbit.UI
                 desc = string.IsNullOrEmpty(desc) ? $"예상 피해: {shown}" : $"{desc}\n예상 피해: {shown}";
             }
 
-            result.Add(new SkillInfoData(data.SkillName, targetsText, desc, 0));
+            result.Add(new SkillInfoData(data.SkillName, targetsText, desc));
             return result;
         }
 
@@ -221,7 +221,6 @@ namespace DiceOrbit.UI
                     skill.SkillName,
                     skill.FormatDiceCondition(),   // 한국어 문구 ("주사위 4 이상" 등) — GetDescription()은 영문 디버그용
                     skill.GetDynamicDescription() ?? string.Empty,
-                    slot.CurrentLevel,
                     // 유효 대상: 슬롯 게터 = 도화지(모디파이어) 적용값. 광역 참격 장착 시 "적 2명"으로 바뀜
                     BuildTargetLabel(slot.TargetType, slot.TargetCount),
                     BuildSkillModifierLines(stats?.Modifiers?.Modifiers, skill)));
@@ -312,7 +311,6 @@ namespace DiceOrbit.UI
                 if (p == null) continue;
                 result.Add(new PassiveInfoData(
                     string.IsNullOrWhiteSpace(p.PassiveName) ? "Unknown Passive" : p.PassiveName,
-                    p.CurrentLevel,
                     p.GetDynamicDescription() ?? string.Empty,
                     (p.Description ?? string.Empty).Trim()));
             }

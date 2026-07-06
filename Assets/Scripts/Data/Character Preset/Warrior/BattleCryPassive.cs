@@ -21,8 +21,6 @@ namespace DiceOrbit.Data.Passives
             return $"좌우 1칸 아군 1명당 피해 +{bonusPercentPerAlly:0.#}%";
         }
 
-        protected override void ApplyLevel(int level) { }
-
         /// <summary>
         /// 패시브 영향 범위 = 좌우 인접 타일. PassiveRangeIndicator가 조회 시 브래킷 표시에 사용.
         /// (구 방식: 상시 회전 트레일 → 조회 시 브래킷으로 대체, 2026-07)

@@ -25,7 +25,6 @@ namespace DiceOrbit.Core
         private bool pendingRestart = false;
         private int lastWaveCleared = 0;
         // 레벨업 타일을 밟은 캐릭터를 임시 보관합니다.
-        private Character pendingLevelUpCharacter;
         
         // Properties
         public GameState CurrentState => currentState;
@@ -116,10 +115,6 @@ namespace DiceOrbit.Core
                     if (characterSelectionUI != null) characterSelectionUI.Hide();
                     if (combatUI != null) combatUI.SetActive(false);
                     if (rewardUI != null) rewardUI.Show();
-                    break;
-
-                case GameState.LevelUp:
-                    EnterLevelUpState();
                     break;
 
                 case GameState.Victory:
@@ -266,17 +261,6 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// 레벨업 트리거 (LevelUpAttribute Tile)
-        /// </summary>
-        public void TriggerLevelUp(Character character)
-        {
-            if (character == null || character.Stats == null) return;
-            pendingLevelUpCharacter = character;
-            Debug.Log($"[GameFlow] TriggerLevelUp called for {character.Stats.CharacterName} - State Change to LevelUp");
-            ChangeState(GameState.LevelUp);
-        }
-
-        /// <summary>
         /// 메인메뉴에서 게임 시작
         /// </summary>
         public void StartGame()
@@ -385,7 +369,6 @@ namespace DiceOrbit.Core
 
             // 플로우 상태 초기화
             lastWaveCleared = 0;
-            pendingLevelUpCharacter = null;
             pendingRestart = true;
 
             UI.GameResultUI.Instance?.Hide();
@@ -394,20 +377,6 @@ namespace DiceOrbit.Core
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
-        private void EnterLevelUpState()
-        {
-            if (pendingLevelUpCharacter == null || pendingLevelUpCharacter.Stats == null)
-            {
-                ChangeState(GameState.Combat);
-                return;
-            }
-
-            // 레벨업 = 모디파이어 3택1 (구 스킬/패시브 자동 레벨업 대체 — 성장은 전부 모디파이어, 기획 REV05)
-            var character = pendingLevelUpCharacter;
-            pendingLevelUpCharacter = null;
-
-            UI.LevelUpChoiceUI.EnsureInstance();
-            UI.LevelUpChoiceUI.Instance.Show(character, () => ChangeState(GameState.Combat));
-        }
+        // (레벨업 타일/상태는 유산으로 철거됨 — 모디파이어 획득은 웨이브 클리어 보상(RewardUI)만, 기획 REV05)
     }
 }

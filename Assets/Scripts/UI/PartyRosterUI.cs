@@ -181,7 +181,7 @@ namespace DiceOrbit.UI
                 if (stats == null) continue;
 
                 string displayName = string.IsNullOrWhiteSpace(stats.CharacterName) ? character.name : stats.CharacterName;
-                entry.NameLevelText.text = $"{displayName}  Lv.{stats.Level}";
+                entry.NameLevelText.text = displayName;
 
                 float maxHp = Mathf.Max(1, stats.MaxHP);
                 float currentHp = Mathf.Clamp(stats.CurrentHP, 0, stats.MaxHP);
