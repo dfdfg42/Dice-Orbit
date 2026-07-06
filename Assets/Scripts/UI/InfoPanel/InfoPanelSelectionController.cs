@@ -62,6 +62,50 @@ namespace DiceOrbit.UI
             bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
             UpdateHover(overUI);
             UpdatePin(overUI);
+            UpdateHoverTooltip();
+        }
+
+        // ── 커서 요약 툴팁 ────────────────────────────────────────
+        // 호버한 유닛의 한 줄 요약을 커서 옆 경량 툴팁에 표시.
+        // 타게팅 중엔 끔 (SkillTargetSelector의 예상 피해/선택 카운터가 툴팁 소유).
+
+        private object _lastTooltipTarget;
+        private float _nextTooltipRefresh;
+        private const float TooltipRefreshInterval = 0.5f;
+
+        private void UpdateHoverTooltip()
+        {
+            bool targeting = SkillTargetSelector.Instance != null && SkillTargetSelector.Instance.IsSelectingTarget;
+            object target = targeting ? null : HoveredUnit;
+
+            bool changed = !ReferenceEquals(target, _lastTooltipTarget);
+            if (!changed && (target == null || Time.unscaledTime < _nextTooltipRefresh)) return;
+
+            _lastTooltipTarget = target;
+            _nextTooltipRefresh = Time.unscaledTime + TooltipRefreshInterval;
+
+            if (target == null)
+            {
+                // 우리가 띄운 툴팁만 정리 (전환 시 1회 — 이후엔 위 조건에서 조용히 지나감)
+                if (changed) HoverTooltipUI.Instance?.HidePinned();
+                return;
+            }
+
+            string text = target switch
+            {
+                Character ch => UnitInfoBuilder.BuildHoverSummary(ch),
+                Monster m    => UnitInfoBuilder.BuildHoverSummary(m),
+                _            => null,
+            };
+
+            if (string.IsNullOrEmpty(text))
+            {
+                HoverTooltipUI.Instance?.HidePinned();
+                return;
+            }
+
+            HoverTooltipUI.EnsureInstance();
+            HoverTooltipUI.Instance?.ShowPinned(text);
         }
 
         private void UpdateHover(bool overUI)

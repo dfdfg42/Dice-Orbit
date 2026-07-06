@@ -131,6 +131,75 @@ namespace DiceOrbit.UI
             return new TileInfoData(tile.TileIndex, tile.Type, list);
         }
 
+        // ── 커서 요약 툴팁 (한눈 요약 — 상세는 정보 패널 몫) ─────────────
+
+        /// <summary>캐릭터 호버 요약: 이름+HP 한 줄, 상태이상/스택 요약 한 줄 (없으면 생략).</summary>
+        public static string BuildHoverSummary(Character ch)
+        {
+            var s = ch.Stats;
+            if (s == null) return ch.name;
+
+            string name = !string.IsNullOrWhiteSpace(s.CharacterName) ? s.CharacterName : ch.name;
+            string line1 = $"{name}  HP {s.CurrentHP}/{s.MaxHP}" + (s.TempArmor > 0 ? $"  방어도 {s.TempArmor}" : "");
+
+            var statuses = BuildStatuses(ch.StatusEffects);
+            if (statuses.Count == 0) return line1;
+
+            var parts = new List<string>(statuses.Count);
+            foreach (var st in statuses)
+            {
+                string part = st.Name;
+                if (!string.IsNullOrEmpty(st.StackText)) part += $" {st.StackText}";
+                if (!string.IsNullOrEmpty(st.DurationText)) part += $" {st.DurationText}";
+                parts.Add(part);
+            }
+            return $"{line1}\n{string.Join(" · ", parts)}";
+        }
+
+        /// <summary>몬스터 호버 요약: 이름+HP 한 줄, 다음 행동 → 대상 (예상 피해) 한 줄 (인텐트 없으면 생략).</summary>
+        public static string BuildHoverSummary(Monster m)
+        {
+            var s = m.Stats;
+            string name = s != null && !string.IsNullOrWhiteSpace(s.MonsterName) ? s.MonsterName : m.name;
+            string line1 = $"{name}  HP {s?.CurrentHP ?? 0}/{s?.MaxHP ?? 0}";
+
+            var data = m.NextSkill?.skillData;
+            if (data == null) return line1;
+
+            string line2 = data.SkillName;
+
+            // 대상 이름들
+            var targets = m.CurrentIntent?.Targets;
+            if (targets != null && targets.Count > 0)
+            {
+                var names = new List<string>();
+                foreach (var t in targets)
+                {
+                    if (t == null) continue;
+                    names.Add(t.Stats is CharacterStats cs ? cs.CharacterName
+                            : t.Stats is MonsterStats ms ? ms.MonsterName
+                            : t.name);
+                }
+                if (names.Count > 0) line2 += $" → {string.Join(", ", names)}";
+            }
+
+            // 예상 피해 (파이프라인 시뮬레이션 — 패시브/모디파이어 반영)
+            int previewBase = data.GetPreviewDamage();
+            if (previewBase > 0)
+            {
+                int shown = previewBase;
+                var repTarget = ResolvePreviewTarget(m);
+                if (repTarget != null && CombatPipeline.Instance != null)
+                {
+                    var simCtx = new AttackContext(m, repTarget, data.SkillName, previewBase);
+                    shown = CombatPipeline.Instance.SimulateCalculation(simCtx);
+                }
+                line2 += $" (예상 {shown})";
+            }
+
+            return $"{line1}\n{line2}";
+        }
+
         private static IReadOnlyList<SkillInfoData> BuildActives(CharacterStats stats)
         {
             var result = new List<SkillInfoData>();
