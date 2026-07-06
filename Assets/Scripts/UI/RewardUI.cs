@@ -44,10 +44,19 @@ namespace DiceOrbit.UI
         private bool _listenersWired;
         private TMP_FontAsset _font;
 
-        private static readonly Color PanelColor = new Color(0.12f, 0.13f, 0.18f, 0.98f);
-        private static readonly Color ButtonColor = new Color(0.25f, 0.45f, 0.8f, 1f);
-        private static readonly Color SlotColor = new Color(0.2f, 0.22f, 0.28f, 1f);
-        private static readonly Color GoldColor = new Color(1f, 0.85f, 0.35f, 1f);
+        // ── 팔레트: "보드게임의 밤" — 어두운 테이블 위 카드/코인 ──
+        private static readonly Color Felt     = new Color(0.043f, 0.051f, 0.078f, 0.85f); // 딤 (테이블의 어둠)
+        private static readonly Color Card     = new Color(0.118f, 0.133f, 0.200f);        // 패널 (남색 카드 스톡)
+        private static readonly Color CardEdge = new Color(0.239f, 0.271f, 0.400f);        // 카드 모서리
+        private static readonly Color CardWell = new Color(0.082f, 0.094f, 0.153f);        // 파인 슬롯 (인셋)
+        private static readonly Color Ink      = new Color(0.910f, 0.894f, 0.847f);        // 본문 (크림 잉크)
+        private static readonly Color InkMuted = new Color(0.910f, 0.894f, 0.847f, 0.45f);
+        private static readonly Color Gold     = new Color(0.878f, 0.702f, 0.341f);        // 시그니처 액센트 (코인)
+        private static readonly Color GoldInk  = new Color(0.140f, 0.110f, 0.055f);        // 골드 위 글자
+        private static readonly Color Slate    = new Color(0.200f, 0.255f, 0.368f);        // 보조 버튼
+
+        private const int PanelRadius = 26;
+        private const int ButtonRadius = 18;
 
         private void Awake()
         {
@@ -190,18 +199,28 @@ namespace DiceOrbit.UI
                 return;
             }
 
+            // 손패의 카드 한 장 — 호버 시 밝아짐 (집어 드는 느낌)
             var go = CreateChild(choiceRow, "Choice");
             var le = go.gameObject.AddComponent<LayoutElement>();
-            le.preferredWidth = 240; le.preferredHeight = 200;
+            le.preferredWidth = 250; le.preferredHeight = 220;
+
             var img = go.gameObject.AddComponent<Image>();
-            img.color = ButtonColor;
+            img.sprite = UiRoundedSprite.Get(ButtonRadius);
+            img.type = Image.Type.Sliced;
+            img.color = Color.white;
+
+            var shadow = go.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
+            shadow.effectDistance = new Vector2(0f, -6f);
+
             var btn = go.gameObject.AddComponent<Button>();
             btn.targetGraphic = img;
+            btn.colors = MakeColors(new Color(0.145f, 0.169f, 0.259f));   // 카드보다 살짝 밝은 남색
             btn.onClick.AddListener(() => onClick());
 
-            var txt = CreateText(go, label, 26, FontStyles.Bold);
+            var txt = CreateText(go, label, 25, FontStyles.Bold);
             Stretch(txt);
-            txt.margin = new Vector4(10, 10, 10, 10);
+            txt.margin = new Vector4(14, 14, 14, 14);
         }
 
         // ─────────────────────────────────────────────
@@ -229,45 +248,60 @@ namespace DiceOrbit.UI
             scaler.referenceResolution = new Vector2(1920, 1080);
             canvasGO.AddComponent<GraphicRaycaster>();
 
-            // 어두운 배경
+            // 어두운 배경 (테이블의 어둠)
             var dim = CreateChild(canvasGO.transform, "Dim");
             Stretch(dim);
-            dim.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.75f);
+            dim.gameObject.AddComponent<Image>().color = Felt;
 
-            // 메인 패널
-            mainPanel = CreatePanel(canvasGO.transform, "MainPanel", new Vector2(900, 620), new Vector2(0, 0));
-            var title = CreateText(mainPanel.transform, "보상 획득", 64, FontStyles.Bold);
-            Place(title, new Vector2(0, 250), new Vector2(800, 90));
+            // 메인 패널 — 카드 스톡
+            mainPanel = CreatePanel(canvasGO.transform, "MainPanel", new Vector2(880, 640), new Vector2(0, 0));
 
-            goldText = CreateText(mainPanel.transform, "골드 0", 44, FontStyles.Bold);
-            goldText.color = GoldColor;
-            Place(goldText, new Vector2(0, 160), new Vector2(800, 70));
+            var eyebrow = CreateText(mainPanel.transform, "웨이브 클리어", 22, FontStyles.Normal);
+            eyebrow.color = InkMuted;
+            Place(eyebrow, new Vector2(0, 262), new Vector2(700, 34));
+
+            var title = CreateText(mainPanel.transform, "보상 획득", 60, FontStyles.Bold);
+            Place(title, new Vector2(0, 210), new Vector2(700, 76));
+
+            // 시그니처: 주사위 5눈 핍 디바이더
+            BuildPipDivider(mainPanel.transform, new Vector2(0, 156));
+
+            // 골드 — 코인 필(pill) 토큰
+            var pill = CreateChild(mainPanel.transform, "GoldPill");
+            Place(pill, new Vector2(0, 96), new Vector2(430, 58));
+            var pillImg = pill.gameObject.AddComponent<Image>();
+            pillImg.sprite = UiRoundedSprite.Get(28);
+            pillImg.type = Image.Type.Sliced;
+            pillImg.color = CardWell;
+            goldText = CreateText(pill, "골드 0", 34, FontStyles.Bold);
+            goldText.color = Gold;
+            Stretch(goldText);
 
             // 포션 슬롯 (예정 placeholder)
-            BuildPotionSlots(mainPanel.transform, new Vector2(0, 50));
+            BuildPotionSlots(mainPanel.transform, new Vector2(0, -4));
 
-            // 업그레이드 버튼
-            upgradeButton = CreateButton(mainPanel.transform, "캐릭터 업그레이드", new Vector2(0, -90),
-                new Vector2(440, 100), out upgradeButtonLabel);
+            // 업그레이드 버튼 (보조 — Slate)
+            upgradeButton = CreateButton(mainPanel.transform, "캐릭터 업그레이드", new Vector2(0, -136),
+                new Vector2(440, 88), out upgradeButtonLabel, primary: false);
 
-            // 다음 버튼
-            nextButton = CreateButton(mainPanel.transform, "다음", new Vector2(0, -230),
-                new Vector2(300, 90), out _);
+            // 다음 버튼 (주 행동 — Gold)
+            nextButton = CreateButton(mainPanel.transform, "다음", new Vector2(0, -244),
+                new Vector2(300, 84), out _, primary: true);
 
             // 업그레이드 패널 (모달, 초기 숨김)
-            upgradePanel = CreatePanel(canvasGO.transform, "UpgradePanel", new Vector2(1100, 520), new Vector2(0, 0));
-            upgradeHeader = CreateText(upgradePanel.transform, "강화할 캐릭터 선택", 44, FontStyles.Bold);
-            Place(upgradeHeader, new Vector2(0, 200), new Vector2(1000, 80));
+            upgradePanel = CreatePanel(canvasGO.transform, "UpgradePanel", new Vector2(1120, 560), new Vector2(0, 0));
+            upgradeHeader = CreateText(upgradePanel.transform, "강화할 캐릭터 선택", 42, FontStyles.Bold);
+            Place(upgradeHeader, new Vector2(0, 212), new Vector2(1000, 76));
 
             var rowGO = CreateChild(upgradePanel.transform, "ChoiceRow");
-            Place(rowGO, new Vector2(0, -10), new Vector2(1020, 240));
+            Place(rowGO, new Vector2(0, -6), new Vector2(1040, 260));
             var hlg = rowGO.gameObject.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 20; hlg.childAlignment = TextAnchor.MiddleCenter;
+            hlg.spacing = 24; hlg.childAlignment = TextAnchor.MiddleCenter;
             hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
             choiceRow = rowGO;
 
-            cancelUpgradeButton = CreateButton(upgradePanel.transform, "취소", new Vector2(0, -200),
-                new Vector2(240, 80), out _);
+            cancelUpgradeButton = CreateButton(upgradePanel.transform, "취소", new Vector2(0, -218),
+                new Vector2(220, 72), out _, primary: false);
 
             upgradePanel.SetActive(false);
 
@@ -282,48 +316,124 @@ namespace DiceOrbit.UI
                       "(버튼 동작은 코드가 참조로 연결하므로 OnClick을 따로 배선할 필요 없음)");
         }
 
+        /// <summary>시그니처 요소: 주사위 5눈(⚄) 모양의 점 디바이더.</summary>
+        private void BuildPipDivider(Transform parent, Vector2 anchoredPos)
+        {
+            var row = CreateChild(parent, "PipDivider");
+            Place(row, anchoredPos, new Vector2(200, 14));
+
+            const int pipCount = 5;
+            const float pipSize = 10f;
+            const float spacing = 24f;
+            float startX = -(pipCount - 1) * spacing * 0.5f;
+
+            for (int i = 0; i < pipCount; i++)
+            {
+                var pip = CreateChild(row, $"Pip{i}");
+                Place(pip, new Vector2(startX + i * spacing, 0), new Vector2(pipSize, pipSize));
+                var img = pip.gameObject.AddComponent<Image>();
+                img.sprite = UiRoundedSprite.Get((int)(pipSize * 0.5f));   // 반지름 = 크기/2 → 원
+                img.color = Gold;
+                img.raycastTarget = false;
+            }
+        }
+
         private void BuildPotionSlots(Transform parent, Vector2 anchoredPos)
         {
             var rowGO = CreateChild(parent, "PotionRow");
             Place(rowGO, anchoredPos, new Vector2(700, 120));
             var hlg = rowGO.gameObject.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 16; hlg.childAlignment = TextAnchor.MiddleCenter;
+            hlg.spacing = 18; hlg.childAlignment = TextAnchor.MiddleCenter;
             hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
 
             for (int i = 0; i < Mathf.Max(0, potionSlotCount); i++)
             {
+                // 파인 슬롯(인셋) — 아직 채워지지 않은 트레이 느낌
                 var slot = CreateChild(rowGO, $"PotionSlot{i}");
                 var le = slot.gameObject.AddComponent<LayoutElement>();
-                le.preferredWidth = 110; le.preferredHeight = 110;
-                slot.gameObject.AddComponent<Image>().color = SlotColor;
-                var t = CreateText(slot, "포션\n(예정)", 22, FontStyles.Normal);
+                le.preferredWidth = 104; le.preferredHeight = 104;
+                var img = slot.gameObject.AddComponent<Image>();
+                img.sprite = UiRoundedSprite.Get(16);
+                img.type = Image.Type.Sliced;
+                img.color = CardWell;
+
+                var t = CreateText(slot, "포션\n(예정)", 20, FontStyles.Normal);
                 Stretch(t);
-                t.color = new Color(1, 1, 1, 0.4f);
+                t.color = InkMuted;
             }
         }
 
         // ── 빌드 헬퍼 ──────────────────────────────────────
+
+        /// <summary>카드 스타일 패널: 모서리(테두리) + 인셋 배경 2겹 라운드 + 그림자.</summary>
         private GameObject CreatePanel(Transform parent, string name, Vector2 size, Vector2 pos)
         {
             var go = CreateChild(parent, name);
             Place(go, pos, size);
-            go.gameObject.AddComponent<Image>().color = PanelColor;
+
+            var edge = go.gameObject.AddComponent<Image>();
+            edge.sprite = UiRoundedSprite.Get(PanelRadius);
+            edge.type = Image.Type.Sliced;
+            edge.color = CardEdge;
+
+            var shadow = go.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.55f);
+            shadow.effectDistance = new Vector2(0f, -10f);
+
+            var bg = CreateChild(go, "BG");
+            Stretch(bg);
+            bg.offsetMin = new Vector2(3f, 3f);
+            bg.offsetMax = new Vector2(-3f, -3f);
+            var bgImg = bg.gameObject.AddComponent<Image>();
+            bgImg.sprite = UiRoundedSprite.Get(PanelRadius - 3);
+            bgImg.type = Image.Type.Sliced;
+            bgImg.color = Card;
+
             return go.gameObject;
         }
 
+        /// <summary>
+        /// 라운드 버튼: 호버/눌림은 ColorBlock으로 (밝아짐/어두워짐).
+        /// primary = Gold(주 행동, 어두운 글자) / 아니면 Slate(보조, 크림 글자).
+        /// </summary>
         private Button CreateButton(Transform parent, string label, Vector2 pos, Vector2 size,
-            out TextMeshProUGUI labelText)
+            out TextMeshProUGUI labelText, bool primary)
         {
+            Color fill = primary ? Gold : Slate;
+            Color textColor = primary ? GoldInk : Ink;
+
             var go = CreateChild(parent, "Button_" + label);
             Place(go, pos, size);
+
             var img = go.gameObject.AddComponent<Image>();
-            img.color = ButtonColor;
+            img.sprite = UiRoundedSprite.Get(ButtonRadius);
+            img.type = Image.Type.Sliced;
+            img.color = Color.white;   // 실제 색은 ColorBlock이 곱함 (호버 시 밝아짐)
+
+            var shadow = go.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.4f);
+            shadow.effectDistance = new Vector2(0f, -4f);
+
             var btn = go.gameObject.AddComponent<Button>();
             btn.targetGraphic = img;
+            btn.colors = MakeColors(fill);
 
-            labelText = CreateText(go, label, 34, FontStyles.Bold);
+            labelText = CreateText(go, label, 32, FontStyles.Bold);
+            labelText.color = textColor;
             Stretch(labelText);
             return btn;
+        }
+
+        private static ColorBlock MakeColors(Color fill)
+        {
+            var cb = ColorBlock.defaultColorBlock;
+            cb.normalColor      = fill;
+            cb.highlightedColor = Color.Lerp(fill, Color.white, 0.15f);
+            cb.pressedColor     = Color.Lerp(fill, Color.black, 0.25f);
+            cb.selectedColor    = fill;
+            cb.disabledColor    = new Color(fill.r, fill.g, fill.b, 0.35f);
+            cb.fadeDuration     = 0.08f;
+            return cb;
         }
 
         private TextMeshProUGUI CreateText(Transform parent, string text, float size, FontStyles style)
@@ -334,7 +444,7 @@ namespace DiceOrbit.UI
             tmp.fontSize = size;
             tmp.fontStyle = style;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Color.white;
+            tmp.color = Ink;
             tmp.raycastTarget = false;
             if (_font != null) tmp.font = _font;
             return tmp;
