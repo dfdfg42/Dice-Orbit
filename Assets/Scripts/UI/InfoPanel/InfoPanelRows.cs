@@ -31,12 +31,23 @@ namespace DiceOrbit.UI
             => Color.Lerp(c, new Color(0.08f, 0.09f, 0.12f), 0.45f);
 
         public static TextMeshProUGUI AddText(Transform parent, string text, float size,
-            Color color, FontStyles style = FontStyles.Normal)
+            Color color, FontStyles style = FontStyles.Normal, bool linkKeywords = false)
         {
             var go = new GameObject("Text", typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var tmp = go.AddComponent<TextMeshProUGUI>();
-            tmp.text = text;
+
+            // 키워드 링크: DB 키워드를 <link>로 감싸고 호버 감지에 등록 → 커서 옆 툴팁으로 정의 표시
+            if (linkKeywords)
+            {
+                tmp.text = TooltipKeywordFormatter.InsertKeywordLinks(text, onLightBackground: true);
+                KeywordLinkHover.Register(tmp);
+            }
+            else
+            {
+                tmp.text = text;
+            }
+
             tmp.fontSize = size;
             tmp.color = color;
             tmp.fontStyle = style;

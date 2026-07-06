@@ -24,6 +24,9 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI  metaText;  // 스택/지속 정보 (상태이상 전용)
         [SerializeField] private TextMeshProUGUI  descText;  // 설명 텍스트
 
+        /// <summary>설명 TMP 접근자 (키워드 링크 호버 등록용 — KeywordLinkHover).</summary>
+        public TextMeshProUGUI DescText => descText;
+
         // ═══════════════════════════════════════════════════════
         // 공개 API — 카드 타입별 설정
         // ═══════════════════════════════════════════════════════

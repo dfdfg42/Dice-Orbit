@@ -34,7 +34,7 @@ namespace DiceOrbit.UI
         [SerializeField] private RectTransform modifiersContainer;   // 장착 모디파이어
         [SerializeField] private RectTransform statusesContainer;
         [SerializeField] private RectTransform tileContainer;
-        [SerializeField] private RectTransform keywordsContainer;   // 선택 (기본 레이아웃엔 미생성)
+        // (키워드 섹션은 철거됨 — 키워드 정의는 텍스트 링크 호버 시 커서 옆 툴팁으로. KeywordLinkHover)
 
         [Header("타일 카드 슬롯")]
         [SerializeField] private Image tileCardImage;               // 타일 카드 이미지 (스프라이트를 코드가 교체)
@@ -156,6 +156,9 @@ namespace DiceOrbit.UI
             _selection = GetComponent<InfoPanelSelectionController>();
             if (_selection == null) _selection = gameObject.AddComponent<InfoPanelSelectionController>();
 
+            // 패널 텍스트 속 키워드 링크 호버 → 커서 옆 정의 툴팁
+            if (GetComponent<KeywordLinkHover>() == null) gameObject.AddComponent<KeywordLinkHover>();
+
             if (attributeVisuals == null)
                 attributeVisuals = Resources.Load<TileAttributeVisualDatabase>("UI/TileAttributeVisualDatabase");
 
@@ -223,7 +226,6 @@ namespace DiceOrbit.UI
             ClearContainer(modifiersContainer);
             ClearContainer(statusesContainer);
             ClearContainer(tileContainer);
-            ClearContainer(keywordsContainer);
             if (tileCardImage != null) tileCardImage.enabled = false;
         }
 
@@ -295,8 +297,7 @@ namespace DiceOrbit.UI
             if (d.CurrentTile.HasValue)
                 RenderTile(d.CurrentTile.Value);
 
-            // ── Keywords (컨테이너가 배선된 경우에만) ──
-            RenderKeywords(d);
+            // (키워드 정의는 섹션 대신 텍스트 링크 호버 → 커서 옆 툴팁. KeywordLinkHover)
         }
 
         private void RenderTile(TileInfoData t)
@@ -332,24 +333,6 @@ namespace DiceOrbit.UI
             }
         }
 
-        private void RenderKeywords(UnitInfoData d)
-        {
-            if (keywordsContainer == null) return;
-
-            // 액티브/패시브 설명을 합쳐 키워드 추출 (기존 ExtractMatches 재사용 — 평문 부분일치 매칭)
-            var sb = new System.Text.StringBuilder();
-            if (d.Actives != null)
-                foreach (var a in d.Actives) sb.AppendLine(a.DynamicDescription);
-            if (d.Passives != null)
-                foreach (var p in d.Passives) { sb.AppendLine(p.DynamicEffect); sb.AppendLine(p.FlavorText); }
-
-            var matches = TooltipKeywordFormatter.ExtractMatches(sb.ToString());
-            if (matches == null) return;
-
-            foreach (var k in matches)
-                AddEntry(keywordsContainer, k.Key, "", k.Description, InfoPanelRows.OnLight(k.Color));
-        }
-
         // ═══════════════════════════════════════════════════════
         // 슬롯 채우기 헬퍼
         // ═══════════════════════════════════════════════════════
@@ -369,7 +352,6 @@ namespace DiceOrbit.UI
             ToggleSection(passivesContainer, unitSections);
             ToggleSection(modifiersContainer, modifiersSection);   // 장착한 게 있을 때만
             ToggleSection(statusesContainer, unitSections);
-            ToggleSection(keywordsContainer, unitSections);
             ToggleSection(tileContainer, tileSection);
         }
 
@@ -410,15 +392,18 @@ namespace DiceOrbit.UI
             if (cardPrefab != null)
             {
                 var card = Instantiate(cardPrefab, container);
-                card.SetStatus(title, meta, "", desc, titleColor);
+                // 설명 속 키워드를 링크로 감싸 호버 시 커서 옆 툴팁으로 정의 표시
+                string linkedDesc = TooltipKeywordFormatter.InsertKeywordLinks(desc, onLightBackground: true);
+                card.SetStatus(title, meta, "", linkedDesc, titleColor);
                 if (icon != null) card.SetIcon(icon, iconTint ?? Color.white);
+                KeywordLinkHover.Register(card.DescText);
                 return;
             }
 
             string line = string.IsNullOrWhiteSpace(meta) ? title : $"{title}  {meta}";
             InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 20f, titleColor, FontStyles.Bold);
             if (!string.IsNullOrWhiteSpace(desc))
-                InfoPanelRows.AddText(container, desc, 16f, InfoPanelRows.MutedColor);
+                InfoPanelRows.AddText(container, desc, 16f, InfoPanelRows.MutedColor, FontStyles.Normal, linkKeywords: true);
         }
 
         /// <summary>
@@ -479,14 +464,14 @@ namespace DiceOrbit.UI
             hpText     = CreateTmp("HpText",     header, new Vector2(0f, 0.28f), new Vector2(1f, 0.52f), 22f, InfoPanelRows.HpColor, FontStyles.Bold);
             flavorText = CreateTmp("FlavorText", header, new Vector2(0f, 0f),    new Vector2(1f, 0.28f), 16f, InfoPanelRows.MutedColor, FontStyles.Italic);
 
-            // 섹션: 액티브 0.66~0.88 / 패시브 0.48~0.66 / 모디파이어 0.36~0.48 / 상태이상 0.24~0.36 / 타일 0.12~0.24 / 키워드 0.00~0.12
-            activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.66f, 0.88f);
+            // 섹션: 액티브 0.64~0.88 / 패시브 0.45~0.64 / 모디파이어 0.32~0.45 / 상태이상 0.18~0.32 / 타일 0.02~0.18
+            // (키워드 섹션 없음 — 정의는 텍스트 링크 호버 시 커서 옆 툴팁)
+            activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.64f, 0.88f);
             activesTitle       = activesContainer.parent.Find("Title").GetComponent<TextMeshProUGUI>();
-            passivesContainer  = CreateSection("PassivesSection",  panel, "패시브",     0.48f, 0.66f);
-            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.36f, 0.48f);
-            statusesContainer  = CreateSection("StatusesSection",  panel, "상태이상",   0.24f, 0.36f);
-            tileContainer      = CreateSection("TileSection",      panel, "밟고 있는 타일", 0.12f, 0.24f);
-            keywordsContainer  = CreateSection("KeywordsSection",  panel, "키워드",     0.00f, 0.12f);
+            passivesContainer  = CreateSection("PassivesSection",  panel, "패시브",     0.45f, 0.64f);
+            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.32f, 0.45f);
+            statusesContainer  = CreateSection("StatusesSection",  panel, "상태이상",   0.18f, 0.32f);
+            tileContainer      = CreateSection("TileSection",      panel, "밟고 있는 타일", 0.02f, 0.18f);
 
             // 타일 섹션 부속: 카드 이미지(왼쪽) + 메타 텍스트
             var tileSection = tileContainer.parent;
@@ -550,38 +535,6 @@ namespace DiceOrbit.UI
             }
 #endif
             Debug.Log("[BattleInfoPanelUI] 모디파이어 섹션 추가 완료 — 기존 섹션과 겹치면 씬에서 위치를 조정하세요.");
-        }
-
-        /// <summary>
-        /// [에디터] 이미 생성한 레이아웃에 키워드 섹션만 추가한다 (기존 스타일링 보존).
-        /// 패널 하단(0~0.14)에 생성되므로 기존 타일 섹션과 겹치면 씬에서 재배치할 것.
-        /// </summary>
-        [ContextMenu("키워드 섹션만 추가")]
-        private void AddKeywordsSection()
-        {
-            if (keywordsContainer != null)
-            {
-                Debug.LogWarning("[BattleInfoPanelUI] keywordsContainer가 이미 배선돼 있습니다.");
-                return;
-            }
-
-            var panel = transform.Find("InfoPanelCanvas/Panel");
-            if (panel == null)
-            {
-                Debug.LogWarning("[BattleInfoPanelUI] InfoPanelCanvas/Panel을 찾을 수 없습니다. 먼저 [기본 레이아웃 생성]을 실행하세요.");
-                return;
-            }
-
-            keywordsContainer = CreateSection("KeywordsSection", panel, "키워드", 0.00f, 0.14f);
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[BattleInfoPanelUI] 키워드 섹션 추가 완료 — 기존 섹션과 겹치면 씬에서 위치를 조정하세요.");
         }
 
         /// <summary>섹션 슬롯 생성: 고정 타이틀 + 내용 컨테이너(세로 쌓기, 넘침 클리핑). 내용 컨테이너를 반환.</summary>
