@@ -37,7 +37,8 @@ namespace DiceOrbit.UI
         // (키워드 섹션은 철거됨 — 키워드 정의는 텍스트 링크 호버 시 커서 옆 툴팁으로. KeywordLinkHover)
 
         [Header("타일 카드 슬롯")]
-        [SerializeField] private Image tileCardImage;               // 타일 카드 이미지 (스프라이트를 코드가 교체)
+        [SerializeField] private Image tileCardImage;               // 타일 그림 (스프라이트 미지정 시 라운드 placeholder)
+        [SerializeField] private RectTransform tileIconRow;         // 타일 그림 안 아래쪽 속성 아이콘 행 (월드 버블 미니어처)
         [SerializeField] private TextMeshProUGUI tileMetaText;      // "#3  Normal" 표기
 
         [Header("기타 슬롯")]
@@ -226,6 +227,7 @@ namespace DiceOrbit.UI
             ClearContainer(modifiersContainer);
             ClearContainer(statusesContainer);
             ClearContainer(tileContainer);
+            ClearContainer(tileIconRow);
             if (tileCardImage != null) tileCardImage.enabled = false;
         }
 
@@ -304,11 +306,44 @@ namespace DiceOrbit.UI
         {
             SetText(tileMetaText, $"#{t.TileIndex}  {t.Type}");
 
+            // 타일 그림: 지정 스프라이트가 있으면 사용, 없으면 라운드 placeholder (아이콘 오버레이의 홈)
             if (tileCardImage != null)
             {
                 var sprite = t.Type == TileType.LevelUp ? levelUpTileCardSprite : normalTileCardSprite;
-                tileCardImage.sprite = sprite;
-                tileCardImage.enabled = sprite != null;
+                if (sprite != null)
+                {
+                    tileCardImage.sprite = sprite;
+                    tileCardImage.type = Image.Type.Simple;
+                    tileCardImage.color = Color.white;
+                }
+                else
+                {
+                    tileCardImage.sprite = UiRoundedSprite.Get(12);
+                    tileCardImage.type = Image.Type.Sliced;
+                    tileCardImage.color = new Color(0.84f, 0.81f, 0.74f);   // 종이보다 살짝 어두운 타일 면
+                }
+                tileCardImage.enabled = true;
+            }
+
+            // 타일 그림 안 아래쪽 아이콘 (월드 타일 버블의 미니어처)
+            if (tileIconRow != null)
+            {
+                InfoPanelRows.Clear(tileIconRow);
+                foreach (var a in t.Attributes)
+                {
+                    if (attributeVisuals == null || !attributeVisuals.TryGet(a.Type, out var e) || e.icon == null) continue;
+
+                    var iconGo = new GameObject("AttrIcon", typeof(RectTransform));
+                    iconGo.transform.SetParent(tileIconRow, false);
+                    var img = iconGo.AddComponent<Image>();
+                    img.sprite = e.icon;
+                    img.color = e.iconTint;
+                    img.preserveAspect = true;
+                    img.raycastTarget = false;
+                    var le = iconGo.AddComponent<LayoutElement>();
+                    le.preferredWidth = 30f;
+                    le.preferredHeight = 30f;
+                }
             }
 
             // 속성별 행: 아이콘 + 이름 + x스택 (nT) + 설명 — 항상 표시 (스펙 §5.1)
@@ -464,26 +499,40 @@ namespace DiceOrbit.UI
             hpText     = CreateTmp("HpText",     header, new Vector2(0f, 0.28f), new Vector2(1f, 0.52f), 22f, InfoPanelRows.HpColor, FontStyles.Bold);
             flavorText = CreateTmp("FlavorText", header, new Vector2(0f, 0f),    new Vector2(1f, 0.28f), 16f, InfoPanelRows.MutedColor, FontStyles.Italic);
 
-            // 섹션: 액티브 0.64~0.88 / 패시브 0.45~0.64 / 모디파이어 0.32~0.45 / 상태이상 0.18~0.32 / 타일 0.02~0.18
+            // 섹션: 액티브 0.66~0.88 / 패시브 0.49~0.66 / 모디파이어 0.38~0.49 / 상태이상 0.28~0.38 / 타일 0.02~0.28
             // (키워드 섹션 없음 — 정의는 텍스트 링크 호버 시 커서 옆 툴팁)
-            activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.64f, 0.88f);
+            activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.66f, 0.88f);
             activesTitle       = activesContainer.parent.Find("Title").GetComponent<TextMeshProUGUI>();
-            passivesContainer  = CreateSection("PassivesSection",  panel, "패시브",     0.45f, 0.64f);
-            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.32f, 0.45f);
-            statusesContainer  = CreateSection("StatusesSection",  panel, "상태이상",   0.18f, 0.32f);
-            tileContainer      = CreateSection("TileSection",      panel, "밟고 있는 타일", 0.02f, 0.18f);
+            passivesContainer  = CreateSection("PassivesSection",  panel, "패시브",     0.49f, 0.66f);
+            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.38f, 0.49f);
+            statusesContainer  = CreateSection("StatusesSection",  panel, "상태이상",   0.28f, 0.38f);
+            tileContainer      = CreateSection("TileSection",      panel, "밟고 있는 타일", 0.02f, 0.28f);
 
-            // 타일 섹션 부속: 카드 이미지(왼쪽) + 메타 텍스트
+            // ── 타일 섹션 내부: 왼쪽 상단 타일 그림 (안 아래쪽에 아이콘 = 월드 버블 미니어처) + 아래 설명 행 ──
             var tileSection = tileContainer.parent;
-            var cardRect = CreateRect("TileCardImage", tileSection, new Vector2(0f, 0.30f), new Vector2(0.30f, 0.85f));
+
+            // 타일 그림 (타이틀 아래 왼쪽 상단)
+            var cardRect = CreateRect("TileCardImage", tileSection, new Vector2(0f, 0.42f), new Vector2(0.40f, 0.80f));
             tileCardImage = cardRect.gameObject.AddComponent<Image>();
             tileCardImage.preserveAspect = true;
             tileCardImage.raycastTarget = false;
             tileCardImage.enabled = false;
-            tileMetaText = CreateTmp("TileMetaText", tileSection, new Vector2(0f, 0.06f), new Vector2(0.30f, 0.28f), 15f, InfoPanelRows.MutedColor, FontStyles.Normal);
-            // 카드 이미지가 왼쪽 30%를 쓰므로 속성 행 컨테이너를 오른쪽으로 밀어준다
-            tileContainer.anchorMin = new Vector2(0.32f, 0.02f);
-            tileContainer.anchorMax = new Vector2(1f, 0.85f);
+
+            // 그림 안 아래쪽 아이콘 행 (월드 타일에 아이콘 뜨는 것과 같은 배치)
+            var iconRowRect = CreateRect("TileIconRow", cardRect, new Vector2(0.05f, 0.04f), new Vector2(0.95f, 0.34f));
+            var iconLayout = iconRowRect.gameObject.AddComponent<HorizontalLayoutGroup>();
+            iconLayout.spacing = 4f;
+            iconLayout.childAlignment = TextAnchor.MiddleCenter;
+            iconLayout.childForceExpandWidth = false;
+            iconLayout.childForceExpandHeight = false;
+            tileIconRow = iconRowRect;
+
+            // 메타 텍스트 (그림 오른쪽)
+            tileMetaText = CreateTmp("TileMetaText", tileSection, new Vector2(0.44f, 0.58f), new Vector2(1f, 0.80f), 16f, InfoPanelRows.MutedColor, FontStyles.Normal);
+
+            // 설명 행 컨테이너: 그림 아래 전체 폭
+            tileContainer.anchorMin = new Vector2(0f, 0f);
+            tileContainer.anchorMax = new Vector2(1f, 0.40f);
 
             // 빈 상태 안내
             var emptyRect = CreateRect("EmptyState", panel, new Vector2(0.1f, 0.45f), new Vector2(0.9f, 0.55f));
