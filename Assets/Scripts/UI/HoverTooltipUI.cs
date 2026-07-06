@@ -45,7 +45,6 @@ namespace DiceOrbit.UI
         // ═══════════════════════════════════════════════════════
 
         private bool _visible;      // 패널이 화면에 보이는지
-        private bool _pinnedByUI;   // ShowPinned()로 고정된 상태인지
 
         // ═══════════════════════════════════════════════════════
         // [1] 싱글톤 초기화
@@ -102,7 +101,6 @@ namespace DiceOrbit.UI
         /// </summary>
         public void ShowPinned(string message)
         {
-            _pinnedByUI = true;
             Show(message);
         }
 
@@ -111,7 +109,6 @@ namespace DiceOrbit.UI
         /// </summary>
         public void HidePinned()
         {
-            _pinnedByUI = false;
             Hide();
         }
 
