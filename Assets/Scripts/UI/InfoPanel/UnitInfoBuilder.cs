@@ -197,6 +197,11 @@ namespace DiceOrbit.UI
                 line2 += $" (예상 {shown})";
             }
 
+            // 스킬 설명 (은은한 회색으로 한 줄)
+            string desc = (data.Description ?? string.Empty).Trim();
+            if (!string.IsNullOrEmpty(desc))
+                return $"{line1}\n{line2}\n<color=#B3B3B3>{desc}</color>";
+
             return $"{line1}\n{line2}";
         }
 

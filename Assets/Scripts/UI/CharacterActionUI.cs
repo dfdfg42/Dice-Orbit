@@ -70,7 +70,11 @@ namespace DiceOrbit.UI
             // 이동 버튼 hover 프리뷰
             AddPointerEvents(moveButton,
                 () => ShowMovePreview(),
-                () => TileSkillPreviewManager.Instance?.HidePreview());
+                () =>
+                {
+                    TileSkillPreviewManager.Instance?.HidePreview();
+                    MovePathPreview.Instance?.Hide();
+                });
 
             // 오버레이 취소 이벤트
             if (overlay != null)
@@ -139,6 +143,7 @@ namespace DiceOrbit.UI
         public void Hide()
         {
             TileSkillPreviewManager.Instance?.HidePreview();
+            MovePathPreview.Instance?.Hide();
             overlay?.Hide();
             HoverTooltipUI.Instance?.HidePinned();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
@@ -336,15 +341,28 @@ namespace DiceOrbit.UI
 
         private void ShowMovePreview()
         {
-            var dest = GetMoveDestination();
-            if (dest == null) return;
+            var path = GetMovePath();
+            if (path.Count == 0) return;
+
+            // 목적지: 회전 트레일 (액션 프리뷰 언어) / 경유: 방향 체브론 (밟는 타일 + 방향 표시)
             TileSkillPreviewManager.EnsureInstance();
-            TileSkillPreviewManager.Instance?.ShowPreview(new[] { dest }, TilePreviewStyle.Neutral);
+            TileSkillPreviewManager.Instance?.ShowPreview(new[] { path[path.Count - 1] }, TilePreviewStyle.Neutral);
+            MovePathPreview.EnsureInstance();
+            MovePathPreview.Instance?.Show(path);
         }
 
         private TileData GetMoveDestination()
         {
-            if (currentCharacter?.CurrentTile == null || currentDice == null) return null;
+            var path = GetMovePath();
+            return path.Count > 0 ? path[path.Count - 1] : null;
+        }
+
+        /// <summary>이동 시 통과할 타일 순서(목적지 포함). 이동 불가면 빈 리스트.</summary>
+        private List<TileData> GetMovePath()
+        {
+            var path = new List<TileData>();
+            if (currentCharacter?.CurrentTile == null || currentDice == null) return path;
+
             int netModifier = currentCharacter.Stats.MoveBuff - currentCharacter.Stats.MoveDebuff;
             int steps = Mathf.Max(currentDice.Value + netModifier, 0);
             var tile = currentCharacter.CurrentTile;
@@ -352,8 +370,9 @@ namespace DiceOrbit.UI
             {
                 if (tile.NextTile == null) break;
                 tile = tile.NextTile;
+                path.Add(tile);
             }
-            return steps > 0 ? tile : null;
+            return path;
         }
 
         private void PopulateSkillList(Character character)
