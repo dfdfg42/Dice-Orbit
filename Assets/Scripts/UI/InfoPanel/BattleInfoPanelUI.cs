@@ -33,13 +33,8 @@ namespace DiceOrbit.UI
         [SerializeField] private RectTransform passivesContainer;
         [SerializeField] private RectTransform modifiersContainer;   // 장착 모디파이어
         [SerializeField] private RectTransform statusesContainer;
-        [SerializeField] private RectTransform tileContainer;
-        // (키워드 섹션은 철거됨 — 키워드 정의는 텍스트 링크 호버 시 커서 옆 툴팁으로. KeywordLinkHover)
-
-        [Header("타일 카드 슬롯")]
-        [SerializeField] private Image tileCardImage;               // 타일 그림 (스프라이트 미지정 시 라운드 placeholder)
-        [SerializeField] private RectTransform tileIconRow;         // 타일 그림 안 아래쪽 속성 아이콘 행 (월드 버블 미니어처)
-        [SerializeField] private TextMeshProUGUI tileMetaText;      // "#3  Normal" 표기
+        // (키워드 섹션 철거 — 정의는 텍스트 링크 호버 시 커서 옆 툴팁. KeywordLinkHover)
+        // (타일 섹션 철거 — 왼쪽 위 독립 패널로 분리. TileInfoPanelUI)
 
         [Header("기타 슬롯")]
         [SerializeField] private GameObject emptyState;             // 대상 없을 때 표시할 오브젝트
@@ -48,8 +43,6 @@ namespace DiceOrbit.UI
         [SerializeField] private GlossaryCardUI cardPrefab;
 
         [Header("스킨")]
-        [SerializeField] private Sprite normalTileCardSprite;
-        [SerializeField] private Sprite levelUpTileCardSprite;
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
         [SerializeField] private float refreshInterval = 0.5f;
         [Tooltip("점수지(크림 종이) 배경색 — 라이트 테마. [기본 레이아웃 생성] 시 적용")]
@@ -100,9 +93,10 @@ namespace DiceOrbit.UI
 
             if (!visible)
             {
-                // 패널 숨김 시 월드 인디케이터도 제거
+                // 패널 숨김 시 월드 인디케이터/타일 패널도 제거
                 Visuals.PassiveRangeIndicator.Instance?.Hide();
                 Visuals.IntentTileLiftEffect.Instance?.Hide();
+                TileInfoPanelUI.Instance?.Hide();
             }
             if (visible) _lastTargetKey = new object();              // 다시 켜질 때 강제 리렌더
         }
@@ -197,22 +191,41 @@ namespace DiceOrbit.UI
                 if (emptyState != null) emptyState.SetActive(false);
                 var d = unit.GetBattleInfo();
                 bool hasModifiers = d.Modifiers != null && d.Modifiers.Count > 0;
-                SetSectionVisibility(unitSections: true, tileSection: d.CurrentTile.HasValue, modifiersSection: hasModifiers);
+                SetSectionVisibility(unitSections: true, modifiersSection: hasModifiers);
                 RenderUnit(d);
+
+                // 밟은 타일 → 왼쪽 위 독립 타일 패널
+                SyncTilePanel(d.CurrentTile);
                 return;
             }
 
             var tile = _selection.CurrentTile;
             if (tile != null)
             {
+                // 타일 단독 뷰: 오른쪽 패널은 비우고 왼쪽 위 타일 패널만
                 if (emptyState != null) emptyState.SetActive(false);
-                SetSectionVisibility(unitSections: false, tileSection: true, modifiersSection: false);   // 타일 단독 뷰: 타일 효과만
-                RenderTile(tile.GetTileInfo());
+                SetSectionVisibility(unitSections: false, modifiersSection: false);
+                SyncTilePanel(tile.GetTileInfo());
                 return;
             }
 
-            SetSectionVisibility(unitSections: false, tileSection: false, modifiersSection: false);      // 빈 상태: 안내 문구만
+            SetSectionVisibility(unitSections: false, modifiersSection: false);      // 빈 상태: 안내 문구만
             if (emptyState != null) emptyState.SetActive(true);
+            SyncTilePanel(null);
+        }
+
+        /// <summary>왼쪽 위 독립 타일 패널 동기화.</summary>
+        private static void SyncTilePanel(TileInfoData? tile)
+        {
+            if (tile.HasValue)
+            {
+                TileInfoPanelUI.EnsureInstance();
+                TileInfoPanelUI.Instance?.Show(tile.Value);
+            }
+            else
+            {
+                TileInfoPanelUI.Instance?.Hide();
+            }
         }
 
         private void ClearAllSlots()
@@ -220,15 +233,11 @@ namespace DiceOrbit.UI
             SetText(nameText, "");
             SetText(hpText, "");
             SetText(flavorText, "");
-            SetText(tileMetaText, "");
             SetText(ResolveActivesTitle(), InfoPanelRows.FormatSectionTitle("액티브"));   // 기본 라벨로 복원
             ClearContainer(activesContainer);
             ClearContainer(passivesContainer);
             ClearContainer(modifiersContainer);
             ClearContainer(statusesContainer);
-            ClearContainer(tileContainer);
-            ClearContainer(tileIconRow);
-            if (tileCardImage != null) tileCardImage.enabled = false;
         }
 
         private void RenderUnit(UnitInfoData d)
@@ -295,77 +304,7 @@ namespace DiceOrbit.UI
                 }
             }
 
-            // ── Tile ──
-            if (d.CurrentTile.HasValue)
-                RenderTile(d.CurrentTile.Value);
-
-            // (키워드 정의는 섹션 대신 텍스트 링크 호버 → 커서 옆 툴팁. KeywordLinkHover)
-        }
-
-        private void RenderTile(TileInfoData t)
-        {
-            SetText(tileMetaText, $"#{t.TileIndex}  {t.Type}");
-
-            // 타일 그림: 지정 스프라이트가 있으면 사용, 없으면 라운드 placeholder (아이콘 오버레이의 홈)
-            if (tileCardImage != null)
-            {
-                var sprite = t.Type == TileType.LevelUp ? levelUpTileCardSprite : normalTileCardSprite;
-                if (sprite != null)
-                {
-                    tileCardImage.sprite = sprite;
-                    tileCardImage.type = Image.Type.Simple;
-                    tileCardImage.color = Color.white;
-                }
-                else
-                {
-                    tileCardImage.sprite = UiRoundedSprite.Get(12);
-                    tileCardImage.type = Image.Type.Sliced;
-                    tileCardImage.color = new Color(0.84f, 0.81f, 0.74f);   // 종이보다 살짝 어두운 타일 면
-                }
-                tileCardImage.enabled = true;
-            }
-
-            // 타일 그림 안 아래쪽 아이콘 (월드 타일 버블의 미니어처)
-            if (tileIconRow != null)
-            {
-                InfoPanelRows.Clear(tileIconRow);
-                foreach (var a in t.Attributes)
-                {
-                    if (attributeVisuals == null || !attributeVisuals.TryGet(a.Type, out var e) || e.icon == null) continue;
-
-                    var iconGo = new GameObject("AttrIcon", typeof(RectTransform));
-                    iconGo.transform.SetParent(tileIconRow, false);
-                    var img = iconGo.AddComponent<Image>();
-                    img.sprite = e.icon;
-                    img.color = e.iconTint;
-                    img.preserveAspect = true;
-                    img.raycastTarget = false;
-                    var le = iconGo.AddComponent<LayoutElement>();
-                    le.preferredWidth = 30f;
-                    le.preferredHeight = 30f;
-                }
-            }
-
-            // 속성별 행: 아이콘 + 이름 + x스택 (nT) + 설명 — 항상 표시 (스펙 §5.1)
-            // 이름/설명은 속성 인스턴스 제공 (Bone/Reagent 등 오버라이드), 아이콘은 월드 버블과 동일 DB
-            foreach (var a in t.Attributes)
-            {
-                string label = !string.IsNullOrWhiteSpace(a.DisplayName) ? a.DisplayName : a.Type.ToString();
-                string desc = a.Description ?? "";
-                Color tint = Color.white;
-                Sprite icon = null;
-                if (attributeVisuals != null && attributeVisuals.TryGet(a.Type, out var entry))
-                {
-                    tint = entry.iconTint;
-                    icon = entry.icon;
-                    // DB에 설명을 채웠으면 그것이 우선 (수동 오버라이드용)
-                    if (!string.IsNullOrWhiteSpace(entry.description)) desc = entry.description;
-                }
-                string dur = a.Duration < 0 ? "" : $"({a.Duration}T)";   // 영구는 지속턴 표기 생략
-                string stack = a.Value > 0 ? $"x{a.Value}" : "";
-                // 글자 색은 밝은 배경용으로 어둡게 보정, 아이콘 틴트는 원본 유지
-                AddEntry(tileContainer, label, $"{stack} {dur}".Trim(), desc, InfoPanelRows.OnLight(tint), icon, tint);
-            }
+            // (타일 정보는 왼쪽 위 독립 패널(TileInfoPanelUI), 키워드 정의는 링크 호버 툴팁(KeywordLinkHover))
         }
 
         // ═══════════════════════════════════════════════════════
@@ -374,10 +313,10 @@ namespace DiceOrbit.UI
 
         /// <summary>
         /// 조회 대상에 맞는 섹션만 표시.
-        /// 유닛 뷰: 헤더+액티브+패시브+상태이상+키워드 / 타일 뷰: 타일 섹션만 / 빈 상태: 전부 숨김.
+        /// 유닛 뷰: 헤더+액티브+패시브+상태이상 / 빈 상태·타일 뷰: 전부 숨김.
         /// 섹션 위치는 고정(앵커)이므로 숨겨도 다른 섹션이 밀리지 않는다.
         /// </summary>
-        private void SetSectionVisibility(bool unitSections, bool tileSection, bool modifiersSection)
+        private void SetSectionVisibility(bool unitSections, bool modifiersSection)
         {
             // 헤더(이름/HP/설명): nameText의 부모 오브젝트를 통째로 토글
             if (nameText != null && nameText.transform.parent != null)
@@ -387,7 +326,6 @@ namespace DiceOrbit.UI
             ToggleSection(passivesContainer, unitSections);
             ToggleSection(modifiersContainer, modifiersSection);   // 장착한 게 있을 때만
             ToggleSection(statusesContainer, unitSections);
-            ToggleSection(tileContainer, tileSection);
         }
 
         /// <summary>컨테이너의 부모(섹션 루트: 타이틀 포함)를 토글.</summary>
@@ -499,40 +437,13 @@ namespace DiceOrbit.UI
             hpText     = CreateTmp("HpText",     header, new Vector2(0f, 0.28f), new Vector2(1f, 0.52f), 22f, InfoPanelRows.HpColor, FontStyles.Bold);
             flavorText = CreateTmp("FlavorText", header, new Vector2(0f, 0f),    new Vector2(1f, 0.28f), 16f, InfoPanelRows.MutedColor, FontStyles.Italic);
 
-            // 섹션: 액티브 0.66~0.88 / 패시브 0.49~0.66 / 모디파이어 0.38~0.49 / 상태이상 0.28~0.38 / 타일 0.02~0.28
-            // (키워드 섹션 없음 — 정의는 텍스트 링크 호버 시 커서 옆 툴팁)
-            activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.66f, 0.88f);
+            // 섹션: 액티브 0.60~0.88 / 패시브 0.40~0.60 / 모디파이어 0.27~0.40 / 상태이상 0.04~0.27
+            // (키워드 섹션 없음 — 정의는 링크 호버 툴팁 / 타일 섹션 없음 — 왼쪽 위 독립 패널 TileInfoPanelUI)
+            activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.60f, 0.88f);
             activesTitle       = activesContainer.parent.Find("Title").GetComponent<TextMeshProUGUI>();
-            passivesContainer  = CreateSection("PassivesSection",  panel, "패시브",     0.49f, 0.66f);
-            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.38f, 0.49f);
-            statusesContainer  = CreateSection("StatusesSection",  panel, "상태이상",   0.28f, 0.38f);
-            tileContainer      = CreateSection("TileSection",      panel, "밟고 있는 타일", 0.02f, 0.28f);
-
-            // ── 타일 섹션 내부: 왼쪽 상단 타일 그림 (안 아래쪽에 아이콘 = 월드 버블 미니어처) + 아래 설명 행 ──
-            var tileSection = tileContainer.parent;
-
-            // 타일 그림 (타이틀 아래 왼쪽 상단)
-            var cardRect = CreateRect("TileCardImage", tileSection, new Vector2(0f, 0.42f), new Vector2(0.40f, 0.80f));
-            tileCardImage = cardRect.gameObject.AddComponent<Image>();
-            tileCardImage.preserveAspect = true;
-            tileCardImage.raycastTarget = false;
-            tileCardImage.enabled = false;
-
-            // 그림 안 아래쪽 아이콘 행 (월드 타일에 아이콘 뜨는 것과 같은 배치)
-            var iconRowRect = CreateRect("TileIconRow", cardRect, new Vector2(0.05f, 0.04f), new Vector2(0.95f, 0.34f));
-            var iconLayout = iconRowRect.gameObject.AddComponent<HorizontalLayoutGroup>();
-            iconLayout.spacing = 4f;
-            iconLayout.childAlignment = TextAnchor.MiddleCenter;
-            iconLayout.childForceExpandWidth = false;
-            iconLayout.childForceExpandHeight = false;
-            tileIconRow = iconRowRect;
-
-            // 메타 텍스트 (그림 오른쪽)
-            tileMetaText = CreateTmp("TileMetaText", tileSection, new Vector2(0.44f, 0.58f), new Vector2(1f, 0.80f), 16f, InfoPanelRows.MutedColor, FontStyles.Normal);
-
-            // 설명 행 컨테이너: 그림 아래 전체 폭
-            tileContainer.anchorMin = new Vector2(0f, 0f);
-            tileContainer.anchorMax = new Vector2(1f, 0.40f);
+            passivesContainer  = CreateSection("PassivesSection",  panel, "패시브",     0.40f, 0.60f);
+            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.27f, 0.40f);
+            statusesContainer  = CreateSection("StatusesSection",  panel, "상태이상",   0.04f, 0.27f);
 
             // 빈 상태 안내
             var emptyRect = CreateRect("EmptyState", panel, new Vector2(0.1f, 0.45f), new Vector2(0.9f, 0.55f));
