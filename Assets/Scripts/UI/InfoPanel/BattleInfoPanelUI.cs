@@ -51,6 +51,8 @@ namespace DiceOrbit.UI
         [SerializeField] private Sprite levelUpTileCardSprite;
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
         [SerializeField] private float refreshInterval = 0.5f;
+        [Tooltip("점수지(크림 종이) 배경색 — 라이트 테마. [기본 레이아웃 생성] 시 적용")]
+        [SerializeField] private Color paperColor = new Color(0.950f, 0.930f, 0.885f, 0.98f);
 
         [Header("정렬")]
         [Tooltip("사이드바는 배경 레이어 — 일반 UI(0)와 팝업(캐릭터 액션 패널 등)이 항상 위에 그려지도록 음수 유지")]
@@ -215,7 +217,7 @@ namespace DiceOrbit.UI
             SetText(hpText, "");
             SetText(flavorText, "");
             SetText(tileMetaText, "");
-            SetText(ResolveActivesTitle(), "액티브");   // 기본 라벨로 복원
+            SetText(ResolveActivesTitle(), InfoPanelRows.FormatSectionTitle("액티브"));   // 기본 라벨로 복원
             ClearContainer(activesContainer);
             ClearContainer(passivesContainer);
             ClearContainer(modifiersContainer);
@@ -234,7 +236,7 @@ namespace DiceOrbit.UI
 
             // 액티브 섹션 제목: 캐릭터 "액티브" / 몬스터 "다음 행동" (빌더가 결정)
             if (!string.IsNullOrWhiteSpace(d.ActivesLabel))
-                SetText(ResolveActivesTitle(), d.ActivesLabel);
+                SetText(ResolveActivesTitle(), InfoPanelRows.FormatSectionTitle(d.ActivesLabel));
 
             // ── Actives ──
             if (d.Actives != null)
@@ -254,7 +256,7 @@ namespace DiceOrbit.UI
                         foreach (var line in a.ModifierLines)
                             desc = JoinLines(desc, $"<color={InfoPanelRows.ModifierColorHex}>{line}</color>");
 
-                    AddEntry(activesContainer, title, meta, desc, Color.white);
+                    AddEntry(activesContainer, title, meta, desc, InfoPanelRows.InkDark);
                 }
             }
 
@@ -285,7 +287,8 @@ namespace DiceOrbit.UI
                 foreach (var s in d.Statuses)
                 {
                     string meta = $"{s.StackText} {s.DurationText}".Trim();
-                    AddEntry(statusesContainer, s.Name, meta, s.Description, s.Color);
+                    // DB 색은 다크 배경용 → 밝은 종이 위에서 읽히게 어둡게 보정
+                    AddEntry(statusesContainer, s.Name, meta, s.Description, InfoPanelRows.OnLight(s.Color));
                 }
             }
 
@@ -325,7 +328,8 @@ namespace DiceOrbit.UI
                 }
                 string dur = a.Duration < 0 ? "" : $"({a.Duration}T)";   // 영구는 지속턴 표기 생략
                 string stack = a.Value > 0 ? $"x{a.Value}" : "";
-                AddEntry(tileContainer, label, $"{stack} {dur}".Trim(), desc, tint, icon, tint);
+                // 글자 색은 밝은 배경용으로 어둡게 보정, 아이콘 틴트는 원본 유지
+                AddEntry(tileContainer, label, $"{stack} {dur}".Trim(), desc, InfoPanelRows.OnLight(tint), icon, tint);
             }
         }
 
@@ -344,7 +348,7 @@ namespace DiceOrbit.UI
             if (matches == null) return;
 
             foreach (var k in matches)
-                AddEntry(keywordsContainer, k.Key, "", k.Description, k.Color);
+                AddEntry(keywordsContainer, k.Key, "", k.Description, InfoPanelRows.OnLight(k.Color));
         }
 
         // ═══════════════════════════════════════════════════════
@@ -413,9 +417,9 @@ namespace DiceOrbit.UI
             }
 
             string line = string.IsNullOrWhiteSpace(meta) ? title : $"{title}  {meta}";
-            InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 16f, titleColor, FontStyles.Bold);
+            InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 20f, titleColor, FontStyles.Bold);
             if (!string.IsNullOrWhiteSpace(desc))
-                InfoPanelRows.AddText(container, desc, 13f, InfoPanelRows.MutedColor);
+                InfoPanelRows.AddText(container, desc, 16f, InfoPanelRows.MutedColor);
         }
 
         /// <summary>
@@ -467,14 +471,14 @@ namespace DiceOrbit.UI
             // 오른쪽 도킹 패널 배경
             var panel = CreateRect("Panel", canvasGo.transform, new Vector2(0.70f, 0f), Vector2.one);
             var bg = panel.gameObject.AddComponent<Image>();
-            bg.color = new Color(0.08f, 0.08f, 0.11f, 0.96f);   // raycastTarget=true 유지 → 패널 위 3D 호버 차단
+            bg.color = paperColor;   // 크림 점수지. raycastTarget=true 유지 → 패널 위 3D 호버 차단
 
             // ── 고정 섹션 슬롯 (패널 내 앵커 비율) ──
             // Header 0.88~1.00
-            var header = CreateRect("Header", panel, new Vector2(0.03f, 0.88f), new Vector2(0.97f, 0.995f));
-            nameText   = CreateTmp("NameText",   header, new Vector2(0f, 0.55f), new Vector2(1f, 1f),    26f, Color.white, FontStyles.Bold);
-            hpText     = CreateTmp("HpText",     header, new Vector2(0f, 0.30f), new Vector2(1f, 0.55f), 18f, InfoPanelRows.HpColor, FontStyles.Normal);
-            flavorText = CreateTmp("FlavorText", header, new Vector2(0f, 0f),    new Vector2(1f, 0.30f), 13f, InfoPanelRows.MutedColor, FontStyles.Italic);
+            var header = CreateRect("Header", panel, new Vector2(0.04f, 0.88f), new Vector2(0.96f, 0.995f));
+            nameText   = CreateTmp("NameText",   header, new Vector2(0f, 0.52f), new Vector2(1f, 1f),    34f, InfoPanelRows.InkDark, FontStyles.Bold);
+            hpText     = CreateTmp("HpText",     header, new Vector2(0f, 0.28f), new Vector2(1f, 0.52f), 22f, InfoPanelRows.HpColor, FontStyles.Bold);
+            flavorText = CreateTmp("FlavorText", header, new Vector2(0f, 0f),    new Vector2(1f, 0.28f), 16f, InfoPanelRows.MutedColor, FontStyles.Italic);
 
             // 섹션: 액티브 0.66~0.88 / 패시브 0.48~0.66 / 모디파이어 0.36~0.48 / 상태이상 0.24~0.36 / 타일 0.12~0.24 / 키워드 0.00~0.12
             activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.66f, 0.88f);
@@ -492,7 +496,7 @@ namespace DiceOrbit.UI
             tileCardImage.preserveAspect = true;
             tileCardImage.raycastTarget = false;
             tileCardImage.enabled = false;
-            tileMetaText = CreateTmp("TileMetaText", tileSection, new Vector2(0f, 0.06f), new Vector2(0.30f, 0.28f), 12f, InfoPanelRows.MutedColor, FontStyles.Normal);
+            tileMetaText = CreateTmp("TileMetaText", tileSection, new Vector2(0f, 0.06f), new Vector2(0.30f, 0.28f), 15f, InfoPanelRows.MutedColor, FontStyles.Normal);
             // 카드 이미지가 왼쪽 30%를 쓰므로 속성 행 컨테이너를 오른쪽으로 밀어준다
             tileContainer.anchorMin = new Vector2(0.32f, 0.02f);
             tileContainer.anchorMax = new Vector2(1f, 0.85f);
@@ -501,7 +505,7 @@ namespace DiceOrbit.UI
             var emptyRect = CreateRect("EmptyState", panel, new Vector2(0.1f, 0.45f), new Vector2(0.9f, 0.55f));
             var emptyTmp = emptyRect.gameObject.AddComponent<TextMeshProUGUI>();
             emptyTmp.text = "캐릭터나 몬스터에 마우스를 올리거나\n클릭해 고정하세요.";
-            emptyTmp.fontSize = 16f;
+            emptyTmp.fontSize = 20f;
             emptyTmp.color = InfoPanelRows.MutedColor;
             emptyTmp.alignment = TextAlignmentOptions.Center;
             emptyTmp.raycastTarget = false;
@@ -586,9 +590,9 @@ namespace DiceOrbit.UI
         {
             var section = CreateRect(name, parent, new Vector2(0.03f, yMin + 0.005f), new Vector2(0.97f, yMax - 0.005f));
 
-            // 타이틀 (코드가 건드리지 않음 — 씬에서 자유 수정)
-            var titleTmp = CreateTmp("Title", section, new Vector2(0f, 0.86f), new Vector2(1f, 1f), 18f, InfoPanelRows.SectionTitleColor, FontStyles.Bold);
-            titleTmp.text = title;
+            // 타이틀: 골드 핍 + 검정 잉크, 큼직하게 (코드는 액티브 라벨 교체 외엔 건드리지 않음)
+            var titleTmp = CreateTmp("Title", section, new Vector2(0f, 0.82f), new Vector2(1f, 1f), 26f, InfoPanelRows.SectionTitleColor, FontStyles.Bold);
+            titleTmp.text = InfoPanelRows.FormatSectionTitle(title);
 
             // 내용 컨테이너
             var content = CreateRect("Content", section, new Vector2(0f, 0f), new Vector2(1f, 0.86f));
