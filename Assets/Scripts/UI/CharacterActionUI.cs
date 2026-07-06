@@ -134,6 +134,9 @@ namespace DiceOrbit.UI
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
 
+            // 이 캐릭터의 스킬 조건을 못 맞추는 주사위를 손패에서 살짝 붉게 표시
+            DiceUI.Instance?.ShowSkillUsabilityHint(character);
+
             // 슬라이드 인
             StopSlide();
             slideCoroutine = StartCoroutine(SlideIn());
@@ -144,6 +147,7 @@ namespace DiceOrbit.UI
         {
             TileSkillPreviewManager.Instance?.HidePreview();
             MovePathPreview.Instance?.Hide();
+            DiceUI.Instance?.ClearSkillUsabilityHint();
             overlay?.Hide();
             HoverTooltipUI.Instance?.HidePinned();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
@@ -186,7 +190,7 @@ namespace DiceOrbit.UI
             RefreshActionButtonsState();
             RefreshSkillButtonPreview();
 
-            // 스킬 목록이 열려 있으면 사용 가능 표시(붉은 틴트)를 새 주사위 값으로 갱신
+            // 스킬 목록이 열려 있으면 호버 텍스트(조건/예상 피해)를 새 주사위 값으로 갱신
             if (skillSelectPanel != null && skillSelectPanel.activeSelf)
                 PopulateSkillList(currentCharacter);
         }
@@ -400,15 +404,6 @@ namespace DiceOrbit.UI
 
                 var imgs = go.GetComponentsInChildren<Image>();
                 if (imgs.Length > 1 && runtimeAbility.BaseSkill != null && runtimeAbility.BaseSkill.icon != null) imgs[1].sprite = runtimeAbility.BaseSkill.icon;
-
-                // 현재 주사위로 사용 불가한 스킬은 붉게 표시 (조건 미충족을 클릭 전에 인지)
-                bool canUse = currentDice != null && runtimeAbility.CanUse(currentDice.Value);
-                if (!canUse)
-                {
-                    var unusableTint = new Color(1f, 0.4f, 0.4f, 1f);
-                    foreach (var img in imgs) img.color = unusableTint;
-                    if (txt != null) txt.color = new Color(1f, 0.55f, 0.55f, 1f);
-                }
 
                 var hoverPreview = go.GetComponent<SkillPreviewHoverUI>();
                 if (hoverPreview == null) hoverPreview = go.AddComponent<SkillPreviewHoverUI>();
