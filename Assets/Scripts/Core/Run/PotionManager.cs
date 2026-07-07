@@ -18,8 +18,11 @@ namespace DiceOrbit.Core.Run
         [Header("설정")]
         [SerializeField] private int slotCount = 3;
 
-        [Header("포션 풀 (비우면 기본 세트 런타임 생성)")]
+        [Header("포션 풀 — 획득 '후보' 목록 (상점 진열/드랍). 비우면 기본 세트 런타임 생성")]
         [SerializeField] private List<PotionDefinition> potionPool = new List<PotionDefinition>();
+
+        [Header("시작 포션 — 게임 시작 시 슬롯에 지급 (테스트/디버그용)")]
+        [SerializeField] private List<PotionDefinition> startingPotions = new List<PotionDefinition>();
 
         private readonly List<PotionDefinition> _slots = new List<PotionDefinition>();
 
@@ -33,6 +36,9 @@ namespace DiceOrbit.Core.Run
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             EnsureDefaultPool();
+
+            foreach (var potion in startingPotions)
+                TryAdd(potion);
         }
 
         private void OnDestroy()

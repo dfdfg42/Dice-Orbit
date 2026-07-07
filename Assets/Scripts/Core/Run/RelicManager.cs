@@ -15,8 +15,11 @@ namespace DiceOrbit.Core.Run
     {
         public static RelicManager Instance { get; private set; }
 
-        [Header("유물 풀 (비우면 기본 세트 런타임 생성)")]
+        [Header("유물 풀 — 획득 '후보' 목록 (엘리트 드랍/상점 진열). 비우면 기본 세트 런타임 생성")]
         [SerializeField] private List<RelicDefinition> relicPool = new List<RelicDefinition>();
+
+        [Header("시작 유물 — 게임 시작 시 바로 보유 (테스트/디버그용, HUD 렐릭칸에 즉시 표시)")]
+        [SerializeField] private List<RelicDefinition> startingRelics = new List<RelicDefinition>();
 
         private readonly List<RelicDefinition> _owned = new List<RelicDefinition>();
         private string _pendingAnnouncement;   // 엘리트 드랍 안내 (보상 화면이 1회 소비)
@@ -39,6 +42,9 @@ namespace DiceOrbit.Core.Run
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             EnsureDefaultPool();
+
+            foreach (var relic in startingRelics)
+                Grant(relic);
         }
 
         private void OnDestroy()
