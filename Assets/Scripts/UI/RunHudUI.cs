@@ -28,6 +28,7 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI goldText;
         [SerializeField] private RectTransform relicRow;
         [SerializeField] private RectTransform potionRow;
+        [SerializeField] private Button settingsButton;    // 환경설정 (ESC로도 열림)
 
         [Header("배치")]
         [SerializeField] private float chipSize = 52f;
@@ -61,6 +62,12 @@ namespace DiceOrbit.UI
         {
             if (rootCanvas == null) BuildDefaultLayout();
 
+            settingsButton?.onClick.AddListener(() =>
+            {
+                SettingsUI.EnsureInstance();
+                SettingsUI.Instance?.Open();
+            });
+
             // 데이터 변경 구독
             GoldManager.EnsureInstance().OnGoldChanged += _ => RefreshGold();
             RelicManager.EnsureInstance().OnRelicsChanged += RebuildRelics;
@@ -70,6 +77,18 @@ namespace DiceOrbit.UI
 
             OnGameStateChanged(GameFlowManager.Instance != null ? GameFlowManager.Instance.CurrentState : GameState.MainMenu);
             RefreshAll();
+        }
+
+        private void Update()
+        {
+            // ESC = 환경설정 토글 (HUD가 떠 있는 게임플레이 상태에서만)
+            if (rootCanvas != null && rootCanvas.activeSelf &&
+                UnityEngine.InputSystem.Keyboard.current != null &&
+                UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                SettingsUI.EnsureInstance();
+                SettingsUI.Instance?.Toggle();
+            }
         }
 
         private void OnDestroy()
@@ -329,6 +348,39 @@ namespace DiceOrbit.UI
 
             // 포션 행
             potionRow = CreateRow(bar.transform, "PotionRow", 190f);
+
+            // 설정 버튼 (바 끝 — ESC로도 열림)
+            var settingsGo = new GameObject("SettingsButton", typeof(RectTransform));
+            settingsGo.transform.SetParent(bar.transform, false);
+            var settingsLe = settingsGo.AddComponent<LayoutElement>();
+            settingsLe.preferredWidth = 72f;
+            settingsLe.preferredHeight = chipSize;
+            var settingsImg = settingsGo.AddComponent<Image>();
+            settingsImg.sprite = UiRoundedSprite.Get(12);
+            settingsImg.type = Image.Type.Sliced;
+            settingsButton = settingsGo.AddComponent<Button>();
+            settingsButton.targetGraphic = settingsImg;
+            var scb = ColorBlock.defaultColorBlock;
+            scb.normalColor = CardWell;
+            scb.highlightedColor = Color.Lerp(CardWell, Color.white, 0.2f);
+            scb.pressedColor = Color.Lerp(CardWell, Color.black, 0.25f);
+            scb.selectedColor = CardWell;
+            scb.fadeDuration = 0.08f;
+            settingsButton.colors = scb;
+
+            var settingsLabel = new GameObject("Label", typeof(RectTransform));
+            settingsLabel.transform.SetParent(settingsGo.transform, false);
+            var settingsTmp = settingsLabel.AddComponent<TextMeshProUGUI>();
+            settingsTmp.text = "설정";
+            settingsTmp.fontSize = 20f;
+            settingsTmp.fontStyle = FontStyles.Bold;
+            settingsTmp.alignment = TextAlignmentOptions.Center;
+            settingsTmp.color = Ink;
+            settingsTmp.raycastTarget = false;
+            if (_font != null) settingsTmp.font = _font;
+            var settingsLabelRect = settingsTmp.rectTransform;
+            settingsLabelRect.anchorMin = Vector2.zero; settingsLabelRect.anchorMax = Vector2.one;
+            settingsLabelRect.offsetMin = Vector2.zero; settingsLabelRect.offsetMax = Vector2.zero;
 
             rootCanvas.SetActive(false);
 

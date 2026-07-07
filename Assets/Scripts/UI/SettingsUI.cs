@@ -80,6 +80,14 @@ namespace DiceOrbit.UI
 
         // ── 공개 API ──────────────────────────────────────────
 
+        public bool IsOpen => rootCanvas != null && rootCanvas.activeSelf;
+
+        public void Toggle()
+        {
+            if (IsOpen) Close();
+            else Open();
+        }
+
         public void Open()
         {
             if (rootCanvas == null) BuildDefaultLayout();
