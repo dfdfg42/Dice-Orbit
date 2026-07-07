@@ -40,15 +40,16 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
-        /// 전투 시작 (노드맵 진입점). waveNumber = WaveDatabase 1-based 인덱스.
+        /// 전투 시작 (노드맵 진입점). encounter = 노드가 배정받은 몹 세트,
+        /// waveNumber = 표시/배경/구독자용 번호 (노드맵에서는 층+1).
         /// </summary>
-        public void StartEncounter(int waveNumber)
+        public void StartEncounter(WaveDefinition encounter, int waveNumber)
         {
             CurrentWave = waveNumber;
             IsWaveActive = true;
-            Debug.Log($"[WaveManager] Encounter 시작 — Wave {waveNumber}");
+            Debug.Log($"[WaveManager] Encounter 시작 — #{waveNumber}, 몬스터 {encounter?.MonsterPresets?.Count ?? 0}종");
 
-            SpawnMonsters(waveNumber);
+            SpawnMonsters(encounter);
 
             // 유물: 전투 시작 시 파티 회복 (예: 생명의 부적)
             int startHeal = Run.RelicManager.Instance?.BattleStartHeal ?? 0;
@@ -64,9 +65,9 @@ namespace DiceOrbit.Core
             OnWaveStart?.Invoke(waveNumber);
         }
 
-        private void SpawnMonsters(int wave)
+        private void SpawnMonsters(WaveDefinition waveDef)
         {
-            Debug.Log($"[WaveManager] Spawning all monsters for Wave {wave}...");
+            Debug.Log("[WaveManager] Spawning encounter monsters...");
 
             CleanupSpawnedMonsters();
 
@@ -76,7 +77,6 @@ namespace DiceOrbit.Core
                 combatManager.ClearMonsters();
             }
 
-            var waveDef = GetWaveDefinition(wave);
             if (waveDef == null || waveDef.MonsterPresets == null || waveDef.MonsterPresets.Count == 0)
             {
                 Debug.LogWarning("[WaveManager] No wave definition or monster presets found. Skipping spawn.");
@@ -135,7 +135,7 @@ namespace DiceOrbit.Core
                 }
             }
 
-            Debug.Log($"[WaveManager] Total {spawnedMonsters.Count} monsters spawned for Wave {wave}.");
+            Debug.Log($"[WaveManager] Total {spawnedMonsters.Count} monsters spawned.");
 
             // 몬스터 정체성 색상 배정 + 발밑 바닥 색상 마커 생성
             Visuals.MonsterIdentityManager.EnsureInstance();

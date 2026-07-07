@@ -56,15 +56,18 @@ namespace DiceOrbit.Core.Run
             // ── 타입 배치 ──
             AssignTypes(act, graph, byFloor, rng);
 
-            // ── 웨이브 인덱스 ──
+            // ── 몹 세트 배정 (층 구간별 티어 풀에서 노드마다 랜덤 — 같은 층도 다양) ──
             foreach (var node in graph.Nodes)
             {
                 switch (node.Type)
                 {
-                    case MapNodeType.Battle: node.WaveIndex = act.ResolveBattleWaveIndex(node.Floor); break;
-                    case MapNodeType.Elite:  node.WaveIndex = act.ResolveEliteWaveIndex(); break;
-                    case MapNodeType.Boss:   node.WaveIndex = act.ResolveBossWaveIndex(); break;
+                    case MapNodeType.Battle: node.Encounter = act.ResolveBattleEncounter(node.Floor, rng); break;
+                    case MapNodeType.Elite:  node.Encounter = act.ResolveEliteEncounter(rng); break;
+                    case MapNodeType.Boss:   node.Encounter = act.ResolveBossEncounter(rng); break;
                 }
+
+                if (node.IsCombat && node.Encounter == null)
+                    Debug.LogWarning($"[MapGenerator] 노드 {node.Id}({node.Type}, 층 {node.Floor})에 배정할 몹 세트가 없습니다 — ActDefinition의 티어 풀/폴백 DB를 확인하세요.");
             }
 
             // ── 주사위 개조 예고 (중반 일반 전투에만) ──
@@ -157,7 +160,8 @@ namespace DiceOrbit.Core.Run
                         MapNodeType.Boss => "👑",
                         _ => "?",
                     };
-                    sb.Append($"[{n.Id}:{icon} w{n.WaveIndex}→({string.Join(",", n.Next)})]  ");
+                    string enc = n.Encounter != null ? $" m{n.Encounter.MonsterPresets?.Count ?? 0}" : "";
+                    sb.Append($"[{n.Id}:{icon}{enc}→({string.Join(",", n.Next)})]  ");
                 }
                 sb.AppendLine();
             }

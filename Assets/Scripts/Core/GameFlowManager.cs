@@ -205,10 +205,16 @@ namespace DiceOrbit.Core
             var run = RunManager.Instance;
             if (run != null && run.RunActive && run.CurrentNode != null && run.CurrentNode.IsCombat)
             {
-                // 노드맵 흐름: 현재 노드가 지정한 웨이브로 전투 시작 (WaveIndex는 0-based, 웨이브 번호는 1-based)
+                // 노드맵 흐름: 노드가 배정받은 몹 세트로 전투 시작 (번호는 층+1 — 표시/배경용)
                 if (WaveManager.Instance != null && !WaveManager.Instance.IsWaveActive)
                 {
-                    WaveManager.Instance.StartEncounter(run.CurrentNode.WaveIndex + 1);
+                    if (run.CurrentNode.Encounter == null)
+                    {
+                        Debug.LogError("[GameFlow] 이 노드에 몹 세트가 없습니다 — ActDefinition의 티어 풀/폴백 DB를 확인하세요.");
+                        ChangeState(GameState.Map);
+                        return;
+                    }
+                    WaveManager.Instance.StartEncounter(run.CurrentNode.Encounter, run.CurrentNode.Floor + 1);
                 }
                 return;
             }
