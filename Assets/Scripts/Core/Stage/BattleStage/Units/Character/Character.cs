@@ -446,6 +446,8 @@ namespace DiceOrbit.Core
             if (stat == null || IsAlive || stat.RevivalStock <= 0) return;
 
             float ratio = stat.RevivalStock * 0.25f;
+            // 유물 보너스 (예: 불사조 깃털 — 부활 HP +N%p)
+            ratio = Mathf.Clamp01(ratio + (Run.RelicManager.Instance?.ReviveHpBonus01 ?? 0f));
             stat.RevivalStock--;
             stat.CurrentHP = Mathf.Max(1, Mathf.RoundToInt(stat.MaxHP * ratio));
 

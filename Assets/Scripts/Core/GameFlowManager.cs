@@ -73,6 +73,7 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"[GameFlow] Start - gameplaySceneName='{gameplaySceneName}', scene={SceneManager.GetActiveScene().name}");
             CacheSceneReferences();
+            UI.RunHudUI.EnsureInstance();
             ChangeState(GameState.MainMenu);
         }
 
@@ -254,14 +255,15 @@ namespace DiceOrbit.Core
             }
         }
 
-        /// <summary>휴식 노드: 파티 전원 비율 회복.</summary>
+        /// <summary>휴식 노드: 파티 전원 비율 회복 (+유물 보너스).</summary>
         private void ApplyRest()
         {
+            float ratio = restHealRatio + (RelicManager.Instance?.RestHealBonus01 ?? 0f);
             foreach (var character in Object.FindObjectsByType<Character>(FindObjectsSortMode.None))
             {
                 if (character == null || character.Stats == null || !character.IsAlive) continue;
                 var stats = character.Stats;
-                int heal = Mathf.RoundToInt(stats.MaxHP * restHealRatio);
+                int heal = Mathf.RoundToInt(stats.MaxHP * ratio);
                 stats.CurrentHP = Mathf.Min(stats.MaxHP, stats.CurrentHP + heal);
                 Debug.Log($"[GameFlow] 휴식 — {stats.CharacterName} +{heal} HP ({stats.CurrentHP}/{stats.MaxHP})");
             }
@@ -287,6 +289,10 @@ namespace DiceOrbit.Core
                     ChangeState(GameState.Victory);
                     return;
                 }
+
+                // 엘리트 클리어 = 유물 직접 드랍 (스펙 §2) — 보상 화면이 안내를 표시
+                if (run.CurrentNode.Type == MapNodeType.Elite)
+                    RelicManager.EnsureInstance().GrantRandom();
             }
 
             ChangeState(GameState.Reward);
@@ -396,6 +402,7 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"[GameFlow] Scene loaded: {scene.name}, pendingStartGame={pendingStartGame}");
             CacheSceneReferences();
+            UI.RunHudUI.EnsureInstance();   // 런 상단 HUD (골드/유물/포션) — 상태에 따라 스스로 표시/숨김
             if (pendingStartGame && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
             {
                 pendingStartGame = false;

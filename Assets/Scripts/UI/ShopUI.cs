@@ -29,6 +29,8 @@ namespace DiceOrbit.UI
         [SerializeField] private int swapCostPerModifier = 30;
         [SerializeField] private int candidateCount = 3;
         [SerializeField] private int modifierChoiceCount = 3;
+        [SerializeField] private int potionOfferCount = 2;
+        [SerializeField] private int relicOfferCount = 2;
 
         [Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]
         [SerializeField] private GameObject rootCanvas;
@@ -40,6 +42,7 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI stepHeader;
         [SerializeField] private RectTransform choiceRow;
         [SerializeField] private Button cancelStepButton;
+        [SerializeField] private RectTransform stockRow;            // 포션/유물 진열대
 
         [Header("선택 (비우면 기본 생성/탐색)")]
         [SerializeField] private Button choiceButtonPrefab;
@@ -108,6 +111,9 @@ namespace DiceOrbit.UI
             _incoming = null;
             _repickRemaining = 0;
             ShowStepPanel(false);
+
+            BuildStockOffers();
+            RenderStock();
             RefreshGold();
         }
 
@@ -169,7 +175,114 @@ namespace DiceOrbit.UI
         private int GetSwapCost(Character ch)
         {
             int modCount = ch?.Stats?.Modifiers?.Modifiers?.Count ?? 0;
-            return swapBaseCost + swapCostPerModifier * modCount;
+            return ApplyDiscount(swapBaseCost + swapCostPerModifier * modCount);
+        }
+
+        /// <summary>유물 할인 적용 (예: 단골 도장 -20%).</summary>
+        private static int ApplyDiscount(int price)
+        {
+            float discount = RelicManager.Instance?.ShopDiscount01 ?? 0f;
+            return Mathf.Max(1, Mathf.RoundToInt(price * (1f - discount)));
+        }
+
+        // ─────────────────────────────────────────────
+        // 진열대: 포션 + 유물 (스펙 §2 — 골드의 소비처)
+        // ─────────────────────────────────────────────
+
+        private readonly List<PotionDefinition> _potionOffers = new List<PotionDefinition>();
+        private readonly List<RelicDefinition> _relicOffers = new List<RelicDefinition>();
+        private readonly HashSet<Object> _soldOut = new HashSet<Object>();
+
+        private void BuildStockOffers()
+        {
+            _potionOffers.Clear();
+            _relicOffers.Clear();
+            _soldOut.Clear();
+
+            _potionOffers.AddRange(PotionManager.EnsureInstance().GetShopOfferings(potionOfferCount));
+            _relicOffers.AddRange(RelicManager.EnsureInstance().GetShopOfferings(relicOfferCount));
+        }
+
+        private void RenderStock()
+        {
+            if (stockRow == null) return;
+
+            for (int i = stockRow.childCount - 1; i >= 0; i--)
+                Destroy(stockRow.GetChild(i).gameObject);
+
+            int gold = GoldManager.Instance?.Gold ?? 0;
+
+            foreach (var potion in _potionOffers)
+            {
+                var captured = potion;
+                int price = ApplyDiscount(potion.ShopPrice);
+                AddStockCard($"🧪 {potion.PotionName}", potion.Description, price,
+                    sold: _soldOut.Contains(potion),
+                    affordable: gold >= price && (PotionManager.Instance?.HasFreeSlot ?? false),
+                    onBuy: () =>
+                    {
+                        if (!(PotionManager.Instance?.HasFreeSlot ?? false)) return;
+                        if (!GoldManager.Instance.TrySpend(ApplyDiscount(captured.ShopPrice))) return;
+                        PotionManager.Instance.TryAdd(captured);
+                        _soldOut.Add(captured);
+                        RefreshGold();
+                        RenderStock();
+                    });
+            }
+
+            foreach (var relic in _relicOffers)
+            {
+                var captured = relic;
+                int price = ApplyDiscount(relic.ShopPrice);
+                AddStockCard($"🏺 {relic.RelicName}", relic.Description, price,
+                    sold: _soldOut.Contains(relic),
+                    affordable: gold >= price,
+                    onBuy: () =>
+                    {
+                        if (!GoldManager.Instance.TrySpend(ApplyDiscount(captured.ShopPrice))) return;
+                        RelicManager.Instance.Grant(captured);
+                        _soldOut.Add(captured);
+                        RefreshGold();
+                        RenderStock();
+                    });
+            }
+        }
+
+        private void AddStockCard(string title, string desc, int price, bool sold, bool affordable, System.Action onBuy)
+        {
+            if (stockRow == null) return;
+
+            string label = sold
+                ? $"<color=#777777>{title}</color>\n<size=55%><color=#666666>판매 완료</color></size>"
+                : $"{title}\n<size=52%>{desc}</size>\n<size=65%><color=#{ColorUtility.ToHtmlStringRGB(Gold)}>{price}G</color>" +
+                  (affordable ? "" : "  <color=#B05050>(불가)</color>") + "</size>";
+
+            var go = new GameObject("Stock", typeof(RectTransform));
+            go.transform.SetParent(stockRow, false);
+            var le = go.AddComponent<LayoutElement>();
+            le.preferredWidth = 168; le.preferredHeight = 158;
+
+            var img = go.AddComponent<Image>();
+            img.sprite = UiRoundedSprite.Get(14);
+            img.type = Image.Type.Sliced;
+
+            var btn = go.AddComponent<Button>();
+            btn.targetGraphic = img;
+            btn.interactable = !sold && affordable;
+            var fill = new Color(0.145f, 0.169f, 0.259f);
+            var cb = ColorBlock.defaultColorBlock;
+            cb.normalColor = fill;
+            cb.highlightedColor = Color.Lerp(fill, Color.white, 0.15f);
+            cb.pressedColor = Color.Lerp(fill, Color.black, 0.25f);
+            cb.selectedColor = fill;
+            cb.disabledColor = new Color(fill.r, fill.g, fill.b, 0.5f);
+            cb.fadeDuration = 0.08f;
+            btn.colors = cb;
+            btn.onClick.AddListener(() => onBuy());
+
+            var txt = CreateText(go, label, 18, FontStyles.Bold);
+            txt.margin = new Vector4(8, 8, 8, 8);
+            Stretch(txt);
         }
 
         /// <summary>2단계: 새 캐릭터 후보 선택 (파티/소멸 제외 풀에서 랜덤).</summary>
@@ -377,7 +490,7 @@ namespace DiceOrbit.UI
             dim.AddComponent<Image>().color = Felt;
 
             // 메인 패널
-            mainPanel = CreatePanel(canvasGo, "MainPanel", new Vector2(760, 560));
+            mainPanel = CreatePanel(canvasGo, "MainPanel", new Vector2(880, 700));
 
             var title = CreateText(mainPanel, "상  점", 44, FontStyles.Bold);
             PlaceTop(title, 30, 60);
@@ -386,7 +499,7 @@ namespace DiceOrbit.UI
             var pill = CreateChild(mainPanel, "GoldPill");
             var pillRect = (RectTransform)pill.transform;
             pillRect.anchorMin = pillRect.anchorMax = new Vector2(0.5f, 1f);
-            pillRect.anchoredPosition = new Vector2(0, -120);
+            pillRect.anchoredPosition = new Vector2(0, -115);
             pillRect.sizeDelta = new Vector2(300, 54);
             var pillImg = pill.AddComponent<Image>();
             pillImg.sprite = UiRoundedSprite.Get(27);
@@ -396,19 +509,25 @@ namespace DiceOrbit.UI
             goldText.color = Gold;
             Stretch(goldText);
 
-            // 상품: 캐릭터 교체 버튼 + 준비 중 슬롯 2개
-            swapButton = CreateButton(mainPanel, "SwapButton", "캐릭터 교체", new Vector2(0, -230), new Vector2(420, 76), false);
+            // 캐릭터 교체
+            swapButton = CreateButton(mainPanel, "SwapButton", "캐릭터 교체", new Vector2(0, -195), new Vector2(420, 72), false);
 
-            var potionSoon = CreateText(mainPanel, "포션 — 준비 중", 24, FontStyles.Normal);
-            potionSoon.color = InkMuted;
-            PlaceAt(potionSoon, new Vector2(0, -320), new Vector2(420, 40));
+            // 진열대 (포션/유물 카드가 코드로 채워짐)
+            var stockLabel = CreateText(mainPanel, "오늘의 상품", 22, FontStyles.Bold);
+            stockLabel.color = InkMuted;
+            PlaceAt(stockLabel, new Vector2(0, -292), new Vector2(420, 36));
 
-            var relicSoon = CreateText(mainPanel, "유물 — 준비 중", 24, FontStyles.Normal);
-            relicSoon.color = InkMuted;
-            PlaceAt(relicSoon, new Vector2(0, -370), new Vector2(420, 40));
+            var stockGo = CreateChild(mainPanel, "StockRow");
+            stockRow = (RectTransform)stockGo.transform;
+            stockRow.anchorMin = stockRow.anchorMax = new Vector2(0.5f, 1f);
+            stockRow.anchoredPosition = new Vector2(0, -400);
+            stockRow.sizeDelta = new Vector2(780, 170);
+            var stockLayout = stockGo.AddComponent<HorizontalLayoutGroup>();
+            stockLayout.spacing = 16; stockLayout.childAlignment = TextAnchor.MiddleCenter;
+            stockLayout.childForceExpandWidth = false; stockLayout.childForceExpandHeight = false;
 
             // 떠나기 (주 행동)
-            leaveButton = CreateButton(mainPanel, "LeaveButton", "떠나기", new Vector2(0, -470), new Vector2(300, 70), true);
+            leaveButton = CreateButton(mainPanel, "LeaveButton", "떠나기", new Vector2(0, -610), new Vector2(300, 70), true);
 
             // ── 단계 패널 (교체 흐름) ──
             stepPanel = CreatePanel(canvasGo, "StepPanel", new Vector2(1100, 420));

@@ -130,6 +130,21 @@ namespace DiceOrbit.Core
         }
         
         /// <summary>
+        /// 남은(미사용) 주사위 전부 재굴림 — 재굴림 물약용. 배정/사용된 주사위는 건드리지 않는다.
+        /// </summary>
+        public void RerollAvailableDice()
+        {
+            var available = AvailableDice;
+            if (available.Count == 0) return;
+
+            foreach (var die in available)
+                die.SetValue(Random.Range(minDiceValue, maxDiceValue + 1));
+
+            Debug.Log($"[DiceManager] 재굴림: {string.Join(", ", available.Select(d => d.Value))}");
+            if (diceUI != null) diceUI.DisplayDice(currentDice);
+        }
+
+        /// <summary>
         /// 주사위를 캐릭터에 할당
         /// </summary>
         public bool AssignDice(DiceData dice, object character, DiceOrbit.Core.Pipeline.ActionType action)

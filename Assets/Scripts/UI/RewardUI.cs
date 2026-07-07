@@ -23,7 +23,8 @@ namespace DiceOrbit.UI
         [Header("Tuning")]
         [SerializeField] private int goldPerReward = 50;
         [SerializeField] private int modifierChoiceCount = 3;
-        [SerializeField] private int potionSlotCount = 3;
+        [Range(0f, 1f)]
+        [SerializeField] private float potionDropChance = 0.2f;   // 전투 보상 저확률 포션 드랍 (스펙 §6)
 
         [Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]
         [SerializeField] private TextMeshProUGUI goldText;
@@ -78,7 +79,22 @@ namespace DiceOrbit.UI
 
             BattleInfoPanelUI.SetVisible(false);   // 보상/모집 화면 동안 정보 패널 숨김
 
-            GoldManager.EnsureInstance().AddGold(goldPerReward);
+            // 골드: 기본 + 유물 보너스 (예: 황금 주사위)
+            _lastRewardGold = goldPerReward + (Core.Run.RelicManager.Instance?.BattleGoldBonus ?? 0);
+            GoldManager.EnsureInstance().AddGold(_lastRewardGold);
+
+            // 드랍 라인: 엘리트 유물 안내(1회 소비) + 저확률 포션
+            _bonusLines = "";
+            string relicMsg = Core.Run.RelicManager.Instance?.ConsumePendingAnnouncement();
+            if (!string.IsNullOrEmpty(relicMsg))
+                _bonusLines += $"\n<size=70%>유물 획득 — {relicMsg}</size>";
+            if (Random.value < potionDropChance)
+            {
+                var dropped = Core.Run.PotionManager.EnsureInstance().GrantRandomDrop();
+                if (dropped != null)
+                    _bonusLines += $"\n<size=70%>포션 드랍 — {dropped.PotionName}</size>";
+            }
+
             RefreshGold();
 
             _upgradeUsed = false;
@@ -94,10 +110,13 @@ namespace DiceOrbit.UI
             BattleInfoPanelUI.SetVisible(true);    // 전투 복귀 시 정보 패널 복원
         }
 
+        private int _lastRewardGold;
+        private string _bonusLines = "";
+
         private void RefreshGold()
         {
             if (goldText != null)
-                goldText.text = $"골드  {GoldManager.Instance?.Gold ?? 0}   (+{goldPerReward})";
+                goldText.text = $"골드  {GoldManager.Instance?.Gold ?? 0}   (+{_lastRewardGold}){_bonusLines}";
         }
 
         /// <summary>씬 배선/폴백 생성 어느 쪽이든 리스너는 코드에서 1회만 연결.</summary>
@@ -346,9 +365,9 @@ namespace DiceOrbit.UI
             hlg.spacing = 18; hlg.childAlignment = TextAnchor.MiddleCenter;
             hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
 
-            for (int i = 0; i < Mathf.Max(0, potionSlotCount); i++)
+            // 포션 소지 현황은 상단 HUD(RunHudUI)가 상시 표시 — 여기는 트레이 분위기만 (3칸 고정)
+            for (int i = 0; i < 3; i++)
             {
-                // 파인 슬롯(인셋) — 아직 채워지지 않은 트레이 느낌
                 var slot = CreateChild(rowGO, $"PotionSlot{i}");
                 var le = slot.gameObject.AddComponent<LayoutElement>();
                 le.preferredWidth = 104; le.preferredHeight = 104;
@@ -356,10 +375,6 @@ namespace DiceOrbit.UI
                 img.sprite = UiRoundedSprite.Get(16);
                 img.type = Image.Type.Sliced;
                 img.color = CardWell;
-
-                var t = CreateText(slot, "포션\n(예정)", 20, FontStyles.Normal);
-                Stretch(t);
-                t.color = InkMuted;
             }
         }
 
