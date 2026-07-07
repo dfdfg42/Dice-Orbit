@@ -31,7 +31,7 @@
 |---|---|
 | `MapNodeType.cs` | 노드 6종 enum (Battle/Elite/Shop/Rest/Event/Boss) |
 | `MapGraph.cs` | MapNode(층/레인/타입/WaveIndex/개조예고/Next) + 그래프 |
-| `ActDefinition.cs` | **막 = 에셋**(SO): 층 수·보장 규칙·WaveDatabase·웨이브 매핑 |
+| `ActDefinition.cs` | **막 = 에셋**(SO): 층 수·보장 규칙 + **층 구간별 몹 세트 풀**(BattleTiers/ElitePool/BossPool, 노드마다 랜덤 배정 — 풀 비면 구 WaveDatabase 폴백) |
 | `MapGenerator.cs` | ActDefinition → MapGraph (비례 창 매핑 간선, 시드 지원) |
 | `RunManager.cs` | 런 상태 단일 출처: 맵/현재 노드/이동/전투 카운터/소멸 캐릭터 |
 | `RelicDefinition.cs` | 유물 에셋: 규칙형 효과(enum+수치) + 전투 반응 효과(인라인) |
@@ -124,7 +124,7 @@ public class MyEffect : RelicCombatEffect
 
 | 어디 | 뭐 |
 |---|---|
-| `Act.asset` | 층 수, 층당 노드 수, 엘리트 층, 상점/휴식/이벤트 개수, 개조 예고 수 |
+| `Act.asset` | 층 수, 층당 노드 수, 엘리트 층, 상점/휴식/이벤트 개수, 개조 예고 수, **층 구간별 몹 세트 풀(BattleTiers)·엘리트/보스 풀** |
 | `RunManager` | First Act, 시드(0=랜덤 — 고정하면 같은 맵 반복 테스트) |
 | `GameFlowManager` | 시작 인원(2), 최대 인원(4), 자동 모집 전투 수(2), 휴식 회복률(30%) |
 | `RewardUI` | 전투 골드(50), 포션 드랍 확률(20%) |
