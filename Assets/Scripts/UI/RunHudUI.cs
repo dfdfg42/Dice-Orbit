@@ -32,6 +32,8 @@ namespace DiceOrbit.UI
 
         [Header("배치")]
         [SerializeField] private float chipSize = 52f;
+        [Tooltip("맵(900)/상점(1450)/보상(1500) 위, 환경설정(2000) 아래 — 상단 바는 모든 게임 화면 위에")]
+        [SerializeField] private int hudSortingOrder = 1600;
 
         [Header("칩 프리팹 (선택 — 비우면 기본 칩 생성)")]
         [Tooltip("루트에 Image(배경), 자식 이름 Icon(Image)/Label(TMP)을 자동 탐색해 채운다")]
@@ -61,6 +63,10 @@ namespace DiceOrbit.UI
         private void Start()
         {
             if (rootCanvas == null) BuildDefaultLayout();
+
+            // 씬에 저장된 캔버스에도 최신 정렬값 강제 (구버전 100으로 생성된 레이아웃 교정)
+            var canvas = rootCanvas != null ? rootCanvas.GetComponent<Canvas>() : null;
+            if (canvas != null) canvas.sortingOrder = hudSortingOrder;
 
             settingsButton?.onClick.AddListener(() =>
             {
@@ -291,7 +297,7 @@ namespace DiceOrbit.UI
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 100;   // 일반 UI 위, 맵(900)/상점(1450) 아래
+            canvas.sortingOrder = hudSortingOrder;
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
