@@ -18,6 +18,14 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI label;
         [SerializeField] private Image image;
 
+        [Header("턴 이미지 (지정 시 텍스트 대신 아트 이미지로 표시)")]
+        [SerializeField] private Sprite playerTurnSprite;
+        [SerializeField] private Sprite monsterTurnSprite;
+
+        [Header("텍스트 폴백 색 (이미지 미지정 시)")]
+        [SerializeField] private Color playerTurnColor  = new Color(0.55f, 0.85f, 1f, 1f);
+        [SerializeField] private Color monsterTurnColor = new Color(1f, 0.45f, 0.45f, 1f);
+
         [Header("Timing")]
         [SerializeField] private float fadeIn  = 0.18f;
         [SerializeField] private float hold    = 0.65f;
@@ -46,6 +54,14 @@ namespace DiceOrbit.UI
             if (existing != null) { Instance = existing; return; }
             BuildDefault();
         }
+
+        /// <summary>플레이어 턴 안내 — 이미지가 지정돼 있으면 이미지, 아니면 텍스트 폴백.</summary>
+        public IEnumerator ShowPlayerTurn()
+            => playerTurnSprite != null ? ShowImage(playerTurnSprite) : ShowText("플레이어 턴", playerTurnColor);
+
+        /// <summary>몬스터 턴 안내 — 이미지가 지정돼 있으면 이미지, 아니면 텍스트 폴백.</summary>
+        public IEnumerator ShowMonsterTurn()
+            => monsterTurnSprite != null ? ShowImage(monsterTurnSprite) : ShowText("몬스터 턴", monsterTurnColor);
 
         public IEnumerator ShowText(string text, Color color)
         {
@@ -101,9 +117,40 @@ namespace DiceOrbit.UI
             if (image != null) image.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// [에디터] 씬에 배치한 빈 오브젝트에 계층을 생성 — 스프라이트 슬롯을 Inspector에서 채우기 위한 셋업.
+        /// </summary>
+        [ContextMenu("기본 레이아웃 생성")]
+        private void BuildLayoutScaffold()
+        {
+            if (group != null)
+            {
+                Debug.LogWarning("[TurnAnnouncementUI] 이미 배선돼 있습니다. 다시 만들려면 슬롯을 비우고 자식을 삭제하세요.");
+                return;
+            }
+
+            BuildHierarchyOn(gameObject, this);
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                UnityEditor.EditorUtility.SetDirty(this);
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+            }
+#endif
+            Debug.Log("[TurnAnnouncementUI] 레이아웃 생성 완료 — Player/Monster Turn Sprite 슬롯에 아트를 꽂으세요.");
+        }
+
         private static void BuildDefault()
         {
             var root = new GameObject("_TurnAnnouncementCanvas");
+            var ui = root.AddComponent<TurnAnnouncementUI>();
+            BuildHierarchyOn(root, ui);
+            Instance = ui;
+        }
+
+        private static void BuildHierarchyOn(GameObject root, TurnAnnouncementUI ui)
+        {
             var canvas = root.AddComponent<Canvas>();
             canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 1000;
@@ -114,8 +161,6 @@ namespace DiceOrbit.UI
             group.alpha          = 0f;
             group.blocksRaycasts = false;
             group.interactable   = false;
-
-            var ui = root.AddComponent<TurnAnnouncementUI>();
 
             // Label
             var labelGO = new GameObject("Label", typeof(RectTransform));
@@ -144,8 +189,6 @@ namespace DiceOrbit.UI
             ui.group = group;
             ui.label = tmp;
             ui.image = img;
-
-            Instance = ui;
         }
     }
 }
