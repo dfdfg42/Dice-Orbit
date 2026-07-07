@@ -11,6 +11,10 @@ namespace DiceOrbit.Data
         [Header("Basic Info")]
         public string CharacterName = "Hero";
 
+        [Header("점감 부활 (스펙 §4)")]
+        [Tooltip("남은 부활 횟수. 부활 HP = 스톡 x 25% (3→75%, 2→50%, 1→25%). 0에서 사망 = 영구사망 = 게임오버")]
+        public int RevivalStock = 3;
+
         [Header("Skills")]
         public List<ActiveSkillSlot>   ActiveAbilities  = new List<ActiveSkillSlot>();
         public List<CharacterPassiveSkill> PassiveInstances = new List<CharacterPassiveSkill>();

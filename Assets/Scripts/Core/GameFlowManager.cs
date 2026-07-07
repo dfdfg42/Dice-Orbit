@@ -254,6 +254,9 @@ namespace DiceOrbit.Core
         {
             Debug.Log($"[GameFlow] Wave {wave} Cleared.");
 
+            // 승리 확정 → 리타이어한 파티원 점감 부활 (스펙 §4: 전투 종료 후 부활)
+            PartyManager.Instance?.ReviveRetiredMembers();
+
             var run = RunManager.Instance;
             if (run != null && run.RunActive && run.CurrentNode != null)
             {
