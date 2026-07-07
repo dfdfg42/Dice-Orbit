@@ -65,7 +65,7 @@ namespace DiceOrbit.UI
 
         /// <summary>아이콘 + 텍스트 가로 행 (타일 속성 등). icon이 null이면 텍스트만.</summary>
         public static void AddIconTextRow(Transform parent, Sprite icon, Color iconTint,
-            string text, float size, Color color, FontStyles style = FontStyles.Normal)
+            string text, float size, Color color, FontStyles style = FontStyles.Normal, float iconSize = 22f)
         {
             if (icon == null)
             {
@@ -91,8 +91,8 @@ namespace DiceOrbit.UI
             img.preserveAspect = true;
             img.raycastTarget = false;
             var le = iconGo.AddComponent<LayoutElement>();
-            le.preferredWidth = 22f;
-            le.preferredHeight = 22f;
+            le.preferredWidth = iconSize;
+            le.preferredHeight = iconSize;
 
             var tmp = AddText(row.transform, text, size, color, style);
             tmp.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;

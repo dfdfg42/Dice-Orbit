@@ -29,6 +29,7 @@ namespace DiceOrbit.UI
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
         [SerializeField] private float panelWidth = 300f;
         [SerializeField] private float iconSize = 22f;              // 타일 그림 안 속성 아이콘 크기
+        [SerializeField] private float cardIconSize = 34f;          // 속성 카드 제목 옆 아이콘 크기
         [Tooltip("정보 패널 왼쪽 경계의 화면 X 비율 (BattleInfoPanelUI 폭 30% 기준 = 0.70)")]
         [SerializeField, Range(0.4f, 1f)] private float dockAnchorX = 0.70f;
         [SerializeField] private Vector2 screenOffset = new Vector2(-16f, -16f);   // 도킹 지점 기준 (왼쪽/아래로)
@@ -183,7 +184,7 @@ namespace DiceOrbit.UI
             card.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             // 제목 행 (아이콘 + 이름 + 스택/지속) — 라이트 배경 색 보정
-            InfoPanelRows.AddIconTextRow(card.transform, icon, tint, title, 19f, InfoPanelRows.OnLight(tint), FontStyles.Bold);
+            InfoPanelRows.AddIconTextRow(card.transform, icon, tint, title, 19f, InfoPanelRows.OnLight(tint), FontStyles.Bold, cardIconSize);
 
             // 설명 (키워드 링크 → 커서 옆 정의 툴팁)
             if (!string.IsNullOrWhiteSpace(desc))
