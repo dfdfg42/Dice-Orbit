@@ -290,9 +290,7 @@ namespace DiceOrbit.Core
                     return;
                 }
 
-                // 엘리트 클리어 = 유물 직접 드랍 (스펙 §2) — 보상 화면이 안내를 표시
-                if (run.CurrentNode.Type == MapNodeType.Elite)
-                    RelicManager.EnsureInstance().GrantRandom();
+                // (엘리트 유물 드랍은 보상 화면의 수령 행으로 — RewardUI.BuildRewardRows)
             }
 
             ChangeState(GameState.Reward);

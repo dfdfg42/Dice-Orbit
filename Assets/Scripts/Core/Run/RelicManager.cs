@@ -22,7 +22,6 @@ namespace DiceOrbit.Core.Run
         [SerializeField] private List<RelicDefinition> startingRelics = new List<RelicDefinition>();
 
         private readonly List<RelicDefinition> _owned = new List<RelicDefinition>();
-        private string _pendingAnnouncement;   // 엘리트 드랍 안내 (보상 화면이 1회 소비)
 
         public IReadOnlyList<RelicDefinition> Owned => _owned;
         public event System.Action OnRelicsChanged;
@@ -81,7 +80,7 @@ namespace DiceOrbit.Core.Run
             OnRelicsChanged?.Invoke();
         }
 
-        /// <summary>미보유 풀에서 랜덤 1개 획득 (엘리트 드랍). 없으면 null.</summary>
+        /// <summary>미보유 풀에서 랜덤 1개 획득. 없으면 null.</summary>
         public RelicDefinition GrantRandom()
         {
             var candidates = relicPool.Where(r => r != null && !_owned.Contains(r)).ToList();
@@ -89,16 +88,7 @@ namespace DiceOrbit.Core.Run
 
             var picked = candidates[Random.Range(0, candidates.Count)];
             Grant(picked);
-            _pendingAnnouncement = picked.RelicName;
             return picked;
-        }
-
-        /// <summary>보상 화면용 드랍 안내 1회 소비.</summary>
-        public string ConsumePendingAnnouncement()
-        {
-            var msg = _pendingAnnouncement;
-            _pendingAnnouncement = null;
-            return msg;
         }
 
         /// <summary>상점 진열용: 미보유 유물 랜덤 count개.</summary>
