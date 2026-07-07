@@ -7,10 +7,11 @@ namespace DiceOrbit.Core.Run
     /// </summary>
     public enum PotionEffectType
     {
-        HealLowestAlly,   // 가장 다친 아군 +N 회복
+        HealLowestAlly,   // 가장 다친 아군 +N 회복 (자동 대상)
         HealParty,        // 파티 전원 +N 회복
         RerollDice,       // 남은(미사용) 주사위 전부 재굴림 — 전투 중에만
         CleanseParty,     // 파티 이동 디버프/속박 해제
+        HealAlly,         // 선택한 아군 +N 회복 (조준 아크로 대상 지정)
     }
 
     [CreateAssetMenu(fileName = "Potion", menuName = "DiceOrbit/Potion Definition")]

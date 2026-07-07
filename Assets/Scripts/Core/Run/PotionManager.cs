@@ -72,11 +72,21 @@ namespace DiceOrbit.Core.Run
             OnChanged?.Invoke();
         }
 
-        /// <summary>포션 사용. 조건 불충족(전투 전용을 밖에서 등)이면 false — 슬롯 유지.</summary>
+        /// <summary>대상 지정이 필요한 포션인가 (조준 아크 진입 대상 — PotionTargetSelector).</summary>
+        public static bool RequiresTarget(PotionDefinition potion)
+            => potion != null && potion.EffectType == PotionEffectType.HealAlly;
+
+        /// <summary>포션 사용 (자동 대상형). 조건 불충족이면 false — 슬롯 유지.</summary>
         public bool TryUse(int index)
         {
             if (index < 0 || index >= _slots.Count) return false;
             var potion = _slots[index];
+
+            if (RequiresTarget(potion))
+            {
+                Debug.LogWarning($"[Potion] '{potion.PotionName}'은(는) 대상 지정이 필요 — TryUseOn 사용.");
+                return false;
+            }
 
             if (potion.CombatOnly && GameFlowManager.Instance?.CurrentState != GameState.Combat)
             {
@@ -87,6 +97,28 @@ namespace DiceOrbit.Core.Run
             if (!Execute(potion)) return false;
 
             Debug.Log($"[Potion] 사용: {potion.PotionName}");
+            _slots.RemoveAt(index);
+            OnChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>대상 지정형 포션 사용 (조준 아크가 고른 아군에게).</summary>
+        public bool TryUseOn(int index, Character target)
+        {
+            if (index < 0 || index >= _slots.Count) return false;
+            if (target == null || !target.IsAlive || target.Stats == null) return false;
+            var potion = _slots[index];
+
+            switch (potion.EffectType)
+            {
+                case PotionEffectType.HealAlly:
+                    target.Stats.CurrentHP = Mathf.Min(target.Stats.MaxHP, target.Stats.CurrentHP + potion.Value);
+                    break;
+                default:
+                    return TryUse(index);   // 대상 불필요형이 들어오면 일반 경로로
+            }
+
+            Debug.Log($"[Potion] 사용: {potion.PotionName} → {target.Stats.CharacterName}");
             _slots.RemoveAt(index);
             OnChanged?.Invoke();
             return true;
@@ -167,7 +199,7 @@ namespace DiceOrbit.Core.Run
         {
             if (potionPool.Count > 0) return;
 
-            potionPool.Add(CreateDefault("회복 물약", "가장 다친 아군의 HP를 30 회복", PotionEffectType.HealLowestAlly, 30, 40, false));
+            potionPool.Add(CreateDefault("회복 물약", "선택한 아군의 HP를 30 회복", PotionEffectType.HealAlly, 30, 40, false));
             potionPool.Add(CreateDefault("연회의 물약", "파티 전원의 HP를 15 회복", PotionEffectType.HealParty, 15, 55, false));
             potionPool.Add(CreateDefault("재굴림 물약", "남은 주사위를 전부 다시 굴린다 (전투 중)", PotionEffectType.RerollDice, 0, 60, true));
             potionPool.Add(CreateDefault("정화 물약", "파티의 이동 저하/속박을 해제", PotionEffectType.CleanseParty, 0, 45, false));

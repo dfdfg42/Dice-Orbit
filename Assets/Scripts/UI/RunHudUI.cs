@@ -88,7 +88,9 @@ namespace DiceOrbit.UI
         private void Update()
         {
             // ESC = 환경설정 토글 (HUD가 떠 있는 게임플레이 상태에서만)
+            // 단, 포션 조준 중이면 ESC는 조준 취소가 우선 (PotionTargetSelector가 처리)
             if (rootCanvas != null && rootCanvas.activeSelf &&
+                (PotionTargetSelector.Instance == null || !PotionTargetSelector.Instance.IsSelecting) &&
                 UnityEngine.InputSystem.Keyboard.current != null &&
                 UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
             {
@@ -171,12 +173,28 @@ namespace DiceOrbit.UI
                 if (potion == null) continue;
 
                 int index = i;
+                var chipGo = chip;
                 string usage = potion.CombatOnly ? "\n<size=80%>전투 중에만 사용 가능</size>" : "";
                 AddHoverTooltip(chip, $"<b>[{potion.PotionName}]</b>\n{potion.Description}{usage}\n<size=80%><color=#8B8B8B>좌클릭 사용 · 우클릭 버리기</color></size>");
 
                 var clickable = chip.AddComponent<PotionSlotWidget>();
                 clickable.Setup(
-                    onUse: () => PotionManager.Instance?.TryUse(index),
+                    onUse: () =>
+                    {
+                        var pm = PotionManager.Instance;
+                        if (pm == null || index >= pm.Slots.Count) return;
+
+                        // 대상 지정형은 조준 모드로 (칩 위치에서 캐릭터로 아크)
+                        if (PotionManager.RequiresTarget(pm.Slots[index]))
+                        {
+                            PotionTargetSelector.EnsureInstance();
+                            PotionTargetSelector.Instance?.Begin(index, chipGo.transform.position);
+                        }
+                        else
+                        {
+                            pm.TryUse(index);
+                        }
+                    },
                     onDiscard: () => PotionManager.Instance?.Discard(index));
             }
         }
