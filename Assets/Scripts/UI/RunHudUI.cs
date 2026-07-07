@@ -32,6 +32,10 @@ namespace DiceOrbit.UI
         [Header("배치")]
         [SerializeField] private float chipSize = 52f;
 
+        [Header("칩 프리팹 (선택 — 비우면 기본 칩 생성)")]
+        [Tooltip("루트에 Image(배경), 자식 이름 Icon(Image)/Label(TMP)을 자동 탐색해 채운다")]
+        [SerializeField] private GameObject chipPrefab;
+
         // 보드게임의 밤 팔레트
         private static readonly Color BarBg    = new Color(0.043f, 0.051f, 0.078f, 0.82f);
         private static readonly Color CardWell = new Color(0.082f, 0.094f, 0.153f);
@@ -154,9 +158,12 @@ namespace DiceOrbit.UI
 
         // ── 위젯 생성 ─────────────────────────────────────────
 
-        /// <summary>아이콘 칩. 아이콘 없으면 이름 첫 글자, empty면 빈 홈.</summary>
+        /// <summary>아이콘 칩. 아이콘 없으면 이름 첫 글자, empty면 빈 홈. 프리팹이 있으면 그걸로 찍는다.</summary>
         private GameObject CreateChip(RectTransform parent, Sprite icon, string fallbackName, Color tint, bool empty = false)
         {
+            if (chipPrefab != null)
+                return CreateChipFromPrefab(parent, icon, fallbackName, tint, empty);
+
             var go = new GameObject("Chip", typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var le = go.AddComponent<LayoutElement>();
@@ -196,6 +203,41 @@ namespace DiceOrbit.UI
                 var r = tmp.rectTransform;
                 r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one;
                 r.offsetMin = Vector2.zero; r.offsetMax = Vector2.zero;
+            }
+            return go;
+        }
+
+        /// <summary>프리팹 기반 칩: 루트 Image = 배경, 자식 Icon(Image)/Label(TMP) 이름 탐색.</summary>
+        private GameObject CreateChipFromPrefab(RectTransform parent, Sprite icon, string fallbackName, Color tint, bool empty)
+        {
+            var go = Instantiate(chipPrefab, parent);
+            go.name = "Chip";
+
+            var bg = go.GetComponent<Image>();
+            if (bg != null)
+                bg.color = empty ? CardWell : Color.Lerp(CardWell, tint, 0.35f);
+
+            var iconImg = go.transform.Find("Icon")?.GetComponent<Image>();
+            var label = go.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
+
+            if (empty)
+            {
+                if (iconImg != null) iconImg.gameObject.SetActive(false);
+                if (label != null) label.gameObject.SetActive(false);
+                return go;
+            }
+
+            bool hasIcon = icon != null;
+            if (iconImg != null)
+            {
+                iconImg.gameObject.SetActive(hasIcon);
+                iconImg.sprite = icon;
+                iconImg.preserveAspect = true;
+            }
+            if (label != null)
+            {
+                label.gameObject.SetActive(!hasIcon);
+                label.text = string.IsNullOrEmpty(fallbackName) ? "?" : fallbackName.Substring(0, 1);
             }
             return go;
         }
