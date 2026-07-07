@@ -13,6 +13,7 @@ namespace DiceOrbit.Core.Run
         BattleGoldBonusFlat,     // 전투 보상 골드 +N
         ReviveHpBonusPercent,    // 점감 부활 HP +N%p
         BattleStartHealFlat,     // 전투 시작 시 파티 전원 +N 회복
+        None,                    // 규칙형 효과 없음 (전투 반응 효과만 있는 유물)
     }
 
     [CreateAssetMenu(fileName = "Relic", menuName = "DiceOrbit/Relic Definition")]
@@ -21,8 +22,14 @@ namespace DiceOrbit.Core.Run
         public string RelicName = "유물";
         [TextArea(2, 4)] public string Description = "";
         public Sprite Icon;
+
+        [Header("규칙형 효과 (질의식 — 상점/휴식/보상/부활 등)")]
         public RelicEffectType EffectType;
         public float Value;
+
+        [Header("전투 반응 효과 (선택 — 파이프라인 리액터, 구 Artifact 계승)")]
+        [SerializeReference] public RelicCombatEffect CombatEffect;
+
         [Min(1)] public int ShopPrice = 120;
     }
 }

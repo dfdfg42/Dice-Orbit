@@ -37,6 +37,17 @@ namespace DiceOrbit.Core.Run
         private float Sum(RelicEffectType type)
             => _owned.Where(r => r != null && r.EffectType == type).Sum(r => r.Value);
 
+        /// <summary>보유 유물의 전투 반응 효과 — CombatPipeline이 리액터로 수집 (구 ArtifactManager 대체).</summary>
+        public IEnumerable<Pipeline.ICombatReactor> CombatReactors
+        {
+            get
+            {
+                foreach (var relic in _owned)
+                    if (relic != null && relic.CombatEffect != null)
+                        yield return relic.CombatEffect;
+            }
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
