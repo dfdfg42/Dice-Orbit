@@ -28,10 +28,18 @@ namespace DiceOrbit.Core.Run
         /// <summary>클리어한 전투류 노드 수 — 자동 모집 판단(스펙 §3: 노드 1·2 클리어 후 모집)에 사용.</summary>
         public int BattlesCleared { get; private set; }
 
+        /// <summary>이번 런의 맵 시드 (세이브 → 같은 맵 재생성).</summary>
+        public int CurrentSeed { get; private set; }
+
         private int _currentNodeId = -1;
 
         // 상점 교체로 내보낸 캐릭터 — 이번 런에서 재영입 불가 (스펙 §3: 리롤 세탁 방지)
         private readonly List<CharacterPreset> _banishedPresets = new List<CharacterPreset>();
+
+        public IEnumerable<string> BanishedNames
+        {
+            get { foreach (var p in _banishedPresets) if (p != null) yield return p.CharacterName; }
+        }
 
         public void RegisterBanished(CharacterPreset preset)
         {
@@ -65,12 +73,46 @@ namespace DiceOrbit.Core.Run
             }
 
             int usedSeed = seed != 0 ? seed : Random.Range(int.MinValue, int.MaxValue);
+            CurrentSeed = usedSeed;
             Map = MapGenerator.Generate(CurrentAct, usedSeed);
             _currentNodeId = -1;
             BattlesCleared = 0;
             _banishedPresets.Clear();
 
             Debug.Log($"[RunManager] 런 시작 — {CurrentAct.ActName}, 시드 {usedSeed}\n{MapGenerator.Dump(Map)}");
+            return true;
+        }
+
+        /// <summary>
+        /// 세이브 복원: 같은 시드로 맵을 재생성하고 진행 상태(방문/현재 위치/카운터)를 되돌린다.
+        /// 골드/파티/유물 복원은 GameFlowManager.ContinueGame 몫.
+        /// </summary>
+        public bool RestoreRun(int seed, int currentNodeId, List<int> visitedNodeIds, int battlesCleared)
+        {
+            CurrentAct = firstAct;
+            if (CurrentAct == null)
+            {
+                Debug.LogWarning("[RunManager] ActDefinition이 없어 복원할 수 없습니다.");
+                return false;
+            }
+
+            CurrentSeed = seed;
+            Map = MapGenerator.Generate(CurrentAct, seed);
+            _banishedPresets.Clear();
+
+            if (visitedNodeIds != null)
+            {
+                foreach (int id in visitedNodeIds)
+                {
+                    var node = Map.Get(id);
+                    if (node != null) node.Visited = true;
+                }
+            }
+
+            _currentNodeId = currentNodeId;
+            BattlesCleared = battlesCleared;
+
+            Debug.Log($"[RunManager] 런 복원 — 시드 {seed}, 현재 노드 {currentNodeId}, 전투 {battlesCleared}회 클리어");
             return true;
         }
 

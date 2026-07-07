@@ -9,6 +9,8 @@ namespace DiceOrbit.UI
         [Header("UI References")]
         [SerializeField] private GameObject panel;
         [SerializeField] private Button startButton;
+        [SerializeField] private Button continueButton;    // 이어하기 — 세이브 있을 때만 활성
+        [SerializeField] private Button settingsButton;    // 환경설정 모달
         [SerializeField] private Button quitButton;
         [SerializeField] private MainMenuCharacterDisplay characterDisplay;
 
@@ -18,7 +20,17 @@ namespace DiceOrbit.UI
             {
                 startButton.onClick.AddListener(OnStartGameButtonClicked);
             }
-            
+
+            if (continueButton != null)
+            {
+                continueButton.onClick.AddListener(OnContinueButtonClicked);
+            }
+
+            if (settingsButton != null)
+            {
+                settingsButton.onClick.AddListener(OnSettingsButtonClicked);
+            }
+
             if (quitButton != null)
             {
                 quitButton.onClick.AddListener(OnQuitButtonClicked);
@@ -35,6 +47,10 @@ namespace DiceOrbit.UI
             {
                 gameObject.SetActive(true);
             }
+
+            // 이어하기: 세이브가 있을 때만 누를 수 있게
+            if (continueButton != null)
+                continueButton.interactable = Core.Run.RunSaveService.HasSave();
 
             characterDisplay?.PlayEntranceAnimation();
         }
@@ -58,6 +74,20 @@ namespace DiceOrbit.UI
                 GameFlowManager.Instance.StartGame();
             }
         }
+        public void OnContinueButtonClicked()
+        {
+            if (GameFlowManager.Instance != null)
+            {
+                GameFlowManager.Instance.ContinueGame();
+            }
+        }
+
+        public void OnSettingsButtonClicked()
+        {
+            SettingsUI.EnsureInstance();
+            SettingsUI.Instance?.Open();
+        }
+
         public void OnQuitButtonClicked()
         {
             Debug.Log("Quit Game");

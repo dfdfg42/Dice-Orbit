@@ -91,6 +91,10 @@ namespace DiceOrbit.Core.Run
             return picked;
         }
 
+        /// <summary>이름으로 풀에서 찾기 (세이브 복원용).</summary>
+        public RelicDefinition FindInPool(string relicName)
+            => relicPool.FirstOrDefault(r => r != null && r.RelicName == relicName);
+
         /// <summary>상점 진열용: 미보유 유물 랜덤 count개.</summary>
         public List<RelicDefinition> GetShopOfferings(int count)
         {

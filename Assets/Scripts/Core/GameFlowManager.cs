@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using DiceOrbit.Core.Run;
@@ -42,6 +43,7 @@ namespace DiceOrbit.Core
         [SerializeField] private string gameplaySceneName = "";
 
         private bool pendingStartGame = false;
+        private bool pendingContinue = false;
         private bool pendingRestart = false;
 
         // Properties
@@ -117,6 +119,7 @@ namespace DiceOrbit.Core
                     if (combatUI != null) combatUI.SetActive(false);
                     UI.NodeMapUI.EnsureInstance();
                     UI.NodeMapUI.Instance?.Show();
+                    RunSaveService.SaveCurrent();   // 노드 단위 자동 저장 (이어하기)
                     break;
 
                 case GameState.Shop:
@@ -148,10 +151,12 @@ namespace DiceOrbit.Core
                     break;
 
                 case GameState.Victory:
+                    RunSaveService.Delete();   // 런 종료 — 이어하기 소멸 (로그라이크)
                     ShowVictory();
                     break;
 
                 case GameState.GameOver:
+                    RunSaveService.Delete();
                     ShowGameOver();
                     break;
             }
@@ -387,6 +392,8 @@ namespace DiceOrbit.Core
         public void StartGame()
         {
             Debug.Log("[GameFlow] StartGame called");
+            RunSaveService.Delete();   // 새 게임 = 기존 이어하기 폐기
+
             if (!string.IsNullOrWhiteSpace(gameplaySceneName))
             {
                 var activeScene = SceneManager.GetActiveScene();
@@ -402,6 +409,102 @@ namespace DiceOrbit.Core
             StartGameFlow();
         }
 
+        /// <summary>이어하기 (메인메뉴) — 세이브가 있을 때만. 씬 로드 후 복원 흐름 진입.</summary>
+        public void ContinueGame()
+        {
+            if (!RunSaveService.HasSave())
+            {
+                Debug.LogWarning("[GameFlow] 이어할 세이브가 없습니다.");
+                return;
+            }
+
+            Debug.Log("[GameFlow] ContinueGame called");
+            if (!string.IsNullOrWhiteSpace(gameplaySceneName))
+            {
+                var activeScene = SceneManager.GetActiveScene();
+                if (activeScene.name != gameplaySceneName)
+                {
+                    pendingContinue = true;
+                    SceneManager.LoadScene(gameplaySceneName);
+                    return;
+                }
+            }
+
+            ContinueGameFlow();
+        }
+
+        /// <summary>세이브 복원: 맵(시드 재생성) → 골드/유물/포션 → 파티 스폰+스탯/모디파이어 → 맵 화면.</summary>
+        private void ContinueGameFlow()
+        {
+            var data = RunSaveService.Load();
+            var run = RunManager.Instance;
+            if (data == null || run == null || !run.RestoreRun(data.Seed, data.CurrentNodeId, data.VisitedNodeIds, data.BattlesCleared))
+            {
+                Debug.LogWarning("[GameFlow] 세이브 복원 실패 — 새 게임으로 시작합니다.");
+                StartGameFlow();
+                return;
+            }
+
+            var selection = Object.FindFirstObjectByType<UI.CharacterSelectionUI>(FindObjectsInactive.Include);
+
+            // 소멸 캐릭터 (재영입 불가 목록)
+            if (selection != null)
+            {
+                foreach (var name in data.BanishedPresetNames)
+                {
+                    var preset = selection.AllCharacters.FirstOrDefault(p => p != null && p.CharacterName == name);
+                    if (preset != null) run.RegisterBanished(preset);
+                }
+            }
+
+            // 골드
+            var goldManager = GoldManager.EnsureInstance();
+            goldManager.ResetGold();
+            goldManager.AddGold(data.Gold);
+
+            // 유물 / 포션 (이름 매칭)
+            var relics = RelicManager.EnsureInstance();
+            foreach (var name in data.RelicNames)
+                relics.Grant(relics.FindInPool(name));
+
+            var potions = PotionManager.EnsureInstance();
+            foreach (var name in data.PotionNames)
+                potions.TryAdd(potions.FindInPool(name));
+
+            // 파티 스폰 + 스탯/모디파이어 복원
+            var spawner = Object.FindFirstObjectByType<CharacterSpawner>();
+            var allModifiers = Data.Modifiers.ModifierRegistry.CreateAll();
+            for (int i = 0; i < data.Party.Count; i++)
+            {
+                var save = data.Party[i];
+                var preset = selection?.AllCharacters.FirstOrDefault(p => p != null && p.CharacterName == save.PresetName);
+                if (preset == null || spawner == null)
+                {
+                    Debug.LogWarning($"[GameFlow] 파티 복원 실패 — 프리셋 '{save.PresetName}'을 찾을 수 없습니다.");
+                    continue;
+                }
+
+                var character = spawner.Spawn(preset, i, data.Party.Count);
+                if (character == null || character.Stats == null) continue;
+
+                character.Stats.MaxHP = save.MaxHp;
+                character.Stats.CurrentHP = Mathf.Clamp(save.CurrentHp, 1, save.MaxHp);
+                character.Stats.RevivalStock = save.RevivalStock;
+
+                foreach (var modName in save.ModifierNames)
+                {
+                    // 캐릭터마다 독립 인스턴스가 필요하므로 매번 새로 생성해 매칭
+                    var mod = Data.Modifiers.ModifierRegistry.CreateAll()
+                        .FirstOrDefault(m => m != null && m.ModifierName == modName);
+                    if (mod != null) character.Stats.Modifiers?.Add(mod);
+                    else Debug.LogWarning($"[GameFlow] 모디파이어 '{modName}' 복원 실패 (레지스트리에 없음)");
+                }
+            }
+
+            Debug.Log($"[GameFlow] 이어하기 완료 — 파티 {data.Party.Count}명, 골드 {data.Gold}");
+            ChangeState(GameState.Map);
+        }
+
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             Debug.Log($"[GameFlow] Scene loaded: {scene.name}, pendingStartGame={pendingStartGame}");
@@ -412,6 +515,15 @@ namespace DiceOrbit.Core
                 pendingStartGame = false;
                 StartGameFlow();
             }
+
+            if (pendingContinue && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
+            {
+                pendingContinue = false;
+                ContinueGameFlow();
+            }
+
+            // 저장된 환경설정(볼륨/전체화면) 적용 — 씬의 AudioManager가 새로 뜬 뒤에
+            UI.SettingsUI.ApplySavedSettings();
 
             // Subscribe to WaveManager events
             if (WaveManager.Instance != null)

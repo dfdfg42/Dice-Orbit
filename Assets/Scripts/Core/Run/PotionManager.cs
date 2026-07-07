@@ -100,6 +100,10 @@ namespace DiceOrbit.Core.Run
             return TryAdd(picked) ? picked : null;
         }
 
+        /// <summary>이름으로 풀에서 찾기 (세이브 복원용).</summary>
+        public PotionDefinition FindInPool(string potionName)
+            => potionPool.FirstOrDefault(p => p != null && p.PotionName == potionName);
+
         /// <summary>상점 진열용 랜덤 count개 (중복 종류 허용 안 함).</summary>
         public List<PotionDefinition> GetShopOfferings(int count)
         {
