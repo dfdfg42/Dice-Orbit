@@ -28,7 +28,7 @@ namespace DiceOrbit.Core.Run
         public float Value;
 
         [Header("전투 반응 효과 (선택 — 파이프라인 리액터, 구 Artifact 계승)")]
-        [SerializeReference] public RelicCombatEffect CombatEffect;
+        [SerializeReference, SubclassPicker] public RelicCombatEffect CombatEffect;
 
         [Min(1)] public int ShopPrice = 120;
     }
