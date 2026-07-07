@@ -2,6 +2,9 @@
 
 > 스펙: `Docs/superpowers/specs/2026-07-07-run-structure-node-map-design.md`
 > 브랜치: `feature/run-structure-node-map-20260707` (battle-ui 브랜치에서 분기 — 레벨 철거가 전제)
+>
+> **상태: 전 태스크 완료 (2026-07-07).** Task 1~2 `7ec8118`, 3~4 `596de4d`, 5는 3에 포함, 6 `930011b`.
+> 유저 에디터 검증 완료 (런 루프 + 점감 부활). 구현 문서: `Docs/run_structure_system.md`
 
 **목표(MVP 슬라이스):** 맵 화면 ↔ 전투를 오가는 런 루프 골격.
 전투/엘리트/휴식/보스 노드가 실동작, 상점/이벤트는 자리만(스텁). 포션·유물·주사위 개조는 후속 계획.
