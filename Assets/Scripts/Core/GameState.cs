@@ -12,7 +12,8 @@ namespace DiceOrbit.Core
         Victory,            // 승리
         GameOver,           // 패배
         Recruit,            // 모집
-        Reward              // 보상
+        Reward,             // 보상
+        Map                 // 노드맵 — 다음 노드 선택 (2026-07-07 런 구조 개편)
         // (LevelUp 상태는 유산으로 철거 — 성장은 웨이브 클리어 보상 모디파이어로 일원화)
     }
 }
