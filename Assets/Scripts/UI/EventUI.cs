@@ -25,6 +25,11 @@ namespace DiceOrbit.UI
         public class DiceGambleEvent
         {
             public string Title = "운명의 주사위";
+            [Tooltip("이벤트 전체 배경 (비우면 기본 펠트 배경)")]
+            public Sprite Background;
+            [TextArea(2, 4)]
+            [Tooltip("연출용 상황 설명 (비우면 규칙 요약만 표시)")]
+            public string FlavorText = "";
             [Range(1, 5)] public int DiceCount = 3;
             public int SuccessThreshold = 11;
             public int RewardGold = 60;
@@ -45,9 +50,11 @@ namespace DiceOrbit.UI
 
         [Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]
         [SerializeField] private GameObject rootCanvas;
-        [SerializeField] private TextMeshProUGUI titleText;
-        [SerializeField] private TextMeshProUGUI descText;
-        [SerializeField] private RectTransform diceRow;
+        [SerializeField] private Image backgroundImage;             // 전체 배경 (이벤트별 스프라이트)
+        [SerializeField] private TextMeshProUGUI titleText;         // 우측 상단 제목
+        [SerializeField] private TextMeshProUGUI descText;          // 제목 아래 설명
+        [SerializeField] private RectTransform choiceColumn;        // 설명 아래 선택지 세로 스택
+        [SerializeField] private RectTransform diceRow;             // 좌중앙 주사위 연출
         [SerializeField] private TextMeshProUGUI resultText;
         [SerializeField] private Button challengeButton;
         [SerializeField] private Button passButton;
@@ -111,11 +118,21 @@ namespace DiceOrbit.UI
             _resolved = false;
             _current = gambleEvents.Count > 0 ? gambleEvents[Random.Range(0, gambleEvents.Count)] : new DiceGambleEvent();
 
+            // 배경: 이벤트별 스프라이트, 없으면 펠트
+            if (backgroundImage != null)
+            {
+                backgroundImage.sprite = _current.Background;
+                backgroundImage.color = _current.Background != null ? Color.white : Felt;
+            }
+
             if (titleText != null) titleText.text = _current.Title;
             if (descText != null)
-                descText.text = $"주사위 {_current.DiceCount}개를 굴려 합이 <color=#{ColorUtility.ToHtmlStringRGB(Gold)}>{_current.SuccessThreshold} 이상</color>이면 " +
-                                $"<color=#{ColorUtility.ToHtmlStringRGB(Gold)}>골드 +{_current.RewardGold}</color>.\n" +
-                                $"실패하면 파티 전원이 <color=#C05048>{_current.FailDamage} 피해</color>를 입는다.";
+            {
+                string rules = $"주사위 {_current.DiceCount}개를 굴려 합이 <color=#{ColorUtility.ToHtmlStringRGB(Gold)}>{_current.SuccessThreshold} 이상</color>이면 " +
+                               $"<color=#{ColorUtility.ToHtmlStringRGB(Gold)}>골드 +{_current.RewardGold}</color>.\n" +
+                               $"실패하면 파티 전원이 <color=#C05048>{_current.FailDamage} 피해</color>를 입는다.";
+                descText.text = string.IsNullOrWhiteSpace(_current.FlavorText) ? rules : $"{_current.FlavorText}\n\n{rules}";
+            }
             if (resultText != null) resultText.text = "";
 
             SetupDiceLabels(_current.DiceCount);
@@ -266,63 +283,83 @@ namespace DiceOrbit.UI
             canvasGo.AddComponent<GraphicRaycaster>();
             rootCanvas = canvasGo;
 
-            // 딤
-            var dim = new GameObject("Dim", typeof(RectTransform));
-            dim.transform.SetParent(canvasGo.transform, false);
-            var dimRect = (RectTransform)dim.transform;
-            dimRect.anchorMin = Vector2.zero; dimRect.anchorMax = Vector2.one;
-            dimRect.offsetMin = Vector2.zero; dimRect.offsetMax = Vector2.zero;
-            dim.AddComponent<Image>().color = Felt;
-
-            // 패널
-            var panel = new GameObject("Panel", typeof(RectTransform));
-            panel.transform.SetParent(canvasGo.transform, false);
-            var panelRect = (RectTransform)panel.transform;
-            panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(880, 620);
-            var edge = panel.AddComponent<Image>();
-            edge.sprite = UiRoundedSprite.Get(26);
-            edge.type = Image.Type.Sliced;
-            edge.color = CardEdge;
-            var shadow = panel.AddComponent<Shadow>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.55f);
-            shadow.effectDistance = new Vector2(0f, -10f);
-
-            var bg = new GameObject("BG", typeof(RectTransform));
-            bg.transform.SetParent(panel.transform, false);
-            var bgRect = (RectTransform)bg.transform;
+            // 전체 배경 (이벤트별 스프라이트 — Show에서 교체, 없으면 펠트색)
+            var bgGo = new GameObject("Background", typeof(RectTransform));
+            bgGo.transform.SetParent(canvasGo.transform, false);
+            var bgRect = (RectTransform)bgGo.transform;
             bgRect.anchorMin = Vector2.zero; bgRect.anchorMax = Vector2.one;
-            bgRect.offsetMin = new Vector2(3, 3); bgRect.offsetMax = new Vector2(-3, -3);
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.sprite = UiRoundedSprite.Get(23);
-            bgImg.type = Image.Type.Sliced;
-            bgImg.color = Card;
-            bgImg.raycastTarget = false;
+            bgRect.offsetMin = Vector2.zero; bgRect.offsetMax = Vector2.zero;
+            backgroundImage = bgGo.AddComponent<Image>();
+            backgroundImage.color = Felt;
+            backgroundImage.preserveAspect = false;
 
-            // 텍스트들
-            titleText = CreateText(panel, "이벤트", 42, FontStyles.Bold);
-            PlaceTop(titleText, 34, 56);
+            // 우측 텍스트 칼럼 (반투명 패널 — 배경 아트 위에서 글이 읽히게)
+            var colGo = new GameObject("RightColumn", typeof(RectTransform));
+            colGo.transform.SetParent(canvasGo.transform, false);
+            var colRect = (RectTransform)colGo.transform;
+            colRect.anchorMin = new Vector2(0.60f, 0.08f);
+            colRect.anchorMax = new Vector2(0.97f, 0.92f);
+            colRect.offsetMin = Vector2.zero; colRect.offsetMax = Vector2.zero;
+            var colImg = colGo.AddComponent<Image>();
+            colImg.sprite = UiRoundedSprite.Get(22);
+            colImg.type = Image.Type.Sliced;
+            colImg.color = new Color(Card.r, Card.g, Card.b, 0.88f);
+            var colShadow = colGo.AddComponent<Shadow>();
+            colShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+            colShadow.effectDistance = new Vector2(0f, -8f);
 
-            descText = CreateText(panel, "", 26, FontStyles.Normal);
-            PlaceTop(descText, 110, 110);
+            // 제목 (칼럼 상단)
+            titleText = CreateText(colGo, "이벤트", 40, FontStyles.Bold);
+            var titleRect = titleText.rectTransform;
+            titleRect.anchorMin = new Vector2(0f, 1f); titleRect.anchorMax = new Vector2(1f, 1f);
+            titleRect.pivot = new Vector2(0.5f, 1f);
+            titleRect.anchoredPosition = new Vector2(0f, -30f);
+            titleRect.sizeDelta = new Vector2(-60f, 54f);
+            titleText.alignment = TextAlignmentOptions.TopLeft;
 
-            // 주사위 행
+            // 설명 (제목 아래)
+            descText = CreateText(colGo, "", 24, FontStyles.Normal);
+            var descRect = descText.rectTransform;
+            descRect.anchorMin = new Vector2(0f, 0.42f); descRect.anchorMax = new Vector2(1f, 1f);
+            descRect.offsetMin = new Vector2(30f, 0f);
+            descRect.offsetMax = new Vector2(-30f, -100f);
+            descText.alignment = TextAlignmentOptions.TopLeft;
+
+            // 선택지 세로 스택 (설명 아래)
+            var choiceGo = new GameObject("ChoiceColumn", typeof(RectTransform));
+            choiceGo.transform.SetParent(colGo.transform, false);
+            choiceColumn = (RectTransform)choiceGo.transform;
+            choiceColumn.anchorMin = new Vector2(0f, 0f);
+            choiceColumn.anchorMax = new Vector2(1f, 0.42f);
+            choiceColumn.offsetMin = new Vector2(30f, 26f);
+            choiceColumn.offsetMax = new Vector2(-30f, -8f);
+            var vlg = choiceGo.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 14f;
+            vlg.childAlignment = TextAnchor.LowerCenter;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = false;
+
+            challengeButton = CreateChoiceBar("도전한다", true);
+            passButton = CreateChoiceBar("지나간다", false);
+
+            // 좌중앙: 주사위 연출 + 결과
             var rowGo = new GameObject("DiceRow", typeof(RectTransform));
-            rowGo.transform.SetParent(panel.transform, false);
+            rowGo.transform.SetParent(canvasGo.transform, false);
             diceRow = (RectTransform)rowGo.transform;
-            diceRow.anchorMin = diceRow.anchorMax = new Vector2(0.5f, 0.5f);
-            diceRow.anchoredPosition = new Vector2(0, 10);
+            diceRow.anchorMin = diceRow.anchorMax = new Vector2(0.30f, 0.52f);
+            diceRow.anchoredPosition = Vector2.zero;
             diceRow.sizeDelta = new Vector2(700, 130);
             var hlg = rowGo.AddComponent<HorizontalLayoutGroup>();
             hlg.spacing = 22; hlg.childAlignment = TextAnchor.MiddleCenter;
             hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
 
-            resultText = CreateText(panel, "", 30, FontStyles.Bold);
-            PlaceAt(resultText, new Vector2(0, -390), new Vector2(760, 50));
-
-            // 버튼
-            challengeButton = CreateButton(panel, "ChallengeButton", "도전한다", new Vector2(-170, -510), true);
-            passButton = CreateButton(panel, "PassButton", "지나간다", new Vector2(170, -510), false);
+            resultText = CreateText(canvasGo, "", 32, FontStyles.Bold);
+            var resultRect = resultText.rectTransform;
+            resultRect.anchorMin = resultRect.anchorMax = new Vector2(0.30f, 0.36f);
+            resultRect.anchoredPosition = Vector2.zero;
+            resultRect.sizeDelta = new Vector2(760, 50);
 
             rootCanvas.SetActive(false);
 
@@ -336,17 +373,17 @@ namespace DiceOrbit.UI
             Debug.Log("[EventUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
         }
 
-        private Button CreateButton(GameObject parent, string name, string label, Vector2 pos, bool primary)
+        /// <summary>선택지 바 (StS식 — 칼럼 폭 전체, 세로 스택).</summary>
+        private Button CreateChoiceBar(string label, bool primary)
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent.transform, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = pos;
-            rect.sizeDelta = new Vector2(280, 72);
+            var go = new GameObject($"Choice_{label}", typeof(RectTransform));
+            go.transform.SetParent(choiceColumn, false);
+            var le = go.AddComponent<LayoutElement>();
+            le.preferredHeight = 66f;
+            le.flexibleWidth = 1f;
 
             var img = go.AddComponent<Image>();
-            img.sprite = UiRoundedSprite.Get(18);
+            img.sprite = UiRoundedSprite.Get(16);
             img.type = Image.Type.Sliced;
 
             var btn = go.AddComponent<Button>();
@@ -360,7 +397,7 @@ namespace DiceOrbit.UI
             cb.fadeDuration = 0.08f;
             btn.colors = cb;
 
-            var txt = CreateText(go, label, 28, FontStyles.Bold);
+            var txt = CreateText(go, label, 27, FontStyles.Bold);
             txt.color = primary ? GoldInk : Ink;
             Stretch(txt);
             return btn;
