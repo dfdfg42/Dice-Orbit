@@ -84,6 +84,44 @@
   (상점 할인/휴식 보너스/전투 골드/부활 HP/전투 시작 회복)
 - **전투 반응형(리액터)**: `RelicCombatEffect` 서브클래스, CombatPipeline이 수집 (Priority 11)
 
+## 3.5 맵 생성 파이프라인 (MapGenerator.Generate)
+
+설계도(ActDefinition) + 시드 → MapGraph. 4단계로 만든다:
+
+**① 층별 노드 수 결정** (`BuildFloorCounts`)
+```
+인트로 층 (0 ~ IntroFloors-1)  → 1개 고정 (단일 전투 — 자동 모집 구간)
+보스층 (마지막)                → 1개
+보스 앞 층 (PreBossChoice)     → 2개 (정예/휴식 2택)
+나머지                         → Min~MaxNodesPerFloor 랜덤
+```
+
+**② 간선 연결 — 비례 창 매핑.** 층에 n개, 다음 층에 m개일 때 노드 i는
+`[i×m/n, ((i+1)×m-1)/n]` 범위의 다음 층 노드와 연결:
+
+```
+다음층:  A   B   C   D          n=3 → m=4:
+         │ ╲ │   │ ╱ │          0 → {A,B}
+이번층:  0   1   2              1 → {B,C}   ← 창이 왼→오로 단조 이동
+                                2 → {C,D}
+```
+왼쪽 노드는 왼쪽끼리만 이어지므로 **간선 교차 없음**, 창이 전 구간을 덮으므로
+**모든 노드가 진입/진출 간선 최소 1개 보장** — 별도 검증/보정 코드가 필요 없다.
+`Next`는 항상 위층만 가리킴 → 구조적 일방통행 (되돌아가기 없음).
+
+**③ 타입 칠하기** (`AssignTypes`) — 전부 Battle로 시작 후 덮어씀:
+보스층=Boss → 보스 앞=Elite+Rest → FirstEliteFloor에 Elite 1 보장 →
+Shop/Rest/Event를 중반 층(인트로 이후~보스 앞 이전)에 랜덤 배치.
+단, **"그 층에 Battle이 최소 1개 남을 때만"** 치환 — 전투 밀도 유지 (수도꼭지 경제 §5 보호).
+
+**④ 몹 세트 배정** — 전투류 노드마다 층이 속한 BattleTiers 풀에서 랜덤 1개
+(같은 층의 두 전투 노드도 서로 다른 세트 가능). Elite/Boss는 전용 풀.
+풀이 비면 구 WaveDatabase 진행도 비례 폴백. 배정 실패 시 콘솔 경고.
+주사위 개조 예고(DiceModReward)는 중반 일반 전투 중 DiceModBattleCount개에 랜덤.
+
+시드 고정(`RunManager.seed ≠ 0`) 시 같은 맵 재현 — 테스트용.
+디버그: RunManager 우클릭 → [맵 생성 테스트] → 콘솔에 ASCII 덤프 (`MapGenerator.Dump`).
+
 ## 4. 새 콘텐츠 만드는 법
 
 ### 새 유물 (규칙형)
