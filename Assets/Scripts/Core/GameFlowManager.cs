@@ -123,6 +123,11 @@ namespace DiceOrbit.Core
                     UI.ShopUI.Instance?.Show();
                     break;
 
+                case GameState.Event:
+                    UI.EventUI.EnsureInstance();
+                    UI.EventUI.Instance?.Show();
+                    break;
+
                 case GameState.Combat:
                     StartCombat();
                     break;
@@ -165,6 +170,10 @@ namespace DiceOrbit.Core
 
                 case GameState.Shop:
                     UI.ShopUI.Instance?.Hide();
+                    break;
+
+                case GameState.Event:
+                    UI.EventUI.Instance?.Hide();
                     break;
 
                 case GameState.Recruit:
@@ -240,9 +249,7 @@ namespace DiceOrbit.Core
                     break;
 
                 case MapNodeType.Event:
-                    // v1 스텁 — 이벤트 노드는 후속 구현 (스펙 §7)
-                    Debug.Log("[GameFlow] Event 노드는 준비 중 (v1 스텁) — 통과 처리.");
-                    UI.NodeMapUI.Instance?.Rebuild();
+                    ChangeState(GameState.Event);
                     break;
             }
         }
@@ -347,6 +354,12 @@ namespace DiceOrbit.Core
 
         /// <summary>상점에서 [떠나기] — 맵으로 복귀 (ShopUI가 호출).</summary>
         public void OnShopComplete()
+        {
+            ChangeState(GameState.Map);
+        }
+
+        /// <summary>이벤트 종료 — 맵으로 복귀 (EventUI가 호출).</summary>
+        public void OnEventComplete()
         {
             ChangeState(GameState.Map);
         }
