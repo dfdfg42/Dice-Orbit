@@ -30,6 +30,17 @@ namespace DiceOrbit.Core.Run
 
         private int _currentNodeId = -1;
 
+        // 상점 교체로 내보낸 캐릭터 — 이번 런에서 재영입 불가 (스펙 §3: 리롤 세탁 방지)
+        private readonly List<CharacterPreset> _banishedPresets = new List<CharacterPreset>();
+
+        public void RegisterBanished(CharacterPreset preset)
+        {
+            if (preset != null && !_banishedPresets.Contains(preset))
+                _banishedPresets.Add(preset);
+        }
+
+        public bool IsBanished(CharacterPreset preset) => preset != null && _banishedPresets.Contains(preset);
+
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -57,6 +68,7 @@ namespace DiceOrbit.Core.Run
             Map = MapGenerator.Generate(CurrentAct, usedSeed);
             _currentNodeId = -1;
             BattlesCleared = 0;
+            _banishedPresets.Clear();
 
             Debug.Log($"[RunManager] 런 시작 — {CurrentAct.ActName}, 시드 {usedSeed}\n{MapGenerator.Dump(Map)}");
             return true;
@@ -68,6 +80,7 @@ namespace DiceOrbit.Core.Run
             CurrentAct = null;
             _currentNodeId = -1;
             BattlesCleared = 0;
+            _banishedPresets.Clear();
         }
 
         // ── 이동 ──────────────────────────────────────────────

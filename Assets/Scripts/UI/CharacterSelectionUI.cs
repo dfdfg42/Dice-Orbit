@@ -15,6 +15,9 @@ namespace DiceOrbit.UI
         [Header("Character Presets")]
         [SerializeField] private List<Core.CharacterPreset> allCharacters = new List<Core.CharacterPreset>();
 
+        /// <summary>전체 캐릭터 풀 (상점 교체 후보 등 외부 조회용 — ShopUI).</summary>
+        public IReadOnlyList<Core.CharacterPreset> AllCharacters => allCharacters;
+
         [Header("Card UI References")]
         [SerializeField] private Transform cardContainer;
         [SerializeField] private GameObject characterCardPrefab;

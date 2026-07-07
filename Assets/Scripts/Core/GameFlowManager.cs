@@ -118,6 +118,11 @@ namespace DiceOrbit.Core
                     UI.NodeMapUI.Instance?.Show();
                     break;
 
+                case GameState.Shop:
+                    UI.ShopUI.EnsureInstance();
+                    UI.ShopUI.Instance?.Show();
+                    break;
+
                 case GameState.Combat:
                     StartCombat();
                     break;
@@ -156,6 +161,10 @@ namespace DiceOrbit.Core
 
                 case GameState.Map:
                     UI.NodeMapUI.Instance?.Hide();
+                    break;
+
+                case GameState.Shop:
+                    UI.ShopUI.Instance?.Hide();
                     break;
 
                 case GameState.Recruit:
@@ -227,9 +236,12 @@ namespace DiceOrbit.Core
                     break;
 
                 case MapNodeType.Shop:
+                    ChangeState(GameState.Shop);
+                    break;
+
                 case MapNodeType.Event:
-                    // v1 스텁 — 후속 계획에서 구현 (스펙 §7)
-                    Debug.Log($"[GameFlow] {node.Type} 노드는 준비 중 (v1 스텁) — 통과 처리.");
+                    // v1 스텁 — 이벤트 노드는 후속 구현 (스펙 §7)
+                    Debug.Log("[GameFlow] Event 노드는 준비 중 (v1 스텁) — 통과 처리.");
                     UI.NodeMapUI.Instance?.Rebuild();
                     break;
             }
@@ -331,6 +343,12 @@ namespace DiceOrbit.Core
         public void OnCombatDefeat()
         {
             ChangeState(GameState.GameOver);
+        }
+
+        /// <summary>상점에서 [떠나기] — 맵으로 복귀 (ShopUI가 호출).</summary>
+        public void OnShopComplete()
+        {
+            ChangeState(GameState.Map);
         }
 
         private int CountParty()
