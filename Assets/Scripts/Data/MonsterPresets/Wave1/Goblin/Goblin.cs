@@ -81,7 +81,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
     {
         [Header("Skill Settings")]
         [SerializeField] private int damage = 10;
-        [SerializeField] private DiceOrbit.Visuals.CombatVfxProfile vfxProfile;
+        // vfxProfile은 SkillData 베이스로 승격됨 (필드명 동일 → 기존 직렬화 데이터 보존)
 
         public MineBombSkill()
         {
@@ -106,7 +106,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
 
             if (affectedTiles.Count == 0) return;
 
-            VfxManager.PlayCast(vfxProfile, source);
+            // 시전 VFX는 SkillData.ExecuteSkillWithIntent가 공통 처리. 타일 폭발만 여기서.
             foreach (var tile in affectedTiles)
                 VfxManager.PlayTile(vfxProfile, tile);
 
@@ -116,10 +116,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
                 if (character.CurrentTile == null || !affectedTiles.Contains(character.CurrentTile)) continue;
 
                 var context = new AttackContext(source, character, SkillName, damage);
-                if (vfxProfile != null) context.AddTag("CustomVfx");
+                context.VfxProfile = vfxProfile;   // 재생 판단은 파이프라인이
                 CombatPipeline.Instance?.Process(context);
-
-                if (context.IsEffected) VfxManager.PlayHit(vfxProfile, character);
             }
 
             // 폭발 후 지뢰 속성 제거

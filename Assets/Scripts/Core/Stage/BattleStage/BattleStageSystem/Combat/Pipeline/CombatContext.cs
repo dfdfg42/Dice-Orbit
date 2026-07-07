@@ -33,6 +33,12 @@ namespace DiceOrbit.Core.Pipeline
         public HashSet<string> Tags = new HashSet<string>();
         public List<ActionEffectInfo> Effects = new List<ActionEffectInfo>();
 
+        /// <summary>
+        /// 이 행위에 쓸 VFX 프로필 — 실행부(스킬)가 지정만 하고,
+        /// 재생 판단은 파이프라인 ApplyAction 한 곳에서 한다 (히트/힐 프리팹 없으면 전역 기본).
+        /// </summary>
+        public Visuals.CombatVfxProfile VfxProfile;
+
         protected EffectContext(Unit source, Unit target, ActionType type, string name, float baseValue)
             : base(source, target, type)
         {

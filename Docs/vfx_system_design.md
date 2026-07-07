@@ -1,5 +1,16 @@
 # Combat VFX 설계 문서
 
+> **⚠ 2026-07-07 갱신 — 호출 방식 통일.** 아래 본문 중 "스킬이 Hit VFX를 인라인 재생 + CustomVfx 태그로 기본 억제" 부분은 구식이다. 현재 규약:
+>
+> ```
+> 실행부(스킬)는  context.VfxProfile = vfxProfile;  로 지정만 한다.
+> 재생 판단은 CombatPipeline.ApplyAction 한 곳:
+>   프로필에 hit/heal 프리팹이 있으면 그걸, 없으면 전역 기본 (VfxManager.PlayAttackHit/PlayHealEffect)
+> Cast VFX만 실행부 시작 시 1회 (캐릭터: CharacterActiveTemplate / 몬스터: SkillData.ExecuteSkillWithIntent 공통)
+> ```
+> - `CustomVfx` 태그는 철거됨 ("프로필은 있는데 hit 칸이 비면 아무것도 안 나오는" 함정 제거)
+> - `vfxProfile` 필드는 **몬스터 스킬 베이스(SkillData)에도 승격** — 캐릭터/몬스터 대칭. 몬스터 스킬 에셋에 프로필만 꽂으면 시전/히트 커스텀이 작동한다.
+
 이 문서는 현재 전투 스킬 VFX 구조를 정리한 문서입니다.  
 범위는 **캐릭터 스킬 VFX** 기준이며, 몬스터 스킬 전용 설계는 별도 확장 대상으로 둡니다.
 

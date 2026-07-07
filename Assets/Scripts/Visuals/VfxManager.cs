@@ -97,6 +97,22 @@ namespace DiceOrbit.Visuals
             SpawnPrefab(profile.tileVfxPrefab, tile.Position + profile.tileOffset, Quaternion.identity, profile.defaultLifetime);
         }
 
+        // ── 통합 진입점 (파이프라인 ApplyAction이 호출 — 재생 판단의 유일한 지점) ──
+
+        /// <summary>공격 적중 VFX: 프로필에 hit 프리팹이 있으면 그걸, 없으면 전역 기본.</summary>
+        public static void PlayAttackHit(CombatVfxProfile profile, Unit target)
+        {
+            if (profile != null && profile.hitVfxPrefab != null) PlayHit(profile, target);
+            else PlayDefaultAttackHit(target);
+        }
+
+        /// <summary>힐 VFX: 프로필에 heal 프리팹이 있으면 그걸, 없으면 전역 기본.</summary>
+        public static void PlayHealEffect(CombatVfxProfile profile, Unit target)
+        {
+            if (profile != null && profile.healVfxPrefab != null) PlayHeal(profile, target);
+            else PlayDefaultHeal(target);
+        }
+
         public static void PlayDefaultAttackHit(Unit target)
         {
             if (target == null) return;

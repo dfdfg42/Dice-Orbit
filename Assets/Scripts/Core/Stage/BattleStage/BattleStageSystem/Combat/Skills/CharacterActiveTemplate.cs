@@ -115,10 +115,8 @@ namespace DiceOrbit.Data.Skills
                 if (target == null || !target.IsAlive) continue;
 
                 var context = new AttackContext(source, target, skillName, rawDamage);
-                if (vfxProfile != null) context.AddTag("CustomVfx");
+                context.VfxProfile = vfxProfile;   // 재생 판단은 파이프라인 ApplyAction 한 곳에서
                 CombatPipeline.Instance?.Process(context);
-
-                if (context.IsEffected) VfxManager.PlayHit(vfxProfile, target);
             }
 
             OnAfterResolved(source, ability);
