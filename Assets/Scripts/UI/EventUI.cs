@@ -16,8 +16,7 @@ namespace DiceOrbit.UI
     /// 이벤트는 EventDefinition 에셋 (Create > DiceOrbit > Event Definition) —
     /// 선택지마다 즉시/주사위 판정 + 성공/실패 결과 묶음. eventPool이 비면 기본 3종 런타임 생성.
     ///
-    /// ── 에디터 소유 레이아웃 ─────────────────────────────────────
-    /// 컴포넌트 우클릭 → [기본 레이아웃 생성] → 씬에서 자유롭게 스타일링.
+    /// 레이아웃 슬롯은 씬에서 배치한다.
     /// </summary>
     public class EventUI : MonoBehaviour
     {
@@ -30,7 +29,7 @@ namespace DiceOrbit.UI
         [SerializeField] private float rollDuration = 0.7f;
         [SerializeField] private float settleInterval = 0.25f;
 
-        [Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]
+        [Header("슬롯 (씬에서 배치)")]
         [SerializeField] private GameObject rootCanvas;
         [SerializeField] private Image backgroundImage;             // 전체 배경 (이벤트별 스프라이트)
         [SerializeField] private TextMeshProUGUI titleText;         // 우측 상단 제목
@@ -81,13 +80,6 @@ namespace DiceOrbit.UI
         public void Show()
         {
             gameObject.SetActive(true);
-
-            if (rootCanvas == null)
-            {
-                Debug.LogWarning("[EventUI] 슬롯이 비어 있어 기본 레이아웃을 런타임 생성합니다. " +
-                                 "컴포넌트 우클릭 → [기본 레이아웃 생성]으로 씬에 고정하는 것을 권장합니다.");
-                BuildDefaultLayout();
-            }
 
             rootCanvas.SetActive(true);
             BattleInfoPanelUI.SetVisible(false);
@@ -326,117 +318,6 @@ namespace DiceOrbit.UI
             });
             def.Choices.Add(new EventChoice { Label = "지나친다" });
             return def;
-        }
-
-        // ─────────────────────────────────────────────
-        // [에디터] 기본 레이아웃 생성 (런타임 폴백 겸용)
-        // ─────────────────────────────────────────────
-        [ContextMenu("기본 레이아웃 생성")]
-        private void BuildDefaultLayout()
-        {
-            if (transform.Find("_EventCanvas") != null)
-            {
-                Debug.LogWarning("[EventUI] _EventCanvas가 이미 있습니다. 다시 생성하려면 기존 것을 삭제하세요.");
-                return;
-            }
-
-            _font = FindAnyObjectByType<TextMeshProUGUI>(FindObjectsInactive.Include)?.font;
-
-            var canvasGo = new GameObject("_EventCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 1450;
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            canvasGo.AddComponent<GraphicRaycaster>();
-            rootCanvas = canvasGo;
-
-            // 전체 배경 (이벤트별 스프라이트 — Show에서 교체, 없으면 펠트색)
-            var bgGo = new GameObject("Background", typeof(RectTransform));
-            bgGo.transform.SetParent(canvasGo.transform, false);
-            var bgRect = (RectTransform)bgGo.transform;
-            bgRect.anchorMin = Vector2.zero; bgRect.anchorMax = Vector2.one;
-            bgRect.offsetMin = Vector2.zero; bgRect.offsetMax = Vector2.zero;
-            backgroundImage = bgGo.AddComponent<Image>();
-            backgroundImage.color = Felt;
-
-            // 우측 텍스트 칼럼 (반투명 — 배경 아트 위에서 글이 읽히게)
-            var colGo = new GameObject("RightColumn", typeof(RectTransform));
-            colGo.transform.SetParent(canvasGo.transform, false);
-            var colRect = (RectTransform)colGo.transform;
-            colRect.anchorMin = new Vector2(0.60f, 0.08f);
-            colRect.anchorMax = new Vector2(0.97f, 0.92f);
-            colRect.offsetMin = Vector2.zero; colRect.offsetMax = Vector2.zero;
-            var colImg = colGo.AddComponent<Image>();
-            colImg.sprite = UiRoundedSprite.Get(22);
-            colImg.type = Image.Type.Sliced;
-            colImg.color = new Color(Card.r, Card.g, Card.b, 0.88f);
-            var colShadow = colGo.AddComponent<Shadow>();
-            colShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
-            colShadow.effectDistance = new Vector2(0f, -8f);
-
-            // 제목 (칼럼 상단)
-            titleText = CreateText(colGo, "이벤트", 40, FontStyles.Bold);
-            var titleRect = titleText.rectTransform;
-            titleRect.anchorMin = new Vector2(0f, 1f); titleRect.anchorMax = new Vector2(1f, 1f);
-            titleRect.pivot = new Vector2(0.5f, 1f);
-            titleRect.anchoredPosition = new Vector2(0f, -30f);
-            titleRect.sizeDelta = new Vector2(-60f, 54f);
-            titleText.alignment = TextAlignmentOptions.TopLeft;
-
-            // 설명 (제목 아래)
-            descText = CreateText(colGo, "", 24, FontStyles.Normal);
-            var descRect = descText.rectTransform;
-            descRect.anchorMin = new Vector2(0f, 0.42f); descRect.anchorMax = new Vector2(1f, 1f);
-            descRect.offsetMin = new Vector2(30f, 0f);
-            descRect.offsetMax = new Vector2(-30f, -100f);
-            descText.alignment = TextAlignmentOptions.TopLeft;
-
-            // 선택지 세로 스택 (설명 아래) — 선택지 수만큼 코드가 채운다
-            var choiceGo = new GameObject("ChoiceColumn", typeof(RectTransform));
-            choiceGo.transform.SetParent(colGo.transform, false);
-            choiceColumn = (RectTransform)choiceGo.transform;
-            choiceColumn.anchorMin = new Vector2(0f, 0f);
-            choiceColumn.anchorMax = new Vector2(1f, 0.42f);
-            choiceColumn.offsetMin = new Vector2(30f, 26f);
-            choiceColumn.offsetMax = new Vector2(-30f, -8f);
-            var vlg = choiceGo.AddComponent<VerticalLayoutGroup>();
-            vlg.spacing = 14f;
-            vlg.childAlignment = TextAnchor.LowerCenter;
-            vlg.childForceExpandWidth = true;
-            vlg.childForceExpandHeight = false;
-            vlg.childControlWidth = true;
-            vlg.childControlHeight = false;
-
-            // 좌중앙: 주사위 연출 + 결과
-            var rowGo = new GameObject("DiceRow", typeof(RectTransform));
-            rowGo.transform.SetParent(canvasGo.transform, false);
-            diceRow = (RectTransform)rowGo.transform;
-            diceRow.anchorMin = diceRow.anchorMax = new Vector2(0.30f, 0.52f);
-            diceRow.anchoredPosition = Vector2.zero;
-            diceRow.sizeDelta = new Vector2(700, 130);
-            var hlg = rowGo.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 22; hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
-
-            resultText = CreateText(canvasGo, "", 32, FontStyles.Bold);
-            var resultRect = resultText.rectTransform;
-            resultRect.anchorMin = resultRect.anchorMax = new Vector2(0.30f, 0.36f);
-            resultRect.anchoredPosition = Vector2.zero;
-            resultRect.sizeDelta = new Vector2(760, 60);
-
-            rootCanvas.SetActive(false);
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[EventUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
         }
 
         /// <summary>선택지 바 (StS식 — 칼럼 폭 전체, 세로 스택).</summary>

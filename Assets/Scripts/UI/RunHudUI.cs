@@ -16,14 +16,13 @@ namespace DiceOrbit.UI
     /// 포션: 좌클릭 = 사용, 우클릭 = 버리기, 호버 = 툴팁.
     ///
     /// ── 에디터 소유 레이아웃 ─────────────────────────────────────
-    /// 컴포넌트 우클릭 → [기본 레이아웃 생성] → 씬에서 자유롭게 스타일링.
-    /// 슬롯이 비어 있으면 런타임 폴백 생성.
+    /// 슬롯은 씬에서 배치·배선한다.
     /// </summary>
     public class RunHudUI : MonoBehaviour
     {
         public static RunHudUI Instance { get; private set; }
 
-        [Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]
+        [Header("슬롯 (씬에서 배치·배선)")]
         [SerializeField] private GameObject rootCanvas;
         [SerializeField] private TextMeshProUGUI goldText;
         [SerializeField] private RectTransform relicRow;
@@ -62,8 +61,6 @@ namespace DiceOrbit.UI
 
         private void Start()
         {
-            if (rootCanvas == null) BuildDefaultLayout();
-
             // 씬에 저장된 캔버스에도 최신 정렬값 강제 (구버전 100으로 생성된 레이아웃 교정)
             var canvas = rootCanvas != null ? rootCanvas.GetComponent<Canvas>() : null;
             if (canvas != null) canvas.sortingOrder = hudSortingOrder;
@@ -295,145 +292,6 @@ namespace DiceOrbit.UI
         {
             for (int i = row.childCount - 1; i >= 0; i--)
                 Destroy(row.GetChild(i).gameObject);
-        }
-
-        // ─────────────────────────────────────────────
-        // [에디터] 기본 레이아웃 생성 (런타임 폴백 겸용)
-        // ─────────────────────────────────────────────
-        [ContextMenu("기본 레이아웃 생성")]
-        private void BuildDefaultLayout()
-        {
-            if (transform.Find("_RunHudCanvas") != null)
-            {
-                Debug.LogWarning("[RunHudUI] _RunHudCanvas가 이미 있습니다. 다시 생성하려면 기존 것을 삭제하세요.");
-                return;
-            }
-
-            _font = FindAnyObjectByType<TextMeshProUGUI>(FindObjectsInactive.Include)?.font;
-
-            var canvasGo = new GameObject("_RunHudCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = hudSortingOrder;
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            canvasGo.AddComponent<GraphicRaycaster>();
-            rootCanvas = canvasGo;
-
-            // 상단 바 (왼쪽 절반 — 오른쪽은 정보 패널 영역)
-            var bar = new GameObject("TopBar", typeof(RectTransform));
-            bar.transform.SetParent(canvasGo.transform, false);
-            var barRect = (RectTransform)bar.transform;
-            barRect.anchorMin = new Vector2(0f, 1f);
-            barRect.anchorMax = new Vector2(0f, 1f);
-            barRect.pivot = new Vector2(0f, 1f);
-            barRect.anchoredPosition = new Vector2(12f, -10f);
-            barRect.sizeDelta = new Vector2(880f, 66f);
-            var barImg = bar.AddComponent<Image>();
-            barImg.sprite = UiRoundedSprite.Get(16);
-            barImg.type = Image.Type.Sliced;
-            barImg.color = BarBg;
-
-            var layout = bar.AddComponent<HorizontalLayoutGroup>();
-            layout.padding = new RectOffset(16, 16, 7, 7);
-            layout.spacing = 18f;
-            layout.childAlignment = TextAnchor.MiddleLeft;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-
-            // 골드
-            var goldGo = new GameObject("GoldText", typeof(RectTransform));
-            goldGo.transform.SetParent(bar.transform, false);
-            goldText = goldGo.AddComponent<TextMeshProUGUI>();
-            goldText.fontSize = 28f;
-            goldText.fontStyle = FontStyles.Bold;
-            goldText.alignment = TextAlignmentOptions.MidlineLeft;
-            goldText.color = Ink;
-            goldText.raycastTarget = false;
-            if (_font != null) goldText.font = _font;
-            var goldLe = goldGo.AddComponent<LayoutElement>();
-            goldLe.preferredWidth = 120f; goldLe.preferredHeight = chipSize;
-
-            // 유물 행
-            relicRow = CreateRow(bar.transform, "RelicRow", 380f);
-
-            // 구분선
-            var divider = new GameObject("Divider", typeof(RectTransform));
-            divider.transform.SetParent(bar.transform, false);
-            var divImg = divider.AddComponent<Image>();
-            divImg.color = new Color(1f, 1f, 1f, 0.12f);
-            divImg.raycastTarget = false;
-            var divLe = divider.AddComponent<LayoutElement>();
-            divLe.preferredWidth = 2f; divLe.preferredHeight = chipSize * 0.8f;
-
-            // 포션 행
-            potionRow = CreateRow(bar.transform, "PotionRow", 190f);
-
-            // 설정 버튼 (바 끝 — ESC로도 열림)
-            var settingsGo = new GameObject("SettingsButton", typeof(RectTransform));
-            settingsGo.transform.SetParent(bar.transform, false);
-            var settingsLe = settingsGo.AddComponent<LayoutElement>();
-            settingsLe.preferredWidth = 72f;
-            settingsLe.preferredHeight = chipSize;
-            var settingsImg = settingsGo.AddComponent<Image>();
-            settingsImg.sprite = UiRoundedSprite.Get(12);
-            settingsImg.type = Image.Type.Sliced;
-            settingsButton = settingsGo.AddComponent<Button>();
-            settingsButton.targetGraphic = settingsImg;
-            var scb = ColorBlock.defaultColorBlock;
-            scb.normalColor = CardWell;
-            scb.highlightedColor = Color.Lerp(CardWell, Color.white, 0.2f);
-            scb.pressedColor = Color.Lerp(CardWell, Color.black, 0.25f);
-            scb.selectedColor = CardWell;
-            scb.fadeDuration = 0.08f;
-            settingsButton.colors = scb;
-
-            var settingsLabel = new GameObject("Label", typeof(RectTransform));
-            settingsLabel.transform.SetParent(settingsGo.transform, false);
-            var settingsTmp = settingsLabel.AddComponent<TextMeshProUGUI>();
-            settingsTmp.text = "설정";
-            settingsTmp.fontSize = 20f;
-            settingsTmp.fontStyle = FontStyles.Bold;
-            settingsTmp.alignment = TextAlignmentOptions.Center;
-            settingsTmp.color = Ink;
-            settingsTmp.raycastTarget = false;
-            if (_font != null) settingsTmp.font = _font;
-            var settingsLabelRect = settingsTmp.rectTransform;
-            settingsLabelRect.anchorMin = Vector2.zero; settingsLabelRect.anchorMax = Vector2.one;
-            settingsLabelRect.offsetMin = Vector2.zero; settingsLabelRect.offsetMax = Vector2.zero;
-
-            rootCanvas.SetActive(false);
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[RunHudUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
-        }
-
-        private RectTransform CreateRow(Transform parent, string name, float width)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
-            var layout = go.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = 8f;
-            layout.childAlignment = TextAnchor.MiddleLeft;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-            layout.childControlWidth = true;
-            layout.childControlHeight = true;
-            var le = go.AddComponent<LayoutElement>();
-            le.preferredWidth = width;
-            le.preferredHeight = chipSize;
-            return rect;
         }
     }
 

@@ -16,9 +16,7 @@ namespace DiceOrbit.UI
     ///   비용 = 기본 + 모디파이어 개수 비례 / 내보낸 캐릭터는 런에서 소멸 /
     ///   새 멤버는 기존 모디파이어 개수만큼 3택1 재선택 / 풀피 + 부활 스톡 만땅 입장.
     ///
-    /// ── 에디터 소유 레이아웃 ─────────────────────────────────────
-    /// 컴포넌트 우클릭 → [기본 레이아웃 생성] → 씬에서 자유롭게 스타일링.
-    /// 슬롯이 비어 있으면 런타임 폴백 생성 (셋업 전에도 동작).
+    /// 레이아웃은 씬에서 배치하고 인스펙터 슬롯에 배선한다.
     /// </summary>
     public class ShopUI : MonoBehaviour
     {
@@ -32,7 +30,7 @@ namespace DiceOrbit.UI
         [SerializeField] private int potionOfferCount = 2;
         [SerializeField] private int relicOfferCount = 2;
 
-        [Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]
+        [Header("슬롯 (씬에서 배치 — 인스펙터에 배선)")]
         [SerializeField] private GameObject rootCanvas;
         [SerializeField] private Image backgroundImage;             // 상점 배경 (전체)
         [SerializeField] private Image merchantImage;               // 우측 상인
@@ -102,12 +100,6 @@ namespace DiceOrbit.UI
         {
             gameObject.SetActive(true);
 
-            if (rootCanvas == null)
-            {
-                Debug.LogWarning("[ShopUI] 슬롯이 비어 있어 기본 레이아웃을 런타임 생성합니다. " +
-                                 "컴포넌트 우클릭 → [기본 레이아웃 생성]으로 씬에 고정하는 것을 권장합니다.");
-                BuildDefaultLayout();
-            }
             WireButtons();
 
             rootCanvas.SetActive(true);
@@ -487,234 +479,13 @@ namespace DiceOrbit.UI
             Stretch(txt);
         }
 
-        // ─────────────────────────────────────────────
-        // [에디터] 기본 레이아웃 생성 (런타임 폴백 겸용)
-        // ─────────────────────────────────────────────
-        [ContextMenu("기본 레이아웃 생성")]
-        private void BuildDefaultLayout()
-        {
-            if (transform.Find("_ShopCanvas") != null)
-            {
-                Debug.LogWarning("[ShopUI] _ShopCanvas가 이미 있습니다. 다시 생성하려면 기존 것을 삭제하세요.");
-                return;
-            }
-
-            _font = FindAnyObjectByType<TextMeshProUGUI>(FindObjectsInactive.Include)?.font;
-
-            var canvasGo = new GameObject("_ShopCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 1450;   // 보상(1500) 바로 아래
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            canvasGo.AddComponent<GraphicRaycaster>();
-            rootCanvas = canvasGo;
-
-            // 전체 배경 (상점 내부 아트 — Show에서 스프라이트 적용, 없으면 펠트색)
-            var bgGo = CreateChild(canvasGo, "Background");
-            StretchRect(bgGo);
-            backgroundImage = bgGo.AddComponent<Image>();
-            backgroundImage.color = Felt;
-
-            // 우측 상인 (스프라이트 지정 시에만 표시)
-            var merchantGo = CreateChild(canvasGo, "Merchant");
-            var merchantRect = (RectTransform)merchantGo.transform;
-            merchantRect.anchorMin = new Vector2(0.66f, 0.10f);
-            merchantRect.anchorMax = new Vector2(0.99f, 0.80f);
-            merchantRect.offsetMin = Vector2.zero; merchantRect.offsetMax = Vector2.zero;
-            merchantImage = merchantGo.AddComponent<Image>();
-            merchantImage.preserveAspect = true;
-            merchantImage.raycastTarget = false;
-            merchantImage.enabled = false;
-
-            // 제목 + 골드 (좌상단)
-            var title = CreateText(canvasGo, "상  점", 46, FontStyles.Bold);
-            var titleRect = title.rectTransform;
-            titleRect.anchorMin = titleRect.anchorMax = new Vector2(0f, 1f);
-            titleRect.pivot = new Vector2(0f, 1f);
-            titleRect.anchoredPosition = new Vector2(60f, -36f);
-            titleRect.sizeDelta = new Vector2(300f, 60f);
-            title.alignment = TextAlignmentOptions.TopLeft;
-
-            var pill = CreateChild(canvasGo, "GoldPill");
-            var pillRect = (RectTransform)pill.transform;
-            pillRect.anchorMin = pillRect.anchorMax = new Vector2(0f, 1f);
-            pillRect.pivot = new Vector2(0f, 1f);
-            pillRect.anchoredPosition = new Vector2(60f, -104f);
-            pillRect.sizeDelta = new Vector2(240f, 48f);
-            var pillImg = pill.AddComponent<Image>();
-            pillImg.sprite = UiRoundedSprite.Get(24);
-            pillImg.type = Image.Type.Sliced;
-            pillImg.color = new Color(0.082f, 0.094f, 0.153f, 0.92f);
-            goldText = CreateText(pill, "골드 0", 28, FontStyles.Bold);
-            goldText.color = Gold;
-            Stretch(goldText);
-
-            // 선반 2단 (아이템이 올라가는 곳)
-            potionShelfRow = BuildShelf(canvasGo, "PotionShelf", "물 약",
-                new Vector2(0.05f, 0.52f), new Vector2(0.62f, 0.78f));
-            relicShelfRow = BuildShelf(canvasGo, "RelicShelf", "유 물",
-                new Vector2(0.05f, 0.20f), new Vector2(0.62f, 0.46f));
-
-            // 카운터: 캐릭터 교체(좌하단) + 떠나기(우하단, 주 행동)
-            swapButton = CreateButton(canvasGo, "SwapButton", "캐릭터 교체", new Vector2(-660, -985), new Vector2(320, 72), false);
-            leaveButton = CreateButton(canvasGo, "LeaveButton", "떠나기", new Vector2(700, -985), new Vector2(280, 72), true);
-
-            // ── 단계 패널 (교체 흐름) ──
-            stepPanel = CreatePanel(canvasGo, "StepPanel", new Vector2(1100, 420));
-            var stepRect = (RectTransform)stepPanel.transform;
-            stepRect.anchoredPosition = new Vector2(0, -80);
-
-            stepHeader = CreateText(stepPanel, "선택", 32, FontStyles.Bold);
-            PlaceTop(stepHeader, 24, 50);
-
-            var rowGo = CreateChild(stepPanel, "ChoiceRow");
-            choiceRow = (RectTransform)rowGo.transform;
-            choiceRow.anchorMin = choiceRow.anchorMax = new Vector2(0.5f, 0.5f);
-            choiceRow.anchoredPosition = new Vector2(0, -20);
-            choiceRow.sizeDelta = new Vector2(1020, 240);
-            var hlg = rowGo.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 20; hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
-
-            cancelStepButton = CreateButton(stepPanel, "CancelButton", "취소", new Vector2(0, -350), new Vector2(200, 56), false);
-            var cancelRect = (RectTransform)cancelStepButton.transform;
-            cancelRect.anchorMin = cancelRect.anchorMax = new Vector2(0.5f, 0f);
-            cancelRect.anchoredPosition = new Vector2(0, 40);
-
-            stepPanel.SetActive(false);
-            rootCanvas.SetActive(false);
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[ShopUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
-        }
-
-        /// <summary>선반 1단: 라벨 + 상품이 올라가는 행 + 나무 보드. 상품 행을 반환.</summary>
-        private RectTransform BuildShelf(GameObject parent, string name, string label, Vector2 anchorMin, Vector2 anchorMax)
-        {
-            var shelfGo = CreateChild(parent, name);
-            var shelfRect = (RectTransform)shelfGo.transform;
-            shelfRect.anchorMin = anchorMin;
-            shelfRect.anchorMax = anchorMax;
-            shelfRect.offsetMin = Vector2.zero; shelfRect.offsetMax = Vector2.zero;
-
-            // 선반 라벨 (좌상단 작은 팻말)
-            var labelTmp = CreateText(shelfGo, label, 22, FontStyles.Bold);
-            labelTmp.color = InkMuted;
-            var labelRect = labelTmp.rectTransform;
-            labelRect.anchorMin = new Vector2(0f, 1f);
-            labelRect.anchorMax = new Vector2(0f, 1f);
-            labelRect.pivot = new Vector2(0f, 1f);
-            labelRect.anchoredPosition = new Vector2(10f, 6f);
-            labelRect.sizeDelta = new Vector2(160f, 32f);
-            labelTmp.alignment = TextAlignmentOptions.MidlineLeft;
-
-            // 나무 보드 (선반 판자 — 상품이 이 위에 올라가 보이게)
-            var board = CreateChild(shelfGo, "Board");
-            var boardRect = (RectTransform)board.transform;
-            boardRect.anchorMin = new Vector2(0f, 0f);
-            boardRect.anchorMax = new Vector2(1f, 0f);
-            boardRect.pivot = new Vector2(0.5f, 0f);
-            boardRect.anchoredPosition = Vector2.zero;
-            boardRect.sizeDelta = new Vector2(0f, 18f);
-            var boardImg = board.AddComponent<Image>();
-            boardImg.sprite = UiRoundedSprite.Get(6);
-            boardImg.type = Image.Type.Sliced;
-            boardImg.color = new Color(0.32f, 0.24f, 0.15f);   // 목재 톤
-            boardImg.raycastTarget = false;
-            var boardShadow = board.AddComponent<Shadow>();
-            boardShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
-            boardShadow.effectDistance = new Vector2(0f, -5f);
-
-            // 상품 행 (보드 위에 왼쪽부터 진열)
-            var rowGo = CreateChild(shelfGo, "Items");
-            var rowRect = (RectTransform)rowGo.transform;
-            rowRect.anchorMin = new Vector2(0f, 0f);
-            rowRect.anchorMax = new Vector2(1f, 1f);
-            rowRect.offsetMin = new Vector2(14f, 16f);   // 보드 두께만큼 띄움
-            rowRect.offsetMax = new Vector2(-14f, -2f);
-            var layout = rowGo.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = 18f;
-            layout.childAlignment = TextAnchor.LowerLeft;   // 상품이 보드에 '올라앉게'
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-
-            return rowRect;
-        }
-
-        // ── 생성 헬퍼 ─────────────────────────────────────────
+        // ── 생성 헬퍼 (런타임 상품/버튼 UI) ───────────────────
 
         private GameObject CreateChild(GameObject parent, string name)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent.transform, false);
             return go;
-        }
-
-        private GameObject CreatePanel(GameObject parent, string name, Vector2 size)
-        {
-            var panel = CreateChild(parent, name);
-            var rect = (RectTransform)panel.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = size;
-
-            var edge = panel.AddComponent<Image>();
-            edge.sprite = UiRoundedSprite.Get(26);
-            edge.type = Image.Type.Sliced;
-            edge.color = CardEdge;
-
-            var shadow = panel.AddComponent<Shadow>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.55f);
-            shadow.effectDistance = new Vector2(0f, -10f);
-
-            var bg = CreateChild(panel, "BG");
-            var bgRect = (RectTransform)bg.transform;
-            bgRect.anchorMin = Vector2.zero; bgRect.anchorMax = Vector2.one;
-            bgRect.offsetMin = new Vector2(3, 3); bgRect.offsetMax = new Vector2(-3, -3);
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.sprite = UiRoundedSprite.Get(23);
-            bgImg.type = Image.Type.Sliced;
-            bgImg.color = Card;
-            bgImg.raycastTarget = false;
-
-            return panel;
-        }
-
-        private Button CreateButton(GameObject parent, string name, string label, Vector2 pos, Vector2 size, bool primary)
-        {
-            var go = CreateChild(parent, name);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = pos;
-            rect.sizeDelta = size;
-
-            var img = go.AddComponent<Image>();
-            img.sprite = UiRoundedSprite.Get(18);
-            img.type = Image.Type.Sliced;
-
-            var btn = go.AddComponent<Button>();
-            btn.targetGraphic = img;
-            Color fill = primary ? Gold : Slate;
-            var cb = ColorBlock.defaultColorBlock;
-            cb.normalColor = fill;
-            cb.highlightedColor = Color.Lerp(fill, Color.white, 0.12f);
-            cb.pressedColor = Color.Lerp(fill, Color.black, 0.2f);
-            cb.selectedColor = fill;
-            cb.fadeDuration = 0.08f;
-            btn.colors = cb;
-
-            var txt = CreateText(go, label, 26, FontStyles.Bold);
-            txt.color = primary ? GoldInk : Ink;
-            Stretch(txt);
-            return btn;
         }
 
         private TextMeshProUGUI CreateText(GameObject parent, string text, float size, FontStyles style)
@@ -736,30 +507,6 @@ namespace DiceOrbit.UI
             var r = tmp.rectTransform;
             r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one;
             r.offsetMin = Vector2.zero; r.offsetMax = Vector2.zero;
-        }
-
-        private static void StretchRect(GameObject go)
-        {
-            var r = (RectTransform)go.transform;
-            r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one;
-            r.offsetMin = Vector2.zero; r.offsetMax = Vector2.zero;
-        }
-
-        private static void PlaceTop(TextMeshProUGUI tmp, float topOffset, float height)
-        {
-            var r = tmp.rectTransform;
-            r.anchorMin = new Vector2(0f, 1f); r.anchorMax = new Vector2(1f, 1f);
-            r.pivot = new Vector2(0.5f, 1f);
-            r.anchoredPosition = new Vector2(0f, -topOffset);
-            r.sizeDelta = new Vector2(0f, height);
-        }
-
-        private static void PlaceAt(TextMeshProUGUI tmp, Vector2 pos, Vector2 size)
-        {
-            var r = tmp.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0.5f, 1f);
-            r.anchoredPosition = pos;
-            r.sizeDelta = size;
         }
     }
 }

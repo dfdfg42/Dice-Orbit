@@ -117,30 +117,6 @@ namespace DiceOrbit.UI
             if (image != null) image.gameObject.SetActive(false);
         }
 
-        /// <summary>
-        /// [에디터] 씬에 배치한 빈 오브젝트에 계층을 생성 — 스프라이트 슬롯을 Inspector에서 채우기 위한 셋업.
-        /// </summary>
-        [ContextMenu("기본 레이아웃 생성")]
-        private void BuildLayoutScaffold()
-        {
-            if (group != null)
-            {
-                Debug.LogWarning("[TurnAnnouncementUI] 이미 배선돼 있습니다. 다시 만들려면 슬롯을 비우고 자식을 삭제하세요.");
-                return;
-            }
-
-            BuildHierarchyOn(gameObject, this);
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[TurnAnnouncementUI] 레이아웃 생성 완료 — Player/Monster Turn Sprite 슬롯에 아트를 꽂으세요.");
-        }
-
         private static void BuildDefault()
         {
             var root = new GameObject("_TurnAnnouncementCanvas");

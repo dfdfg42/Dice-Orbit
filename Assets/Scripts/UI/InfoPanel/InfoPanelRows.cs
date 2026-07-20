@@ -10,15 +10,19 @@ namespace DiceOrbit.UI
     /// </summary>
     internal static class InfoPanelRows
     {
-        // ── 라이트(점수지) 팔레트 ──
-        public static readonly Color InkDark           = new Color(0.10f, 0.11f, 0.16f);  // 제목/본문 잉크
-        public static readonly Color SectionTitleColor = new Color(0.10f, 0.11f, 0.16f);  // 헤더 = 검정 잉크 (크게)
-        public static readonly Color PassiveColor      = new Color(0.72f, 0.36f, 0.16f);  // 패시브 — 진한 주황
-        public static readonly Color MutedColor        = new Color(0.42f, 0.40f, 0.36f);  // 설명 — 따뜻한 회색
-        public static readonly Color HpColor           = new Color(0.70f, 0.20f, 0.20f);  // HP — 진한 적색
-        public static readonly Color DiceColor         = new Color(0.16f, 0.42f, 0.65f);  // 주사위 조건 — 진한 청색
-        public static readonly Color ModifierColor     = new Color(0.42f, 0.28f, 0.72f);  // 모디파이어 — 진한 보라
-        public static readonly Color AccentGold        = new Color(0.79f, 0.61f, 0.25f);  // 시그니처 골드 (핍)
+        // ── 라이트(점수지) 팔레트 — Figma 배틀 UI 톤 (#FAF3E0 크림 종이) ──
+        public static readonly Color InkDark           = new Color(0.294f, 0.259f, 0.361f); // 제목/본문 잉크 #4B425C
+        public static readonly Color SectionTitleColor = new Color(0.294f, 0.259f, 0.361f); // 헤더 = 딥 잉크 #4B425C
+        public static readonly Color PassiveColor      = new Color(0.514f, 0.624f, 0.557f); // 패시브 — 세이지 그린 #839F8E
+        public static readonly Color MutedColor        = new Color(0.42f, 0.40f, 0.36f);    // 설명 — 따뜻한 회색 (가독성 유지)
+        public static readonly Color HpColor           = new Color(0.773f, 0.227f, 0.227f); // HP — 적색 #C53A3A
+        public static readonly Color DiceColor         = new Color(0.16f, 0.42f, 0.65f);    // 주사위 조건 — 진한 청색
+        public static readonly Color ModifierColor     = new Color(0.42f, 0.28f, 0.72f);    // 모디파이어 — 진한 보라
+        public static readonly Color AccentGold        = new Color(0.79f, 0.61f, 0.25f);    // 시그니처 골드 (핍)
+
+        // ── Figma 패널/칩 색 ──
+        public static readonly Color PaperColor        = new Color(0.980f, 0.953f, 0.878f, 0.98f); // 크림 패널 #FAF3E0
+        public static readonly Color ChipColor         = new Color(0.910f, 0.859f, 0.765f);        // 섹션 제목 칩 #E8DBC3
 
         /// <summary>모디파이어 효과 라인용 리치텍스트 색 (스킬 설명에 인라인 삽입 시).</summary>
         public const string ModifierColorHex = "#6A48B8";
@@ -55,9 +59,9 @@ namespace DiceOrbit.UI
             return tmp;
         }
 
-        /// <summary>섹션 헤더 서식: 골드 핍(주사위 눈) 접두 (보상 화면 시그니처 계승).</summary>
+        /// <summary>섹션 헤더 서식: Figma 배틀 UI는 크림 칩 위 텍스트만 (핍 없음).</summary>
         public static string FormatSectionTitle(string title)
-            => $"<color=#C99B3F>●</color>  {title}";
+            => title;
 
         /// <summary>섹션 헤더: 골드 핍 + 검정 잉크 볼드, 큼직하게.</summary>
         public static void AddSectionTitle(Transform parent, string title)

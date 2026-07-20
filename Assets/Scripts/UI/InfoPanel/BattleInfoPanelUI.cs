@@ -12,8 +12,7 @@ namespace DiceOrbit.UI
     /// 섹션(헤더/액티브/패시브/상태이상/타일)의 위치·크기·배경은 씬에서 고정 슬롯으로 배치하고,
     /// 이 컴포넌트는 슬롯 참조에 "내용만" 채워 넣는다. 섹션이 비어도 슬롯 위치는 변하지 않는다.
     ///
-    /// 최초 셋업: 빈 GameObject에 이 컴포넌트를 붙이고 컴포넌트 우클릭 →
-    /// [기본 레이아웃 생성] 실행 → 생성된 계층을 자유롭게 스타일링/재배치 후 씬 저장.
+    /// 슬롯은 씬에서 배치하고 인스펙터 슬롯에 배선한다.
     ///
     /// 행 모양 커스텀: cardPrefab에 GlossaryCardUI 프리팹을 꽂으면 항목이 카드로 렌더링된다.
     /// 비워두면 기본 텍스트 행(InfoPanelRows)으로 렌더링.
@@ -45,8 +44,8 @@ namespace DiceOrbit.UI
         [Header("스킨")]
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
         [SerializeField] private float refreshInterval = 0.5f;
-        [Tooltip("점수지(크림 종이) 배경색 — 라이트 테마. [기본 레이아웃 생성] 시 적용")]
-        [SerializeField] private Color paperColor = new Color(0.950f, 0.930f, 0.885f, 0.98f);
+        [Tooltip("점수지(크림 종이) 배경색 — 라이트 테마 #FAF3E0")]
+        [SerializeField] private Color paperColor = new Color(0.980f, 0.953f, 0.878f, 0.98f);
 
         [Header("정렬")]
         [Tooltip("사이드바는 배경 레이어 — 일반 UI(0)와 팝업(캐릭터 액션 패널 등)이 항상 위에 그려지도록 음수 유지")]
@@ -66,8 +65,7 @@ namespace DiceOrbit.UI
 
             Instance = FindFirstObjectByType<BattleInfoPanelUI>();
             if (Instance == null)
-                Debug.LogWarning("[BattleInfoPanelUI] 씬에 인스턴스가 없습니다. 빈 오브젝트에 컴포넌트를 붙이고 " +
-                                 "우클릭 → [기본 레이아웃 생성]으로 셋업해주세요.");
+                Debug.LogWarning("[BattleInfoPanelUI] 씬에 인스턴스가 없습니다. 씬에 패널을 배치하고 슬롯을 배선해주세요.");
         }
 
         /// <summary>
@@ -245,7 +243,19 @@ namespace DiceOrbit.UI
             // ── Header ──
             SetText(nameText, d.Name);
             SetText(hpText, $"HP {d.CurrentHp}/{d.MaxHp}" + (d.Armor > 0 ? $"   방어도 {d.Armor}" : ""));
-            SetText(flavorText, d.FlavorText);
+
+            // 상태이상 라인 (체력 바로 아래): 별도 섹션 대신 헤더에 요약 — 없으면 "상태이상 없음"
+            string statusLine = "";
+            if (d.Statuses != null)
+            {
+                foreach (var s in d.Statuses)
+                {
+                    string stack = string.IsNullOrWhiteSpace(s.StackText) ? "" : $" {s.StackText}";
+                    string one = $"<color=#{ColorUtility.ToHtmlStringRGB(InfoPanelRows.OnLight(s.Color))}>{s.Name}{stack}</color>";
+                    statusLine = statusLine.Length == 0 ? one : $"{statusLine}    {one}";
+                }
+            }
+            SetText(flavorText, statusLine.Length == 0 ? "상태이상 없음" : statusLine);
 
             // 액티브 섹션 제목: 캐릭터 "액티브" / 몬스터 "다음 행동" (빌더가 결정)
             if (!string.IsNullOrWhiteSpace(d.ActivesLabel))
@@ -293,16 +303,7 @@ namespace DiceOrbit.UI
                 }
             }
 
-            // ── Statuses ──
-            if (d.Statuses != null)
-            {
-                foreach (var s in d.Statuses)
-                {
-                    string meta = $"{s.StackText} {s.DurationText}".Trim();
-                    // DB 색은 다크 배경용 → 밝은 종이 위에서 읽히게 어둡게 보정
-                    AddEntry(statusesContainer, s.Name, meta, s.Description, InfoPanelRows.OnLight(s.Color));
-                }
-            }
+            // ── Statuses ── (헤더 상태 라인으로 이동 — 아래 별도 섹션은 SetSectionVisibility에서 숨김)
 
             // (타일 정보는 왼쪽 위 독립 패널(TileInfoPanelUI), 키워드 정의는 링크 호버 툴팁(KeywordLinkHover))
         }
@@ -325,7 +326,7 @@ namespace DiceOrbit.UI
             ToggleSection(activesContainer, unitSections);
             ToggleSection(passivesContainer, unitSections);
             ToggleSection(modifiersContainer, modifiersSection);   // 장착한 게 있을 때만
-            ToggleSection(statusesContainer, unitSections);
+            ToggleSection(statusesContainer, false);               // 상태이상은 헤더 라인으로 이동 — 하단 섹션 상시 숨김
         }
 
         /// <summary>컨테이너의 부모(섹션 루트: 타이틀 포함)를 토글.</summary>
@@ -374,9 +375,9 @@ namespace DiceOrbit.UI
             }
 
             string line = string.IsNullOrWhiteSpace(meta) ? title : $"{title}  {meta}";
-            InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 20f, titleColor, FontStyles.Bold);
+            InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 24f, titleColor, FontStyles.Bold);
             if (!string.IsNullOrWhiteSpace(desc))
-                InfoPanelRows.AddText(container, desc, 16f, InfoPanelRows.MutedColor, FontStyles.Normal, linkKeywords: true);
+                InfoPanelRows.AddText(container, desc, 20f, InfoPanelRows.MutedColor, FontStyles.Normal, linkKeywords: true);
         }
 
         /// <summary>
@@ -401,146 +402,5 @@ namespace DiceOrbit.UI
             return "";
         }
 
-        // ═══════════════════════════════════════════════════════
-        // [에디터] 기본 레이아웃 생성 — 1회 실행 후 씬에서 자유롭게 스타일링
-        // ═══════════════════════════════════════════════════════
-
-        [ContextMenu("기본 레이아웃 생성")]
-        private void GenerateDefaultLayout()
-        {
-            if (transform.Find("InfoPanelCanvas") != null)
-            {
-                Debug.LogWarning("[BattleInfoPanelUI] InfoPanelCanvas가 이미 있습니다. 다시 생성하려면 기존 것을 삭제하세요.");
-                return;
-            }
-
-            // 캔버스
-            var canvasGo = new GameObject("InfoPanelCanvas", typeof(RectTransform));
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = panelSortingOrder;         // 배경 레이어 — 일반 UI/팝업이 항상 위
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            canvasGo.AddComponent<GraphicRaycaster>();
-
-            // 오른쪽 도킹 패널 배경
-            var panel = CreateRect("Panel", canvasGo.transform, new Vector2(0.70f, 0f), Vector2.one);
-            var bg = panel.gameObject.AddComponent<Image>();
-            bg.color = paperColor;   // 크림 점수지. raycastTarget=true 유지 → 패널 위 3D 호버 차단
-
-            // ── 고정 섹션 슬롯 (패널 내 앵커 비율) ──
-            // Header 0.88~1.00
-            var header = CreateRect("Header", panel, new Vector2(0.04f, 0.88f), new Vector2(0.96f, 0.995f));
-            nameText   = CreateTmp("NameText",   header, new Vector2(0f, 0.52f), new Vector2(1f, 1f),    34f, InfoPanelRows.InkDark, FontStyles.Bold);
-            hpText     = CreateTmp("HpText",     header, new Vector2(0f, 0.28f), new Vector2(1f, 0.52f), 22f, InfoPanelRows.HpColor, FontStyles.Bold);
-            flavorText = CreateTmp("FlavorText", header, new Vector2(0f, 0f),    new Vector2(1f, 0.28f), 16f, InfoPanelRows.MutedColor, FontStyles.Italic);
-
-            // 섹션: 액티브 0.60~0.88 / 패시브 0.40~0.60 / 모디파이어 0.27~0.40 / 상태이상 0.04~0.27
-            // (키워드 섹션 없음 — 정의는 링크 호버 툴팁 / 타일 섹션 없음 — 왼쪽 위 독립 패널 TileInfoPanelUI)
-            activesContainer   = CreateSection("ActivesSection",   panel, "액티브",     0.60f, 0.88f);
-            activesTitle       = activesContainer.parent.Find("Title").GetComponent<TextMeshProUGUI>();
-            passivesContainer  = CreateSection("PassivesSection",  panel, "패시브",     0.40f, 0.60f);
-            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.27f, 0.40f);
-            statusesContainer  = CreateSection("StatusesSection",  panel, "상태이상",   0.04f, 0.27f);
-
-            // 빈 상태 안내
-            var emptyRect = CreateRect("EmptyState", panel, new Vector2(0.1f, 0.45f), new Vector2(0.9f, 0.55f));
-            var emptyTmp = emptyRect.gameObject.AddComponent<TextMeshProUGUI>();
-            emptyTmp.text = "캐릭터나 몬스터에 마우스를 올리거나\n클릭해 고정하세요.";
-            emptyTmp.fontSize = 20f;
-            emptyTmp.color = InfoPanelRows.MutedColor;
-            emptyTmp.alignment = TextAlignmentOptions.Center;
-            emptyTmp.raycastTarget = false;
-            emptyState = emptyRect.gameObject;
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[BattleInfoPanelUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
-        }
-
-        /// <summary>
-        /// [에디터] 이미 생성한 레이아웃에 모디파이어 섹션만 추가한다 (기존 스타일링 보존).
-        /// 패널 중단(0.36~0.48)에 생성되므로 기존 섹션과 겹치면 씬에서 재배치할 것.
-        /// </summary>
-        [ContextMenu("모디파이어 섹션만 추가")]
-        private void AddModifiersSection()
-        {
-            if (modifiersContainer != null)
-            {
-                Debug.LogWarning("[BattleInfoPanelUI] modifiersContainer가 이미 배선돼 있습니다.");
-                return;
-            }
-
-            var panel = transform.Find("InfoPanelCanvas/Panel");
-            if (panel == null)
-            {
-                Debug.LogWarning("[BattleInfoPanelUI] InfoPanelCanvas/Panel을 찾을 수 없습니다. 먼저 [기본 레이아웃 생성]을 실행하세요.");
-                return;
-            }
-
-            modifiersContainer = CreateSection("ModifiersSection", panel, "모디파이어", 0.36f, 0.48f);
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[BattleInfoPanelUI] 모디파이어 섹션 추가 완료 — 기존 섹션과 겹치면 씬에서 위치를 조정하세요.");
-        }
-
-        /// <summary>섹션 슬롯 생성: 고정 타이틀 + 내용 컨테이너(세로 쌓기, 넘침 클리핑). 내용 컨테이너를 반환.</summary>
-        private RectTransform CreateSection(string name, Transform parent, string title, float yMin, float yMax)
-        {
-            var section = CreateRect(name, parent, new Vector2(0.03f, yMin + 0.005f), new Vector2(0.97f, yMax - 0.005f));
-
-            // 타이틀: 골드 핍 + 검정 잉크, 큼직하게 (코드는 액티브 라벨 교체 외엔 건드리지 않음)
-            var titleTmp = CreateTmp("Title", section, new Vector2(0f, 0.82f), new Vector2(1f, 1f), 26f, InfoPanelRows.SectionTitleColor, FontStyles.Bold);
-            titleTmp.text = InfoPanelRows.FormatSectionTitle(title);
-
-            // 내용 컨테이너
-            var content = CreateRect("Content", section, new Vector2(0f, 0f), new Vector2(1f, 0.86f));
-            var layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 4f;
-            layout.childForceExpandHeight = false;
-            layout.childControlHeight = true;
-            layout.childControlWidth = true;
-            layout.childAlignment = TextAnchor.UpperLeft;
-            content.gameObject.AddComponent<RectMask2D>();   // 넘치는 내용은 잘림 (슬롯 크기 고정)
-
-            return content;
-        }
-
-        private static RectTransform CreateRect(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            return rect;
-        }
-
-        private static TextMeshProUGUI CreateTmp(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax,
-            float size, Color color, FontStyles style)
-        {
-            var rect = CreateRect(name, parent, anchorMin, anchorMax);
-            var tmp = rect.gameObject.AddComponent<TextMeshProUGUI>();
-            tmp.fontSize = size;
-            tmp.color = color;
-            tmp.fontStyle = style;
-            tmp.raycastTarget = false;
-            return tmp;
-        }
     }
 }

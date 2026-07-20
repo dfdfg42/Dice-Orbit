@@ -16,7 +16,7 @@ namespace DiceOrbit.UI
     {
         public static TileInfoPanelUI Instance { get; private set; }
 
-        [Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]
+        [Header("슬롯 (씬에서 배치)")]
         [SerializeField] private GameObject rootCanvas;
         [SerializeField] private RectTransform stack;               // 타일 카드 + 속성 카드들이 쌓이는 곳
         [SerializeField] private Image tileImage;                   // 타일 그림
@@ -58,7 +58,6 @@ namespace DiceOrbit.UI
 
         public void Show(TileInfoData t)
         {
-            if (rootCanvas == null) BuildDefaultLayout();
             rootCanvas.SetActive(true);
 
             SetTileVisual(t);
@@ -189,95 +188,6 @@ namespace DiceOrbit.UI
             // 설명 (키워드 링크 → 커서 옆 정의 툴팁)
             if (!string.IsNullOrWhiteSpace(desc))
                 InfoPanelRows.AddText(card.transform, desc, 15f, InfoPanelRows.MutedColor, FontStyles.Normal, linkKeywords: true);
-        }
-
-        // ─────────────────────────────────────────────
-        // [에디터] 기본 레이아웃 생성 (런타임 폴백 겸용)
-        // ─────────────────────────────────────────────
-        [ContextMenu("기본 레이아웃 생성")]
-        private void BuildDefaultLayout()
-        {
-            if (transform.Find("_TileInfoCanvas") != null)
-            {
-                Debug.LogWarning("[TileInfoPanelUI] _TileInfoCanvas가 이미 있습니다. 다시 생성하려면 기존 것을 삭제하세요.");
-                return;
-            }
-
-            var canvasGo = new GameObject("_TileInfoCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = -5;                        // 정보 레이어 (팝업/일반 UI 아래)
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            canvasGo.AddComponent<GraphicRaycaster>();
-            rootCanvas = canvasGo;
-
-            // 정보 패널 왼쪽에 붙는 스택 (타일 카드 + 속성 카드들) — 오른쪽 위, 패널 경계 기준
-            var stackGo = new GameObject("Stack", typeof(RectTransform));
-            stackGo.transform.SetParent(canvasGo.transform, false);
-            stack = (RectTransform)stackGo.transform;
-            stack.anchorMin = stack.anchorMax = new Vector2(dockAnchorX, 1f);   // 패널 왼쪽 경계에 도킹
-            stack.pivot = new Vector2(1f, 1f);                                   // 오른쪽 위 피벗 → 경계에서 왼쪽으로 전개
-            stack.anchoredPosition = screenOffset;
-            stack.sizeDelta = new Vector2(panelWidth, 0f);
-            var layout = stackGo.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 8f;
-            layout.childForceExpandHeight = false;
-            layout.childControlHeight = true;
-            layout.childControlWidth = true;
-            stackGo.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            // 타일 카드 (그림 + 그림 안 위쪽 아이콘 + 메타)
-            var tileCard = new GameObject("TileCard", typeof(RectTransform));
-            tileCard.transform.SetParent(stack, false);
-            tileCard.AddComponent<LayoutElement>().preferredHeight = 170f;
-
-            var cardBg = tileCard.AddComponent<Image>();
-            cardBg.sprite = UiRoundedSprite.Get(16);
-            cardBg.type = Image.Type.Sliced;
-            cardBg.color = new Color(0.950f, 0.930f, 0.885f, 0.98f);
-            var cardShadow = tileCard.AddComponent<Shadow>();
-            cardShadow.effectColor = new Color(0f, 0f, 0f, 0.4f);
-            cardShadow.effectDistance = new Vector2(0f, -5f);
-
-            // 타일 그림
-            var imgRect = new GameObject("TileImage", typeof(RectTransform));
-            imgRect.transform.SetParent(tileCard.transform, false);
-            var imgRt = (RectTransform)imgRect.transform;
-            imgRt.anchorMin = new Vector2(0.10f, 0.08f);   // 메타 텍스트 제거로 아래까지 확장
-            imgRt.anchorMax = new Vector2(0.90f, 0.92f);
-            imgRt.offsetMin = Vector2.zero; imgRt.offsetMax = Vector2.zero;
-            tileImage = imgRect.AddComponent<Image>();
-            tileImage.preserveAspect = false;
-            tileImage.raycastTarget = false;
-
-            // 그림 안 '위쪽' 아이콘 행 — 인게임 타일 버블과 같은 배치
-            var iconRowGo = new GameObject("TileIconRow", typeof(RectTransform));
-            iconRowGo.transform.SetParent(imgRect.transform, false);
-            tileIconRow = (RectTransform)iconRowGo.transform;
-            tileIconRow.anchorMin = new Vector2(0.05f, 0.60f);
-            tileIconRow.anchorMax = new Vector2(0.95f, 0.96f);
-            tileIconRow.offsetMin = Vector2.zero; tileIconRow.offsetMax = Vector2.zero;
-            var iconLayout = iconRowGo.AddComponent<HorizontalLayoutGroup>();
-            iconLayout.spacing = 4f;
-            iconLayout.childAlignment = TextAnchor.MiddleCenter;
-            iconLayout.childForceExpandWidth = false;
-            iconLayout.childForceExpandHeight = false;
-            iconLayout.childControlWidth = true;    // LayoutElement 크기(iconSize)가 실제로 적용되게
-            iconLayout.childControlHeight = true;   // (안 켜면 기본 100x100으로 뜸)
-
-            rootCanvas.SetActive(false);
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[TileInfoPanelUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
         }
     }
 }

@@ -11,15 +11,15 @@ namespace DiceOrbit.UI
     /// 노드맵 화면 (GameState.Map). 세로 진행형: 아래 출발 → 위 보스 (StS 방향), 세로 스크롤.
     /// RunManager의 MapGraph를 그리고, 선택 가능 노드 클릭 → GameFlowManager.OnNodeSelected.
     ///
-    /// "보드게임의 밤" 팔레트. 에디터 소유 + 런타임 폴백:
-    /// 씬에 배치 + [기본 레이아웃 생성] → 캔버스/타이틀/스크롤 뼈대를 하이라키에서 스타일링.
+    /// "보드게임의 밤" 팔레트. 에디터 소유:
+    /// 씬에 캔버스/타이틀/스크롤 뼈대를 배치하고 슬롯을 배선한다.
     /// 노드·간선은 맵이 런마다 랜덤이라 MapRoot(Content) 아래에 코드가 채운다.
     /// </summary>
     public class NodeMapUI : MonoBehaviour
     {
         public static NodeMapUI Instance { get; private set; }
 
-        [Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]
+        [Header("슬롯 (씬에서 배치 후 배선)")]
         [SerializeField] private GameObject rootCanvas;
         [SerializeField] private ScrollRect scrollRect;
         [SerializeField] private RectTransform mapRoot;      // 스크롤 Content — 노드/간선이 그려지는 영역
@@ -67,7 +67,6 @@ namespace DiceOrbit.UI
 
         public void Show()
         {
-            if (rootCanvas == null) BuildDefaultLayout();
             rootCanvas.SetActive(true);
             BattleInfoPanelUI.SetVisible(false);
             Rebuild();
@@ -265,103 +264,5 @@ namespace DiceOrbit.UI
             MapNodeType.Boss   => "보스",
             _ => "?",
         };
-
-        // ─────────────────────────────────────────────
-        // [에디터] 기본 레이아웃 생성 (런타임 폴백 겸용)
-        // ─────────────────────────────────────────────
-        [ContextMenu("기본 레이아웃 생성")]
-        private void BuildDefaultLayout()
-        {
-            if (transform.Find("_NodeMapCanvas") != null)
-            {
-                Debug.LogWarning("[NodeMapUI] _NodeMapCanvas가 이미 있습니다. 다시 생성하려면 기존 것을 삭제하세요.");
-                return;
-            }
-
-            _font = FindAnyObjectByType<TextMeshProUGUI>(FindObjectsInactive.Include)?.font;
-
-            var canvasGo = new GameObject("_NodeMapCanvas");
-            canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 900;   // 일반 UI 위, 상점(1450)·보상(1500) 아래
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            canvasGo.AddComponent<GraphicRaycaster>();
-            rootCanvas = canvasGo;
-
-            // 펠트 배경
-            var felt = new GameObject("Felt", typeof(RectTransform));
-            felt.transform.SetParent(canvasGo.transform, false);
-            var feltRect = (RectTransform)felt.transform;
-            feltRect.anchorMin = Vector2.zero; feltRect.anchorMax = Vector2.one;
-            feltRect.offsetMin = Vector2.zero; feltRect.offsetMax = Vector2.zero;
-            felt.AddComponent<Image>().color = Felt;
-
-            // 스크롤 영역 (타이틀 아래 전체)
-            var scrollGo = new GameObject("ScrollView", typeof(RectTransform));
-            scrollGo.transform.SetParent(canvasGo.transform, false);
-            var scrollRectTr = (RectTransform)scrollGo.transform;
-            scrollRectTr.anchorMin = Vector2.zero;
-            scrollRectTr.anchorMax = Vector2.one;
-            scrollRectTr.offsetMin = new Vector2(0f, 0f);
-            scrollRectTr.offsetMax = new Vector2(0f, -80f);   // 타이틀 공간
-            scrollRect = scrollGo.AddComponent<ScrollRect>();
-            scrollRect.horizontal = false;
-            scrollRect.vertical = true;
-            scrollRect.movementType = ScrollRect.MovementType.Clamped;
-            scrollRect.scrollSensitivity = 40f;
-
-            // 뷰포트 (마스크)
-            var viewportGo = new GameObject("Viewport", typeof(RectTransform));
-            viewportGo.transform.SetParent(scrollGo.transform, false);
-            var viewportRect = (RectTransform)viewportGo.transform;
-            viewportRect.anchorMin = Vector2.zero; viewportRect.anchorMax = Vector2.one;
-            viewportRect.offsetMin = Vector2.zero; viewportRect.offsetMax = Vector2.zero;
-            viewportGo.AddComponent<RectMask2D>();
-            var viewportImg = viewportGo.AddComponent<Image>();   // 레이캐스트 영역 (드래그 스크롤용)
-            viewportImg.color = new Color(0f, 0f, 0f, 0.001f);
-            scrollRect.viewport = viewportRect;
-
-            // Content (MapRoot) — 아래 기준, 높이는 Rebuild가 층 수에 맞춰 설정
-            var contentGo = new GameObject("MapRoot", typeof(RectTransform));
-            contentGo.transform.SetParent(viewportGo.transform, false);
-            mapRoot = (RectTransform)contentGo.transform;
-            mapRoot.anchorMin = new Vector2(0f, 0f);
-            mapRoot.anchorMax = new Vector2(1f, 0f);
-            mapRoot.pivot = new Vector2(0.5f, 0f);
-            mapRoot.sizeDelta = new Vector2(0f, 1000f);
-            scrollRect.content = mapRoot;
-
-            // 타이틀 (스크롤 위에 고정)
-            var titleGo = new GameObject("Title", typeof(RectTransform));
-            titleGo.transform.SetParent(canvasGo.transform, false);
-            var titleRect = (RectTransform)titleGo.transform;
-            titleRect.anchorMin = new Vector2(0.5f, 1f);
-            titleRect.anchorMax = new Vector2(0.5f, 1f);
-            titleRect.pivot = new Vector2(0.5f, 1f);
-            titleRect.anchoredPosition = new Vector2(0f, -18f);
-            titleRect.sizeDelta = new Vector2(800f, 56f);
-            titleText = titleGo.AddComponent<TextMeshProUGUI>();
-            titleText.text = "노드맵";
-            titleText.fontSize = 36f;
-            titleText.fontStyle = FontStyles.Bold;
-            titleText.alignment = TextAlignmentOptions.Center;
-            titleText.color = Ink;
-            titleText.raycastTarget = false;
-            if (_font != null) titleText.font = _font;
-
-            rootCanvas.SetActive(false);
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(this);
-                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
-            }
-#endif
-            Debug.Log("[NodeMapUI] 기본 레이아웃 생성 완료 — 계층을 자유롭게 스타일링한 뒤 씬을 저장하세요.");
-        }
     }
 }
