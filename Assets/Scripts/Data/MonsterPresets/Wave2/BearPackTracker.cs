@@ -15,7 +15,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2
     {
         public static int HoneyEaten { get; private set; }
 
-        private static WaveManager hookedManager;
+        private static CombatManager hookedManager;
 
         // 캐릭터별 (마지막으로 카운트한 턴, 그 턴의 꿀 밟기 횟수)
         private static readonly Dictionary<Character, (int turn, int count)> HoneySteps = new();
@@ -56,19 +56,19 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2
             return count;
         }
 
-        /// <summary>웨이브 시작마다 상태 초기화 + 잔여 꿀 타일 제거 훅을 보장한다(중복 구독 방지).</summary>
+        /// <summary>전투 시작마다 상태 초기화 + 잔여 꿀 타일 제거 훅을 보장한다(중복 구독 방지).</summary>
         public static void EnsureWaveHook()
         {
-            var wm = WaveManager.Instance;
-            if (wm == null) return;
-            if (hookedManager == wm) return;
+            var cm = CombatManager.Instance;
+            if (cm == null) return;
+            if (hookedManager == cm) return;
 
-            if (hookedManager != null) hookedManager.OnWaveStart -= OnWaveStart;
-            wm.OnWaveStart += OnWaveStart;
-            hookedManager = wm;
+            if (hookedManager != null) hookedManager.OnCombatStart -= OnCombatStart;
+            cm.OnCombatStart += OnCombatStart;
+            hookedManager = cm;
         }
 
-        private static void OnWaveStart(int wave)
+        private static void OnCombatStart()
         {
             Reset();
             ClearHoneyTiles();

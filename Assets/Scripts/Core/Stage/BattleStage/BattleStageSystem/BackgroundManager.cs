@@ -30,19 +30,19 @@ namespace DiceOrbit.Core
             if (backgroundRenderer != null)
                 backgroundRenderer.sortingOrder = sortingOrder;
 
-            if (WaveManager.Instance != null)
+            if (CombatManager.Instance != null)
             {
-                WaveManager.Instance.OnWaveStart += OnWaveStart;
+                CombatManager.Instance.OnCombatStart += OnCombatStart;
 
-                if (WaveManager.Instance.IsWaveActive)
-                    OnWaveStart(WaveManager.Instance.CurrentWave);
+                if (CombatManager.Instance.InCombat)
+                    OnCombatStart();
             }
         }
 
         private void OnDestroy()
         {
-            if (WaveManager.Instance != null)
-                WaveManager.Instance.OnWaveStart -= OnWaveStart;
+            if (CombatManager.Instance != null)
+                CombatManager.Instance.OnCombatStart -= OnCombatStart;
         }
 
         private void LateUpdate()
@@ -81,11 +81,15 @@ namespace DiceOrbit.Core
             backgroundRenderer.transform.localScale = new Vector3(scale, scale, 1f);
         }
 
-        private void OnWaveStart(int waveIndex)
+        /// <summary>배경 결정: 몹 세트 오버라이드 → 막 기본 (스펙 2026-07-21 §4).</summary>
+        private void OnCombatStart()
         {
-            var waveDef = WaveManager.Instance.GetWaveDefinition(waveIndex);
-            if (waveDef != null && waveDef.BackgroundSprite != null)
-                SetBackground(waveDef.BackgroundSprite);
+            var encounter = CombatManager.Instance != null ? CombatManager.Instance.CurrentEncounter : null;
+            Sprite sprite = encounter != null ? encounter.BackgroundSprite : null;
+            if (sprite == null)
+                sprite = Run.RunManager.Instance?.CurrentAct?.DefaultBackground;
+            if (sprite != null)
+                SetBackground(sprite);
         }
 
         public void SetBackground(Sprite sprite)

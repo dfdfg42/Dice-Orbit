@@ -28,15 +28,15 @@ namespace DiceOrbit.Data.Passives
         {
             base.Initialize(ownerUnit);
 
-            // 웨이브가 넘어갈 때만 집중 스택 초기화 (공격으로는 소비되지 않음)
-            if (WaveManager.Instance != null)
+            // 전투가 넘어갈 때만 집중 스택 초기화 (공격으로는 소비되지 않음)
+            if (CombatManager.Instance != null)
             {
-                WaveManager.Instance.OnWaveStart -= HandleWaveStart;
-                WaveManager.Instance.OnWaveStart += HandleWaveStart;
+                CombatManager.Instance.OnCombatStart -= HandleCombatStart;
+                CombatManager.Instance.OnCombatStart += HandleCombatStart;
             }
         }
 
-        private void HandleWaveStart(int wave)
+        private void HandleCombatStart()
         {
             owner?.StatusEffects?.RemoveEffect(EffectType.Focus);
             hpAtTurnStart = -1;

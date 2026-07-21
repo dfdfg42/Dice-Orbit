@@ -33,24 +33,24 @@ namespace DiceOrbit.Data.Passives
         public override void Initialize(Unit ownerUnit)
         {
             base.Initialize(ownerUnit);
-            SubscribeWaveStart();
+            SubscribeCombatStart();
 
-            // 웨이브 진행 중에 합류한 경우 즉시 설치
-            if (WaveManager.Instance != null && WaveManager.Instance.IsWaveActive)
+            // 전투 진행 중에 합류한 경우 즉시 설치
+            if (CombatManager.Instance != null && CombatManager.Instance.InCombat)
             {
                 reagentStacks = 0;
                 PlaceReagentTiles();
             }
         }
 
-        private void SubscribeWaveStart()
+        private void SubscribeCombatStart()
         {
-            if (WaveManager.Instance == null) return;
-            WaveManager.Instance.OnWaveStart -= HandleWaveStart;
-            WaveManager.Instance.OnWaveStart += HandleWaveStart;
+            if (CombatManager.Instance == null) return;
+            CombatManager.Instance.OnCombatStart -= HandleCombatStart;
+            CombatManager.Instance.OnCombatStart += HandleCombatStart;
         }
 
-        private void HandleWaveStart(int wave)
+        private void HandleCombatStart()
         {
             if (owner == null) return;
             if (!(owner is Character ch) || !ch.IsAlive) return;

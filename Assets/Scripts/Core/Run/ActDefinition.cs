@@ -29,6 +29,10 @@ namespace DiceOrbit.Core.Run
         [Header("정보")]
         public string ActName = "Act 1";
 
+        [Header("연출")]
+        [Tooltip("막 기본 전투 배경 — 몹 세트의 BackgroundSprite가 비어 있으면 이걸 사용")]
+        public Sprite DefaultBackground;
+
         [Header("맵 구조")]
         [Min(4)] public int FloorCount = 12;
         [Range(1, 5)] public int MinNodesPerFloor = 2;
