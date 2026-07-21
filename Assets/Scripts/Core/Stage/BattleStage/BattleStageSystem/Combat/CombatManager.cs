@@ -54,6 +54,8 @@ namespace DiceOrbit.Core
         public List<Monster> ActiveMonsters => activeMonsters;
         public int TurnCount => turnCount;
         public bool PlayerTurnActive => playerTurnActive;
+        public Run.EncounterDefinition CurrentEncounter { get; private set; }   // 배경 등 조회용
+        public int CurrentFloorNumber { get; private set; }                     // 표시용 (층+1)
 
         private sealed class CharacterTurnBudget
         {
@@ -151,6 +153,47 @@ namespace DiceOrbit.Core
             return null;
         }
 
+        /// <summary>전투 진입점 (노드맵 흐름). 스폰 → CombatStart 방송 → 턴 시퀀스.</summary>
+        public void StartEncounter(Run.EncounterDefinition encounter, int floorNumber)
+        {
+            if (inCombat) return;
+
+            DestroyActiveMonsters();
+            CurrentEncounter = encounter;
+            CurrentFloorNumber = floorNumber;
+
+            var spawned = EncounterSpawner.EnsureInstance().Spawn(encounter);
+            foreach (var m in spawned)
+                RegisterMonster(m);
+            // 사망 구독 불필요 — Monster가 사망 시 OnMonsterDefeated를 직접 호출한다 (이중 호출 금지).
+
+            BroadcastCombatStart();
+            StartCombat();
+        }
+
+        /// <summary>이전 전투 잔여 몬스터 파괴 + 장부 초기화 (파괴 책임 = 장부 권위).</summary>
+        private void DestroyActiveMonsters()
+        {
+            foreach (var m in activeMonsters)
+            {
+                if (m == null) continue;
+                Destroy(m.gameObject);
+            }
+            activeMonsters.Clear();
+        }
+
+        /// <summary>전투 시작 사건을 파이프라인에 방송 — 유물 등 리액터가 반응 (개별 효과는 모름).</summary>
+        private void BroadcastCombatStart()
+        {
+            if (Pipeline.CombatPipeline.Instance == null || PartyManager.Instance == null) return;
+            foreach (var ch in PartyManager.Instance.Party)
+            {
+                if (ch == null || !ch.IsAlive) continue;
+                var ctx = new Pipeline.TurnEventContext(ch, ch, Pipeline.EventPhase.CombatStart);
+                Pipeline.CombatPipeline.Instance.Process(ctx);
+            }
+        }
+
         /// <summary>
         /// 전투 시작
         /// </summary>
@@ -231,12 +274,12 @@ namespace DiceOrbit.Core
 
             OnCombatEnd?.Invoke();
 
-            // Wave 진행 처리
+            // 전투 결과 통지 (승/패 대칭 — GameFlow 직접 호출)
             if (victory)
             {
-                if (WaveManager.Instance != null)
+                if (GameFlowManager.Instance != null)
                 {
-                    WaveManager.Instance.CheckWaveClear();
+                    GameFlowManager.Instance.OnEncounterCleared();
                 }
             }
             else

@@ -3,7 +3,7 @@ using DiceOrbit.Data; // EffectType
 
 namespace DiceOrbit.Core.Pipeline
 {
-    public enum EventPhase { TurnStart, TurnEnd, TileTick }
+    public enum EventPhase { TurnStart, TurnEnd, TileTick, CombatStart }
 
     /// <summary>
     /// 파이프라인을 통과하는 봉투(본체). NotifyReactors가 나르는 타입.
