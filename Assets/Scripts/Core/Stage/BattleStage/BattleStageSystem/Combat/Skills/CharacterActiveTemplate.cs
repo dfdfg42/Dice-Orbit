@@ -28,7 +28,6 @@ namespace DiceOrbit.Data.Skills
         [SerializeField] protected string skillName = "";
         [SerializeField, TextArea(2, 4)] protected string description = "";
         [SerializeField] public Sprite icon;
-        [SerializeField] public int maxLevel = 1;
 
         [Header("Requirement")]
         [SerializeField] public DiceRequirement requirement = new DiceRequirement();
@@ -44,7 +43,6 @@ namespace DiceOrbit.Data.Skills
 
         public string SkillName   => skillName;
         public string Description => description;
-        public virtual int MaxLevel => Mathf.Max(1, maxLevel);
 
         public CharacterSkillTargetType TargetType => targetType;
         public TilePreviewStyle PreviewStyle       => previewStyle;
@@ -59,8 +57,8 @@ namespace DiceOrbit.Data.Skills
         /// </summary>
         public virtual string GetDynamicDescription() => Description;
 
-        /// <summary>주사위 요구 조건을 한국어 문구로 변환.</summary>
-        protected string FormatDiceCondition()
+        /// <summary>주사위 요구 조건을 한국어 문구로 변환. (정보 패널 등 UI 표시용으로도 사용)</summary>
+        public string FormatDiceCondition()
         {
             if (requirement == null) return string.Empty;
 
@@ -117,10 +115,8 @@ namespace DiceOrbit.Data.Skills
                 if (target == null || !target.IsAlive) continue;
 
                 var context = new AttackContext(source, target, skillName, rawDamage);
-                if (vfxProfile != null) context.AddTag("CustomVfx");
+                context.VfxProfile = vfxProfile;   // 재생 판단은 파이프라인 ApplyAction 한 곳에서
                 CombatPipeline.Instance?.Process(context);
-
-                if (context.IsEffected) VfxManager.PlayHit(vfxProfile, target);
             }
 
             OnAfterResolved(source, ability);

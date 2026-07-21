@@ -304,6 +304,57 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
+        /// 텍스트 안의 DB 키워드를 TMP 링크(&lt;link="kw:키워드"&gt;)로 감쌉니다.
+        /// KeywordLinkHover가 링크 호버를 감지해 커서 옆 툴팁으로 정의를 띄운다.
+        /// onLightBackground = true면 키워드 색을 밝은 배경 대비로 어둡게 보정.
+        /// </summary>
+        public static string InsertKeywordLinks(string rawText, bool onLightBackground = false)
+        {
+            if (string.IsNullOrWhiteSpace(rawText)) return rawText;
+
+            // 매칭되는 키워드 수집 후 긴 것부터 치환 (부분 문자열 이중 래핑 방지)
+            var matched = new List<KeyValuePair<string, string>>();   // key → color hex
+            foreach (var pair in GetLookup())
+            {
+                if (rawText.IndexOf(pair.Key, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+
+                Color c = pair.Value.Color;
+                if (onLightBackground)
+                    c = Color.Lerp(c, new Color(0.08f, 0.09f, 0.12f), 0.45f);
+                matched.Add(new KeyValuePair<string, string>(pair.Key, ColorUtility.ToHtmlStringRGB(c)));
+            }
+            if (matched.Count == 0) return rawText;
+            matched.Sort((a, b) => b.Key.Length.CompareTo(a.Key.Length));
+
+            string result = rawText;
+            foreach (var kv in matched)
+            {
+                // 이미 이 키워드가 링크 처리돼 있으면 건너뜀 (짧은 키가 긴 키의 래핑 결과를 재래핑하는 것 방지)
+                if (result.IndexOf($"kw:{kv.Key}", System.StringComparison.OrdinalIgnoreCase) >= 0) continue;
+
+                result = ReplaceIgnoreCase(result, kv.Key,
+                    $"<link=\"kw:{kv.Key}\"><color=#{kv.Value}><u>{kv.Key}</u></color></link>");
+            }
+            return result;
+        }
+
+        private static string ReplaceIgnoreCase(string source, string oldValue, string newValue)
+        {
+            var sb = new System.Text.StringBuilder();
+            int prev = 0;
+            int idx = source.IndexOf(oldValue, System.StringComparison.OrdinalIgnoreCase);
+            while (idx >= 0)
+            {
+                sb.Append(source, prev, idx - prev);
+                sb.Append(newValue);
+                prev = idx + oldValue.Length;
+                idx = source.IndexOf(oldValue, prev, System.StringComparison.OrdinalIgnoreCase);
+            }
+            sb.Append(source, prev, source.Length - prev);
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// 원본 텍스트에서 DB에 등록된 키워드를 모두 추출합니다.
         /// KeywordGlossaryPanelUI에 전달할 목록을 만들 때 사용합니다.
         ///
@@ -352,8 +403,8 @@ namespace DiceOrbit.UI
             // 스택이 있을 때만 스택 텍스트를 표시합니다 (예: "x3")
             string stackText = value > 0 ? $"x{value}" : string.Empty;
 
-            // 지속 턴 텍스트: -1은 무한, 그 외는 남은 턴 표시 (예: "(2T)")
-            string durationText = duration < 0 ? "(∞T)" : $"({duration}T)";
+            // 지속 턴 텍스트: 남은 턴 표시 (예: "(2T)"). -1(무한/영구)은 표기 생략 — "(∞T)"는 유저에게 부자연스러움
+            string durationText = duration < 0 ? string.Empty : $"({duration}T)";
 
             // 설명: 표시 이름으로 먼저 검색, 없으면 원본 열거형 이름으로 재검색합니다
             if (!TryGetDescription(displayName, out string description))

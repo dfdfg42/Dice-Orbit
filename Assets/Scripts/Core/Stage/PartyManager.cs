@@ -172,6 +172,19 @@ namespace DiceOrbit.Core
         {
             return party.All(c => !c.IsAlive);
         }
+
+        /// <summary>
+        /// 전투에서 리타이어한 파티원 전원 부활 (점감 부활 — 스펙 §4).
+        /// 전투 승리 확정 후 GameFlowManager가 호출.
+        /// </summary>
+        public void ReviveRetiredMembers()
+        {
+            foreach (var character in party)
+            {
+                if (character != null && !character.IsAlive)
+                    character.Revive();
+            }
+        }
         
         /// <summary>
         /// 파티원 모두 회복

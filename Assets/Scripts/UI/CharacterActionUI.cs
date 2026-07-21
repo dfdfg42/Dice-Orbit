@@ -70,7 +70,11 @@ namespace DiceOrbit.UI
             // 이동 버튼 hover 프리뷰
             AddPointerEvents(moveButton,
                 () => ShowMovePreview(),
-                () => TileSkillPreviewManager.Instance?.HidePreview());
+                () =>
+                {
+                    TileSkillPreviewManager.Instance?.HidePreview();
+                    MovePathPreview.Instance?.Hide();
+                });
 
             // 오버레이 취소 이벤트
             if (overlay != null)
@@ -130,6 +134,9 @@ namespace DiceOrbit.UI
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
 
+            // 이 캐릭터의 스킬 조건을 못 맞추는 주사위를 손패에서 살짝 붉게 표시
+            DiceUI.Instance?.ShowSkillUsabilityHint(character);
+
             // 슬라이드 인
             StopSlide();
             slideCoroutine = StartCoroutine(SlideIn());
@@ -139,6 +146,8 @@ namespace DiceOrbit.UI
         public void Hide()
         {
             TileSkillPreviewManager.Instance?.HidePreview();
+            MovePathPreview.Instance?.Hide();
+            DiceUI.Instance?.ClearSkillUsabilityHint();
             overlay?.Hide();
             HoverTooltipUI.Instance?.HidePinned();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
@@ -180,6 +189,10 @@ namespace DiceOrbit.UI
             // 버튼 활성화는 턴 예산/상태를 함께 고려해 갱신합니다.
             RefreshActionButtonsState();
             RefreshSkillButtonPreview();
+
+            // 스킬 목록이 열려 있으면 호버 텍스트(조건/예상 피해)를 새 주사위 값으로 갱신
+            if (skillSelectPanel != null && skillSelectPanel.activeSelf)
+                PopulateSkillList(currentCharacter);
         }
 
         public void OnDiceDeselected(DiceData dice)
@@ -220,7 +233,7 @@ namespace DiceOrbit.UI
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Move);
+                bool success = diceManager.AssignDice(currentDice, currentCharacter);
                 if (success)
                 {
                     // 실제 이동 실행 직전에 이동 예산 1회를 확정 소비합니다.
@@ -286,7 +299,7 @@ namespace DiceOrbit.UI
                 var text = skillButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (text != null)
                 {
-                    text.text = $"{runtimeAbility.BaseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})";
+                    text.text = runtimeAbility.BaseSkill.SkillName;
                 }
             }
             else
@@ -336,15 +349,26 @@ namespace DiceOrbit.UI
 
         private void ShowMovePreview()
         {
-            var dest = GetMoveDestination();
-            if (dest == null) return;
-            TileSkillPreviewManager.EnsureInstance();
-            TileSkillPreviewManager.Instance?.ShowPreview(new[] { dest }, TilePreviewStyle.Neutral);
+            var path = GetMovePath();
+            if (path.Count == 0) return;
+
+            // 경유: 방향 체브론 / 목적지: 소나 핑 + 리프트 (회전 트레일은 스킬 조준 전용으로 분리)
+            MovePathPreview.EnsureInstance();
+            MovePathPreview.Instance?.Show(path);
         }
 
         private TileData GetMoveDestination()
         {
-            if (currentCharacter?.CurrentTile == null || currentDice == null) return null;
+            var path = GetMovePath();
+            return path.Count > 0 ? path[path.Count - 1] : null;
+        }
+
+        /// <summary>이동 시 통과할 타일 순서(목적지 포함). 이동 불가면 빈 리스트.</summary>
+        private List<TileData> GetMovePath()
+        {
+            var path = new List<TileData>();
+            if (currentCharacter?.CurrentTile == null || currentDice == null) return path;
+
             int netModifier = currentCharacter.Stats.MoveBuff - currentCharacter.Stats.MoveDebuff;
             int steps = Mathf.Max(currentDice.Value + netModifier, 0);
             var tile = currentCharacter.CurrentTile;
@@ -352,8 +376,9 @@ namespace DiceOrbit.UI
             {
                 if (tile.NextTile == null) break;
                 tile = tile.NextTile;
+                path.Add(tile);
             }
-            return steps > 0 ? tile : null;
+            return path;
         }
 
         private void PopulateSkillList(Character character)
@@ -373,8 +398,7 @@ namespace DiceOrbit.UI
                 var txt = go.GetComponentInChildren<TextMeshProUGUI>();
                 if (txt != null)
                 {
-                    var skillName = runtimeAbility.BaseSkill != null ? runtimeAbility.BaseSkill.SkillName : "Unknown Skill";
-                    txt.text = $"{skillName} (Lv.{runtimeAbility.CurrentLevel})";
+                    txt.text = runtimeAbility.BaseSkill != null ? runtimeAbility.BaseSkill.SkillName : "Unknown Skill";
                 }
 
                 var imgs = go.GetComponentsInChildren<Image>();
@@ -411,7 +435,7 @@ namespace DiceOrbit.UI
             var baseSkill = runtimeAbility.BaseSkill;
             var lines = new List<string>
             {
-                $"{baseSkill.SkillName} (Lv.{runtimeAbility.CurrentLevel})"
+                baseSkill.SkillName
             };
 
             string description = baseSkill.Description;
@@ -428,7 +452,7 @@ namespace DiceOrbit.UI
             string condition = BuildRequirementText(activeSkill?.requirement);
             if (diceValue > 0)
             {
-                lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "사용 불가")})");
+                lines.Add($"조건: {condition} (현재 주사위 {diceValue}: {(canUse ? "사용 가능" : "<color=#FF6B6B>사용 불가</color>")})");
             }
             else
             {

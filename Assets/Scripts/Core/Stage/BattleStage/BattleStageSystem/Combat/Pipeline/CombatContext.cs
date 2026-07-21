@@ -14,13 +14,11 @@ namespace DiceOrbit.Core.Pipeline
         public Unit Target;
         public bool IsCancelled;
         public bool IsSimulation;
-        public ActionType Type;     // 마이그레이션 shim — 모든 리액터 이전 후 제거 예정
 
-        protected CombatContext(Unit source, Unit target, ActionType type)
+        protected CombatContext(Unit source, Unit target)
         {
             SourceUnit = source;
             Target = target;
-            Type = type;
         }
     }
 
@@ -33,8 +31,14 @@ namespace DiceOrbit.Core.Pipeline
         public HashSet<string> Tags = new HashSet<string>();
         public List<ActionEffectInfo> Effects = new List<ActionEffectInfo>();
 
-        protected EffectContext(Unit source, Unit target, ActionType type, string name, float baseValue)
-            : base(source, target, type)
+        /// <summary>
+        /// 이 행위에 쓸 VFX 프로필 — 실행부(스킬)가 지정만 하고,
+        /// 재생 판단은 파이프라인 ApplyAction 한 곳에서 한다 (히트/힐 프리팹 없으면 전역 기본).
+        /// </summary>
+        public Visuals.CombatVfxProfile VfxProfile;
+
+        protected EffectContext(Unit source, Unit target, string name, float baseValue)
+            : base(source, target)
         {
             Name = name;
             BaseValue = baseValue;
@@ -51,13 +55,13 @@ namespace DiceOrbit.Core.Pipeline
     {
         public bool IsEffected;
         public AttackContext(Unit source, Unit target, string name, float baseValue)
-            : base(source, target, ActionType.Attack, name, baseValue) { }
+            : base(source, target, name, baseValue) { }
     }
 
     public sealed class HealContext : EffectContext
     {
         public HealContext(Unit source, Unit target, string name, float baseValue)
-            : base(source, target, ActionType.Heal, name, baseValue) { }
+            : base(source, target, name, baseValue) { }
     }
 
     /// <summary>이동 사건 — 걸음 수만 운반.</summary>
@@ -65,7 +69,7 @@ namespace DiceOrbit.Core.Pipeline
     {
         public int Steps;
         public MoveContext(Unit source, Unit target, int steps)
-            : base(source, target, ActionType.Move) { Steps = steps; }
+            : base(source, target) { Steps = steps; }
     }
 
     /// <summary>턴시작/종료/타일틱 사건 — 숫자 없음.</summary>
@@ -73,13 +77,6 @@ namespace DiceOrbit.Core.Pipeline
     {
         public EventPhase Phase;
         public TurnEventContext(Unit source, Unit target, EventPhase phase)
-            : base(source, target, PhaseToType(phase)) { Phase = phase; }
-
-        private static ActionType PhaseToType(EventPhase phase) => phase switch
-        {
-            EventPhase.TurnStart => ActionType.OnStartTurn,
-            EventPhase.TurnEnd   => ActionType.OnEndTurn,
-            _                    => ActionType.None, // TileTick
-        };
+            : base(source, target) { Phase = phase; }
     }
 }

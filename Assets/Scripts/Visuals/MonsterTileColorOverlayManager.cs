@@ -20,6 +20,7 @@ namespace DiceOrbit.Visuals
 
         private readonly Dictionary<TileData, GameObject> _overlays = new();
         private readonly Dictionary<string, Texture2D> _bandCache = new();
+        private readonly Dictionary<TileData, float> _liftOffsets = new();   // 타일 리프트 연출 연동 (IntentTileLiftEffect)
 
         private void Awake()
         {
@@ -42,6 +43,22 @@ namespace DiceOrbit.Visuals
             new GameObject("[MonsterTileColorOverlayManager]").AddComponent<MonsterTileColorOverlayManager>();
         }
 
+        /// <summary>
+        /// 타일 오버레이를 위로 띄우는 오프셋 지정 (타일 리프트 연출과 함께 움직이도록).
+        /// 0이면 원위치. Rebuild가 일어나도 오프셋은 유지된다.
+        /// </summary>
+        public void SetLiftOffset(TileData tile, float height)
+        {
+            if (tile == null) return;
+
+            if (height > 0f) _liftOffsets[tile] = height;
+            else _liftOffsets.Remove(tile);
+
+            // 오버레이 메시는 월드 좌표로 구워져 있고 GO는 원점에 있으므로, 트랜스폼 이동 = 통째로 띄우기
+            if (_overlays.TryGetValue(tile, out var go) && go != null)
+                go.transform.position = Vector3.up * Mathf.Max(0f, height);
+        }
+
         /// <summary>현재 (타일 → 색상 목록) 으로 오버레이 전체를 재구성한다.</summary>
         public void Rebuild(Dictionary<TileData, List<Color>> tileColors)
         {
@@ -54,6 +71,10 @@ namespace DiceOrbit.Visuals
                 var colors = kv.Value;
                 if (tile == null || colors == null || colors.Count == 0) continue;
                 _overlays[tile] = BuildOverlay(tile, colors);
+
+                // 리프트 중인 타일이면 재구성 후에도 띄운 상태 유지
+                if (_liftOffsets.TryGetValue(tile, out float lift))
+                    _overlays[tile].transform.position = Vector3.up * lift;
             }
         }
 

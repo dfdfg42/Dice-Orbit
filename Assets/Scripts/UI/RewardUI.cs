@@ -1,74 +1,216 @@
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using DiceOrbit.Core;
+using DiceOrbit.Core.Run;
 using DiceOrbit.Data.Modifiers;
 
 namespace DiceOrbit.UI
 {
     /// <summary>
-    /// 웨이브 클리어 보상 화면 (코드 자동 생성 — 임시).
-    /// 골드 표시 + 포션 슬롯(예정) + [캐릭터 업그레이드] 버튼.
-    /// 업그레이드: 캐릭터 1명 선택 → 모디파이어 선택 → 그 캐릭터에 장착.
+    /// 웨이브 클리어 보상 화면 — StS식 수령 리스트.
+    /// 가운데 세로로 보상 행(골드/캐릭터 강화/유물/포션)이 쌓이고,
+    /// 하나 클릭 → 수령 → 행이 사라지며 나머지가 위로 당겨진다. [계속]으로 맵 복귀.
+    ///
+    /// "캐릭터 강화" 행을 누르면 강화 창(캐릭터 선택 → 모디파이어 3택1)이 뜬다.
+    ///
+    /// ── 레이아웃 ─────────────────────────────────────
+    /// 슬롯은 씬에서 직접 배치한다. 행 모양은 rewardRowPrefab으로 교체 가능.
     /// </summary>
     public class RewardUI : MonoBehaviour
     {
         [Header("Tuning")]
         [SerializeField] private int goldPerReward = 50;
         [SerializeField] private int modifierChoiceCount = 3;
-        [SerializeField] private int potionSlotCount = 3;
+        [Range(0f, 1f)]
+        [SerializeField] private float potionDropChance = 0.2f;   // 전투 보상 저확률 포션 드랍 (스펙 §6)
 
-        private bool _built;
-        private TMP_FontAsset _font;
+        [Header("슬롯 (씬에서 배치)")]
+        [SerializeField] private TextMeshProUGUI goldText;          // 현재 보유 골드 표시
+        [SerializeField] private GameObject mainPanel;
+        [SerializeField] private RectTransform rewardListRoot;      // 보상 행이 세로로 쌓이는 곳
+        [SerializeField] private GameObject upgradePanel;
+        [SerializeField] private TextMeshProUGUI upgradeHeader;
+        [SerializeField] private RectTransform choiceRow;           // 강화 창의 선택 버튼 행
+        [SerializeField] private Button nextButton;
+        [SerializeField] private Button cancelUpgradeButton;
 
-        private TextMeshProUGUI _goldText;
-        private GameObject _mainPanel;
-        private GameObject _upgradePanel;
-        private TextMeshProUGUI _upgradeHeader;
-        private Transform _choiceRow;
-        private Button _upgradeButton;
-        private TextMeshProUGUI _upgradeButtonLabel;
+        [Header("프리팹 (선택 — 비우면 기본 스타일 생성)")]
+        [SerializeField] private Button choiceButtonPrefab;         // 강화 창 선택 카드
+        [SerializeField] private Button rewardRowPrefab;            // 보상 행 (TMP 자식 필요)
 
         private Character _pickedCharacter;
-        private bool _upgradeUsed;
+        private GameObject _upgradeRow;                             // 강화 행 (강화 완료 시 제거)
+        private bool _listenersWired;
+        private TMP_FontAsset _font;
 
-        private static readonly Color PanelColor = new Color(0.12f, 0.13f, 0.18f, 0.98f);
-        private static readonly Color ButtonColor = new Color(0.25f, 0.45f, 0.8f, 1f);
-        private static readonly Color SlotColor = new Color(0.2f, 0.22f, 0.28f, 1f);
-        private static readonly Color GoldColor = new Color(1f, 0.85f, 0.35f, 1f);
+        // ── 팔레트: "보드게임의 밤" — 어두운 테이블 위 카드/코인 ──
+        private static readonly Color Felt     = new Color(0.043f, 0.051f, 0.078f, 0.85f);
+        private static readonly Color Card     = new Color(0.118f, 0.133f, 0.200f);
+        private static readonly Color CardEdge = new Color(0.239f, 0.271f, 0.400f);
+        private static readonly Color CardWell = new Color(0.082f, 0.094f, 0.153f);
+        private static readonly Color Ink      = new Color(0.910f, 0.894f, 0.847f);
+        private static readonly Color InkMuted = new Color(0.910f, 0.894f, 0.847f, 0.45f);
+        private static readonly Color Gold     = new Color(0.878f, 0.702f, 0.341f);
+        private static readonly Color GoldInk  = new Color(0.140f, 0.110f, 0.055f);
+        private static readonly Color Slate    = new Color(0.200f, 0.255f, 0.368f);
+
+        private const int PanelRadius = 26;
+        private const int ButtonRadius = 18;
+
+        private void Awake()
+        {
+            WireButtons();
+        }
 
         public void Show()
         {
             gameObject.SetActive(true);
-            EnsureBuilt();
 
-            GoldManager.EnsureInstance().AddGold(goldPerReward);
-            RefreshGold();
+            WireButtons();
 
-            _upgradeUsed = false;
+            BattleInfoPanelUI.SetVisible(false);   // 보상/모집 화면 동안 정보 패널 숨김
+
             _pickedCharacter = null;
-            if (_upgradeButton != null) _upgradeButton.interactable = true;
-            if (_upgradeButtonLabel != null) _upgradeButtonLabel.text = "캐릭터 업그레이드";
+            _upgradeRow = null;
             ShowUpgradePanel(false);
+            RefreshGold();
+            BuildRewardRows();
         }
 
-        public void Hide() => gameObject.SetActive(false);
+        public void Hide()
+        {
+            gameObject.SetActive(false);
+            BattleInfoPanelUI.SetVisible(true);    // 전투 복귀 시 정보 패널 복원
+        }
 
         private void RefreshGold()
         {
-            if (_goldText != null)
-                _goldText.text = $"골드  {GoldManager.Instance?.Gold ?? 0}   (+{goldPerReward})";
+            if (goldText != null)
+                goldText.text = $"골드  {GoldManager.Instance?.Gold ?? 0}";
+        }
+
+        /// <summary>씬 배선/폴백 생성 어느 쪽이든 리스너는 코드에서 1회만 연결.</summary>
+        private void WireButtons()
+        {
+            if (_listenersWired) return;
+            if (nextButton == null && cancelUpgradeButton == null) return;
+
+            nextButton?.onClick.AddListener(OnNextClicked);
+            cancelUpgradeButton?.onClick.AddListener(() => ShowUpgradePanel(false));
+            _listenersWired = true;
         }
 
         // ─────────────────────────────────────────────
-        // 업그레이드 흐름
+        // 보상 리스트 (StS식 — 클릭 수령, 행 제거)
         // ─────────────────────────────────────────────
-        private void OnUpgradeClicked()
+
+        private void BuildRewardRows()
         {
-            // 1단계: 캐릭터 선택
+            if (rewardListRoot == null) return;
+
+            for (int i = rewardListRoot.childCount - 1; i >= 0; i--)
+                Destroy(rewardListRoot.GetChild(i).gameObject);
+
+            // ① 골드 (+유물 보너스, 예: 황금 주사위)
+            int goldAmount = goldPerReward + (ArtifactManager.Instance?.BattleGoldBonus ?? 0);
+            AddRewardRow($"<color=#{ColorUtility.ToHtmlStringRGB(Gold)}>●</color>  골드 +{goldAmount}", row =>
+            {
+                GoldManager.EnsureInstance().AddGold(goldAmount);
+                RefreshGold();
+                Destroy(row);
+            });
+
+            // ② 캐릭터 강화 (모디파이어 3택1)
+            _upgradeRow = AddRewardRow("⬆  캐릭터 강화  <size=60%>모디파이어 3택1</size>", row =>
+            {
+                BeginUpgradeFlow();   // 수령은 모디파이어 선택 완료 시점 (취소하면 행 유지)
+            });
+
+            // ③ 유물 (엘리트 클리어 시 — 스펙 §2)
+            var runNode = RunManager.Instance?.CurrentNode;
+            if (runNode != null && runNode.Type == MapNodeType.Elite)
+            {
+                var artifact = ArtifactManager.EnsureInstance().GetShopOfferings(1).FirstOrDefault();
+                if (artifact != null)
+                {
+                    AddRewardRow($"🏺  유물 — {artifact.artifactName}", row =>
+                    {
+                        ArtifactManager.Instance.Grant(artifact);
+                        Destroy(row);
+                    });
+                }
+            }
+
+            // ④ 포션 (저확률 드랍)
+            if (Random.value < potionDropChance)
+            {
+                var potion = PotionManager.EnsureInstance().GetShopOfferings(1).FirstOrDefault();
+                if (potion != null)
+                {
+                    AddRewardRow($"🧪  포션 — {potion.PotionName}", row =>
+                    {
+                        if (PotionManager.Instance.TryAdd(potion))
+                            Destroy(row);
+                        else
+                            Debug.Log("[Reward] 포션 슬롯이 가득 — HUD에서 버린 뒤 수령하세요.");
+                    });
+                }
+            }
+        }
+
+        /// <summary>보상 행 추가 (StS식 가로 바). 클릭 시 onClaim(자기 자신)을 호출.</summary>
+        private GameObject AddRewardRow(string label, System.Action<GameObject> onClaim)
+        {
+            if (rewardListRoot == null) return null;
+
+            if (rewardRowPrefab != null)
+            {
+                var instance = Instantiate(rewardRowPrefab, rewardListRoot);
+                var tmp = instance.GetComponentInChildren<TextMeshProUGUI>();
+                if (tmp != null) tmp.text = label;
+                var go2 = instance.gameObject;
+                instance.onClick.AddListener(() => onClaim(go2));
+                return go2;
+            }
+
+            var go = CreateChild(rewardListRoot, "RewardRow");
+            var le = go.gameObject.AddComponent<LayoutElement>();
+            le.preferredHeight = 74;
+            le.flexibleWidth = 1f;
+
+            var img = go.gameObject.AddComponent<Image>();
+            img.sprite = UiRoundedSprite.Get(ButtonRadius);
+            img.type = Image.Type.Sliced;
+            img.color = Color.white;
+
+            var shadow = go.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.4f);
+            shadow.effectDistance = new Vector2(0f, -4f);
+
+            var btn = go.gameObject.AddComponent<Button>();
+            btn.targetGraphic = img;
+            btn.colors = MakeColors(new Color(0.145f, 0.169f, 0.259f));
+            var captured = go.gameObject;
+            btn.onClick.AddListener(() => onClaim(captured));
+
+            var txt = CreateText(go, label, 27, FontStyles.Bold);
+            txt.alignment = TextAlignmentOptions.MidlineLeft;
+            txt.margin = new Vector4(26, 8, 18, 8);
+            Stretch(txt);
+
+            return go.gameObject;
+        }
+
+        // ─────────────────────────────────────────────
+        // 캐릭터 강화 흐름 (강화 행 클릭 → 창)
+        // ─────────────────────────────────────────────
+        private void BeginUpgradeFlow()
+        {
             _pickedCharacter = null;
-            _upgradeHeader.text = "강화할 캐릭터 선택";
+            if (upgradeHeader != null) upgradeHeader.text = "강화할 캐릭터 선택";
             ClearRow();
 
             var party = PartyManager.Instance?.Party;
@@ -89,9 +231,8 @@ namespace DiceOrbit.UI
         {
             _pickedCharacter = ch;
 
-            // 2단계: 모디파이어 선택
             string name = ch.Stats != null ? ch.Stats.CharacterName : ch.name;
-            _upgradeHeader.text = $"[{name}] 모디파이어 선택";
+            if (upgradeHeader != null) upgradeHeader.text = $"[{name}] 모디파이어 선택";
             ClearRow();
 
             // 이 캐릭터에게 적용 가능한 모디파이어만 제시
@@ -111,9 +252,8 @@ namespace DiceOrbit.UI
                 Debug.Log($"[Reward] {_pickedCharacter.Stats?.CharacterName} ← '{mod.ModifierName}' 장착");
             }
 
-            _upgradeUsed = true;
-            if (_upgradeButton != null) _upgradeButton.interactable = false;
-            if (_upgradeButtonLabel != null) _upgradeButtonLabel.text = "강화 완료 ✓";
+            // 강화 행 수령 완료 → 제거
+            if (_upgradeRow != null) { Destroy(_upgradeRow); _upgradeRow = null; }
             ShowUpgradePanel(false);
         }
 
@@ -124,138 +264,64 @@ namespace DiceOrbit.UI
 
         private void ShowUpgradePanel(bool visible)
         {
-            if (_upgradePanel != null) _upgradePanel.SetActive(visible);
+            if (upgradePanel != null) upgradePanel.SetActive(visible);
         }
 
         private void ClearRow()
         {
-            if (_choiceRow == null) return;
-            for (int i = _choiceRow.childCount - 1; i >= 0; i--)
-                Destroy(_choiceRow.GetChild(i).gameObject);
+            if (choiceRow == null) return;
+            for (int i = choiceRow.childCount - 1; i >= 0; i--)
+                Destroy(choiceRow.GetChild(i).gameObject);
         }
 
-        // ─────────────────────────────────────────────
-        // UI 자동 생성
-        // ─────────────────────────────────────────────
-        private void EnsureBuilt()
-        {
-            if (_built) return;
-            _built = true;
-
-            _font = FindAnyObjectByType<TextMeshProUGUI>(FindObjectsInactive.Include)?.font;
-
-            var canvasGO = new GameObject("_RewardCanvas");
-            canvasGO.transform.SetParent(transform, false);
-            var canvas = canvasGO.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 1500;
-            var scaler = canvasGO.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            canvasGO.AddComponent<GraphicRaycaster>();
-
-            // 어두운 배경
-            var dim = CreateChild(canvasGO.transform, "Dim");
-            Stretch(dim);
-            dim.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.75f);
-
-            // 메인 패널
-            _mainPanel = CreatePanel(canvasGO.transform, "MainPanel", new Vector2(900, 620), new Vector2(0, 0));
-            var title = CreateText(_mainPanel.transform, "보상 획득", 64, FontStyles.Bold);
-            Place(title, new Vector2(0, 250), new Vector2(800, 90));
-
-            _goldText = CreateText(_mainPanel.transform, "골드 0", 44, FontStyles.Bold);
-            _goldText.color = GoldColor;
-            Place(_goldText, new Vector2(0, 160), new Vector2(800, 70));
-
-            // 포션 슬롯 (예정 placeholder)
-            BuildPotionSlots(_mainPanel.transform, new Vector2(0, 50));
-
-            // 업그레이드 버튼
-            _upgradeButton = CreateButton(_mainPanel.transform, "캐릭터 업그레이드", new Vector2(0, -90),
-                new Vector2(440, 100), OnUpgradeClicked, out _upgradeButtonLabel);
-
-            // 다음 버튼
-            CreateButton(_mainPanel.transform, "다음", new Vector2(0, -230),
-                new Vector2(300, 90), OnNextClicked, out _);
-
-            // 업그레이드 패널 (모달, 초기 숨김)
-            _upgradePanel = CreatePanel(canvasGO.transform, "UpgradePanel", new Vector2(1100, 520), new Vector2(0, 0));
-            _upgradeHeader = CreateText(_upgradePanel.transform, "강화할 캐릭터 선택", 44, FontStyles.Bold);
-            Place(_upgradeHeader, new Vector2(0, 200), new Vector2(1000, 80));
-
-            var rowGO = CreateChild(_upgradePanel.transform, "ChoiceRow");
-            Place(rowGO, new Vector2(0, -10), new Vector2(1020, 240));
-            var hlg = rowGO.gameObject.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 20; hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
-            _choiceRow = rowGO;
-
-            CreateButton(_upgradePanel.transform, "취소", new Vector2(0, -200),
-                new Vector2(240, 80), () => ShowUpgradePanel(false), out _);
-
-            _upgradePanel.SetActive(false);
-        }
-
-        private void BuildPotionSlots(Transform parent, Vector2 anchoredPos)
-        {
-            var rowGO = CreateChild(parent, "PotionRow");
-            Place(rowGO, anchoredPos, new Vector2(700, 120));
-            var hlg = rowGO.gameObject.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 16; hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
-
-            for (int i = 0; i < Mathf.Max(0, potionSlotCount); i++)
-            {
-                var slot = CreateChild(rowGO, $"PotionSlot{i}");
-                var le = slot.gameObject.AddComponent<LayoutElement>();
-                le.preferredWidth = 110; le.preferredHeight = 110;
-                slot.gameObject.AddComponent<Image>().color = SlotColor;
-                var t = CreateText(slot, "포션\n(예정)", 22, FontStyles.Normal);
-                Stretch(t);
-                t.color = new Color(1, 1, 1, 0.4f);
-            }
-        }
-
+        /// <summary>강화 창 선택 버튼 1개 추가. 프리팹이 있으면 그걸로, 없으면 기본 스타일로 생성.</summary>
         private void AddChoiceButton(string label, System.Action onClick)
         {
-            var go = CreateChild(_choiceRow, "Choice");
+            if (choiceRow == null) return;
+
+            if (choiceButtonPrefab != null)
+            {
+                var btnInstance = Instantiate(choiceButtonPrefab, choiceRow);
+                var tmp = btnInstance.GetComponentInChildren<TextMeshProUGUI>();
+                if (tmp != null) tmp.text = label;
+                btnInstance.onClick.AddListener(() => onClick());
+                return;
+            }
+
+            // 손패의 카드 한 장 — 호버 시 밝아짐 (집어 드는 느낌)
+            var go = CreateChild(choiceRow, "Choice");
             var le = go.gameObject.AddComponent<LayoutElement>();
-            le.preferredWidth = 240; le.preferredHeight = 200;
+            le.preferredWidth = 250; le.preferredHeight = 220;
+
             var img = go.gameObject.AddComponent<Image>();
-            img.color = ButtonColor;
+            img.sprite = UiRoundedSprite.Get(ButtonRadius);
+            img.type = Image.Type.Sliced;
+            img.color = Color.white;
+
+            var shadow = go.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
+            shadow.effectDistance = new Vector2(0f, -6f);
+
             var btn = go.gameObject.AddComponent<Button>();
             btn.targetGraphic = img;
+            btn.colors = MakeColors(new Color(0.145f, 0.169f, 0.259f));   // 카드보다 살짝 밝은 남색
             btn.onClick.AddListener(() => onClick());
 
-            var txt = CreateText(go, label, 26, FontStyles.Bold);
+            var txt = CreateText(go, label, 25, FontStyles.Bold);
             Stretch(txt);
-            txt.margin = new Vector4(10, 10, 10, 10);
+            txt.margin = new Vector4(14, 14, 14, 14);
         }
 
-        // ── 빌드 헬퍼 ──────────────────────────────────────
-        private GameObject CreatePanel(Transform parent, string name, Vector2 size, Vector2 pos)
+        private static ColorBlock MakeColors(Color fill)
         {
-            var go = CreateChild(parent, name);
-            Place(go, pos, size);
-            go.gameObject.AddComponent<Image>().color = PanelColor;
-            return go.gameObject;
-        }
-
-        private Button CreateButton(Transform parent, string label, Vector2 pos, Vector2 size,
-            System.Action onClick, out TextMeshProUGUI labelText)
-        {
-            var go = CreateChild(parent, "Button_" + label);
-            Place(go, pos, size);
-            var img = go.gameObject.AddComponent<Image>();
-            img.color = ButtonColor;
-            var btn = go.gameObject.AddComponent<Button>();
-            btn.targetGraphic = img;
-            btn.onClick.AddListener(() => onClick());
-
-            labelText = CreateText(go, label, 34, FontStyles.Bold);
-            Stretch(labelText);
-            return btn;
+            var cb = ColorBlock.defaultColorBlock;
+            cb.normalColor      = fill;
+            cb.highlightedColor = Color.Lerp(fill, Color.white, 0.15f);
+            cb.pressedColor     = Color.Lerp(fill, Color.black, 0.25f);
+            cb.selectedColor    = fill;
+            cb.disabledColor    = new Color(fill.r, fill.g, fill.b, 0.35f);
+            cb.fadeDuration     = 0.08f;
+            return cb;
         }
 
         private TextMeshProUGUI CreateText(Transform parent, string text, float size, FontStyles style)
@@ -266,7 +332,7 @@ namespace DiceOrbit.UI
             tmp.fontSize = size;
             tmp.fontStyle = style;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Color.white;
+            tmp.color = Ink;
             tmp.raycastTarget = false;
             if (_font != null) tmp.font = _font;
             return tmp;
@@ -278,17 +344,6 @@ namespace DiceOrbit.UI
             go.transform.SetParent(parent, false);
             return (RectTransform)go.transform;
         }
-
-        private static void Place(RectTransform rt, Vector2 anchoredPos, Vector2 size)
-        {
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = size;
-        }
-
-        // TMP/Image 등 Graphic을 직접 넘길 수 있게 오버로드 (rectTransform 위임)
-        private static void Place(Graphic g, Vector2 anchoredPos, Vector2 size) => Place(g.rectTransform, anchoredPos, size);
 
         private static void Stretch(RectTransform rt)
         {

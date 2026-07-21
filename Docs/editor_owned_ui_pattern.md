@@ -1,0 +1,79 @@
+# 에디터 소유 UI 패턴 가이드
+
+> 2026-07-05 정립, 이후 모든 신규 UI에 적용. "코드가 만들되, 스타일은 씬이 소유한다."
+> 배경: UI가 순수 코드 생성이면 인스펙터에서 만질 수 없고, 순수 씬 제작이면 흐름 배선이 수작업이 됨 — 이 패턴은 둘의 중간.
+
+## 패턴 3요소
+
+```csharp
+public class SomeUI : MonoBehaviour
+{
+    // ① 슬롯: 코드가 "내용"을 채울 자리 — 씬 오브젝트 참조
+    [SerializeField] private TextMeshProUGUI titleText;
+    [SerializeField] private RectTransform listRoot;
+
+    // ② 에디터 스캐폴드: 우클릭 1회로 기본 계층 생성 → 씬에 영구 저장 → 자유 스타일링
+    [ContextMenu("기본 레이아웃 생성")]
+    private void BuildDefaultLayout()
+    {
+        // 계층 생성 + 슬롯 자동 배선 + (에디터 모드면) SetDirty + MarkSceneDirty
+    }
+
+    // ③ 런타임 폴백: 슬롯이 비어 있으면 Show() 시점에 같은 메서드로 생성
+    public void Show()
+    {
+        if (rootCanvas == null) BuildDefaultLayout();   // 셋업 전에도 게임이 멈추지 않음
+        ...
+    }
+}
+```
+
+**규약:**
+- 생성 루트는 `_XxxCanvas` 같은 언더스코어 이름 — "재생성하려면 이걸 지우세요"의 표식
+- 이미 있으면 경고만 하고 반환 (중복 생성 방지)
+- 버튼 리스너는 씬 배선이 아니라 **코드가 참조로 연결** (`WireButtons`, 1회 가드) — OnClick을 씬에서 만질 필요 없음
+- 내용 행(보상 행/노드/칩처럼 런타임에 개수가 변하는 것)은 슬롯 컨테이너 안에 코드가 채움
+- 씬 구조가 바뀌는 코드 수정 후에는 `_XxxCanvas` 삭제 → 재생성 필요 (레이아웃은 씬에 박제되므로)
+
+## 프리팹 슬롯 (내용물 모양 커스텀)
+
+런타임 생성 내용물의 모양을 바꾸고 싶을 때 — 프리팹을 꽂으면 그걸로 찍어냄:
+
+| UI | 슬롯 | 프리팹 요구사항 |
+|---|---|---|
+| RewardUI | choiceButtonPrefab / rewardRowPrefab | Button 루트 + 자식 TMP |
+| ShopUI | choiceButtonPrefab | Button 루트 + 자식 TMP |
+| RunHudUI | chipPrefab | Image 루트 + 자식 `Icon`(Image)/`Label`(TMP) 이름 탐색 |
+| BattleInfoPanelUI | cardPrefab (GlossaryCardUI) | GlossaryCardUI 컴포넌트 |
+
+## SubclassPicker ([SerializeReference] 인라인 선택)
+
+`[SerializeReference]` 필드는 기본 인스펙터에서 타입을 고를 수 없다 → 드로어 제공:
+
+```csharp
+[SerializeReference, SubclassPicker] public RelicCombatEffect CombatEffect;
+```
+- `Core/SubclassPickerAttribute.cs` (런타임) + `Editor/SubclassPickerDrawer.cs`
+- 드롭다운에 파생 타입 자동 나열 (TypeCache) → 선택 시 인스턴스 생성, 필드 인라인 편집
+- 새 효과 클래스를 만들면 컴파일만 해도 드롭다운에 나타남
+
+## 적용 현황
+
+| UI | 파일 | 비고 |
+|---|---|---|
+| 전투 정보 패널 | `InfoPanel/BattleInfoPanelUI.cs` | 섹션 앵커 고정형 |
+| 타일 패널 | `InfoPanel/TileInfoPanelUI.cs` | 정보 패널 왼쪽 경계 도킹 |
+| 노드맵 | `NodeMapUI.cs` | 세로 스크롤 (ScrollRect 뼈대는 씬, 노드는 런타임) |
+| 보상 | `RewardUI.cs` | StS식 수령 리스트 |
+| 상점 | `ShopUI.cs` | 무대형 (배경/상인 스프라이트 슬롯) |
+| 이벤트 | `EventUI.cs` | 무대형 + EventDefinition 에셋 |
+| 런 HUD | `RunHudUI.cs` | 상태별 자동 표시/숨김 |
+
+## 새 UI 만들 때 체크리스트
+
+1. 슬롯 필드 선언 (`[Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]`)
+2. `[ContextMenu("기본 레이아웃 생성")]` — 중복 가드, 슬롯 배선, SetDirty/MarkSceneDirty
+3. Show()에서 폴백 호출 + `BattleInfoPanelUI.SetVisible(false)` (전체화면 UI라면)
+4. 팔레트는 기존 상수 계승 (다크 = "보드게임의 밤" Felt/Card/Gold, 라이트 = 점수지 InfoPanelRows)
+5. 라운드 모서리는 `UiRoundedSprite.Get(radius)` (에디터 모드에선 Assets/Art/Generated에 에셋 저장)
+6. 정렬 질서: 사이드바 -5 / HUD 100 / 노드맵 900 / 상점·이벤트 1450 / 보상 1500 / 커서 툴팁 30000

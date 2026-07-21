@@ -55,6 +55,7 @@ namespace DiceOrbit.UI
             if (titleText != null) { titleText.text = title; titleText.color = titleColor; }
             if (messageText != null) messageText.text = message;
             SetVisible(true);
+            BattleInfoPanelUI.SetVisible(false);   // 결과 화면 동안 정보 패널 숨김
         }
 
         public void Hide() => SetVisible(false);

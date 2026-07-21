@@ -189,10 +189,10 @@ namespace DiceOrbit.UI
                 hpText.text = $"{stats.CurrentHP}/{stats.MaxHP}";
             }
             
-            // 레벨
+            // (레벨 표기는 철거됨 — 성장은 전부 모디파이어로. 텍스트는 비워서 숨김)
             if (levelText != null)
             {
-                levelText.text = $"Lv.{stats.Level}";
+                levelText.text = string.Empty;
             }
         }
         

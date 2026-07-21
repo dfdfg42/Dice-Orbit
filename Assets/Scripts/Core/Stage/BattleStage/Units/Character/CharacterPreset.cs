@@ -49,7 +49,6 @@ namespace DiceOrbit.Core
             var stats = new CharacterStats
             {
                 CharacterName = this.CharacterName,
-                Level         = 1,
                 MaxHP         = this.MaxHP,
                 CurrentHP     = this.MaxHP
             };

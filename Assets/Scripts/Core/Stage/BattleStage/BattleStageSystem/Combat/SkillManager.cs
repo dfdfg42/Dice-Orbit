@@ -17,6 +17,12 @@ namespace DiceOrbit.Core
             else Destroy(gameObject);
         }
 
+        private void Start()
+        {
+            // 전투 정보 패널 부트스트랩 (씬에 없으면 코드로 생성)
+            BattleInfoPanelUI.EnsureInstance();
+        }
+
         public void PrepareSkill(Character source, int skillIndex, DiceData dice)
         {
             if (source == null || dice == null) return;
@@ -86,7 +92,7 @@ namespace DiceOrbit.Core
             // OneEnemy나 OneTile일 때는 이미 StartTargetSelection에서 락(Reserved)을 걸어두었음.
             if (dice.State != DiceState.Reserved)
             {
-                bool success = diceManager.AssignDice(dice, source, DiceOrbit.Core.Pipeline.ActionType.Skill);
+                bool success = diceManager.AssignDice(dice, source);
                 if (!success)
                 {
                     CharacterActionUI.Instance?.ReturnDiceElement();

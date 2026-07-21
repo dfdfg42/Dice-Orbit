@@ -15,6 +15,9 @@ namespace DiceOrbit.UI
         [Header("Character Presets")]
         [SerializeField] private List<Core.CharacterPreset> allCharacters = new List<Core.CharacterPreset>();
 
+        /// <summary>전체 캐릭터 풀 (상점 교체 후보 등 외부 조회용 — ShopUI).</summary>
+        public IReadOnlyList<Core.CharacterPreset> AllCharacters => allCharacters;
+
         [Header("Card UI References")]
         [SerializeField] private Transform cardContainer;
         [SerializeField] private GameObject characterCardPrefab;
@@ -105,6 +108,7 @@ namespace DiceOrbit.UI
             }
 
             DiceUI.Instance?.SetPanelVisible(false);
+            BattleInfoPanelUI.SetVisible(false);   // 캐릭터 선택/모집 동안 정보 패널 숨김
             HideDetail();
             ResetSelectionSession();
             GenerateRandomChoices();
@@ -122,6 +126,7 @@ namespace DiceOrbit.UI
             }
 
             DiceUI.Instance?.SetPanelVisible(true);
+            BattleInfoPanelUI.SetVisible(true);    // 전투 복귀 시 정보 패널 복원
         }
 
         private void GenerateRandomChoices()

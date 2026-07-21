@@ -7,21 +7,25 @@ using System.Linq;
 namespace DiceOrbit.Core
 {
     /// <summary>
-    /// 웨이브 관리자 (1~8 Wave)
+    /// 전투 1회 실행기: 웨이브 정의 → 몬스터 스폰 + 전멸 감지.
+    /// "다음 전투가 무엇인지"는 노드맵(RunManager)이 결정한다 —
+    /// 구 순차 진행 API(StartFirstWave/StartNextWave/MaxWave)는 철거됨 (2026-07-07 노드맵 개편).
+    ///
+    /// 이벤트/조회(OnWaveStart, OnWaveClear, IsWaveActive, CurrentWave, GetWaveDefinition)는
+    /// 기존 구독자(패시브·배경·몬스터) 호환을 위해 시그니처 유지.
     /// </summary>
     public class WaveManager : MonoBehaviour
     {
         public static WaveManager Instance { get; private set; }
 
         [Header("Settings")]
-        public int MaxWave = 4;
         [SerializeField] private WaveDatabase waveDatabase;
         [SerializeField] private Transform spawnRoot;
         [SerializeField] private float fallbackSpawnRadius = 2.5f;
         [SerializeField] private GameObject monsterPrefab;
-        
+
         [Header("Runtime")]
-        public int CurrentWave { get; private set; } = 0;
+        public int CurrentWave { get; private set; } = 0;      // 마지막으로 시작한 전투의 웨이브 번호 (1-based)
         public bool IsWaveActive { get; private set; } = false;
 
         private readonly List<Monster> spawnedMonsters = new List<Monster>();
@@ -35,40 +39,35 @@ namespace DiceOrbit.Core
             else Destroy(gameObject);
         }
 
-        public void StartFirstWave()
+        /// <summary>
+        /// 전투 시작 (노드맵 진입점). encounter = 노드가 배정받은 몹 세트,
+        /// waveNumber = 표시/배경/구독자용 번호 (노드맵에서는 층+1).
+        /// </summary>
+        public void StartEncounter(WaveDefinition encounter, int waveNumber)
         {
-            CurrentWave = 1;
-            StartWave(CurrentWave);
-        }
-
-        public void StartNextWave()
-        {
-            if (CurrentWave < MaxWave)
-            {
-                CurrentWave++;
-                StartWave(CurrentWave);
-            }
-            else
-            {
-                Debug.Log("[WaveManager] Game Completed!");
-            }
-        }
-
-        private void StartWave(int wave)
-        {
+            CurrentWave = waveNumber;
             IsWaveActive = true;
-            Debug.Log($"[WaveManager] Wave {wave} Started!");
-            ResolveMaxWave();
+            Debug.Log($"[WaveManager] Encounter 시작 — #{waveNumber}, 몬스터 {encounter?.MonsterPresets?.Count ?? 0}종");
 
-            // Spawn Monsters
-            SpawnMonsters(wave);
+            SpawnMonsters(encounter);
 
-            OnWaveStart?.Invoke(wave);
+            // 유물: 전투 시작 시 파티 회복 (예: 생명의 부적)
+            int startHeal = Run.ArtifactManager.Instance?.BattleStartHeal ?? 0;
+            if (startHeal > 0 && PartyManager.Instance != null)
+            {
+                foreach (var c in PartyManager.Instance.Party)
+                {
+                    if (c == null || !c.IsAlive || c.Stats == null) continue;
+                    c.Stats.CurrentHP = Mathf.Min(c.Stats.MaxHP, c.Stats.CurrentHP + startHeal);
+                }
+            }
+
+            OnWaveStart?.Invoke(waveNumber);
         }
 
-        private void SpawnMonsters(int wave)
+        private void SpawnMonsters(WaveDefinition waveDef)
         {
-            Debug.Log($"[WaveManager] Spawning all monsters for Wave {wave}...");
+            Debug.Log("[WaveManager] Spawning encounter monsters...");
 
             CleanupSpawnedMonsters();
 
@@ -78,7 +77,6 @@ namespace DiceOrbit.Core
                 combatManager.ClearMonsters();
             }
 
-            var waveDef = GetWaveDefinition(wave);
             if (waveDef == null || waveDef.MonsterPresets == null || waveDef.MonsterPresets.Count == 0)
             {
                 Debug.LogWarning("[WaveManager] No wave definition or monster presets found. Skipping spawn.");
@@ -137,7 +135,7 @@ namespace DiceOrbit.Core
                 }
             }
 
-            Debug.Log($"[WaveManager] Total {spawnedMonsters.Count} monsters spawned for Wave {wave}.");
+            Debug.Log($"[WaveManager] Total {spawnedMonsters.Count} monsters spawned.");
 
             // 몬스터 정체성 색상 배정 + 발밑 바닥 색상 마커 생성
             Visuals.MonsterIdentityManager.EnsureInstance();
@@ -185,15 +183,7 @@ namespace DiceOrbit.Core
             Debug.Log($"[WaveManager] Wave {CurrentWave} Cleared!");
 
             OnWaveClear?.Invoke(CurrentWave);
-            // 다음 웨이브는 Recruit → Reward 플로우 완료 후 GameFlowManager.OnRewardComplete가 StartNextWave 호출.
-        }
-
-        private void ResolveMaxWave()
-        {
-            if (waveDatabase != null && waveDatabase.Waves != null && waveDatabase.Waves.Count > 0)
-            {
-                MaxWave = waveDatabase.Waves.Count;
-            }
+            // 다음 행선지는 GameFlowManager가 노드맵(RunManager) 상태를 보고 결정한다.
         }
 
         public WaveDefinition GetWaveDefinition(int wave)

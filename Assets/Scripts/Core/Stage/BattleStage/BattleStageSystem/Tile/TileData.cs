@@ -23,7 +23,7 @@ namespace DiceOrbit.Data
     /// <summary>
     /// 개별 타일 데이터
     /// </summary>
-    public class TileData : MonoBehaviour, UI.IHoverTooltipProvider, ICombatReactor
+    public class TileData : MonoBehaviour, ICombatReactor
     {
         [Header("Tile Properties")]
         [SerializeField] private int tileIndex;
@@ -43,6 +43,9 @@ namespace DiceOrbit.Data
 
         // Properties
         public int TileIndex => tileIndex;
+
+        /// <summary>타일 타입. 현재 규칙: 0번 타일 = LevelUp, 나머지 = Normal (ResolveTileTypeName과 동일).</summary>
+        public TileType Type => tileIndex == 0 ? TileType.LevelUp : TileType.Normal;
         public TileData NextTile => nextTile;
         public TileData PreviousTile => previousTile;
         public Vector3 Position => transform.position;
@@ -140,45 +143,8 @@ namespace DiceOrbit.Data
             return attributes.ContainsKey(attributeType);
         }
 
-        private string BuildTooltipText()
-        {
-            var detailLines = new List<string>();
-
-            foreach (var attribute in attributes)
-            {
-                if (attribute.Value == null) continue;
-                detailLines.AddRange(attribute.Value.GetTooltipDescriptions());
-            }
-
-            var sb = new StringBuilder();
-            sb.AppendLine($"Tile #{tileIndex}");
-            sb.AppendLine($"Type: {ResolveTileTypeName()}");
-            if (attributes.Count > 0)
-            {
-                sb.AppendLine($"Attributes: {attributes.Count}");
-            }
-            if (detailLines.Count > 0)
-            {
-                sb.AppendLine("--- Details ---");
-                foreach (var line in detailLines)
-                {
-                    sb.AppendLine(line);
-                }
-            }
-
-            return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
-        }
-
-        public UI.HoverTooltipData GetHoverTooltipData()
-        {
-            return new UI.HoverTooltipData(BuildTooltipText());
-        }
-
-        private string ResolveTileTypeName()
-        {
-            if (tileIndex == 0) return TileType.LevelUp.ToString();
-            return TileType.Normal.ToString();
-        }
+        /// <summary>정보 패널용 타일 구조화 데이터.</summary>
+        public UI.TileInfoData GetTileInfo() => UI.UnitInfoBuilder.Build(this);
 
         void ICombatReactor.OnReact(CombatTrigger trigger, CombatContext context)
         {

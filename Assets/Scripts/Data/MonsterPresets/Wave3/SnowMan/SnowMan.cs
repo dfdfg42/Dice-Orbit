@@ -166,8 +166,6 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
             isStackable = false;
         }
 
-        protected override void ApplyLevel(int level) { }
-
         public override string GetDynamicDescription()
             => $"눈사람이 디버프 부여/공격 성공 시 다른 아군 체력 +{healAmount}";
 

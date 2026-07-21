@@ -207,6 +207,36 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
+        /// 캐릭터 선택 중: 해당 캐릭터의 어떤 스킬 조건도 못 맞추는 주사위를 살짝 붉게 표시.
+        /// (CharacterActionUI.Show에서 호출, Hide에서 ClearSkillUsabilityHint로 해제)
+        /// </summary>
+        public void ShowSkillUsabilityHint(Core.Character character)
+        {
+            foreach (var element in diceElements)
+            {
+                if (element == null || element.Data == null) continue;
+                element.SetSkillUnusableHint(!CanUseAnySkill(character, element.Data.Value));
+            }
+        }
+
+        /// <summary>스킬 사용 불가 힌트를 전부 해제.</summary>
+        public void ClearSkillUsabilityHint()
+        {
+            foreach (var element in diceElements)
+                element?.SetSkillUnusableHint(false);
+        }
+
+        private static bool CanUseAnySkill(Core.Character character, int diceValue)
+        {
+            var slots = character?.Stats?.ActiveAbilities;
+            if (slots == null || slots.Count == 0) return true;   // 정보 없으면 힌트를 띄우지 않음
+
+            foreach (var slot in slots)
+                if (slot != null && slot.CanUse(diceValue)) return true;
+            return false;
+        }
+
+        /// <summary>
         /// 특정 주사위의 UI 표시를 새로고침합니다.
         /// </summary>
         public void RefreshDiceVisual(DiceData diceData)

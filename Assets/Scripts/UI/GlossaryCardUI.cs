@@ -24,6 +24,9 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI  metaText;  // 스택/지속 정보 (상태이상 전용)
         [SerializeField] private TextMeshProUGUI  descText;  // 설명 텍스트
 
+        /// <summary>설명 TMP 접근자 (키워드 링크 호버 등록용 — KeywordLinkHover).</summary>
+        public TextMeshProUGUI DescText => descText;
+
         // ═══════════════════════════════════════════════════════
         // 공개 API — 카드 타입별 설정
         // ═══════════════════════════════════════════════════════
@@ -97,6 +100,20 @@ namespace DiceOrbit.UI
             // 설명 텍스트 설정
             if (descText != null)
                 descText.text = description;
+        }
+
+        /// <summary>
+        /// 카드에 아이콘을 표시합니다 (SetStatus 이후 호출용 — 상태이상 양식 + 아이콘 조합).
+        /// 정보 패널의 타일 속성 행 등에서 사용.
+        /// </summary>
+        public void SetIcon(Sprite icon, Color tint)
+        {
+            if (iconImage == null) return;
+
+            bool hasIcon = icon != null;
+            iconImage.sprite = icon;
+            iconImage.color = tint;
+            iconImage.gameObject.SetActive(hasIcon);
         }
 
         // ═══════════════════════════════════════════════════════

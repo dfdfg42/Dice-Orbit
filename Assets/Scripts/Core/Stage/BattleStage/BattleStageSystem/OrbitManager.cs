@@ -117,8 +117,8 @@ namespace DiceOrbit.Core
                 tileData = tileObj.AddComponent<TileData>();
                 if (type == TileType.LevelUp)
                 {
-                    var levelUpAttribute = new treavse_LevelUP(TileAttributeType.LevelUp, 1, -1);
-                    tileData.AddAttribute(levelUpAttribute);
+                    // 시작 타일 = 치유 타일 (구 레벨업 타일 대체 — 지나가면 소량 회복, 기획 REV05)
+                    tileData.AddAttribute(new StartHealTile(TileAttributeType.ScoutHeal, 5, -1));
                 }
             }
             

@@ -1,21 +1,22 @@
-using DiceOrbit.Core.Pipeline;
-using DiceOrbit.Systems.Artifact;
 using DiceOrbit.Core;
+using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Core.Run;
 using UnityEngine;
 
-using static UnityEngine.UI.GridLayoutGroup;
-
-public class PowerfullPunch : RuntimeArtifact
+namespace DiceOrbit.Data.Artifacts
 {
-    public PowerfullPunch(ArtifactData data) : base(data)
+    /// <summary>강력한 주먹 (디버그) — 캐릭터 공격의 출력을 고정값으로.</summary>
+    [System.Serializable]
+    public class PowerfullPunch : RuntimeArtifact
     {
-    }
+        public int fixedOutput = 1000;
 
-    public void OnAttack(CombatTrigger trigger, AttackContext context)
-    {
-        if (trigger != CombatTrigger.OnCalculateOutput) return;
-        if (context.SourceUnit is not Character) return;
-        Debug.Log("artifact react: Powerfull Punch");
-        context.OutputValue = 1000;
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
+        {
+            if (trigger != CombatTrigger.OnCalculateOutput) return;
+            if (context.SourceUnit is not Character) return;
+            Debug.Log("[Artifact] PowerfullPunch react");
+            context.OutputValue = fixedOutput;
+        }
     }
 }

@@ -169,6 +169,15 @@ namespace DiceOrbit.UI
             }
         }
 
+        /// <summary>부활 스톡 핍: 남은 스톡은 골드 ●, 소진은 어두운 ○ (스펙 §4 — "런의 목숨 게이지").</summary>
+        private static string BuildRevivalPips(int stock)
+        {
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < 3; i++)
+                sb.Append(i < stock ? "<color=#C99B3F>●</color>" : "<color=#55524A>○</color>");
+            return sb.ToString();
+        }
+
         private void RefreshEntries()
         {
             foreach (var kv in entryByCharacter)
@@ -181,7 +190,7 @@ namespace DiceOrbit.UI
                 if (stats == null) continue;
 
                 string displayName = string.IsNullOrWhiteSpace(stats.CharacterName) ? character.name : stats.CharacterName;
-                entry.NameLevelText.text = $"{displayName}  Lv.{stats.Level}";
+                entry.NameLevelText.text = $"{displayName} <size=70%>{BuildRevivalPips(stats.RevivalStock)}</size>";
 
                 float maxHp = Mathf.Max(1, stats.MaxHP);
                 float currentHp = Mathf.Clamp(stats.CurrentHP, 0, stats.MaxHP);
@@ -276,13 +285,14 @@ namespace DiceOrbit.UI
         {
             if (character == null) return;
 
-            HoverTooltipUI.EnsureInstance();
-            HoverTooltipUI.Instance?.ShowPinned(character.GetHoverTooltipData());
+            // 캐릭터 상세는 정보 패널이 담당 (구 툴팁 철거 후 이관)
+            BattleInfoPanelUI.EnsureInstance();
+            BattleInfoPanelUI.Instance?.ShowUnitExternal(character);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            HoverTooltipUI.Instance?.HidePinned();
+            BattleInfoPanelUI.Instance?.ClearUnitExternal(character);
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -296,7 +306,7 @@ namespace DiceOrbit.UI
 
         private void OnDisable()
         {
-            HoverTooltipUI.Instance?.HidePinned();
+            BattleInfoPanelUI.Instance?.ClearUnitExternal(character);
         }
     }
 }

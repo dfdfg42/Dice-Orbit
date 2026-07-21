@@ -11,7 +11,7 @@ namespace DiceOrbit.Core
     /// <summary>
     /// 게임 캐릭터 (플레이어)
     /// </summary>
-    public class Character : Unit<CharacterStats>, UI.IHoverTooltipProvider
+    public class Character : Unit<CharacterStats>, UI.IBattleInfoProvider
     {
         public static readonly Vector3 TILE_OFFSET = new Vector3(0, 1.5f, 1.0f);
 
@@ -135,23 +135,7 @@ namespace DiceOrbit.Core
             }
         }
 
-        public void SyncPassiveLevelsFromRuntime()
-        {
-            if (stat == null) return;
-
-            foreach (var passive in stat.PassiveInstances)
-                passive?.SetLevel(passive.CurrentLevel);
-        }
-
-        public void LevelUpCharacter()
-        {
-            if (stat == null) return;
-
-            stat.LevelUp();
-            CharacterProgressionService.ApplyLevelUp(this);
-
-            Debug.Log($"[Character] {stat.CharacterName} leveled up -> Lv.{stat.Level}");
-        }
+        // (캐릭터/스킬/패시브 레벨 시스템은 철거됨 — 성장은 전부 모디파이어로, 기획 REV05)
 
         protected override void Awake()
         {
@@ -416,6 +400,9 @@ namespace DiceOrbit.Core
         [SerializeField] private float deathDespawnDelay = 0.7f;
         private bool isDying = false;
 
+        /// <summary>전투에서 리타이어한 상태 (사망 → 오브젝트 비활성, 전투 종료 후 부활 대기). 스펙 §4 점감 부활.</summary>
+        public bool IsRetired { get; private set; }
+
         protected override void HandleDeath()
         {
             if (isDying) return;
@@ -424,20 +411,52 @@ namespace DiceOrbit.Core
             base.HandleDeath();
             spriteVisual?.PlayDeath();
 
-            // 전멸/전투 종료 판정 (HP 기준이라 파괴 전에 호출해도 안전)
-            var combatManager = CombatManager.Instance;
-            if (combatManager != null) combatManager.OnCharacterDefeated(this);
+            // 부활 스톡 소진 상태의 사망 = 영구사망 → 즉시 런 종료 (스펙 §4: 한 명이라도 영구사망하면 게임오버)
+            if (stat == null || stat.RevivalStock <= 0)
+            {
+                Debug.Log($"[Character] {stat?.CharacterName} 영구사망 — 런 종료");
+                CombatManager.Instance?.EndCombat(false);
+                return;
+            }
 
-            // 사망 연출 후 파티에서 제거하고 오브젝트 파괴
-            StartCoroutine(DespawnAfterDeath());
+            // 전멸/전투 종료 판정 (HP 기준이라 비활성화 전에 호출해도 안전)
+            CombatManager.Instance?.OnCharacterDefeated(this);
+
+            // 사망 연출 후 리타이어: 파괴하지 않고 필드에서만 이탈 (전투 종료 후 Revive로 복귀)
+            StartCoroutine(RetireAfterDeathAnim());
         }
 
-        private System.Collections.IEnumerator DespawnAfterDeath()
+        private System.Collections.IEnumerator RetireAfterDeathAnim()
         {
             yield return new WaitForSeconds(Mathf.Max(0f, deathDespawnDelay));
 
-            PartyManager.Instance?.RemoveCharacter(this);
-            Destroy(gameObject);
+            if (IsAlive) yield break;   // 연출 중 부활(전투가 그 사이 끝난 경우)했으면 이탈 취소
+
+            IsRetired = true;
+            // 비활성화 = 타일 점유/타게팅/주사위 배분에서 자연 제외 (점유는 활성 캐릭터 순회로 판정됨)
+            gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// 점감 부활: 스톡 3→75%, 2→50%, 1→25% HP로 복귀하며 스톡 1 차감.
+        /// 전투 승리 후 PartyManager.ReviveRetiredMembers가 호출.
+        /// </summary>
+        public void Revive()
+        {
+            if (stat == null || IsAlive || stat.RevivalStock <= 0) return;
+
+            float ratio = stat.RevivalStock * 0.25f;
+            // 유물 보너스 (예: 불사조 깃털 — 부활 HP +N%p)
+            ratio = Mathf.Clamp01(ratio + (Run.ArtifactManager.Instance?.ReviveHpBonus01 ?? 0f));
+            stat.RevivalStock--;
+            stat.CurrentHP = Mathf.Max(1, Mathf.RoundToInt(stat.MaxHP * ratio));
+
+            IsRetired = false;
+            isDying = false;
+            gameObject.SetActive(true);
+            spriteVisual?.PlayIdle();
+
+            Debug.Log($"[Character] {stat.CharacterName} 부활 — HP {stat.CurrentHP}/{stat.MaxHP}, 남은 스톡 {stat.RevivalStock}");
         }
 
         /// <summary>
@@ -487,82 +506,8 @@ namespace DiceOrbit.Core
             }
         }
 
-        public UI.HoverTooltipData GetHoverTooltipData()
-        {
-            return new UI.HoverTooltipData(BuildCharacterTooltipText(), BuildStatusTooltipData(), BuildPassiveTooltipData());
-        }
-
-        private string BuildCharacterTooltipText()
-        {
-            var sb = new StringBuilder();
-
-            // 이름 강조 (크기, 굵기)
-            string characterName = stat != null && !string.IsNullOrWhiteSpace(stat.CharacterName)
-                ? stat.CharacterName
-                : name;
-
-            sb.AppendLine($"<size=115%><b>{characterName}</b></size>");
-            sb.AppendLine(); // 빈 줄로 구분
-
-            // 프로필 설명 추가
-            string profileDescription = stat?.SourcePreset != null
-                ? stat.SourcePreset.Description
-                : string.Empty;
-            if (!string.IsNullOrWhiteSpace(profileDescription))
-            {
-                sb.AppendLine($"<color=#D4D4D4>{profileDescription.Trim()}</color>");
-            }
-
-            return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
-        }
-
-        private List<UI.TooltipKeywordFormatter.KeywordDisplayData> BuildPassiveTooltipData()
-        {
-            var passivesList = new List<UI.TooltipKeywordFormatter.KeywordDisplayData>();
-            if (passives == null || passives.ActivePassives.Count == 0) return passivesList;
-
-            foreach (var passive in passives.ActivePassives)
-            {
-                if (passive == null) continue;
-
-                string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
-                if (passive.CurrentLevel > 0)
-                {
-                    passiveName += $" (Lv.{passive.CurrentLevel})";
-                }
-
-                // 패시브 효과 수치 텍스트 빌드 (다형성 활용)
-                string effText = passive.GetDynamicDescription();
-                // 추가 설명이 있다면 합침
-                string desc = effText;
-                if (!string.IsNullOrWhiteSpace(passive.Description))
-                    desc = $"{effText}\n<color=#B3B3B3>{passive.Description}</color>";
-
-                // 패시브 카드는 약간 붉은빛 주황색 기본 제공 (Inspector에서 색을 지정 안했으므로 코드로 하드코딩)
-                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f);
-
-                passivesList.Add(new UI.TooltipKeywordFormatter.KeywordDisplayData(passiveName, desc.Trim(), passiveColor, null));
-            }
-
-            return passivesList;
-        }
-
-        private List<UI.TooltipKeywordFormatter.StatusDisplayData> BuildStatusTooltipData()
-        {
-            var statuses = new List<UI.TooltipKeywordFormatter.StatusDisplayData>();
-            if (statusEffects == null) return statuses;
-
-            var effects = statusEffects.GetActiveEffects();
-            if (effects == null || effects.Count == 0) return statuses;
-
-            foreach (var effect in effects)
-            {
-                if (effect == null) continue;
-                statuses.Add(UI.TooltipKeywordFormatter.BuildStatusDisplayData(effect.Type.ToString(), effect.Value, effect.Duration));
-            }
-
-            return statuses;
-        }
+        /// <summary>정보 패널용 구조화 데이터 (빌드 로직은 UnitInfoBuilder로 단일화).</summary>
+        public UI.UnitInfoData GetBattleInfo() => UI.UnitInfoBuilder.Build(this);
 
         public override void CollectReactors(List<Pipeline.ICombatReactor> list)
         {

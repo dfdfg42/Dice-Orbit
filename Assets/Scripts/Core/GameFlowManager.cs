@@ -1,18 +1,39 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using DiceOrbit.Core.Run;
 
 namespace DiceOrbit.Core
 {
     /// <summary>
-    /// 게임 플로우 관리자 (싱글톤)
+    /// 게임 플로우 관리자 (싱글톤) — 노드맵 런 구조 (2026-07-07 개편).
+    ///
+    /// 흐름:
+    ///   MainMenu → Recruit(2명 채울 때까지 반복) → RunManager.StartRun → Map
+    ///   Map(노드 선택) → [전투류] Combat → 클리어 → Reward → (노드 1·2였으면 Recruit) → Map
+    ///                  → [휴식] 즉시 회복 → Map 유지
+    ///                  → [상점/이벤트] v1 스텁 → Map 유지
+    ///                  → [보스] Combat → 클리어 → Victory
     /// </summary>
     public class GameFlowManager : MonoBehaviour
     {
         public static GameFlowManager Instance { get; private set; }
-        
+
         [Header("Game State")]
         [SerializeField] private GameState currentState = GameState.MainMenu;
-        
+
+        [Header("파티")]
+        [Tooltip("런 시작 시 뽑는 인원 (스펙 §3: 2명 시작)")]
+        [SerializeField] private int startingPartySize = 2;
+        [Tooltip("자동 모집 포함 최대 인원")]
+        [SerializeField] private int maxPartySize = 4;
+        [Tooltip("이 수만큼의 전투 클리어까지는 보상 후 자동 모집 (스펙 §3: 노드 1·2)")]
+        [SerializeField] private int autoRecruitBattles = 2;
+
+        [Header("휴식")]
+        [Range(0f, 1f)]
+        [SerializeField] private float restHealRatio = 0.3f;
+
         [Header("References")]
         [SerializeField] private UI.MainMenuUI mainMenuUI;
         [SerializeField] private UI.CharacterSelectionUI characterSelectionUI;
@@ -22,17 +43,15 @@ namespace DiceOrbit.Core
         [SerializeField] private string gameplaySceneName = "";
 
         private bool pendingStartGame = false;
+        private bool pendingContinue = false;
         private bool pendingRestart = false;
-        private int lastWaveCleared = 0;
-        // 레벨업 타일을 밟은 캐릭터를 임시 보관합니다.
-        private Character pendingLevelUpCharacter;
-        
+
         // Properties
         public GameState CurrentState => currentState;
-        
+
         // Events
         public event System.Action<GameState> OnStateChanged;
-        
+
         private void Awake()
         {
             if (Instance == null)
@@ -51,26 +70,25 @@ namespace DiceOrbit.Core
                 Destroy(gameObject);
             }
         }
-        
+
         private void Start()
         {
             Debug.Log($"[GameFlow] Start - gameplaySceneName='{gameplaySceneName}', scene={SceneManager.GetActiveScene().name}");
             CacheSceneReferences();
+            UI.RunHudUI.EnsureInstance();
             ChangeState(GameState.MainMenu);
         }
 
         private void OnEnable()
         {
-            Debug.Log("[GameFlow] OnEnable - subscribing to sceneLoaded");
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnDisable()
         {
-            Debug.Log("[GameFlow] OnDisable - unsubscribing from sceneLoaded");
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
-        
+
         /// <summary>
         /// 게임 상태 변경
         /// </summary>
@@ -85,10 +103,6 @@ namespace DiceOrbit.Core
             OnStateChanged?.Invoke(currentState);
         }
 
-
-        /// <summary>
-        /// 상태 진입
-        /// </summary>
         private void EnterState(GameState state)
         {
             switch (state)
@@ -98,12 +112,30 @@ namespace DiceOrbit.Core
                     if (combatUI != null) combatUI.SetActive(false);
                     if (characterSelectionUI != null) characterSelectionUI.Hide();
                     if (rewardUI != null) rewardUI.Hide();
+                    UI.NodeMapUI.Instance?.Hide();
                     break;
-                    
+
+                case GameState.Map:
+                    if (combatUI != null) combatUI.SetActive(false);
+                    UI.NodeMapUI.EnsureInstance();
+                    UI.NodeMapUI.Instance?.Show();
+                    RunSaveService.SaveCurrent();   // 노드 단위 자동 저장 (이어하기)
+                    break;
+
+                case GameState.Shop:
+                    UI.ShopUI.EnsureInstance();
+                    UI.ShopUI.Instance?.Show();
+                    break;
+
+                case GameState.Event:
+                    UI.EventUI.EnsureInstance();
+                    UI.EventUI.Instance?.Show();
+                    break;
+
                 case GameState.Combat:
                     StartCombat();
                     break;
-                    
+
                 case GameState.Recruit:
                     Debug.Log("Enter Recruit State");
                     if (characterSelectionUI != null)
@@ -118,23 +150,18 @@ namespace DiceOrbit.Core
                     if (rewardUI != null) rewardUI.Show();
                     break;
 
-                case GameState.LevelUp:
-                    EnterLevelUpState();
-                    break;
-
                 case GameState.Victory:
+                    RunSaveService.Delete();   // 런 종료 — 이어하기 소멸 (로그라이크)
                     ShowVictory();
                     break;
-                    
+
                 case GameState.GameOver:
+                    RunSaveService.Delete();
                     ShowGameOver();
                     break;
             }
         }
-        
-        /// <summary>
-        /// 상태 종료
-        /// </summary>
+
         private void ExitState(GameState state)
         {
             switch (state)
@@ -142,7 +169,17 @@ namespace DiceOrbit.Core
                 case GameState.MainMenu:
                     if (mainMenuUI != null) mainMenuUI.Hide();
                     break;
-                case GameState.CharacterSelection:
+
+                case GameState.Map:
+                    UI.NodeMapUI.Instance?.Hide();
+                    break;
+
+                case GameState.Shop:
+                    UI.ShopUI.Instance?.Hide();
+                    break;
+
+                case GameState.Event:
+                    UI.EventUI.Instance?.Hide();
                     break;
 
                 case GameState.Recruit:
@@ -158,67 +195,115 @@ namespace DiceOrbit.Core
                     break;
             }
         }
-        
+
         // === State Methods ===
-        
+
         private void StartCombat()
         {
             Debug.Log("Starting combat...");
-            
+
             if (combatUI != null)
             {
                 combatUI.SetActive(true);
             }
 
-            // Ensure first wave spawns if none started yet
-            if (WaveManager.Instance != null && WaveManager.Instance.CurrentWave == 0)
+            var run = RunManager.Instance;
+            if (run != null && run.RunActive && run.CurrentNode != null && run.CurrentNode.IsCombat)
             {
-                Debug.Log("[GameFlow] Starting first wave...");
-                WaveManager.Instance.StartFirstWave();
+                // 노드맵 흐름: 노드가 배정받은 몹 세트로 전투 시작 (번호는 층+1 — 표시/배경용)
+                if (WaveManager.Instance != null && !WaveManager.Instance.IsWaveActive)
+                {
+                    if (run.CurrentNode.Encounter == null)
+                    {
+                        Debug.LogError("[GameFlow] 이 노드에 몹 세트가 없습니다 — ActDefinition의 티어 풀/폴백 DB를 확인하세요.");
+                        ChangeState(GameState.Map);
+                        return;
+                    }
+                    WaveManager.Instance.StartEncounter(run.CurrentNode.Encounter, run.CurrentNode.Floor + 1);
+                }
+                return;
             }
-            else if (WaveManager.Instance != null && !WaveManager.Instance.IsWaveActive)
-            {
-                 // Resume combat or start next? 
-                 // Usually StartNextWave is called by 'OnRewardComplete'
-                 // But if we just entered Combat state without active wave...
-                 // It might be a reload or debug entry.
-                 Debug.Log("[GameFlow] Entered Combat state but no wave active. Ensuring combat starts if monsters exist.");
-                 if (CombatManager.Instance != null && CombatManager.Instance.ActiveMonsters.Count > 0)
-                 {
-                     CombatManager.Instance.StartCombat();
-                 }
-            }
-            else if (WaveManager.Instance == null)
-            {
-                Debug.LogWarning("[GameFlow] WaveManager not found in scene. Monsters will not spawn.");
-                 // Fallback for debug scenes without WaveManager
-                if (CombatManager.Instance != null) CombatManager.Instance.StartCombat();
-            }
-        }
-        
-        // === Public Methods ===
 
-        /// <summary>
-        /// 전투 승리
-        /// </summary>
-        public void OnCombatVictory()
-        {
-            // Not used directly, dependent on WaveManager
+            // 노드맵 없는 디버그 씬 폴백: 이미 배치된 몬스터로 전투만 시작
+            Debug.LogWarning("[GameFlow] RunManager 없이 Combat 진입 — 배치된 몬스터로 전투 시작 (디버그 폴백).");
+            if (CombatManager.Instance != null && CombatManager.Instance.ActiveMonsters.Count > 0)
+            {
+                CombatManager.Instance.StartCombat();
+            }
         }
+
+        // === 노드맵 진입점 (NodeMapUI가 호출) ===
+
+        /// <summary>맵에서 노드 선택. 노드 타입에 따라 상태 전환/즉시 처리.</summary>
+        public void OnNodeSelected(int nodeId)
+        {
+            var run = RunManager.Instance;
+            if (run == null || !run.RunActive) return;
+
+            var node = run.MoveToNode(nodeId);
+            if (node == null) return;
+
+            switch (node.Type)
+            {
+                case MapNodeType.Battle:
+                case MapNodeType.Elite:
+                case MapNodeType.Boss:
+                    ChangeState(GameState.Combat);
+                    break;
+
+                case MapNodeType.Rest:
+                    ApplyRest();
+                    UI.NodeMapUI.Instance?.Rebuild();   // Map 상태 유지, 다음 선택지 갱신
+                    break;
+
+                case MapNodeType.Shop:
+                    ChangeState(GameState.Shop);
+                    break;
+
+                case MapNodeType.Event:
+                    ChangeState(GameState.Event);
+                    break;
+            }
+        }
+
+        /// <summary>휴식 노드: 파티 전원 비율 회복 (+유물 보너스).</summary>
+        private void ApplyRest()
+        {
+            float ratio = restHealRatio + (ArtifactManager.Instance?.RestHealBonus01 ?? 0f);
+            foreach (var character in Object.FindObjectsByType<Character>(FindObjectsSortMode.None))
+            {
+                if (character == null || character.Stats == null || !character.IsAlive) continue;
+                var stats = character.Stats;
+                int heal = Mathf.RoundToInt(stats.MaxHP * ratio);
+                stats.CurrentHP = Mathf.Min(stats.MaxHP, stats.CurrentHP + heal);
+                Debug.Log($"[GameFlow] 휴식 — {stats.CharacterName} +{heal} HP ({stats.CurrentHP}/{stats.MaxHP})");
+            }
+        }
+
+        // === 전투 결과 ===
 
         public void OnWaveCleared(int wave)
         {
             Debug.Log($"[GameFlow] Wave {wave} Cleared.");
-            lastWaveCleared = wave;
 
-            // 마지막 웨이브를 클리어했으면 바로 승리(프로토타입 종료) 화면으로.
-            if (WaveManager.Instance != null && wave >= WaveManager.Instance.MaxWave)
+            // 승리 확정 → 리타이어한 파티원 점감 부활 (스펙 §4: 전투 종료 후 부활)
+            PartyManager.Instance?.ReviveRetiredMembers();
+
+            var run = RunManager.Instance;
+            if (run != null && run.RunActive && run.CurrentNode != null)
             {
-                ChangeState(GameState.Victory);
-                return;
+                run.OnBattleCleared();
+
+                // 보스 클리어 = 막 종료 (v1: 단일 막 → 승리)
+                if (run.CurrentNode.Type == MapNodeType.Boss)
+                {
+                    ChangeState(GameState.Victory);
+                    return;
+                }
+
+                // (엘리트 유물 드랍은 보상 화면의 수령 행으로 — RewardUI.BuildRewardRows)
             }
 
-            // 그 외에는 보상 화면 → (확인) → 영입.
             ChangeState(GameState.Reward);
         }
 
@@ -233,55 +318,82 @@ namespace DiceOrbit.Core
 
         public void OnRewardComplete()
         {
-            // 최종 웨이브 클리어 후 보상이면 Victory.
-            if (WaveManager.Instance != null && lastWaveCleared >= WaveManager.Instance.MaxWave)
+            var run = RunManager.Instance;
+
+            // 노드 1·2 클리어 직후에는 자동 모집 (파티가 최대 인원 미만일 때만)
+            if (run != null && run.RunActive &&
+                run.BattlesCleared <= autoRecruitBattles &&
+                CountParty() < maxPartySize)
             {
-                ChangeState(GameState.Victory);
+                ChangeState(GameState.Recruit);
                 return;
             }
 
-            // Reward 다음 Recruit으로.
-            ChangeState(GameState.Recruit);
+            ChangeState(GameState.Map);
         }
 
         public void OnRecruitComplete()
         {
-            // 게임 시작 직후의 첫 영입(CurrentWave==0)이면 첫 웨이브를 띄우고,
-            // 웨이브 클리어 후 영입이면 다음 웨이브를 띄운다. 둘 다 Combat 상태 진입은 동일.
-            ChangeState(GameState.Combat);
+            var run = RunManager.Instance;
 
-            var wm = WaveManager.Instance;
-            if (wm != null && wm.CurrentWave > 0 && !wm.IsWaveActive)
+            // 런 시작 전(맵 없음): 시작 인원을 채울 때까지 모집 반복 → 다 차면 런 시작
+            if (run == null || !run.RunActive)
             {
-                wm.StartNextWave();
+                if (CountParty() < startingPartySize && characterSelectionUI != null)
+                {
+                    Debug.Log($"[GameFlow] 시작 인원 {CountParty()}/{startingPartySize} — 모집 계속");
+                    characterSelectionUI.Show();   // Recruit 상태 유지한 채 재표시
+                    return;
+                }
+
+                if (run != null && run.StartRun())
+                {
+                    ChangeState(GameState.Map);
+                    return;
+                }
+
+                // RunManager/ActDefinition 없는 씬 폴백: 그냥 전투로
+                Debug.LogWarning("[GameFlow] RunManager 없음 — 전투로 직행 (디버그 폴백).");
+                ChangeState(GameState.Combat);
+                return;
             }
+
+            // 런 중간 모집(노드 1·2 이후) → 맵으로 복귀
+            ChangeState(GameState.Map);
         }
-        
-        /// <summary>
-        /// 전투 패배
-        /// </summary>
+
         public void OnCombatDefeat()
         {
             ChangeState(GameState.GameOver);
         }
 
-        /// <summary>
-        /// 레벨업 트리거 (LevelUpAttribute Tile)
-        /// </summary>
-        public void TriggerLevelUp(Character character)
+        /// <summary>상점에서 [떠나기] — 맵으로 복귀 (ShopUI가 호출).</summary>
+        public void OnShopComplete()
         {
-            if (character == null || character.Stats == null) return;
-            pendingLevelUpCharacter = character;
-            Debug.Log($"[GameFlow] TriggerLevelUp called for {character.Stats.CharacterName} - State Change to LevelUp");
-            ChangeState(GameState.LevelUp);
+            ChangeState(GameState.Map);
         }
 
-        /// <summary>
-        /// 메인메뉴에서 게임 시작
-        /// </summary>
+        /// <summary>이벤트 종료 — 맵으로 복귀 (EventUI가 호출).</summary>
+        public void OnEventComplete()
+        {
+            ChangeState(GameState.Map);
+        }
+
+        private int CountParty()
+        {
+            int count = 0;
+            foreach (var c in Object.FindObjectsByType<Character>(FindObjectsSortMode.None))
+                if (c != null && c.IsAlive) count++;
+            return count;
+        }
+
+        // === 게임 시작/재시작 ===
+
         public void StartGame()
         {
             Debug.Log("[GameFlow] StartGame called");
+            RunSaveService.Delete();   // 새 게임 = 기존 이어하기 폐기
+
             if (!string.IsNullOrWhiteSpace(gameplaySceneName))
             {
                 var activeScene = SceneManager.GetActiveScene();
@@ -297,16 +409,122 @@ namespace DiceOrbit.Core
             StartGameFlow();
         }
 
+        /// <summary>이어하기 (메인메뉴) — 세이브가 있을 때만. 씬 로드 후 복원 흐름 진입.</summary>
+        public void ContinueGame()
+        {
+            if (!RunSaveService.HasSave())
+            {
+                Debug.LogWarning("[GameFlow] 이어할 세이브가 없습니다.");
+                return;
+            }
+
+            Debug.Log("[GameFlow] ContinueGame called");
+            if (!string.IsNullOrWhiteSpace(gameplaySceneName))
+            {
+                var activeScene = SceneManager.GetActiveScene();
+                if (activeScene.name != gameplaySceneName)
+                {
+                    pendingContinue = true;
+                    SceneManager.LoadScene(gameplaySceneName);
+                    return;
+                }
+            }
+
+            ContinueGameFlow();
+        }
+
+        /// <summary>세이브 복원: 맵(시드 재생성) → 골드/유물/포션 → 파티 스폰+스탯/모디파이어 → 맵 화면.</summary>
+        private void ContinueGameFlow()
+        {
+            var data = RunSaveService.Load();
+            var run = RunManager.Instance;
+            if (data == null || run == null || !run.RestoreRun(data.Seed, data.CurrentNodeId, data.VisitedNodeIds, data.BattlesCleared))
+            {
+                Debug.LogWarning("[GameFlow] 세이브 복원 실패 — 새 게임으로 시작합니다.");
+                StartGameFlow();
+                return;
+            }
+
+            var selection = Object.FindFirstObjectByType<UI.CharacterSelectionUI>(FindObjectsInactive.Include);
+
+            // 소멸 캐릭터 (재영입 불가 목록)
+            if (selection != null)
+            {
+                foreach (var name in data.BanishedPresetNames)
+                {
+                    var preset = selection.AllCharacters.FirstOrDefault(p => p != null && p.CharacterName == name);
+                    if (preset != null) run.RegisterBanished(preset);
+                }
+            }
+
+            // 골드
+            var goldManager = GoldManager.EnsureInstance();
+            goldManager.ResetGold();
+            goldManager.AddGold(data.Gold);
+
+            // 유물 / 포션 (이름 매칭 — 구 세이브는 RelicNames 폴백)
+            var artifactManager = ArtifactManager.EnsureInstance();
+            foreach (var name in data.EffectiveArtifactNames)
+                artifactManager.Grant(artifactManager.FindInPool(name));
+
+            var potions = PotionManager.EnsureInstance();
+            foreach (var name in data.PotionNames)
+                potions.TryAdd(potions.FindInPool(name));
+
+            // 파티 스폰 + 스탯/모디파이어 복원
+            var spawner = Object.FindFirstObjectByType<CharacterSpawner>();
+            var allModifiers = Data.Modifiers.ModifierRegistry.CreateAll();
+            for (int i = 0; i < data.Party.Count; i++)
+            {
+                var save = data.Party[i];
+                var preset = selection?.AllCharacters.FirstOrDefault(p => p != null && p.CharacterName == save.PresetName);
+                if (preset == null || spawner == null)
+                {
+                    Debug.LogWarning($"[GameFlow] 파티 복원 실패 — 프리셋 '{save.PresetName}'을 찾을 수 없습니다.");
+                    continue;
+                }
+
+                var character = spawner.Spawn(preset, i, data.Party.Count);
+                if (character == null || character.Stats == null) continue;
+
+                character.Stats.MaxHP = save.MaxHp;
+                character.Stats.CurrentHP = Mathf.Clamp(save.CurrentHp, 1, save.MaxHp);
+                character.Stats.RevivalStock = save.RevivalStock;
+
+                foreach (var modName in save.ModifierNames)
+                {
+                    // 캐릭터마다 독립 인스턴스가 필요하므로 매번 새로 생성해 매칭
+                    var mod = Data.Modifiers.ModifierRegistry.CreateAll()
+                        .FirstOrDefault(m => m != null && m.ModifierName == modName);
+                    if (mod != null) character.Stats.Modifiers?.Add(mod);
+                    else Debug.LogWarning($"[GameFlow] 모디파이어 '{modName}' 복원 실패 (레지스트리에 없음)");
+                }
+            }
+
+            Debug.Log($"[GameFlow] 이어하기 완료 — 파티 {data.Party.Count}명, 골드 {data.Gold}");
+            ChangeState(GameState.Map);
+        }
+
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             Debug.Log($"[GameFlow] Scene loaded: {scene.name}, pendingStartGame={pendingStartGame}");
             CacheSceneReferences();
+            UI.RunHudUI.EnsureInstance();   // 런 상단 HUD (골드/유물/포션) — 상태에 따라 스스로 표시/숨김
             if (pendingStartGame && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
             {
                 pendingStartGame = false;
                 StartGameFlow();
             }
-            
+
+            if (pendingContinue && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
+            {
+                pendingContinue = false;
+                ContinueGameFlow();
+            }
+
+            // 저장된 환경설정(볼륨/전체화면) 적용 — 씬의 AudioManager가 새로 뜬 뒤에
+            UI.SettingsUI.ApplySavedSettings();
+
             // Subscribe to WaveManager events
             if (WaveManager.Instance != null)
             {
@@ -327,7 +545,7 @@ namespace DiceOrbit.Core
 
         private void StartGameFlow()
         {
-            // Start with recruit selection (first character pick)
+            // 시작 모집 (startingPartySize명 채울 때까지 OnRecruitComplete가 반복 표시)
             Debug.Log("[GameFlow] StartGameFlow -> Recruit");
             ChangeState(GameState.Recruit);
         }
@@ -383,31 +601,14 @@ namespace DiceOrbit.Core
             // 공유 정적 상태 초기화
             DiceOrbit.Data.MonsterPresets.Wave2.BearPackTracker.Reset();
 
-            // 플로우 상태 초기화
-            lastWaveCleared = 0;
-            pendingLevelUpCharacter = null;
+            // 런/플로우 상태 초기화
+            RunManager.Instance?.EndRun();
             pendingRestart = true;
 
             UI.GameResultUI.Instance?.Hide();
 
             // 현재 씬 재로드 (씬 종속 매니저/오브젝트는 모두 새로 초기화됨)
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        }
-
-        private void EnterLevelUpState()
-        {
-            if (pendingLevelUpCharacter == null || pendingLevelUpCharacter.Stats == null)
-            {
-                ChangeState(GameState.Combat);
-                return;
-            }
-
-            // 레벨업 타일에서는 항상 액티브 1개 + 패시브 1개를 자동 강화합니다.
-            pendingLevelUpCharacter.LevelUpCharacter();
-
-            // 레벨업 상태는 일시 상태이므로 즉시 전투 흐름으로 복귀합니다.
-            pendingLevelUpCharacter = null;
-            ChangeState(GameState.Combat);
         }
     }
 }

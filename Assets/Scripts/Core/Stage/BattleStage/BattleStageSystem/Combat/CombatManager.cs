@@ -169,15 +169,14 @@ namespace DiceOrbit.Core
             StartCoroutine(AnnounceAndStartPlayerTurn());
         }
 
-        private static readonly Color PlayerTurnColor  = new Color(0.55f, 0.85f, 1f, 1f);
-        private static readonly Color MonsterTurnColor = new Color(1f, 0.45f, 0.45f, 1f);
+        // (턴 안내의 이미지/텍스트·색 결정은 TurnAnnouncementUI 소유로 이동)
 
         private System.Collections.IEnumerator AnnounceAndStartPlayerTurn()
         {
             UI.TurnAnnouncementUI.EnsureInstance();
             var ui = UI.TurnAnnouncementUI.Instance;
             if (ui != null)
-                yield return ui.ShowText("플레이어 턴", PlayerTurnColor);
+                yield return ui.ShowPlayerTurn();
             StartPlayerTurn();
         }
 
@@ -186,7 +185,7 @@ namespace DiceOrbit.Core
             UI.TurnAnnouncementUI.EnsureInstance();
             var ui = UI.TurnAnnouncementUI.Instance;
             if (ui != null)
-                yield return ui.ShowText("몬스터 턴", MonsterTurnColor);
+                yield return ui.ShowMonsterTurn();
             ProgressMonsterTurn();
         }
 

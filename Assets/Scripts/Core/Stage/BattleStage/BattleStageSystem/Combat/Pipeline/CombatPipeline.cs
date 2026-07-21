@@ -95,7 +95,6 @@ namespace DiceOrbit.Core.Pipeline
 
         private void HandlePostAction(CombatContext context)
         {
-            //Debug.LogWarning($"{context.SourceUnit.name}, {context.Target.name}, {context.Type}");
             // 적중했다면 OnHit, 처치했다면 OnKill 등 세분화 가능
             NotifyReactors(context, CombatTrigger.OnHit); // 일단 OnHit으로 통일
             NotifyReactors(context, CombatTrigger.OnPostAction);
@@ -126,15 +125,12 @@ namespace DiceOrbit.Core.Pipeline
                     }
             }
 
-            // D. 유물에서 Reactor 수집
-            if (Core.ArtifactManager.Instance != null)
+            // D. 유물에서 Reactor 수집 (ArtifactManager — 보유 런타임 인스턴스 자체가 ICombatReactor)
+            if (Core.Run.ArtifactManager.Instance != null)
             {
-                foreach (var artifact in Core.ArtifactManager.Instance.Artifacts)
+                foreach (var artifact in Core.Run.ArtifactManager.Instance.Artifacts)
                 {
-                    if (artifact != null && artifact is ICombatReactor artifactReactor)
-                    {
-                        reactors.Add(artifactReactor);
-                    }
+                    reactors.Add(artifact);
                 }
             }
 
@@ -174,14 +170,14 @@ namespace DiceOrbit.Core.Pipeline
             {
                 case AttackContext atk:
                     if (atk.Target.TakeDamage(Mathf.RoundToInt(atk.OutputValue)) != 0) atk.IsEffected = true;
-                    if (atk.IsEffected && !atk.HasTag("CustomVfx"))
-                        VfxManager.PlayDefaultAttackHit(atk.Target);
+                    // VFX 재생 판단은 여기 한 곳 — 컨텍스트의 프로필에 hit이 있으면 그걸, 없으면 전역 기본
+                    if (atk.IsEffected)
+                        VfxManager.PlayAttackHit(atk.VfxProfile, atk.Target);
                     break;
                 case HealContext heal:
                     // Unit.Heal을 사용하는 것이 일관성에 좋음 (오버라이드 가능성 고려)
                     heal.Target.Heal(Mathf.RoundToInt(heal.OutputValue));
-                    if (!heal.HasTag("CustomVfx"))
-                        VfxManager.PlayDefaultHeal(heal.Target);
+                    VfxManager.PlayHealEffect(heal.VfxProfile, heal.Target);
                     break;
                 // MoveContext / TurnEventContext: 순수 방송 — Apply 없음 (의도적 no-op)
             }

@@ -8,9 +8,7 @@ namespace DiceOrbit.Data.Passives
         string PassiveName { get; }
         string Description { get; }
         bool IsStackable { get; }
-        int CurrentLevel { get; }
         void Initialize(Unit owner);
-        void SetLevel(int level);
         IPassive Clone();
         bool AllowSamePassive(IPassive incoming);
         void OnOwnerSelected(Character c);

@@ -12,7 +12,7 @@ namespace DiceOrbit.Core
     /// 몬스터 (중앙 구역)
     /// AI + Skills + Managers 통합 구현
     /// </summary>
-    public class Monster : Unit<MonsterStats>, UI.IHoverTooltipProvider
+    public class Monster : Unit<MonsterStats>, UI.IBattleInfoProvider
     {
         [Header("Animation")]
         [SerializeField] private Animator animator;
@@ -38,6 +38,7 @@ namespace DiceOrbit.Core
         private MonsterSkill nextSkill;
         private AttackIntent nextIntent; // 다음 턴에 사용할 AttackIntent
         public AttackIntent CurrentIntent => nextIntent; // AttackIntent 타입으로 반환
+        public MonsterSkill NextSkill => nextSkill;      // 정보 패널 "다음 행동" 표시용
 
         // 사망 이벤트 (WaveManager 등에서 구독)
         public event System.Action<Monster> OnDeath;
@@ -308,125 +309,8 @@ namespace DiceOrbit.Core
             StartCoroutine(CoDestroyAfterDeath());
         }
 
-        private string BuildMonsterTooltipText()
-        {
-            var sb = new StringBuilder();
-            
-            // 이름 강조 (크기, 굵기)
-            sb.AppendLine($"<size=115%><b>{Stats.MonsterName}</b></size>");
-            sb.AppendLine(); // 빈 줄
-
-            if (CurrentIntent != null)
-            {
-                var targets = CurrentIntent.Targets;
-                if (targets != null && targets.Count > 0)
-                {
-                    string targetNames = string.Join(", ", targets.Select(t => t.Stats is Data.CharacterStats cs ? cs.CharacterName : (t.Stats is Data.MonsterStats ms ? ms.MonsterName : "Unknown")));
-                    sb.AppendLine($"<color=#FF7575><b>대상:</b> {targetNames}</color>");
-                }
-
-                // 스킬 설명 (nextSkill에서 가져오기)
-                if (nextSkill != null && nextSkill.skillData != null)
-                {
-                    if (!string.IsNullOrWhiteSpace(nextSkill.skillData.Description))
-                    {
-                        sb.AppendLine($"<color=#FFAA75><b>의도:</b> {nextSkill.skillData.Description.Trim()}</color>");
-                    }
-
-                    // 예상 피해 (패시브/모디파이어가 반영된 실제 피해를 시뮬레이션으로 계산)
-                    int previewBase = nextSkill.skillData.GetPreviewDamage();
-                    if (previewBase > 0)
-                    {
-                        int shown = previewBase;
-                        var repTarget = ResolvePreviewTarget();
-                        if (repTarget != null && CombatPipeline.Instance != null)
-                        {
-                            var simCtx = new AttackContext(this, repTarget,
-                                nextSkill.skillData.SkillName, previewBase);
-                            shown = CombatPipeline.Instance.SimulateCalculation(simCtx);
-                        }
-                        sb.AppendLine($"<color=#FF5555><b>예상 피해:</b> {shown}</color>");
-                    }
-                }
-            }
-
-            return UI.TooltipKeywordFormatter.AppendKeywordSection(sb.ToString().TrimEnd());
-        }
-
-        /// <summary>의도 예상 피해 시뮬레이션에 쓸 대표 대상. 의도 대상이 있으면 그 대상, 없으면 생존 파티원.</summary>
-        private Unit ResolvePreviewTarget()
-        {
-            if (CurrentIntent != null)
-            {
-                if (CurrentIntent.Targets != null)
-                {
-                    var t = CurrentIntent.Targets.FirstOrDefault(x => x != null && x.IsAlive);
-                    if (t != null) return t;
-                }
-
-                if (CurrentIntent.TargetTiles != null)
-                {
-                    foreach (var tile in CurrentIntent.TargetTiles)
-                    {
-                        var chars = tile != null ? tile.GetCharactersOnTile() : null;
-                        var c = chars?.FirstOrDefault(x => x != null && x.IsAlive);
-                        if (c != null) return c;
-                    }
-                }
-            }
-
-            var alive = PartyManager.Instance?.GetAliveCharacters();
-            return (alive != null && alive.Count > 0) ? alive[0] : null;
-        }
-
-        public UI.HoverTooltipData GetHoverTooltipData()
-        {
-            return new UI.HoverTooltipData(BuildMonsterTooltipText(), BuildStatusTooltipData(), BuildPassiveTooltipData());
-        }
-
-        private List<UI.TooltipKeywordFormatter.KeywordDisplayData> BuildPassiveTooltipData()
-        {
-            var passivesList = new List<UI.TooltipKeywordFormatter.KeywordDisplayData>();
-            if (passives == null || passives.ActivePassives.Count == 0) return passivesList;
-
-            foreach (var passive in passives.ActivePassives)
-            {
-                if (passive == null) continue;
-                
-                string passiveName = string.IsNullOrWhiteSpace(passive.PassiveName) ? "Unknown Passive" : passive.PassiveName;
-                if (passive.CurrentLevel > 0)
-                {
-                    passiveName += $" (Lv.{passive.CurrentLevel})";
-                }
-
-                string desc = "";
-                if (!string.IsNullOrWhiteSpace(passive.Description))
-                    desc = $"<color=#B3B3B3>{passive.Description.Trim()}</color>";
-
-                Color passiveColor = new Color(1f, 0.6f, 0.4f, 1f); // 붉은빛 주황색 통일
-                
-                passivesList.Add(new UI.TooltipKeywordFormatter.KeywordDisplayData(passiveName, desc, passiveColor, null));
-            }
-
-            return passivesList;
-        }
-
-        private List<UI.TooltipKeywordFormatter.StatusDisplayData> BuildStatusTooltipData()
-        {
-            var statuses = new List<UI.TooltipKeywordFormatter.StatusDisplayData>();
-            if (statusEffects == null) return statuses;
-
-            var effects = statusEffects.GetActiveEffects();
-            if (effects == null || effects.Count == 0) return statuses;
-
-            foreach (var effect in effects)
-            {
-                if (effect == null) continue;
-                statuses.Add(UI.TooltipKeywordFormatter.BuildStatusDisplayData(effect.Type.ToString(), effect.Value, effect.Duration));
-            }
-
-            return statuses;
-        }
+        /// <summary>정보 패널용 구조화 데이터 (빌드 로직은 UnitInfoBuilder로 단일화).</summary>
+        public UI.UnitInfoData GetBattleInfo() => UI.UnitInfoBuilder.Build(this);
 
         private void EnsureHoverCollider()
         {

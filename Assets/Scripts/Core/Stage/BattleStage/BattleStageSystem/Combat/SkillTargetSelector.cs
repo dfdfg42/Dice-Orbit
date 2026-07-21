@@ -13,11 +13,14 @@ namespace DiceOrbit.Core
         public static SkillTargetSelector Instance { get; private set; }
 
         [Header("Visual")]
-        [SerializeField] private LineRenderer targetLine;
         [SerializeField] private Color validTargetColor   = Color.green;
         [SerializeField] private Color invalidTargetColor = Color.red;
         [SerializeField] private Color confirmedLineColor = new Color(0.3f, 0.8f, 1f, 1f);
         [SerializeField] private float lineWidth = 0.1f;
+
+        // 조준선: 포물선 + 흐르는 점선 + 화살촉 (몬스터 인텐트 라인과 같은 형태 언어 — DashedArcLine)
+        private LineRenderer _cursorArc;
+        private LineRenderer _cursorArrow;
 
         // 선택 상태
         private bool            isSelectingTarget;
@@ -29,7 +32,7 @@ namespace DiceOrbit.Core
 
         // 멀티 선택 누적
         private int                      _requiredCount;
-        private readonly List<LineRenderer> _confirmedLines     = new();
+        private readonly List<GameObject>   _confirmedLines     = new();
         private readonly List<Vector3>      _confirmedPositions = new();
         private readonly List<Unit>         _pendingUnits       = new();
         private readonly List<TileData>     _pendingTiles       = new();
@@ -52,9 +55,8 @@ namespace DiceOrbit.Core
             mainCamera    = Camera.main;
             _orbitManager = FindFirstObjectByType<OrbitManager>();
 
-            if (targetLine == null) targetLine = gameObject.AddComponent<LineRenderer>();
-            ConfigureLine(targetLine);
-            targetLine.enabled = false;
+            _cursorArc   = DashedArcLine.CreateArc(transform, lineWidth);
+            _cursorArrow = DashedArcLine.CreateArrow(transform, lineWidth);
         }
 
         // ── 매 프레임 ─────────────────────────────────────────────────────
@@ -89,8 +91,7 @@ namespace DiceOrbit.Core
             _pendingUnits.Clear();
             _pendingTiles.Clear();
 
-            if (targetLine == null) targetLine = gameObject.AddComponent<LineRenderer>();
-            targetLine.enabled = true;
+            DashedArcLine.SetVisible(_cursorArc, _cursorArrow, true);
 
             sourceCharacter?.OnSkillTargetingStarted();
 
@@ -190,7 +191,7 @@ namespace DiceOrbit.Core
         {
             if (_confirmedLines.Count > 0)
             {
-                Destroy(_confirmedLines[_confirmedLines.Count - 1].gameObject);
+                Destroy(_confirmedLines[_confirmedLines.Count - 1]);
                 _confirmedLines.RemoveAt(_confirmedLines.Count - 1);
             }
 
@@ -218,14 +219,13 @@ namespace DiceOrbit.Core
 
         private void UpdateCursorLine()
         {
-            if (sourceCharacter == null || targetLine == null) return;
+            if (sourceCharacter == null || _cursorArc == null) return;
 
             var mouse = Mouse.current;
             if (mouse == null) return;
 
             // 시작점 = 항상 캐릭터 위치 (방사형)
-            Vector3 startPos = _confirmedPositions[0];
-            targetLine.SetPosition(0, startPos);
+            Vector3 startPos = _confirmedPositions[0] + Vector3.up * 0.3f;
 
             Ray ray = mainCamera.ScreenPointToRay(mouse.position.ReadValue());
             bool    validTarget = false;
@@ -234,7 +234,7 @@ namespace DiceOrbit.Core
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 validTarget = IsValidTarget(hit.collider.gameObject);
-                endPos      = validTarget ? hit.collider.GetComponentInParent<Transform>().position : hit.point;
+                endPos      = validTarget ? hit.collider.GetComponentInParent<Transform>().position + Vector3.up * 0.3f : hit.point;
             }
             else
             {
@@ -242,10 +242,8 @@ namespace DiceOrbit.Core
                 if (plane.Raycast(ray, out float dist)) endPos = ray.GetPoint(dist);
             }
 
-            targetLine.SetPosition(1, endPos);
             var color = validTarget ? validTargetColor : invalidTargetColor;
-            targetLine.startColor = color;
-            targetLine.endColor   = color;
+            DashedArcLine.SetArcWithArrow(_cursorArc, _cursorArrow, startPos, endPos, color);
         }
 
         // ── 데미지 미리보기 ──────────────────────────────────────────────
@@ -383,10 +381,10 @@ namespace DiceOrbit.Core
             sourceCharacter?.OnSkillTargetingEnded();
             isSelectingTarget = false;
 
-            if (targetLine != null) targetLine.enabled = false;
+            DashedArcLine.SetVisible(_cursorArc, _cursorArrow, false);
 
-            foreach (var lr in _confirmedLines)
-                if (lr != null) Destroy(lr.gameObject);
+            foreach (var go in _confirmedLines)
+                if (go != null) Destroy(go);
             _confirmedLines.Clear();
             _confirmedPositions.Clear();
             _pendingUnits.Clear();
@@ -404,26 +402,19 @@ namespace DiceOrbit.Core
 
         // ── 라인 헬퍼 ─────────────────────────────────────────────────────
 
-        private LineRenderer CreateConfirmedLine(Vector3 from, Vector3 to)
+        /// <summary>확정된 대상으로의 고정 아크 (커서 조준선과 같은 형태, 확정색).</summary>
+        private void CreateConfirmedLine(Vector3 from, Vector3 to)
         {
-            var go = new GameObject("_ConfirmedLine");
-            var lr = go.AddComponent<LineRenderer>();
-            ConfigureLine(lr);
-            lr.startColor    = confirmedLineColor;
-            lr.endColor      = confirmedLineColor;
-            lr.SetPosition(0, from);
-            lr.SetPosition(1, to);
-            _confirmedLines.Add(lr);
-            return lr;
-        }
+            var root = new GameObject("_ConfirmedLine");
+            root.transform.SetParent(transform, false);
 
-        private void ConfigureLine(LineRenderer lr)
-        {
-            lr.material      = new Material(Shader.Find("Sprites/Default"));
-            lr.textureMode   = LineTextureMode.Tile;
-            lr.startWidth    = lineWidth;
-            lr.endWidth      = lineWidth;
-            lr.positionCount = 2;
+            var arc   = DashedArcLine.CreateArc(root.transform, lineWidth);
+            var arrow = DashedArcLine.CreateArrow(root.transform, lineWidth);
+            DashedArcLine.SetArcWithArrow(arc, arrow,
+                from + Vector3.up * 0.3f, to + Vector3.up * 0.3f, confirmedLineColor);
+            DashedArcLine.SetVisible(arc, arrow, true);
+
+            _confirmedLines.Add(root);
         }
     }
 }

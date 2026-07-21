@@ -14,24 +14,28 @@ namespace DiceOrbit.UI
 
         [Header("Settings")]
         [SerializeField] private Color tileAttackColor = new Color(1f, 0f, 0f, 0.5f); // 반투명 빨강
-        [SerializeField] private Color targetLineColor = Color.red;
+        [SerializeField] private Color targetLineColor = Color.red;                  // 정체성 색 폴백
         [SerializeField] private float lineWidth = 0.1f;
         [SerializeField] private int parabolaSegments = 24;
         [SerializeField] private float parabolaHeightMultiplier = 0.2f;
         [SerializeField] private float minParabolaHeight = 0.4f;
         [SerializeField] private float maxParabolaHeight = 2.0f;
         [SerializeField] private float dashWorldLength = 0.45f;
-        [SerializeField] private float dashScrollSpeed = 1.75f;
         [SerializeField] private float fadeEdgeRatio = 0.14f;
-        [SerializeField] private float dashPixelShiftInterval = 0.05f;
 
         // 다중 몬스터 Intent 관리
-        private Dictionary<Core.Monster, Data.AttackIntent> registeredIntents 
+        private Dictionary<Core.Monster, Data.AttackIntent> registeredIntents
             = new Dictionary<Core.Monster, Data.AttackIntent>();
 
-        // 각 몬스터별 LineRenderer (타겟팅 공격용)
-        private Dictionary<Core.Monster, LineRenderer> monsterLineRenderers 
-            = new Dictionary<Core.Monster, LineRenderer>();
+        // 몬스터별 조준 아크 (대상마다 1개 — DashedArcLine 공용 헬퍼, 아크+화살촉)
+        private struct ArcPair
+        {
+            public GameObject Root;
+            public LineRenderer Arc;
+            public LineRenderer Arrow;
+        }
+        private readonly Dictionary<Core.Monster, List<ArcPair>> monsterLines
+            = new Dictionary<Core.Monster, List<ArcPair>>();
 
         // 몬스터별 타일 추적 (타일 하이라이트 관리)
         private Dictionary<Core.Monster, List<Data.TileData>> monsterTiles 
@@ -41,9 +45,6 @@ namespace DiceOrbit.UI
         private List<Data.TileData> highlightedTiles;
 
         private bool isShowing = false; // Show 상태 플래그
-        private Texture2D dashedLineTexture;
-        private Color[] dashPixels;
-        private float dashPixelTimer = 0f;
 
         private void Awake()
         {
@@ -56,7 +57,6 @@ namespace DiceOrbit.UI
             }
 
             Instance = this;
-            CreateDashTexture();
 
             // 임시로 1초마다 RefreshAttackIntent 호출
             InvokeRepeating(nameof(RefreshAttackIntent), 1f, 1f);
@@ -69,16 +69,19 @@ namespace DiceOrbit.UI
                 Instance = null;
             }
 
-            // 생성된 LineRenderer들 정리
-            foreach (var line in monsterLineRenderers.Values)
-            {
-                if (line != null && line.gameObject != null)
-                {
-                    Destroy(line.gameObject);
-                }
-            }
-            monsterLineRenderers.Clear();
+            // 생성된 조준 아크 정리
+            foreach (var pairs in monsterLines.Values)
+                DestroyPairs(pairs);
+            monsterLines.Clear();
             monsterTiles.Clear();
+        }
+
+        private static void DestroyPairs(List<ArcPair> pairs)
+        {
+            if (pairs == null) return;
+            foreach (var p in pairs)
+                if (p.Root != null) Destroy(p.Root);
+            pairs.Clear();
         }
 
         /*
@@ -133,14 +136,11 @@ namespace DiceOrbit.UI
 
             registeredIntents.Remove(monster);
 
-            // 해당 몬스터의 LineRenderer 제거
-            if (monsterLineRenderers.TryGetValue(monster, out var line))
+            // 해당 몬스터의 조준 아크 제거
+            if (monsterLines.TryGetValue(monster, out var pairs))
             {
-                if (line != null && line.gameObject != null)
-                {
-                    Destroy(line.gameObject);
-                }
-                monsterLineRenderers.Remove(monster);
+                DestroyPairs(pairs);
+                monsterLines.Remove(monster);
             }
 
             // 플로팅 UI 제거는 이 몬스터의 것만 따로 완벽하게 제거
@@ -169,13 +169,12 @@ namespace DiceOrbit.UI
 
         private void Update()
         {
-            // 모든 타겟팅 공격 라인 실시간 업데이트 (항상 실행)
+            // 모든 타겟팅 공격 라인 실시간 업데이트 (항상 실행 — 점선 흐름은 DashedArcLine 드라이버가 담당)
             UpdateAllTargetLines();
-            AnimateDashLines();
         }
 
         /// <summary>
-        /// 모든 타겟 라인 실시간 업데이트
+        /// 모든 타겟 라인 실시간 업데이트 (대상마다 아크 1개, 몬스터 정체성 색)
         /// </summary>
         private void UpdateAllTargetLines()
         {
@@ -185,19 +184,34 @@ namespace DiceOrbit.UI
                 var intent = kvp.Value;
 
                 if (monster == null || intent == null) continue;
+                if (!monsterLines.TryGetValue(monster, out var pairs) || pairs == null || pairs.Count == 0) continue;
 
-                // LineRenderer가 있고 활성화되어 있는 경우만 업데이트
-                if (monsterLineRenderers.TryGetValue(monster, out var line) && line != null && line.enabled)
+                var targets = intent.Targets;
+                if (targets == null) continue;
+
+                Color color = ResolveMonsterLineColor(monster);
+                Vector3 startPos = monster.transform.position + Vector3.up * 0.5f;
+
+                for (int i = 0; i < pairs.Count; i++)
                 {
-                    var targets = intent.Targets;
-                    if (targets != null && targets.Count > 0 && targets[0] != null)
-                    {
-                        Vector3 startPos = monster.transform.position + Vector3.up * 0.5f;
-                        Vector3 endPos = targets[0].transform.position + Vector3.up * 0.5f;
-                        UpdateParabolaLine(line, startPos, endPos);
-                    }
+                    var pair = pairs[i];
+                    if (pair.Arc == null || !pair.Arc.enabled) continue;
+
+                    if (i >= targets.Count || targets[i] == null) continue;
+
+                    Vector3 endPos = targets[i].transform.position + Vector3.up * 0.5f;
+                    Visuals.DashedArcLine.SetArcWithArrow(pair.Arc, pair.Arrow, startPos, endPos, color,
+                        parabolaSegments, parabolaHeightMultiplier, minParabolaHeight, maxParabolaHeight,
+                        dashWorldLength, fadeEdgeRatio);
                 }
             }
+        }
+
+        /// <summary>조준선 색 = 몬스터 정체성 색 (타일 오버레이 밴드와 일치 → 누가 누굴 노리는지 색으로 매칭).</summary>
+        private Color ResolveMonsterLineColor(Core.Monster monster)
+        {
+            var identity = Visuals.MonsterIdentityManager.Instance;
+            return identity != null ? identity.GetColor(monster) : targetLineColor;
         }
 
         /// <summary>
@@ -235,16 +249,8 @@ namespace DiceOrbit.UI
             {
                 var targets = intent.Targets;
                 if (targets == null || targets.Count == 0) return;
-                if (targets.Count == 1)
-                {
-                    ShowTargetedAttackForMonster(monster, targets[0]);
-                }
-                else
-                {
-                    // 다중 타겟인 경우, 첫 번째 타겟만 시각화 (추후 개선 가능)
-                    ShowTargetedAttackForMonster(monster, targets[0]);
-                }
-            }         
+                ShowTargetedAttackForMonster(monster, targets);   // 다중 타겟 전부 아크 표시
+            }
             else if (intent.TargetType == Data.TargetType.Self || intent.TargetType == Data.TargetType.None)
             {
                 // 타겟이 존재하지 않는 버프/대기/특수 효과이므로 
@@ -308,178 +314,42 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
-        /// 타겟팅 공격 시각화 (몬스터별 LineRenderer)
+        /// 타겟팅 공격 시각화 — 대상마다 조준 아크 1개 (몬스터 정체성 색 + 화살촉).
         /// </summary>
-        private void ShowTargetedAttackForMonster(Core.Monster monster, Core.Unit target)
+        private void ShowTargetedAttackForMonster(Core.Monster monster, IReadOnlyList<Core.Unit> targets)
         {
-            if (monster == null || target == null) return;
+            if (monster == null || targets == null || targets.Count == 0) return;
 
-            // 몬스터별 LineRenderer 생성 또는 재사용
-            if (!monsterLineRenderers.TryGetValue(monster, out var line) || line == null)
+            if (!monsterLines.TryGetValue(monster, out var pairs) || pairs == null)
             {
-                line = CreateLineRenderer();
-                monsterLineRenderers[monster] = line;
+                pairs = new List<ArcPair>();
+                monsterLines[monster] = pairs;
             }
+            DestroyPairs(pairs);   // 대상 수가 바뀔 수 있으므로 재생성
 
-            // LineRenderer 설정
-            line.enabled = true;
+            Color color = ResolveMonsterLineColor(monster);
             Vector3 startPos = monster.transform.position + Vector3.up * 0.5f;
-            Vector3 endPos = target.transform.position + Vector3.up * 0.5f;
-            UpdateParabolaLine(line, startPos, endPos);
-        }
 
-        /// <summary>
-        /// LineRenderer 생성 (재사용 가능한 설정)
-        /// </summary>
-        private LineRenderer CreateLineRenderer()
-        {
-            var go = new GameObject("AttackLine");
-            go.transform.SetParent(transform);
-
-            var line = go.AddComponent<LineRenderer>();
-            line.startWidth = lineWidth;
-            line.endWidth = lineWidth;
-            line.textureMode = LineTextureMode.Tile;
-            line.alignment = LineAlignment.View;
-            line.numCapVertices = 0;
-            line.numCornerVertices = 2;
-
-            var shader = Shader.Find("Sprites/Default");
-            if (shader == null)
+            foreach (var target in targets)
             {
-                shader = Shader.Find("Unlit/Transparent");
-            }
+                if (target == null) continue;
 
-            line.material = new Material(shader);
-            line.material.color = Color.white;
-            if (dashedLineTexture != null)
-            {
-                line.material.mainTexture = dashedLineTexture;
-            }
+                var root = new GameObject("_AttackArc");
+                root.transform.SetParent(transform, false);
+                var arc   = Visuals.DashedArcLine.CreateArc(root.transform, lineWidth);
+                var arrow = Visuals.DashedArcLine.CreateArrow(root.transform, lineWidth);
 
-            line.colorGradient = CreateFadedGradient();
-            line.sortingOrder = 100;
-            line.enabled = false;
+                Vector3 endPos = target.transform.position + Vector3.up * 0.5f;
+                Visuals.DashedArcLine.SetArcWithArrow(arc, arrow, startPos, endPos, color,
+                    parabolaSegments, parabolaHeightMultiplier, minParabolaHeight, maxParabolaHeight,
+                    dashWorldLength, fadeEdgeRatio);
+                Visuals.DashedArcLine.SetVisible(arc, arrow, true);
 
-            return line;
-        }
-
-        private void UpdateParabolaLine(LineRenderer line, Vector3 startPos, Vector3 endPos)
-        {
-            if (line == null) return;
-            line.colorGradient = CreateFadedGradient();
-
-            int segments = Mathf.Max(4, parabolaSegments);
-            line.positionCount = segments + 1;
-
-            float distance = Vector3.Distance(startPos, endPos);
-            float height = Mathf.Clamp(distance * parabolaHeightMultiplier, minParabolaHeight, maxParabolaHeight);
-
-            for (int i = 0; i <= segments; i++)
-            {
-                float t = i / (float)segments;
-                Vector3 p = Vector3.Lerp(startPos, endPos, t);
-                float arc = 4f * t * (1f - t); // 0->1->0 parabola profile
-                p.y += arc * height;
-                line.SetPosition(i, p);
-            }
-
-            if (line.material != null && line.material.mainTexture != null)
-            {
-                float repeatX = Mathf.Max(1f, distance / Mathf.Max(0.05f, dashWorldLength));
-                line.material.mainTextureScale = new Vector2(repeatX, 1f);
+                pairs.Add(new ArcPair { Root = root, Arc = arc, Arrow = arrow });
             }
         }
 
-        private void AnimateDashLines()
-        {
-            float scroll = -(Time.time * dashScrollSpeed);
-
-            foreach (var line in monsterLineRenderers.Values)
-            {
-                if (line == null || !line.enabled) continue;
-                if (line.material == null || line.material.mainTexture == null) continue;
-
-                line.material.mainTextureOffset = new Vector2(scroll, 0f);
-                if (line.material.HasProperty("_MainTex"))
-                {
-                    line.material.SetTextureOffset("_MainTex", new Vector2(scroll, 0f));
-                }
-                if (line.material.HasProperty("_BaseMap"))
-                {
-                    line.material.SetTextureOffset("_BaseMap", new Vector2(scroll, 0f));
-                }
-            }
-
-            // Shader가 UV 오프셋을 무시하는 경우에도 점선이 움직이도록 텍스처 자체를 순환시킴.
-            AnimateDashTexturePixels();
-        }
-
-        private Gradient CreateFadedGradient()
-        {
-            float edge = Mathf.Clamp01(fadeEdgeRatio);
-
-            var gradient = new Gradient();
-            gradient.SetKeys(
-                new[]
-                {
-                    new GradientColorKey(targetLineColor, 0f),
-                    new GradientColorKey(targetLineColor, 1f)
-                },
-                new[]
-                {
-                    new GradientAlphaKey(0f, 0f),
-                    new GradientAlphaKey(1f, edge),
-                    new GradientAlphaKey(1f, 1f - edge),
-                    new GradientAlphaKey(0f, 1f)
-                }
-            );
-
-            return gradient;
-        }
-
-        private void CreateDashTexture()
-        {
-            if (dashedLineTexture != null) return;
-
-            // 8-on / 8-off pattern (repeat in U)
-            const int width = 16;
-            dashedLineTexture = new Texture2D(width, 1, TextureFormat.RGBA32, false)
-            {
-                wrapMode = TextureWrapMode.Repeat,
-                filterMode = FilterMode.Point,
-                name = "AttackLineDashTex"
-            };
-            dashPixels = new Color[width];
-
-            for (int x = 0; x < width; x++)
-            {
-                bool on = x < width / 2;
-                dashPixels[x] = on ? Color.white : new Color(1f, 1f, 1f, 0f);
-            }
-            dashedLineTexture.SetPixels(dashPixels);
-            dashedLineTexture.Apply(false, false);
-        }
-
-        private void AnimateDashTexturePixels()
-        {
-            if (dashedLineTexture == null || dashPixels == null || dashPixels.Length <= 1) return;
-            if (dashPixelShiftInterval <= 0f) return;
-
-            dashPixelTimer += Time.deltaTime;
-            if (dashPixelTimer < dashPixelShiftInterval) return;
-            dashPixelTimer = 0f;
-
-            Color last = dashPixels[dashPixels.Length - 1];
-            for (int i = dashPixels.Length - 1; i > 0; i--)
-            {
-                dashPixels[i] = dashPixels[i - 1];
-            }
-            dashPixels[0] = last;
-
-            dashedLineTexture.SetPixels(dashPixels);
-            dashedLineTexture.Apply(false, false);
-        }
+        // (점선 텍스처/애니메이션/포물선/그라디언트는 DashedArcLine 공용 헬퍼로 이전 — 2026-07)
 
         /// <summary>
         /// highlightedTiles 재계산 (monsterTiles 기반)
@@ -560,14 +430,10 @@ namespace DiceOrbit.UI
             }
             activeFloatingUIs.Clear();
 
-            // 모든 LineRenderer 비활성화
-            foreach (var line in monsterLineRenderers.Values)
-            {
-                if (line != null)
-                {
-                    line.enabled = false;
-                }
-            }
+            // 모든 조준 아크 제거
+            foreach (var pairs in monsterLines.Values)
+                DestroyPairs(pairs);
+            monsterLines.Clear();
 
             // 몬스터별 타일 추적 초기화
             monsterTiles.Clear();

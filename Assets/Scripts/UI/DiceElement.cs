@@ -81,6 +81,17 @@ namespace DiceOrbit.UI
             }
         }
 
+        // 캐릭터 선택 중, 이 값으로는 그 캐릭터의 어떤 스킬 조건도 못 맞출 때 살짝 붉게
+        private bool skillUnusableHint;
+
+        /// <summary>스킬 사용 불가 힌트 표시 토글 (CharacterActionUI 열림/닫힘에 맞춰 DiceUI가 호출).</summary>
+        public void SetSkillUnusableHint(bool unusable)
+        {
+            if (skillUnusableHint == unusable) return;
+            skillUnusableHint = unusable;
+            UpdateVisual();
+        }
+
         private Color ResolveCurrentColor()
         {
             if (diceData == null) return normalColor;
@@ -88,7 +99,9 @@ namespace DiceOrbit.UI
             switch (diceData.State)
             {
                 case DiceState.Available:
-                    return isSelected ? selectedColor : normalColor;
+                    if (isSelected) return selectedColor;
+                    // 사용 불가 힌트: 평상색에서 붉은 쪽으로 약간만 (선택/예약/사용 상태색이 항상 우선)
+                    return skillUnusableHint ? Color.Lerp(normalColor, new Color(1f, 0.25f, 0.25f, normalColor.a), 0.4f) : normalColor;
                 case DiceState.Reserved:
                     return reservedColor;
                 case DiceState.Used:
