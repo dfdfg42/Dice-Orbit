@@ -52,17 +52,6 @@ namespace DiceOrbit.Core
 
             SpawnMonsters(encounter);
 
-            // 유물: 전투 시작 시 파티 회복 (예: 생명의 부적)
-            int startHeal = Run.ArtifactManager.Instance?.BattleStartHeal ?? 0;
-            if (startHeal > 0 && PartyManager.Instance != null)
-            {
-                foreach (var c in PartyManager.Instance.Party)
-                {
-                    if (c == null || !c.IsAlive || c.Stats == null) continue;
-                    c.Stats.CurrentHP = Mathf.Min(c.Stats.MaxHP, c.Stats.CurrentHP + startHeal);
-                }
-            }
-
             OnWaveStart?.Invoke(waveNumber);
         }
 

@@ -18,11 +18,11 @@ namespace DiceOrbit.Core.Run
         public virtual int Priority => 11;   // 패시브(50~100) 뒤, 모디파이어(10~30) 대역
 
         // ── 규칙형 질의 효과 (기본 0 — 필요한 것만 override) ──
+        // 전투 "안" 행위(회복·피해)는 질의가 아니라 파이프라인 훅으로 (예: LifeAmulet의 CombatStart 반응)
         public virtual float ShopDiscountPercent  => 0f;   // 상점 가격 -N%
         public virtual float RestHealBonusPercent => 0f;   // 휴식 회복 +N%p
         public virtual int   BattleGoldBonus      => 0;    // 전투 보상 골드 +N
         public virtual float ReviveHpBonusPercent => 0f;   // 점감 부활 HP +N%p
-        public virtual int   BattleStartHeal      => 0;    // 전투 시작 시 파티 회복 +N
 
         // ── 전투 반응 훅 (기본 무동작 — 필요한 것만 override) ──
         public virtual void OnReact(CombatTrigger trigger, CombatContext context)
