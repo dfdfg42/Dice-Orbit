@@ -140,11 +140,33 @@ public class ArtifactManager : MonoBehaviour
 | `EventDefinition.cs` (122) | 〃 (GrantRandom) |
 | `ShopUI.cs` (194~) | 〃 + `RelicDefinition`→`ArtifactData`, 필드명 치환 (`RelicName`→`artifactName`, `Description`→`artifactTooltip`, `Icon`→`artifactIcon`, `ShopPrice`→`shopPrice`) |
 | `RunHudUI.cs` (76, 143) | 〃 + 칩 데이터를 `RuntimeArtifact.data`에서 읽기. `data == null`인 인스턴스(`AddArtifact` 직접 추가분)는 클래스명으로 표시 |
-| `RunSaveService.cs` (83~) | 저장 필드 `RelicNames` → `ArtifactNames`. 복원 = `FindInPool(name)` → `Grant` |
+| `RunSaveService.cs` (83~) | 저장은 새 필드 `ArtifactNames`에. 구 필드 `RelicNames`는 로드 전용으로 존치 (§5.1) |
 | `CombatPipeline.cs` (130~) | D단계 수집을 `ArtifactManager.Instance.Artifacts`로 (인스턴스 자체가 ICombatReactor) |
 
-**세이브 호환**: 기존 세이브의 유물 보유만 소실된다 (런 진행/골드/포션은 유지).
-프로토타입 단계이므로 수용. 마이그레이션 코드는 쓰지 않는다.
+### 5.1 세이브 호환 (구 세이브의 유물 보유 유지)
+
+JsonUtility는 JSON에 없는 필드를 기본값으로 두고, 클래스에 없는 키를 무시한다.
+이를 이용해 마이그레이션을 필드 존치 + 로드 폴백으로 처리한다:
+
+```csharp
+public class RunSaveData
+{
+    public List<string> ArtifactNames = new List<string>();  // 신규 — 저장은 여기에
+    public List<string> RelicNames = new List<string>();     // 구 세이브 로드 전용 (쓰지 않음)
+
+    /// <summary>복원 시 이걸 읽는다 — 신 필드 우선, 비어 있으면 구 필드 폴백.</summary>
+    public List<string> EffectiveArtifactNames
+        => ArtifactNames.Count > 0 ? ArtifactNames : RelicNames;
+}
+```
+
+- `SaveCurrent()`는 `ArtifactNames`에만 쓴다 (보유 인스턴스의 `data.artifactName`).
+- `GameFlowManager` 복원부는 `data.EffectiveArtifactNames`를 순회해
+  `FindInPool(name)` → `Grant` (현행 로직 그대로).
+- **이름 매칭 보장**: 새 폴백/에셋 유물의 표시명은 현행 유물명을 그대로 승계한다
+  (단골 도장 / 포근한 침낭 / 황금 주사위 / 불사조 깃털 / 생명의 부적) — 구 세이브의
+  `RelicNames` 값이 새 풀에서도 그대로 매칭된다.
+- 풀에 없는 이름은 현행처럼 조용히 무시된다 (`Grant(null)` = no-op).
 
 ## 6. 규약 (유물 클래스 작성 규칙)
 
@@ -163,4 +185,5 @@ public class ArtifactManager : MonoBehaviour
 - 플레이 검증(사용자, 에디터): ① 엘리트 클리어 → 유물 드랍 + HUD 칩 표시
   ② 상점 진열/구매/할인(단골 도장) ③ 휴식 보너스(침낭) ④ 부활 HP 보너스(깃털)
   ⑤ 전투 시작 회복(부적) ⑥ 보상 골드 보너스(황금 주사위) ⑦ PowerfullPunch 공격 출력 고정
-  ⑧ 세이브 → 이어하기로 유물 복원.
+  ⑧ 세이브 → 이어하기로 유물 복원 ⑨ **개편 이전 세이브**(RelicNames만 있는 파일)를
+  이어하기 → 유물 보유가 그대로 복원되는지.
