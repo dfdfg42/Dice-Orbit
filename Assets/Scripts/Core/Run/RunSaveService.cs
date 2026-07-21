@@ -15,7 +15,12 @@ namespace DiceOrbit.Core.Run
         public int BattlesCleared;
 
         public int Gold;
-        public List<string> RelicNames = new List<string>();
+        public List<string> ArtifactNames = new List<string>();  // 저장은 여기에
+        public List<string> RelicNames = new List<string>();     // 개편 이전 세이브 로드 전용 (쓰지 않음)
+
+        /// <summary>복원 시 이걸 읽는다 — 신 필드 우선, 비어 있으면 구 필드 폴백.</summary>
+        public List<string> EffectiveArtifactNames
+            => ArtifactNames.Count > 0 ? ArtifactNames : RelicNames;
         public List<string> PotionNames = new List<string>();
         public List<string> BanishedPresetNames = new List<string>();
         public List<CharacterSave> Party = new List<CharacterSave>();
@@ -80,8 +85,10 @@ namespace DiceOrbit.Core.Run
 
             data.BanishedPresetNames.AddRange(run.BanishedNames);
 
-            if (RelicManager.Instance != null)
-                data.RelicNames.AddRange(RelicManager.Instance.Owned.Where(r => r != null).Select(r => r.RelicName));
+            if (ArtifactManager.Instance != null)
+                data.ArtifactNames.AddRange(ArtifactManager.Instance.Artifacts
+                    .Where(a => a != null && a.data != null)
+                    .Select(a => a.data.artifactName));
 
             if (PotionManager.Instance != null)
                 data.PotionNames.AddRange(PotionManager.Instance.Slots.Where(p => p != null).Select(p => p.PotionName));

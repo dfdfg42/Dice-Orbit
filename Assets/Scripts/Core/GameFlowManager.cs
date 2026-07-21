@@ -462,10 +462,10 @@ namespace DiceOrbit.Core
             goldManager.ResetGold();
             goldManager.AddGold(data.Gold);
 
-            // 유물 / 포션 (이름 매칭)
-            var relics = RelicManager.EnsureInstance();
-            foreach (var name in data.RelicNames)
-                relics.Grant(relics.FindInPool(name));
+            // 유물 / 포션 (이름 매칭 — 구 세이브는 RelicNames 폴백)
+            var artifactManager = ArtifactManager.EnsureInstance();
+            foreach (var name in data.EffectiveArtifactNames)
+                artifactManager.Grant(artifactManager.FindInPool(name));
 
             var potions = PotionManager.EnsureInstance();
             foreach (var name in data.PotionNames)
