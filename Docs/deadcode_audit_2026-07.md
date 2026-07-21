@@ -1,5 +1,6 @@
 # 레거시/데드코드 감사 리포트 (Assets/Scripts 전체)
 
+> **업데이트 2026-07-21**: 아래 지적 중 다수가 해소됨 — `CombatContext.Type` shim + `ActionType` enum 전체 삭제(주사위 `assignedAction` 장부 포함), 묘비 파일 `BattleStageSystem/ActionType.cs` 삭제, `WaveDefinition.SpawnCount` 삭제. 또한 리포트 범위 밖 대형 정리: 구 Relic 시스템 → 클래스 기반 Artifact 재구축, WaveManager/WaveDatabase 철거(→ CombatManager.StartEncounter + EncounterSpawner), DIM 죽은 훅 21개 복구.
 > **업데이트 2026-07-03**: 이 리포트 이후 Tier 1-B 항목 일부가 실제 삭제됨 — `SampleMonster.cs`(`SampleAttack`/`SampleDeath`/`SamplePassive`), `SampleTile.cs`(`SampleTileAttribute`), `HoneyTile.cs`(`HoneyTileAttribute`/`HoneyDebuff`). Honey 로직은 이제 `Wave2/HoneyPawTile.cs`에 존재. 나머지 Tier-1 항목은 아직 미조치(un-actioned). 아래 티어별 본문은 원본 그대로 유지.
 
 > 작성일 2026-07-02 · 브랜치 `refactor/combat-context-merge-20260621`

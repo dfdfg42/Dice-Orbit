@@ -1,6 +1,6 @@
 # CombatContext / CombatAction 병합 + 서브클래스 리팩토링 설계
 
-> **[구현 완료 · 2026-07-03 갱신 노트]** 이 설계는 **구현되었다**: `CombatContext`는 추상 기반 + 서브클래스(`EffectContext`→`AttackContext`/`HealContext`, `MoveContext`, `TurnEventContext`)가 되었고 `CombatAction` 클래스는 병합·삭제되어 `CombatAction.cs`에는 `ActionType` enum + `ActionEffectInfo` 구조체만 남았다. 실제 코드와 **두 가지 차이**만 기록한다: (1) §6의 `context is XContext` 분기는 이후 **타입별 DIM 훅**(`ICombatReactor`의 `OnAttack`/`OnHeal`/`OnMove`/`OnTurnEvent`)으로 대체됨 — [Docs/combat_reactor_dispatch.md](combat_reactor_dispatch.md) 참조. (2) §9 Step 5의 `ActionType Type` 마이그레이션 심 제거는 **아직 이뤄지지 않아** 기반 `CombatContext`에 `Type` 심이 그대로 남아 있다. 아래 본문은 원본 설계 기록으로 보존한다.
+> **[구현 완료 · 2026-07-03 갱신 노트]** 이 설계는 **구현되었다**: `CombatContext`는 추상 기반 + 서브클래스(`EffectContext`→`AttackContext`/`HealContext`, `MoveContext`, `TurnEventContext`)가 되었고 `CombatAction` 클래스는 병합·삭제되어 `CombatAction.cs`에는 `ActionType` enum + `ActionEffectInfo` 구조체만 남았다. 실제 코드와 **두 가지 차이**만 기록한다: (1) §6의 `context is XContext` 분기는 이후 **타입별 DIM 훅**(`ICombatReactor`의 `OnAttack`/`OnHeal`/`OnMove`/`OnTurnEvent`)으로 대체됨 — [Docs/combat_reactor_dispatch.md](combat_reactor_dispatch.md) 참조. (2) §9 Step 5의 `ActionType Type` 마이그레이션 심은 **2026-07-21에 제거 완료** — `ActionType` enum 자체(주사위 배정 장부 포함)도 함께 삭제되어 `CombatAction.cs`에는 `ActionEffectInfo`만 남았다. 아래 본문은 원본 설계 기록으로 보존한다.
 
 > 상태: 설계안(검토 대기) · 작성일 2026-06-20 · 대상 브랜치 `feature/character-select-ui-20260526`
 > 범위: 전투 파이프라인의 데이터 모델(`CombatContext` / `CombatAction`) 구조 개편. 트리거(`CombatTrigger`)는 최소 변경.
