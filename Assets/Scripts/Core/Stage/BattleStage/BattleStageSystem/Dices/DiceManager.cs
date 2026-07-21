@@ -147,24 +147,18 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 주사위를 캐릭터에 할당
         /// </summary>
-        public bool AssignDice(DiceData dice, object character, DiceOrbit.Core.Pipeline.ActionType action)
+        public bool AssignDice(DiceData dice, object character)
         {
             if (dice == null || dice.State != DiceState.Available)
             {
                 Debug.LogWarning($"Cannot assign dice: null or not available");
                 return false;
             }
-            
-            if (action == DiceOrbit.Core.Pipeline.ActionType.None)
-            {
-                Debug.LogWarning("Cannot assign dice: action type is None");
-                return false;
-            }
-            
+
             // 할당
-            dice.Assign(character, action);
-            
-            Debug.Log($"Dice {dice.ID} (value: {dice.Value}) assigned to character with action: {action}");
+            dice.Assign(character);
+
+            Debug.Log($"Dice {dice.ID} (value: {dice.Value}) assigned to character");
             
             // 이벤트 발생
             OnDiceUsed?.Invoke(dice);

@@ -233,7 +233,7 @@ namespace DiceOrbit.UI
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
             {
-                bool success = diceManager.AssignDice(currentDice, currentCharacter, ActionType.Move);
+                bool success = diceManager.AssignDice(currentDice, currentCharacter);
                 if (success)
                 {
                     // 실제 이동 실행 직전에 이동 예산 1회를 확정 소비합니다.

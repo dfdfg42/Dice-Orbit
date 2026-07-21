@@ -95,7 +95,6 @@ namespace DiceOrbit.Core.Pipeline
 
         private void HandlePostAction(CombatContext context)
         {
-            //Debug.LogWarning($"{context.SourceUnit.name}, {context.Target.name}, {context.Type}");
             // 적중했다면 OnHit, 처치했다면 OnKill 등 세분화 가능
             NotifyReactors(context, CombatTrigger.OnHit); // 일단 OnHit으로 통일
             NotifyReactors(context, CombatTrigger.OnPostAction);

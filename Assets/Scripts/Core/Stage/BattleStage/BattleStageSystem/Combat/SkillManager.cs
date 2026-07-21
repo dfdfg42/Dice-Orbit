@@ -92,7 +92,7 @@ namespace DiceOrbit.Core
             // OneEnemy나 OneTile일 때는 이미 StartTargetSelection에서 락(Reserved)을 걸어두었음.
             if (dice.State != DiceState.Reserved)
             {
-                bool success = diceManager.AssignDice(dice, source, DiceOrbit.Core.Pipeline.ActionType.Skill);
+                bool success = diceManager.AssignDice(dice, source);
                 if (!success)
                 {
                     CharacterActionUI.Instance?.ReturnDiceElement();
