@@ -126,12 +126,12 @@ namespace DiceOrbit.Core.Pipeline
                     }
             }
 
-            // D. 유물에서 Reactor 수집 (RelicManager — 구 Artifact 시스템은 유물로 통합됨, 2026-07)
-            if (Core.Run.RelicManager.Instance != null)
+            // D. 유물에서 Reactor 수집 (ArtifactManager — 보유 런타임 인스턴스 자체가 ICombatReactor)
+            if (Core.Run.ArtifactManager.Instance != null)
             {
-                foreach (var reactor in Core.Run.RelicManager.Instance.CombatReactors)
+                foreach (var artifact in Core.Run.ArtifactManager.Instance.Artifacts)
                 {
-                    reactors.Add(reactor);
+                    reactors.Add(artifact);
                 }
             }
 

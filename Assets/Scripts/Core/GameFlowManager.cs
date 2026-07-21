@@ -269,7 +269,7 @@ namespace DiceOrbit.Core
         /// <summary>휴식 노드: 파티 전원 비율 회복 (+유물 보너스).</summary>
         private void ApplyRest()
         {
-            float ratio = restHealRatio + (RelicManager.Instance?.RestHealBonus01 ?? 0f);
+            float ratio = restHealRatio + (ArtifactManager.Instance?.RestHealBonus01 ?? 0f);
             foreach (var character in Object.FindObjectsByType<Character>(FindObjectsSortMode.None))
             {
                 if (character == null || character.Stats == null || !character.IsAlive) continue;
