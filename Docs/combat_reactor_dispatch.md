@@ -1,6 +1,12 @@
 # Combat 리액터 타입별 디스패치 (DIM Template Method)
 
-> 상태: 적용 완료(에디터/Mono 검증) · 작성일 2026-06-21 · 브랜치 `refactor/combat-context-merge-20260621`
+> 상태: 적용 완료 · 작성일 2026-06-21 · 브랜치 `refactor/combat-context-merge-20260621`
+> **⚠️ 2026-07-21 정정**: 이 개편은 **죽은 훅 21개**를 만든 채 "검증 완료"로 기록돼 있었다.
+> 베이스(CharacterPassiveSkill/PassiveAbility/StatusEffect)가 훅을 선언하지 않은 상태에서
+> 파생 클래스가 `public void OnAttack(...)`을 선언하면 **인터페이스 매핑에 포함되지 않아
+> 절대 호출되지 않는다** (C# 인터페이스 매핑은 인터페이스를 나열한 클래스에서 확정 —
+> 리플렉션 InterfaceMapping 조사로 확인). 수정: 세 베이스에 훅 4종을 `public virtual`로
+> 선언하고 파생 21곳을 전부 `override`로 교정. **§4.1 필수 규칙** 참조.
 > 선행: [combat_context_action_merge_design.md](combat_context_action_merge_design.md) (CombatContext 서브클래스화). 이 문서는 그 위에 올린 **리액터 디스패치** 개편을 다룬다.
 
 ---
@@ -80,6 +86,21 @@ public void OnAttack(CombatTrigger t, AttackContext c)       { /* 누적만큼 �
 ```
 
 **특수/전파 리액터** — 모든 컨텍스트를 직접 처리하거나 자식에게 전파해야 하면 `OnReact` 자체를 override (예: `PassiveManager`, `StatusEffectManager`, `TileData`).
+
+### 4.1 필수 규칙 — 훅 선언 위치 (2026-07-21 죽은 훅 사고 이후)
+
+C# 인터페이스 매핑은 **인터페이스를 base list에 나열한 클래스에서 확정**된다. 파생 클래스의
+동명 메서드는 인터페이스를 재나열하지 않는 한 매핑에 **들어가지 않는다** (컴파일 에러도 없이
+조용히 죽는다).
+
+| 리액터 위치 | 규칙 |
+|---|---|
+| 인터페이스를 **직접 나열**하는 클래스 (`class X : ICombatReactor`) | `public void OnAttack(...)` 그대로 OK |
+| **베이스를 상속**하는 클래스 (`class X : CharacterPassiveSkill` 등) | 반드시 `public override void OnAttack(...)` — 베이스의 virtual 훅을 override |
+
+이를 위해 `CharacterPassiveSkill` / `PassiveAbility` / `StatusEffect` / `RuntimeArtifact` 베이스는
+훅 4종(`OnAttack/OnHeal/OnMove/OnTurnEvent`)을 `public virtual` 빈 구현으로 선언해 두었다.
+**새 리액터 훅에 `override`가 안 붙으면 컴파일러가 CS0114(숨김) 경고를 낸다 — 경고를 무시하지 말 것.**
 
 > ⚠️ **DIM은 인터페이스 참조로만 호출 가능하다.** 리액터의 `OnReact`/훅을 *클래스 타입* 변수로 호출하면 컴파일되지 않는다 → `((ICombatReactor)x).OnReact(...)`로 캐스팅하거나, 컬렉션을 `ICombatReactor`/`IPassive`(인터페이스)로 다뤄야 한다.
 

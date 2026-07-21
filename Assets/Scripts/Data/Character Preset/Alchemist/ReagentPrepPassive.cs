@@ -67,7 +67,7 @@ namespace DiceOrbit.Data.Passives
             Notify($"{PassiveName} +{bonusPercentPerStack:0.#}%");
         }
 
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
             if (trigger != CombatTrigger.OnCalculateOutput) return;

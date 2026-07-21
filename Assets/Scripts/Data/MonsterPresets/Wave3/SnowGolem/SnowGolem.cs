@@ -136,7 +136,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
             isStackable = false;
         }
 
-        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             if (owner == null) return;
 

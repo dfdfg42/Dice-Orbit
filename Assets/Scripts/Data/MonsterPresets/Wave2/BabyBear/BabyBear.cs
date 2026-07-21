@@ -97,7 +97,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
         public override string GetDynamicDescription()
             => $"먹은 꿀 1개당 피해 +1 (현재 +{BearPackTracker.HoneyEaten})";
 
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
 

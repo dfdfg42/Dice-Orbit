@@ -77,7 +77,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaKnight
             isStackable = false;
         }
 
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (trigger != CombatTrigger.OnPreAction) return;
 

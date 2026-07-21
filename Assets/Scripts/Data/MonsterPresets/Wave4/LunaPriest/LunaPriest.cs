@@ -164,7 +164,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaPriest
             return null;
         }
 
-        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             // 턴 시작 시점 실행
             if (trigger == CombatTrigger.OnPreAction &&
@@ -220,7 +220,7 @@ namespace DiceOrbit.Systems.Effects
             IsStackable = false;
         }
 
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (trigger == CombatTrigger.OnPreAction && context.SourceUnit == Owner)
             {

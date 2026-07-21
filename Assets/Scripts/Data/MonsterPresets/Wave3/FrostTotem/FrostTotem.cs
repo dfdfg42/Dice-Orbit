@@ -21,7 +21,7 @@ namespace DiceOrbit.Systems.Effects
             IsStackable = false;
         }
 
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (Owner == null) return;
 
@@ -127,7 +127,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.FrostTotem
         public override string GetDynamicDescription()
             => $"턴 종료 시 이동하지 않은 적에게 받는 피해 +{damageIncreasePercent}% ({duration}턴)";
 
-        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             if (owner == null) return;
 

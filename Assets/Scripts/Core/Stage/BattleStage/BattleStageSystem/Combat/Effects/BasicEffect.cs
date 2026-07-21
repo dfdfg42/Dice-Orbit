@@ -13,7 +13,7 @@ namespace DiceOrbit.Systems.Effects
         {
         }
 
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (Owner == null) return;
 

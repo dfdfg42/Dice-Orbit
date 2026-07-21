@@ -43,7 +43,7 @@ namespace DiceOrbit.Data.Passives
         }
 
         // 공격받으면 집중 감소
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
             if (trigger != CombatTrigger.OnPostAction) return;
@@ -52,7 +52,7 @@ namespace DiceOrbit.Data.Passives
         }
 
         // 턴 종료 시 체력 손실 여부로 확인
-        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             if (owner == null) return;
             if (trigger != CombatTrigger.OnPostAction || context.Phase != EventPhase.TurnEnd) return;
