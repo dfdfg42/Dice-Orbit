@@ -115,7 +115,7 @@ namespace DiceOrbit.UI
                 Destroy(rewardListRoot.GetChild(i).gameObject);
 
             // ① 골드 (+유물 보너스, 예: 황금 주사위)
-            int goldAmount = goldPerReward + (RelicManager.Instance?.BattleGoldBonus ?? 0);
+            int goldAmount = goldPerReward + (ArtifactManager.Instance?.BattleGoldBonus ?? 0);
             AddRewardRow($"<color=#{ColorUtility.ToHtmlStringRGB(Gold)}>●</color>  골드 +{goldAmount}", row =>
             {
                 GoldManager.EnsureInstance().AddGold(goldAmount);
@@ -133,12 +133,12 @@ namespace DiceOrbit.UI
             var runNode = RunManager.Instance?.CurrentNode;
             if (runNode != null && runNode.Type == MapNodeType.Elite)
             {
-                var relic = RelicManager.EnsureInstance().GetShopOfferings(1).FirstOrDefault();
-                if (relic != null)
+                var artifact = ArtifactManager.EnsureInstance().GetShopOfferings(1).FirstOrDefault();
+                if (artifact != null)
                 {
-                    AddRewardRow($"🏺  유물 — {relic.RelicName}", row =>
+                    AddRewardRow($"🏺  유물 — {artifact.artifactName}", row =>
                     {
-                        RelicManager.Instance.Grant(relic);
+                        ArtifactManager.Instance.Grant(artifact);
                         Destroy(row);
                     });
                 }

@@ -73,7 +73,7 @@ namespace DiceOrbit.UI
 
             // 데이터 변경 구독
             GoldManager.EnsureInstance().OnGoldChanged += _ => RefreshGold();
-            RelicManager.EnsureInstance().OnRelicsChanged += RebuildRelics;
+            ArtifactManager.EnsureInstance().OnArtifactsChanged += RebuildRelics;
             PotionManager.EnsureInstance().OnChanged += RebuildPotions;
             if (GameFlowManager.Instance != null)
                 GameFlowManager.Instance.OnStateChanged += OnGameStateChanged;
@@ -140,14 +140,16 @@ namespace DiceOrbit.UI
             if (relicRow == null) return;
             Clear(relicRow);
 
-            var owned = RelicManager.Instance?.Owned;
+            var owned = ArtifactManager.Instance?.Artifacts;
             if (owned == null) return;
 
-            foreach (var relic in owned)
+            foreach (var artifact in owned)
             {
-                if (relic == null) continue;
-                var chip = CreateChip(relicRow, relic.Icon, relic.RelicName, RelicTint);
-                AddHoverTooltip(chip, $"<b>[{relic.RelicName}]</b>\n{relic.Description}");
+                if (artifact == null) continue;
+                var data = artifact.data;
+                string title = data != null ? data.artifactName : artifact.GetType().Name;
+                var chip = CreateChip(relicRow, data != null ? data.artifactIcon : null, title, RelicTint);
+                AddHoverTooltip(chip, $"<b>[{title}]</b>\n{(data != null ? data.artifactTooltip : "")}");
             }
         }
 

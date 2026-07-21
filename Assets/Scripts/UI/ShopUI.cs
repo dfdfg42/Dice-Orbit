@@ -191,7 +191,7 @@ namespace DiceOrbit.UI
         /// <summary>유물 할인 적용 (예: 단골 도장 -20%).</summary>
         private static int ApplyDiscount(int price)
         {
-            float discount = RelicManager.Instance?.ShopDiscount01 ?? 0f;
+            float discount = ArtifactManager.Instance?.ShopDiscount01 ?? 0f;
             return Mathf.Max(1, Mathf.RoundToInt(price * (1f - discount)));
         }
 
@@ -200,7 +200,7 @@ namespace DiceOrbit.UI
         // ─────────────────────────────────────────────
 
         private readonly List<PotionDefinition> _potionOffers = new List<PotionDefinition>();
-        private readonly List<RelicDefinition> _relicOffers = new List<RelicDefinition>();
+        private readonly List<ArtifactData> _relicOffers = new List<ArtifactData>();
         private readonly HashSet<Object> _soldOut = new HashSet<Object>();
 
         private void BuildStockOffers()
@@ -210,7 +210,7 @@ namespace DiceOrbit.UI
             _soldOut.Clear();
 
             _potionOffers.AddRange(PotionManager.EnsureInstance().GetShopOfferings(potionOfferCount));
-            _relicOffers.AddRange(RelicManager.EnsureInstance().GetShopOfferings(relicOfferCount));
+            _relicOffers.AddRange(ArtifactManager.EnsureInstance().GetShopOfferings(relicOfferCount));
         }
 
         private void RenderStock()
@@ -238,17 +238,17 @@ namespace DiceOrbit.UI
                     });
             }
 
-            foreach (var relic in _relicOffers)
+            foreach (var artifact in _relicOffers)
             {
-                var captured = relic;
-                int price = ApplyDiscount(relic.ShopPrice);
-                AddStockCard(relicShelfRow, relic.RelicName, relic.Description, price,
-                    sold: _soldOut.Contains(relic),
+                var captured = artifact;
+                int price = ApplyDiscount(artifact.shopPrice);
+                AddStockCard(relicShelfRow, artifact.artifactName, artifact.artifactTooltip, price,
+                    sold: _soldOut.Contains(artifact),
                     affordable: gold >= price,
                     onBuy: () =>
                     {
-                        if (!GoldManager.Instance.TrySpend(ApplyDiscount(captured.ShopPrice))) return;
-                        RelicManager.Instance.Grant(captured);
+                        if (!GoldManager.Instance.TrySpend(ApplyDiscount(captured.shopPrice))) return;
+                        ArtifactManager.Instance.Grant(captured);
                         _soldOut.Add(captured);
                         RefreshGold();
                         RenderStock();

@@ -119,8 +119,8 @@ namespace DiceOrbit.Core.Run
 
                 case EventOutcomeType.GainRandomRelic:
                 {
-                    var relic = RelicManager.EnsureInstance().GrantRandom();
-                    return relic != null ? $"유물 획득 — {relic.RelicName}" : "";
+                    var artifact = ArtifactManager.EnsureInstance().GrantRandom();
+                    return artifact != null ? $"유물 획득 — {artifact.artifactName}" : "";
                 }
             }
             return "";
