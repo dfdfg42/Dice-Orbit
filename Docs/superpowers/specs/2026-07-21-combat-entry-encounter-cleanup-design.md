@@ -38,7 +38,8 @@ GameFlow (Combat 상태 진입, StartCombat())
       ① 이전 전투 몬스터 GameObject 파괴 + activeMonsters 초기화
          (파괴 책임 = 장부 권위인 CombatManager)
       ② EncounterSpawner.Spawn(encounter) → 반환 목록을 activeMonsters에 등록
-      ③ 유물 시작 회복 적용 (ArtifactManager.BattleStartHeal)
+      ③ CombatStart 파이프라인 방송 — 파티원마다 TurnEventContext(member, member, CombatStart)
+         (유물 등 리액터가 여기 반응. CombatManager는 개별 효과를 모름)
       ④ CurrentEncounter/CurrentFloorNumber 설정 → 기존 StartCombat() 턴 시퀀스
 승리:  IsCombatFinished() → EndCombat(true) → GameFlowManager.OnEncounterCleared()
 패배:  IsCombatFinished() → EndCombat(false) → GameFlowManager.OnCombatDefeat()   (현행 유지)
@@ -67,12 +68,29 @@ public void StartEncounter(EncounterDefinition encounter, int floorNumber)
     CurrentFloorNumber = floorNumber;
     var spawned = EncounterSpawner.Instance.Spawn(encounter);   // ②
     foreach (var m in spawned) RegisterMonster(m);
-    ApplyBattleStartHeal();           // ③ ArtifactManager.BattleStartHeal (WaveManager에서 이사)
+    BroadcastCombatStart();           // ③ 파티원마다 TurnEventContext(CombatStart) Process
     StartCombat();                    // ④ 기존 턴 시퀀스 (OnCombatStart 발화)
 }
 ```
 `EndCombat(true)`의 `WaveManager.CheckWaveClear()` 호출 → `GameFlowManager.Instance.OnEncounterCleared()`로 교체.
 몬스터 사망 시 목록 제거는 현행 `OnMonsterDefeated` 경로 그대로 (WaveManager의 중복 OnDeath 구독 삭제).
+
+### 유물 시작 회복 — 풀 질의에서 파이프라인 리액터로 전환
+
+경계 규칙: **전투 밖 수치 질의(상점할인/휴식/골드/부활HP)는 풀 패턴, 전투 안 행위(회복·피해)는
+파이프라인 리액터.** BattleStartHeal은 유일한 "전투 안 행위"인데 질의 패턴에 있었고, 게다가
+`Stats.CurrentHP` 직접 대입으로 파이프라인 제1규칙을 어기고 있었다 (플로팅 알림·VFX·리액터 반응 누락).
+
+- `EventPhase.CombatStart` 추가 (TurnEventContext). `CombatManager.BroadcastCombatStart()`가
+  파티원마다 방송 — 턴 시작 방송과 같은 문법.
+- `LifeAmulet`(생명의 부적)이 `OnTurnEvent`를 오버라이드: `CombatStart`면 대상에게
+  `HealContext(null, target, "생명의 부적", amount)`를 파이프라인에 태운다.
+  정식 힐이 되므로 알림/VFX/타 리액터 반응을 공짜로 얻는다.
+- `RuntimeArtifact.BattleStartHeal` virtual 프로퍼티 + `ArtifactManager.BattleStartHeal` 합산
+  질의 **삭제** (소비처였던 WaveManager도 폐지되므로 잔존 참조 0).
+- ⚠️ 검증 필요: TurnEventContext 디스패치 도중 리액터가 새 HealContext를 Process하는
+  **중첩 실행**의 안전성. 상태이상 DoT 선례를 계획 단계에서 확인하고, 불안하면
+  ActionQueueManager 경유로 우회.
 
 ### EncounterSpawner (신규 — WaveManager 씬 자리 대체)
 ```csharp
@@ -164,4 +182,6 @@ public class EncounterDefinition
   ② 클리어 → 부활/보상 라우팅, 보스 → Victory ③ 파티 전멸 → GameOver
   ④ 배경: 막 기본 표시 + 오버라이드 세트에서 교체 ⑤ 마법사 집중/연금 시약 리셋 발동
   ⑥ 스켈레톤 뼈 설치/고블린 지뢰 정리 동작 ⑦ 9~11층 일반 전투 몹 세트 정상 배정
-  ⑧ "Wave" 문자열이 게임플레이 코드에서 사라졌는지 grep 확인.
+  ⑧ "Wave" 문자열이 게임플레이 코드에서 사라졌는지 grep 확인
+  ⑨ 생명의 부적: 전투 시작 시 회복이 **파이프라인 경유**로 발동 (힐 플로팅 알림 표시)
+  — 중첩 Process 크래시/재귀 없음 확인.
