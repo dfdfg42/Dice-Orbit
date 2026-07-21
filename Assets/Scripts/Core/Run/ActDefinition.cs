@@ -16,7 +16,7 @@ namespace DiceOrbit.Core.Run
         [Tooltip("적용 끝 층 (포함)")]
         public int MaxFloor = 4;
         [Tooltip("이 구간의 몹 세트 풀 — 노드마다 랜덤 1개 (같은 층이라도 노드마다 다를 수 있음)")]
-        public List<WaveDefinition> Encounters = new List<WaveDefinition>();
+        public List<EncounterDefinition> Encounters = new List<EncounterDefinition>();
     }
 
     /// <summary>
@@ -51,9 +51,9 @@ namespace DiceOrbit.Core.Run
         [Tooltip("일반 전투: 층이 속한 구간의 풀에서 노드마다 랜덤 1개")]
         public List<EncounterTier> BattleTiers = new List<EncounterTier>();
         [Tooltip("엘리트 전투 풀 (랜덤 1개)")]
-        public List<WaveDefinition> ElitePool = new List<WaveDefinition>();
+        public List<EncounterDefinition> ElitePool = new List<EncounterDefinition>();
         [Tooltip("보스 전투 풀 (랜덤 1개)")]
-        public List<WaveDefinition> BossPool = new List<WaveDefinition>();
+        public List<EncounterDefinition> BossPool = new List<EncounterDefinition>();
 
         [Header("폴백 — 위 풀이 비어 있으면 구 웨이브 DB에서 유도 (마이그레이션용)")]
         public WaveDatabase WaveDatabase;
@@ -61,7 +61,7 @@ namespace DiceOrbit.Core.Run
         private int WaveCount => WaveDatabase != null && WaveDatabase.Waves != null ? WaveDatabase.Waves.Count : 0;
 
         /// <summary>일반 전투 몹 세트: 층이 속한 티어 풀에서 랜덤. 풀이 없으면 DB 진행도 비례 폴백.</summary>
-        public WaveDefinition ResolveBattleEncounter(int floor, System.Random rng)
+        public EncounterDefinition ResolveBattleEncounter(int floor, System.Random rng)
         {
             foreach (var tier in BattleTiers)
             {
@@ -78,14 +78,14 @@ namespace DiceOrbit.Core.Run
             return WaveDatabase.Waves[idx];
         }
 
-        public WaveDefinition ResolveEliteEncounter(System.Random rng)
+        public EncounterDefinition ResolveEliteEncounter(System.Random rng)
         {
             if (ElitePool != null && ElitePool.Count > 0)
                 return ElitePool[rng.Next(ElitePool.Count)];
             return WaveCount > 0 ? WaveDatabase.Waves[Mathf.Max(0, WaveCount - 2)] : null;
         }
 
-        public WaveDefinition ResolveBossEncounter(System.Random rng)
+        public EncounterDefinition ResolveBossEncounter(System.Random rng)
         {
             if (BossPool != null && BossPool.Count > 0)
                 return BossPool[rng.Next(BossPool.Count)];

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using DiceOrbit.Core.Run;
 using DiceOrbit.Data.Waves;
 using DiceOrbit.Data.Monsters;
 using System.Linq;
@@ -43,7 +44,7 @@ namespace DiceOrbit.Core
         /// 전투 시작 (노드맵 진입점). encounter = 노드가 배정받은 몹 세트,
         /// waveNumber = 표시/배경/구독자용 번호 (노드맵에서는 층+1).
         /// </summary>
-        public void StartEncounter(WaveDefinition encounter, int waveNumber)
+        public void StartEncounter(EncounterDefinition encounter, int waveNumber)
         {
             CurrentWave = waveNumber;
             IsWaveActive = true;
@@ -65,7 +66,7 @@ namespace DiceOrbit.Core
             OnWaveStart?.Invoke(waveNumber);
         }
 
-        private void SpawnMonsters(WaveDefinition waveDef)
+        private void SpawnMonsters(EncounterDefinition waveDef)
         {
             Debug.Log("[WaveManager] Spawning encounter monsters...");
 
@@ -88,10 +89,6 @@ namespace DiceOrbit.Core
                 Debug.LogWarning("[WaveManager] monsterPrefab is not assigned. Skipping spawn.");
                 return;
             }
-
-            // SpawnCount는 레거시로 유지 (현재는 사용하지 않음)
-            int spawnCount = Mathf.Max(1, waveDef.SpawnCount);
-            Debug.Log($"[WaveManager] SpawnCount={spawnCount} (Legacy, ignored)");
 
             var validPresets = waveDef.MonsterPresets.Where(p => p != null).ToList();
             if (validPresets.Count == 0)
@@ -186,7 +183,7 @@ namespace DiceOrbit.Core
             // 다음 행선지는 GameFlowManager가 노드맵(RunManager) 상태를 보고 결정한다.
         }
 
-        public WaveDefinition GetWaveDefinition(int wave)
+        public EncounterDefinition GetWaveDefinition(int wave)
         {
             if (waveDatabase == null || waveDatabase.Waves == null || waveDatabase.Waves.Count == 0)
             {
