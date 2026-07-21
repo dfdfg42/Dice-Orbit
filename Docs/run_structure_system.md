@@ -15,7 +15,7 @@
    ├─ ⚔️ Battle/💀 Elite/👑 Boss → Combat → WaveManager.StartEncounter(node.WaveIndex+1)
    │      └─ 클리어 → PartyManager.ReviveRetiredMembers() (점감 부활)
    │              ├─ Boss였으면 → Victory
-   │              ├─ Elite였으면 → 유물 랜덤 드랍 (RelicManager.GrantRandom)
+   │              ├─ Elite였으면 → 유물 랜덤 드랍 (ArtifactManager.GrantRandom)
    │              └─ Reward(골드+모디파이어 3택1+포션 드랍) → (전투 1·2 후엔 Recruit) → Map
    ├─ 🏕️ Rest  → 파티 30%(+유물 보너스) 즉시 회복 → Map 유지
    ├─ 🛒 Shop  → GameState.Shop → ShopUI (교체·포션·유물 구매) → 떠나기 → Map
@@ -34,9 +34,9 @@
 | `ActDefinition.cs` | **막 = 에셋**(SO): 층 수·보장 규칙 + **층 구간별 몹 세트 풀**(BattleTiers/ElitePool/BossPool, 노드마다 랜덤 배정 — 풀 비면 구 WaveDatabase 폴백) |
 | `MapGenerator.cs` | ActDefinition → MapGraph (비례 창 매핑 간선, 시드 지원) |
 | `RunManager.cs` | 런 상태 단일 출처: 맵/현재 노드/이동/전투 카운터/소멸 캐릭터 |
-| `RelicDefinition.cs` | 유물 에셋: 규칙형 효과(enum+수치) + 전투 반응 효과(인라인) |
-| `RelicCombatEffect.cs` | 유물의 파이프라인 리액터 베이스 (구 Artifact 계승) |
-| `RelicManager.cs` | 유물 보유/풀/드랍/상점 진열 + 효과 질의 창구 |
+| `Artifact/ArtifactData.cs` | 유물 에셋: 표시 데이터 + SubclassPicker 로직 프로토타입 |
+| `Artifact/RuntimeArtifact.cs` | 유물 베이스: ICombatReactor + 규칙형 virtual 프로퍼티, 획득 시 CreateInstance 복제 |
+| `Artifact/ArtifactManager.cs` | 유물 보유/풀/드랍/상점 진열 + 효과 질의 창구 |
 | `PotionDefinition.cs` | 포션 에셋: 효과 enum+수치, 전투 전용 플래그 |
 | `PotionManager.cs` | 포션 3슬롯 인벤토리 + 효과 실행 |
 
@@ -57,7 +57,7 @@
 | `CharacterStats.cs` | `RevivalStock` (부활 스톡) |
 | `PartyManager.cs` | `ReviveRetiredMembers()` |
 | `DiceManager.cs` | `RerollAvailableDice()` (재굴림 물약) |
-| `CombatPipeline.cs` | 유물 리액터 수집 D단계 → RelicManager |
+| `CombatPipeline.cs` | 유물 리액터 수집 D단계 → ArtifactManager (보유 인스턴스 = 리액터) |
 | `RewardUI.cs` | 골드 유물 보너스 + 유물/포션 드랍 안내 라인 |
 
 ## 3. 핵심 설계 결정
@@ -79,10 +79,12 @@
 **⑤ 수도꼭지 경제.** 모디파이어 = 전투 3택1 전용. 골드 = 전투산 → 상점(교체/포션/유물).
 유물 = 엘리트 드랍 + 상점. "전투 없이 성장"은 구조적으로 불가.
 
-**⑥ 유물 = 두 효과 유형의 통합** (구 Artifact 시스템 흡수, 2026-07):
-- **규칙형(질의식)**: `RelicEffectType` enum + 수치. 소비처가 `RelicManager` 프로퍼티를 읽음
-  (상점 할인/휴식 보너스/전투 골드/부활 HP/전투 시작 회복)
-- **전투 반응형(리액터)**: `RelicCombatEffect` 서브클래스, CombatPipeline이 수집 (Priority 11)
+**⑥ 유물 = 클래스 기반 재구축** (2026-07-21, 스펙 `2026-07-21-artifact-system-rebuild-design.md`):
+- 유물 1개 = `RuntimeArtifact` 서브클래스 1개 (`Data/Artifacts/`). 규칙형 효과는 virtual
+  프로퍼티 오버라이드, 전투 반응은 virtual 훅 오버라이드 — 한 유물이 둘 다 가능.
+- `ArtifactData`(SO)가 표시 데이터 + 프로토타입을 들고, 획득 시 `CreateInstance`로
+  런타임 인스턴스를 복제 (상태가 에셋에 오염되지 않음). Priority 11.
+- 세이브: `ArtifactNames` 저장, 개편 이전 `RelicNames`는 로드 폴백으로 지원.
 
 ## 3.5 맵 생성 파이프라인 (MapGenerator.Generate)
 
@@ -124,27 +126,28 @@ Shop/Rest/Event를 중반 층(인트로 이후~보스 앞 이전)에 랜덤 배�
 
 ## 4. 새 콘텐츠 만드는 법
 
-### 새 유물 (규칙형)
-1. `Create > DiceOrbit > Relic Definition` 에셋 생성
-2. 이름/설명/아이콘 + `Effect Type` 선택 + `Value` 입력 (예: ShopDiscountPercent, 20)
-3. 씬 `RelicManager`의 **Relic Pool**에 추가 → 엘리트 드랍/상점 진열 후보가 됨
-
-### 새 유물 (전투 반응형)
-1. `RelicCombatEffect` 상속 클래스 작성 — 훅(OnAttack/OnHeal/OnMove/OnTurnEvent)만 구현:
+### 새 유물
+1. `RuntimeArtifact` 상속 클래스 작성 (`Assets/Scripts/Data/Artifacts/<이름>/<이름>.cs`) —
+   규칙형은 virtual 프로퍼티, 전투 반응은 훅을 **`override`로** 구현 (override 없이 `public void`로
+   쓰면 호출 안 됨 — DIM 함정):
 ```csharp
 [System.Serializable]
-public class MyEffect : RelicCombatEffect
+public class MyArtifact : RuntimeArtifact
 {
-    public int power = 10;   // Inspector 노출
-    public void OnAttack(CombatTrigger t, AttackContext c)
+    public int power = 10;   // Inspector(에셋)에서 튜닝
+    public override float ShopDiscountPercent => 5f;              // 규칙형 (선택)
+    public override void OnAttack(CombatTrigger t, AttackContext c)  // 전투 반응 (선택)
     {
         if (t != CombatTrigger.OnCalculateOutput) return;
         c.OutputValue += power;
     }
 }
 ```
-2. 컴파일 → 유물 에셋의 `Combat Effect` 드롭다운에 자동 등장 (`[SubclassPicker]` 드로어)
-3. 규칙형 효과가 없으면 `Effect Type = None`
+2. `Create > DiceOrbit > ArtifactData` 에셋 생성 → 이름/설명/아이콘/가격 입력,
+   `Effect` 드롭다운에서 클래스 선택 (`[SubclassPicker]` 드로어) + 파라미터 튜닝
+3. 씬 `ArtifactManager`의 **Artifact Pool**에 추가 → 엘리트 드랍/상점 진열 후보가 됨
+- 상태(카운터 등)를 갖는 훅은 `if (context.IsSimulation) return;` 가드 필수
+- 프로토타입 필드는 값 타입만 (획득 시 얕은 복사)
 
 ### 새 포션
 `Create > DiceOrbit > Potion Definition` → 효과 enum/수치/가격/전투 전용 여부 →
@@ -168,20 +171,19 @@ public class MyEffect : RelicCombatEffect
 | `RewardUI` | 전투 골드(50), 포션 드랍 확률(20%) |
 | `ShopUI` | 교체 기본가(60)/모디파이어당(30), 진열 수(포션2/유물2) |
 | `EventUI` | 이벤트 목록 (내용 전부) |
-| `RelicManager` | Relic Pool(획득 후보) / **Starting Relics(테스트용 즉시 보유)** |
+| `ArtifactManager` | Artifact Pool(획득 후보) / **Starting Artifacts(테스트용 즉시 보유)** |
 | `PotionManager` | Potion Pool / Starting Potions |
 | `CharacterStats` | RevivalStock (기본 3) |
 | `RunHudUI` | 칩 크기, Chip Prefab(칩 모양 커스텀) |
 
-⚠️ **Pool ≠ 보유**: Pool은 획득 "후보" 목록. HUD에 바로 띄우려면 Starting Relics/Potions에.
+⚠️ **Pool ≠ 보유**: Pool은 획득 "후보" 목록. HUD에 바로 띄우려면 Starting Artifacts/Potions에.
 ⚠️ Pool에 에셋을 하나라도 넣으면 기본 세트(런타임 생성)는 비활성화됨.
 
 ## 6. 씬 요구사항
 
 - `RunManager` + First Act 지정 (필수 — 없으면 디버그 폴백)
-- `RelicManager`/`PotionManager`: 커스텀 풀/시작 지급 쓰려면 배치 (없으면 런타임 생성 + 기본 세트)
+- `ArtifactManager`/`PotionManager`: 커스텀 풀/시작 지급 쓰려면 배치 (없으면 런타임 생성 + 기본 세트)
 - UI 4종(NodeMap/Shop/Event/RunHud): 스타일링하려면 배치 + [기본 레이아웃 생성], 없어도 폴백 동작
-- ~~ArtifactManager / ArtifactPanelUI~~ — **철거됨**. 씬에 남은 오브젝트는 삭제할 것 (missing script)
 
 ## 7. 미구현 / 다음
 
