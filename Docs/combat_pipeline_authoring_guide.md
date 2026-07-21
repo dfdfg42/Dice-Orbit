@@ -25,10 +25,9 @@ tiles, modifiers) observe and mutate that context as it flows through the phases
   (`CharacterPassiveSkill`), monster passives (`PassiveAbility`), `StatusEffect`, artifacts,
   `CharacterModifier`, `TileData` / `TileAttribute`.
 
-> Note: `CombatContext` still carries an `ActionType Type` field. It is a migration shim kept for
-> compatibility and will be removed once all reactors are fully typed. Do NOT branch new logic on
-> it — branch on the concrete context type (`AttackContext`, `HealContext`, ...) via the typed
-> hooks instead.
+> Note: the old `ActionType Type` migration shim was **removed (2026-07-21)** — `ActionType`
+> no longer exists. Branch on the concrete context type (`AttackContext`, `HealContext`, ...)
+> via the typed hooks.
 
 ## 2. Data path (actual)
 
