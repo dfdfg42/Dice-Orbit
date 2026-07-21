@@ -59,12 +59,7 @@ namespace DiceOrbit.Core.Run
         [Tooltip("보스 전투 풀 (랜덤 1개)")]
         public List<EncounterDefinition> BossPool = new List<EncounterDefinition>();
 
-        [Header("폴백 — 위 풀이 비어 있으면 구 웨이브 DB에서 유도 (마이그레이션용)")]
-        public WaveDatabase WaveDatabase;
-
-        private int WaveCount => WaveDatabase != null && WaveDatabase.Waves != null ? WaveDatabase.Waves.Count : 0;
-
-        /// <summary>일반 전투 몹 세트: 층이 속한 티어 풀에서 랜덤. 풀이 없으면 DB 진행도 비례 폴백.</summary>
+        /// <summary>일반 전투 몹 세트: 층이 속한 티어 풀에서 랜덤. 미매칭 = 시끄러운 실패 (폴백 없음).</summary>
         public EncounterDefinition ResolveBattleEncounter(int floor, System.Random rng)
         {
             foreach (var tier in BattleTiers)
@@ -74,26 +69,24 @@ namespace DiceOrbit.Core.Run
                 return tier.Encounters[rng.Next(tier.Encounters.Count)];
             }
 
-            // 폴백: 구 방식 — 진행도 비례 DB 인덱스 (보스 웨이브 제외 범위)
-            int normalMax = Mathf.Max(0, WaveCount - 2);
-            if (WaveCount == 0) return null;
-            float progress = FloorCount > 1 ? (float)floor / (FloorCount - 1) : 0f;
-            int idx = Mathf.Clamp(Mathf.RoundToInt(progress * normalMax), 0, Mathf.Max(0, WaveCount - 1));
-            return WaveDatabase.Waves[idx];
+            Debug.LogError($"[Act] {floor}층 일반 전투 풀 미매칭 — BattleTiers 커버리지를 확인하세요.");
+            return null;
         }
 
         public EncounterDefinition ResolveEliteEncounter(System.Random rng)
         {
             if (ElitePool != null && ElitePool.Count > 0)
                 return ElitePool[rng.Next(ElitePool.Count)];
-            return WaveCount > 0 ? WaveDatabase.Waves[Mathf.Max(0, WaveCount - 2)] : null;
+            Debug.LogError("[Act] ElitePool이 비어 있습니다.");
+            return null;
         }
 
         public EncounterDefinition ResolveBossEncounter(System.Random rng)
         {
             if (BossPool != null && BossPool.Count > 0)
                 return BossPool[rng.Next(BossPool.Count)];
-            return WaveCount > 0 ? WaveDatabase.Waves[WaveCount - 1] : null;
+            Debug.LogError("[Act] BossPool이 비어 있습니다.");
+            return null;
         }
     }
 }
