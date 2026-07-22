@@ -168,11 +168,17 @@ void OnTurnEvent(CombatTrigger trigger, TurnEventContext context) { }
 Do **not** override `OnReact` and type-cast the context yourself — that is the old pattern. Only
 propagating containers (`PassiveManager`, `StatusEffectManager`, `TileData`) override `OnReact`.
 
+> ⚠️ **`override` 필수 (2026-07-21 죽은 훅 21개 사고)**: 베이스(`CharacterPassiveSkill` /
+> `PassiveAbility` / `StatusEffect` / `RuntimeArtifact`)를 상속하는 리액터는 훅을 반드시
+> `public override void`로 구현해야 한다. `public void`로 선언하면 인터페이스 매핑에서 빠져
+> **컴파일은 되지만 절대 호출되지 않는다** (CS0114 경고가 유일한 신호). 규칙 상세:
+> [combat_reactor_dispatch.md](combat_reactor_dispatch.md) §4.1.
+
 Example: a damage-boosting character passive overrides only `OnAttack`, gates on the trigger and
 owner, mutates `OutputValue`, and skips notification during simulation:
 
 ```csharp
-public void OnAttack(CombatTrigger trigger, AttackContext context)
+public override void OnAttack(CombatTrigger trigger, AttackContext context)
 {
     if (owner == null) return;
     if (trigger != CombatTrigger.OnCalculateOutput) return; // pick your phase

@@ -36,7 +36,7 @@ namespace DiceOrbit.Data.Passives
             return tiles;
         }
 
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
             if (trigger != CombatTrigger.OnCalculateOutput) return;

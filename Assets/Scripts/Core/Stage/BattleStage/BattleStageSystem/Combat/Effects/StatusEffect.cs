@@ -45,6 +45,12 @@ namespace DiceOrbit.Systems.Effects
         }
 
         // ICombatReactor: OnReact는 인터페이스 기본 디스패치(DIM)를 사용. 공통 지속시간 감소는 OnTurnEvent에서.
+        // ⚠️ 훅은 반드시 이 베이스에 virtual로 선언 + 자식은 override 필수 —
+        // override 없는 public void 선언은 매핑에서 빠져 절대 호출되지 않는다 (2026-07-21).
+        public virtual void OnAttack(CombatTrigger trigger, AttackContext context) { }
+        public virtual void OnHeal(CombatTrigger trigger, HealContext context) { }
+        public virtual void OnMove(CombatTrigger trigger, MoveContext context) { }
+
         public virtual void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             if (Owner == null) return;

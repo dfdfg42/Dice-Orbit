@@ -32,7 +32,6 @@ namespace DiceOrbit.Core.Run
         public float RestHealBonus01 => artifacts.Sum(a => a.RestHealBonusPercent) / 100f;
         public int   BattleGoldBonus => artifacts.Sum(a => a.BattleGoldBonus);
         public float ReviveHpBonus01 => artifacts.Sum(a => a.ReviveHpBonusPercent) / 100f;
-        public int   BattleStartHeal => artifacts.Sum(a => a.BattleStartHeal);
 
         private void Awake()
         {

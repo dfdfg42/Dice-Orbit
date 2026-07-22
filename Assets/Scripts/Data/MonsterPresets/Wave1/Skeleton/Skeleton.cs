@@ -88,7 +88,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
         [Tooltip("뼈 타일이 부여하는 일시 방어도")]
         [SerializeField] private int armorAmount = 10;
 
-        private WaveManager hookedManager;
+        private CombatManager hookedManager;
 
         public PlantBonePassive()
         {
@@ -103,31 +103,31 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
         public override void Initialize(Unit Owner)
         {
             base.Initialize(Owner);
-            SubscribeWaveStart();
+            SubscribeCombatStart();
 
-            // 웨이브 진행 중에 합류한 경우 즉시 설치
-            if (WaveManager.Instance != null && WaveManager.Instance.IsWaveActive)
+            // 전투 진행 중에 합류한 경우 즉시 설치
+            if (CombatManager.Instance != null && CombatManager.Instance.InCombat)
                 PlantBones();
         }
 
-        private void SubscribeWaveStart()
+        private void SubscribeCombatStart()
         {
-            var wm = WaveManager.Instance;
-            if (wm == null) return;
-            if (hookedManager == wm) return;
+            var cm = CombatManager.Instance;
+            if (cm == null) return;
+            if (hookedManager == cm) return;
 
-            if (hookedManager != null) hookedManager.OnWaveStart -= HandleWaveStart;
-            wm.OnWaveStart += HandleWaveStart;
-            hookedManager = wm;
+            if (hookedManager != null) hookedManager.OnCombatStart -= HandleCombatStart;
+            cm.OnCombatStart += HandleCombatStart;
+            hookedManager = cm;
         }
 
-        private void HandleWaveStart(int wave)
+        private void HandleCombatStart()
         {
             if (owner == null || !owner.IsAlive) return;
             PlantBones();
         }
 
-        // 전투 반응 없음 (뼈 설치는 WaveManager.OnWaveStart 구독으로 처리)
+        // 전투 반응 없음 (뼈 설치는 CombatManager.OnCombatStart 구독으로 처리)
 
         private void PlantBones()
         {

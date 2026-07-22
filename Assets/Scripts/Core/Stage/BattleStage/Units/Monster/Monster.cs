@@ -40,7 +40,7 @@ namespace DiceOrbit.Core
         public AttackIntent CurrentIntent => nextIntent; // AttackIntent 타입으로 반환
         public MonsterSkill NextSkill => nextSkill;      // 정보 패널 "다음 행동" 표시용
 
-        // 사망 이벤트 (WaveManager 등에서 구독)
+        // 사망 이벤트 (외부 구독용 — 장부 제거는 Die()의 CombatManager.OnMonsterDefeated 직접 호출)
         public event System.Action<Monster> OnDeath;
 
         // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
@@ -298,7 +298,7 @@ namespace DiceOrbit.Core
                 }
             }
 
-            // 사망 이벤트 발생 (WaveManager 등에서 감지)
+            // 사망 이벤트 발생 (외부 구독자 통지)
             OnDeath?.Invoke(this);
 
             // AttackIndicator에서 Intent 제거

@@ -51,7 +51,7 @@ public class SomeUI : MonoBehaviour
 `[SerializeReference]` 필드는 기본 인스펙터에서 타입을 고를 수 없다 → 드로어 제공:
 
 ```csharp
-[SerializeReference, SubclassPicker] public RelicCombatEffect CombatEffect;
+[SerializeReference, SubclassPicker] public RuntimeArtifact effect;   // 예: ArtifactData의 유물 효과
 ```
 - `Core/SubclassPickerAttribute.cs` (런타임) + `Editor/SubclassPickerDrawer.cs`
 - 드롭다운에 파생 타입 자동 나열 (TypeCache) → 선택 시 인스턴스 생성, 필드 인라인 편집

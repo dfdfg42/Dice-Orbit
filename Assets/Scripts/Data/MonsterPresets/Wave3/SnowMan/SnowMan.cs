@@ -169,7 +169,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
         public override string GetDynamicDescription()
             => $"눈사람이 디버프 부여/공격 성공 시 다른 아군 체력 +{healAmount}";
 
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
             if (trigger != CombatTrigger.OnHit || context.IsSimulation || !context.IsEffected) return;
@@ -189,7 +189,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
         }
 
         // 턴 종료 시 누적 피해 초기화
-        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             if (owner == null) return;
             if (trigger == CombatTrigger.OnPostAction &&

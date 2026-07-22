@@ -12,7 +12,7 @@
    ┌──────────────────────────────────────────────────────────────┘
    ▼
  NodeMapUI에서 노드 클릭 → GameFlowManager.OnNodeSelected(id)
-   ├─ ⚔️ Battle/💀 Elite/👑 Boss → Combat → WaveManager.StartEncounter(node.WaveIndex+1)
+   ├─ ⚔️ Battle/💀 Elite/👑 Boss → Combat → CombatManager.StartEncounter(node.Encounter, 층+1)
    │      └─ 클리어 → PartyManager.ReviveRetiredMembers() (점감 부활)
    │              ├─ Boss였으면 → Victory
    │              ├─ Elite였으면 → 유물 랜덤 드랍 (ArtifactManager.GrantRandom)
@@ -52,7 +52,8 @@
 | 파일 | 변경 |
 |---|---|
 | `GameFlowManager.cs` | 노드 라우팅 상태머신 (Map/Shop/Event 상태 추가) |
-| `WaveManager.cs` | 순차 진행 철거 → `StartEncounter(waveNumber)` 실행기만 |
+| `CombatManager.cs` | 전투 진입점 `StartEncounter` + 장부/승패/방송 단일 권위 (WaveManager 철거, 2026-07-21) |
+| `EncounterSpawner.cs` | 스폰 전용 도구 (인스턴스화·위치·정체성 색 — 장부/판정 없음) |
 | `Character.cs` | 사망 = 리타이어 모델 + `Revive()` |
 | `CharacterStats.cs` | `RevivalStock` (부활 스톡) |
 | `PartyManager.cs` | `ReviveRetiredMembers()` |
@@ -62,9 +63,12 @@
 
 ## 3. 핵심 설계 결정
 
-**① 진행의 권위는 RunManager 하나.** WaveManager는 "다음 전투가 뭔지" 모른다 —
-받은 웨이브 번호로 스폰+전멸 감지만. 이벤트 시그니처(`OnWaveStart(int)` 등)는 유지되어
-기존 구독자(패시브/배경/몬스터) 무수정.
+**① 진행의 권위는 RunManager, 전투 상태의 권위는 CombatManager.** (2026-07-21 정리 —
+스펙 `2026-07-21-combat-entry-encounter-cleanup-design.md`) WaveManager는 폐지되었다.
+`GameFlow → CombatManager.StartEncounter(몹세트, 층+1)` 직행, 스폰은 `EncounterSpawner`,
+전투 시작 방송은 `CombatManager.OnCombatStart`, 승/패 통지는 `OnEncounterCleared()`/
+`OnCombatDefeat()` 직접 호출. 유물 시작 회복은 `EventPhase.CombatStart` 파이프라인 방송에
+LifeAmulet이 리액터로 반응한다 (규칙: 전투 밖 수치 = 질의, 전투 안 행위 = 리액터).
 
 **② 막 = 데이터.** 2막 추가 = ActDefinition 에셋 하나 (+보스 클리어 분기에 다음 막 처리).
 
@@ -158,7 +162,7 @@ public class MyArtifact : RuntimeArtifact
 씬 `EventUI`의 **Gamble Events** 목록에 항목 추가 (제목/주사위 수/목표 합/보상/실패 피해).
 
 ### 2막
-`Create > DiceOrbit > Act Definition` → 몬스터 웨이브 DB/층 구성 지정.
+`Create > DiceOrbit > Act Definition` → 층 구성 + 티어/엘리트/보스 풀 + 기본 배경 지정.
 (현재 v1은 단일 막 → 보스 = 승리. 다막 전환은 GameFlow 보스 분기에서 확장)
 
 ## 5. 튜닝 포인트 (Inspector)

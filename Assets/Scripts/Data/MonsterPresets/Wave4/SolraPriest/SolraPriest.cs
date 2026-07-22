@@ -154,7 +154,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.SolraPriest
             return null;
         }
 
-        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             // 턴 종료 시점 실행
             if (trigger == CombatTrigger.OnPreAction &&

@@ -28,22 +28,22 @@ namespace DiceOrbit.Data.Passives
         {
             base.Initialize(ownerUnit);
 
-            // 웨이브가 넘어갈 때만 집중 스택 초기화 (공격으로는 소비되지 않음)
-            if (WaveManager.Instance != null)
+            // 전투가 넘어갈 때만 집중 스택 초기화 (공격으로는 소비되지 않음)
+            if (CombatManager.Instance != null)
             {
-                WaveManager.Instance.OnWaveStart -= HandleWaveStart;
-                WaveManager.Instance.OnWaveStart += HandleWaveStart;
+                CombatManager.Instance.OnCombatStart -= HandleCombatStart;
+                CombatManager.Instance.OnCombatStart += HandleCombatStart;
             }
         }
 
-        private void HandleWaveStart(int wave)
+        private void HandleCombatStart()
         {
             owner?.StatusEffects?.RemoveEffect(EffectType.Focus);
             hpAtTurnStart = -1;
         }
 
         // 공격받으면 집중 감소
-        public void OnAttack(CombatTrigger trigger, AttackContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
             if (trigger != CombatTrigger.OnPostAction) return;
@@ -52,7 +52,7 @@ namespace DiceOrbit.Data.Passives
         }
 
         // 턴 종료 시 체력 손실 여부로 확인
-        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             if (owner == null) return;
             if (trigger != CombatTrigger.OnPostAction || context.Phase != EventPhase.TurnEnd) return;

@@ -14,7 +14,7 @@ namespace DiceOrbit.Core.Run
         public int Floor;                        // 0 = 시작층, FloorCount-1 = 보스층
         public int Lane;                         // 층 내 가로 위치 (UI 배치용)
         public MapNodeType Type;
-        [NonSerialized] public WaveDefinition Encounter;   // 이 노드의 몹 세트 (전투류만 — 생성 시 티어 풀에서 배정)
+        [NonSerialized] public EncounterDefinition Encounter;   // 이 노드의 몹 세트 (전투류만 — 생성 시 티어 풀에서 배정)
         public bool DiceModReward;               // 주사위 개조 드랍 예고 (맵에 아이콘 표시)
         public bool Visited;
         public List<int> Next = new List<int>(); // 다음 층에서 이동 가능한 노드 Id들

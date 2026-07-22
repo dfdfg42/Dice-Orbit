@@ -14,25 +14,25 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
     // 웨이브 단위 지뢰밭 정리 훅
     // ==========================================
     /// <summary>
-    /// 지뢰는 고블린 사망 후에도 유지되고, 웨이브 종료(=다음 웨이브 시작) 시에만 정리된다.
-    /// WaveManager.OnWaveStart 에 한 번만 구독해 잔여 지뢰 타일을 제거한다.
+    /// 지뢰는 고블린 사망 후에도 유지되고, 전투 종료(=다음 전투 시작) 시에만 정리된다.
+    /// CombatManager.OnCombatStart 에 한 번만 구독해 잔여 지뢰 타일을 제거한다.
     /// </summary>
     public static class MineFieldCleaner
     {
-        private static WaveManager hookedManager;
+        private static CombatManager hookedManager;
 
         public static void EnsureWaveHook()
         {
-            var wm = WaveManager.Instance;
-            if (wm == null) return;
-            if (hookedManager == wm) return;
+            var cm = CombatManager.Instance;
+            if (cm == null) return;
+            if (hookedManager == cm) return;
 
-            if (hookedManager != null) hookedManager.OnWaveStart -= OnWaveStart;
-            wm.OnWaveStart += OnWaveStart;
-            hookedManager = wm;
+            if (hookedManager != null) hookedManager.OnCombatStart -= OnCombatStart;
+            cm.OnCombatStart += OnCombatStart;
+            hookedManager = cm;
         }
 
-        private static void OnWaveStart(int wave)
+        private static void OnCombatStart()
         {
             var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
             if (orbit?.Tiles == null) return;
@@ -167,7 +167,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public override string GetDynamicDescription()
             => $"매 턴 시작 시 무작위 타일 {minesPerTurn}개에 {mineDamage} 피해 지뢰 설치 (중첩 가능)";
 
-        public void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
             if (context.Phase == EventPhase.TurnStart && context.SourceUnit == owner && trigger == CombatTrigger.OnPreAction)
             {

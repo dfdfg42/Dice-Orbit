@@ -210,16 +210,16 @@ namespace DiceOrbit.Core
             var run = RunManager.Instance;
             if (run != null && run.RunActive && run.CurrentNode != null && run.CurrentNode.IsCombat)
             {
-                // 노드맵 흐름: 노드가 배정받은 몹 세트로 전투 시작 (번호는 층+1 — 표시/배경용)
-                if (WaveManager.Instance != null && !WaveManager.Instance.IsWaveActive)
+                // 노드맵 흐름: 노드가 배정받은 몹 세트로 전투 시작 (번호는 층+1 — 표시용)
+                if (CombatManager.Instance != null && !CombatManager.Instance.InCombat)
                 {
                     if (run.CurrentNode.Encounter == null)
                     {
-                        Debug.LogError("[GameFlow] 이 노드에 몹 세트가 없습니다 — ActDefinition의 티어 풀/폴백 DB를 확인하세요.");
+                        Debug.LogError("[GameFlow] 이 노드에 몹 세트가 없습니다 — ActDefinition의 티어 풀을 확인하세요.");
                         ChangeState(GameState.Map);
                         return;
                     }
-                    WaveManager.Instance.StartEncounter(run.CurrentNode.Encounter, run.CurrentNode.Floor + 1);
+                    CombatManager.Instance.StartEncounter(run.CurrentNode.Encounter, run.CurrentNode.Floor + 1);
                 }
                 return;
             }
@@ -282,9 +282,9 @@ namespace DiceOrbit.Core
 
         // === 전투 결과 ===
 
-        public void OnWaveCleared(int wave)
+        public void OnEncounterCleared()
         {
-            Debug.Log($"[GameFlow] Wave {wave} Cleared.");
+            Debug.Log("[GameFlow] Encounter Cleared.");
 
             // 승리 확정 → 리타이어한 파티원 점감 부활 (스펙 §4: 전투 종료 후 부활)
             PartyManager.Instance?.ReviveRetiredMembers();
@@ -305,15 +305,6 @@ namespace DiceOrbit.Core
             }
 
             ChangeState(GameState.Reward);
-        }
-
-        private void OnWaveStarted(int wave)
-        {
-            Debug.Log($"[GameFlow] Wave {wave} Started. Combat Beginning.");
-            if (CombatManager.Instance != null)
-            {
-                CombatManager.Instance.StartCombat();
-            }
         }
 
         public void OnRewardComplete()
@@ -525,15 +516,7 @@ namespace DiceOrbit.Core
             // 저장된 환경설정(볼륨/전체화면) 적용 — 씬의 AudioManager가 새로 뜬 뒤에
             UI.SettingsUI.ApplySavedSettings();
 
-            // Subscribe to WaveManager events
-            if (WaveManager.Instance != null)
-            {
-                WaveManager.Instance.OnWaveStart -= OnWaveStarted;
-                WaveManager.Instance.OnWaveStart += OnWaveStarted;
-
-                WaveManager.Instance.OnWaveClear -= OnWaveCleared;
-                WaveManager.Instance.OnWaveClear += OnWaveCleared;
-            }
+            // (전투 결과 통지는 CombatManager가 OnEncounterCleared/OnCombatDefeat를 직접 호출 — 구독 불필요)
 
             // 재시작 후 재진입: 영입 화면부터 다시 시작
             if (pendingRestart)
