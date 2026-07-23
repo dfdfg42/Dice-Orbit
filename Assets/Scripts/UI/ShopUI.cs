@@ -199,7 +199,7 @@ namespace DiceOrbit.UI
         // 진열대: 포션 + 유물 (스펙 §2 — 골드의 소비처)
         // ─────────────────────────────────────────────
 
-        private readonly List<PotionDefinition> _potionOffers = new List<PotionDefinition>();
+        private readonly List<Potion> _potionOffers = new List<Potion>();
         private readonly List<ArtifactData> _relicOffers = new List<ArtifactData>();
         private readonly HashSet<Object> _soldOut = new HashSet<Object>();
 
