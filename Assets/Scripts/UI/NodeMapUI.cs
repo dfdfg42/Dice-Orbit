@@ -29,7 +29,7 @@ namespace DiceOrbit.UI
         [Header("배경 스킨 (선택 — 비우면 펠트색)")]
         [SerializeField] private Sprite backgroundSprite;
 
-        [Header("노드 스킨 (선택 — 비우면 텍스트 카드). 통짜 이미지, 상태는 색조/테두리로 표현")]
+        [Header("노드 스킨 (선택 — 비우면 텍스트 카드). 통짜 이미지, 상태는 밝기로 표현 (밝음=갈 수 있음, 어두움=현재/지나옴)")]
         [SerializeField] private Sprite battleSprite;
         [SerializeField] private Sprite eliteSprite;
         [SerializeField] private Sprite shopSprite;
@@ -231,29 +231,25 @@ namespace DiceOrbit.UI
             rect.anchoredPosition = pos;
             rect.sizeDelta = new Vector2(size, size);
 
-            // 테두리: 금 = 선택 가능, 흰(잉크) = 현재 위치 (스킨 모드 — 금색 카드 배경 대체)
-            if (isSelectable)
-                CreateNodeRing(go.transform, Gold);
-            else if (isCurrent && skin != null)
-                CreateNodeRing(go.transform, Ink);
-
             var img = go.AddComponent<Image>();
             if (skin != null)
             {
-                // 통짜 이미지 스킨 — 상태는 색조로 (원색 = 현재/선택가능, 흐림 = 방문/잠김)
+                // 통짜 이미지 스킨 — 상태는 밝기로: 갈 수 있는 노드 = 원색(밝음),
+                // 현재 위치 = 어둡게, 지나온/잠긴 노드 = 그 사이 흐림
                 img.sprite = skin;
                 img.preserveAspect = true;
-                img.color = node.Visited && !isCurrent ? new Color(0.45f, 0.45f, 0.50f, 0.85f)
-                          : (isCurrent || isSelectable) ? Color.white
-                          : new Color(0.60f, 0.60f, 0.66f);
+                img.color = isSelectable ? Color.white
+                          : isCurrent ? new Color(0.42f, 0.42f, 0.48f)
+                          : node.Visited ? new Color(0.50f, 0.50f, 0.55f, 0.85f)
+                          : new Color(0.65f, 0.65f, 0.70f);
             }
             else
             {
                 img.sprite = UiRoundedSprite.Get(16);
                 img.type = Image.Type.Sliced;
-                img.color = isCurrent ? Gold
+                img.color = isSelectable ? CardEdge
+                          : isCurrent ? new Color(0.07f, 0.08f, 0.12f)
                           : node.Visited ? new Color(Dim.r, Dim.g, Dim.b, 0.55f)
-                          : isSelectable ? CardEdge
                           : Card;
             }
 
@@ -267,7 +263,7 @@ namespace DiceOrbit.UI
                 label.fontSize = node.Type == MapNodeType.Boss ? 22f : 16f;
                 label.fontStyle = FontStyles.Bold;
                 label.alignment = TextAlignmentOptions.Center;
-                label.color = isCurrent ? new Color(0.1f, 0.09f, 0.06f) : node.Visited ? Dim : Ink;
+                label.color = node.Visited && !isCurrent ? Dim : Ink;
                 label.raycastTarget = false;
                 if (_font != null) label.font = _font;
                 var labelRect = label.rectTransform;
@@ -297,37 +293,29 @@ namespace DiceOrbit.UI
                 var btn = go.AddComponent<Button>();
                 btn.targetGraphic = img;
                 var cb = ColorBlock.defaultColorBlock;
-                if (skin != null)
-                {
-                    cb.normalColor = new Color(0.88f, 0.88f, 0.88f);   // 흰 틴트 이미지는 1 초과가 안 먹혀 — 평소 살짝 어둡게, 호버 시 원색
-                    cb.highlightedColor = Color.white;
-                }
-                else
-                {
-                    cb.normalColor = Color.white;
-                    cb.highlightedColor = new Color(1.2f, 1.2f, 1.2f);
-                }
+                cb.normalColor = Color.white;
+                cb.highlightedColor = skin != null ? Color.white : new Color(1.2f, 1.2f, 1.2f);
                 cb.pressedColor = new Color(0.8f, 0.8f, 0.8f);
                 cb.fadeDuration = 0.08f;
                 btn.colors = cb;
+
+                go.AddComponent<NodeHoverPop>();   // 호버 시 살짝 커지는 팝
                 int id = node.Id;
                 btn.onClick.AddListener(() => GameFlowManager.Instance?.OnNodeSelected(id));
             }
         }
 
-        /// <summary>노드 둘레 링 (금 = 선택 가능, 잉크 = 현재 위치).</summary>
-        private static void CreateNodeRing(Transform parent, Color color)
+        /// <summary>마우스 오버 시 노드가 살짝 커지는 팝 효과 (선택 가능 노드에만 부착).</summary>
+        private class NodeHoverPop : MonoBehaviour,
+            UnityEngine.EventSystems.IPointerEnterHandler, UnityEngine.EventSystems.IPointerExitHandler
         {
-            var ringGo = new GameObject("Ring", typeof(RectTransform));
-            ringGo.transform.SetParent(parent, false);
-            var ringRect = (RectTransform)ringGo.transform;
-            ringRect.anchorMin = Vector2.zero; ringRect.anchorMax = Vector2.one;
-            ringRect.offsetMin = new Vector2(-5, -5); ringRect.offsetMax = new Vector2(5, 5);
-            var ringImg = ringGo.AddComponent<Image>();
-            ringImg.sprite = UiRoundedSprite.Get(20);
-            ringImg.type = Image.Type.Sliced;
-            ringImg.color = color;
-            ringImg.raycastTarget = false;
+            private Vector3 _target = Vector3.one;
+
+            public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData e) => _target = Vector3.one * 1.12f;
+            public void OnPointerExit(UnityEngine.EventSystems.PointerEventData e) => _target = Vector3.one;
+
+            private void Update()
+                => transform.localScale = Vector3.Lerp(transform.localScale, _target, Time.unscaledDeltaTime * 14f);
         }
 
         private Sprite GetNodeSprite(MapNodeType type) => type switch
