@@ -52,22 +52,32 @@
 "동작이 맞는가"는 §마지막의 Windows Unity 체크리스트가 유일한 게이트다. 이 계획은 그 사실을
 숨기지 않는다. 컴파일이 통과했다고 "동작한다"고 보고하지 말 것.
 
-**컴파일 검증조차 Unity와 완전히 같지 않다.** `compile-check.sh`는 `Assets/Scripts` 전체를 한
-어셈블리로 묶어 `UNITY_EDITOR`를 켠 채 컴파일하지만, Unity는 최소 둘로 쪼갠다.
+**컴파일 검증은 Unity의 어셈블리 분할을 그대로 흉내낸다.** Unity가 스크립트를 쪼개는 방식과
+같게 두 번 컴파일한다.
 
-| Unity 어셈블리 | 대상 |
-|---|---|
-| `Assembly-CSharp` | `Assets/Scripts/` 중 `Editor/` 밖 전부 |
-| `Assembly-CSharp-Editor` | `Assets/Scripts/Editor/` 아래 |
+| 단계 | 대상 | `UNITY_EDITOR` | 참조 |
+|---|---|---|---|
+| `Assembly-CSharp` | `Assets/Scripts/` 중 `Editor/` 밖 (169개) | **끔** | `UnityEngine.*`만 |
+| `Assembly-CSharp-Editor` | `Assets/Scripts/**/Editor/**` (3개) | 켬 | `UnityEngine.*` + `UnityEditor.*` + 위 결과 |
 
-그래서 이 스크립트가 **놓치는 오류 두 종류**가 있다.
+이 분할 덕분에 **단일 컴파일이 놓치던 두 종류를 잡는다.** 2026-07-28 세션에서 일부러 위반을
+심어 확인했다.
 
-1. **어셈블리 경계 접근** — 런타임 클래스의 `internal` 멤버를 에디터 코드에서 부르면 Unity에서는
-   `CS0122`지만 이 스크립트는 통과시킨다. 그래서 태스크 2의 `EditorSetContents`/
-   `EditorContentsEqual`은 `internal`이 아니라 `public`이다.
-2. **`UNITY_EDITOR`로 감싼 코드 밖의 문제** — 플레이어 빌드에서만 드러나는 오류는 잡히지 않는다.
+| 위반 | 단일 컴파일 | 분할 컴파일 |
+|---|---|---|
+| 에디터 코드가 런타임 클래스의 `internal` 멤버 접근 | `COMPILE OK` (놓침) | `CS0117` 검출 |
+| 런타임 코드가 `#if UNITY_EDITOR` 밖에서 `UnityEditor` API 사용 | `COMPILE OK` (놓침) | `CS0234` 검출 |
 
-두 가지 모두 Windows Unity가 최종 게이트다.
+첫 번째가 실제로 이 계획에 영향을 줬다 — 태스크 2의 `EditorSetContents`/`EditorContentsEqual`이
+`internal`이 아니라 `public`인 이유다.
+
+**그래도 동작 검증은 아니다.** 잡히지 않는 것은 여전히 남는다.
+
+- 씬·프리팹의 직렬화 참조가 살아 있는지 (`.meta` GUID, 인스펙터 배선)
+- `OnValidate`·`AssetPostprocessor` 같은 에디터 수명주기가 실제로 도는지
+- 런타임 로직이 의도대로 동작하는지
+
+이것들은 Windows Unity가 유일한 게이트다.
 
 ---
 
@@ -255,12 +265,18 @@ chmod +x Tools/setup-compile-refs.sh
 
 ```bash
 #!/usr/bin/env bash
-# Roslyn 컴파일 검증 — Unity 없이 타입/컴파일 오류만 확인한다.
+# Roslyn 컴파일 검증 — Unity 없이 타입/컴파일 오류를 확인한다.
 #
-# 이것은 동작 검증이 아니다. 통과했다고 "동작한다"고 보고하지 말 것.
-# Unity와 완전히 같지도 않다 — 여기서는 Assets/Scripts 전체를 한 어셈블리로 묶어
-# UNITY_EDITOR를 켠 채 컴파일하지만, Unity는 Assembly-CSharp / Assembly-CSharp-Editor로
-# 쪼갠다. 어셈블리 경계를 넘는 internal 접근 오류(CS0122)는 여기서 잡히지 않는다.
+# Unity의 어셈블리 분할을 그대로 흉내낸다:
+#   1) Assembly-CSharp        Editor/ 밖.  UNITY_EDITOR 끔.  UnityEngine.* 만 참조
+#   2) Assembly-CSharp-Editor Editor/ 안.  UNITY_EDITOR 켬.  + UnityEditor.* + 1)
+#
+# 그래서 어셈블리 경계를 넘는 internal 접근과, #if UNITY_EDITOR 밖으로 새어나온
+# 에디터 API 사용이 잡힌다. 한 덩어리로 컴파일하면 둘 다 놓친다.
+#
+# 다만 동작 검증은 아니다. 통과했다고 "동작한다"고 보고하지 말 것 —
+# 씬·프리팹 직렬화 참조, OnValidate/AssetPostprocessor 수명주기, 런타임 로직은
+# Windows Unity에서만 확인된다.
 #
 # 준비물은 Tools/setup-compile-refs.sh가 만든다.
 set -uo pipefail
@@ -279,33 +295,45 @@ fi
 CSC="$(ls -d "$HOME"/.dotnet/sdk/*/Roslyn/bincore/csc.dll 2>/dev/null | sort | tail -1)"
 if [ -z "$CSC" ]; then echo "ERROR: Roslyn csc.dll을 찾지 못했습니다." >&2; exit 2; fi
 
-RSP="$OUT/compile.rsp"
-: > "$RSP"
-
 # ── 참조 ──
 # UnityEngine.dll / UnityEditor.dll(집합체)은 제외한다 — 모듈 DLL과 같은 타입을 재노출해
 # CS0433(타입 중복)을 5,000건 넘게 일으킨다. 실제 타입은 전부 *Module.dll에 있다.
-{
-  find "$REFS/Editor/Data/Managed/UnityEngine" -name '*.dll' \
-       ! -name 'UnityEngine.dll' ! -name 'UnityEditor.dll' -printf '-r:%p\n'
-  find "$REFS/Editor/Data/NetStandard" -name 'netstandard.dll' -printf '-r:%p\n'
-  find "$REFS/prebuilt" -name '*.dll' -printf '-r:%p\n'
-} >> "$RSP"
+#
+# 런타임 어셈블리에는 UnityEditor.* 를 주지 않는다 — 실제 Unity도 주지 않는다.
+# 이래야 #if UNITY_EDITOR 밖으로 새어나온 에디터 API 사용이 CS0234로 잡힌다.
+RUNTIME_REFS=()
+while IFS= read -r d; do RUNTIME_REFS+=("-r:$d"); done < <(
+  find "$REFS/Editor/Data/Managed/UnityEngine" -name 'UnityEngine*.dll' ! -name 'UnityEngine.dll'
+  find "$REFS/Editor/Data/NetStandard" -name 'netstandard.dll'
+  find "$REFS/prebuilt" -name '*.dll'
+)
 
-# ── 소스: 프로젝트만 ──
-find "$ROOT/Assets/Scripts" -name '*.cs' -printf '"%p"\n' >> "$RSP"
+EDITOR_REFS=("${RUNTIME_REFS[@]}")
+while IFS= read -r d; do EDITOR_REFS+=("-r:$d"); done < <(
+  find "$REFS/Editor/Data/Managed/UnityEngine" -name 'UnityEditor*.dll' ! -name 'UnityEditor.dll'
+)
 
-"$DOTNET" "$CSC" \
-  -nologo -noconfig -nostdlib \
-  -target:library -out:"$OUT/DiceOrbit.dll" \
-  -langversion:9 -unsafe \
-  -define:UNITY_EDITOR -define:UNITY_2020_1_OR_NEWER -define:UNITY_6000_0_OR_NEWER \
-  -warn:0 \
-  "@$RSP"
+COMMON=(-nologo -noconfig -nostdlib -target:library -langversion:9 -unsafe -warn:0
+        -define:UNITY_2020_1_OR_NEWER -define:UNITY_6000_0_OR_NEWER)
 
-STATUS=$?
-if [ $STATUS -eq 0 ]; then echo "COMPILE OK"; else echo "COMPILE FAILED (exit $STATUS)"; fi
-exit $STATUS
+# ── 1) Assembly-CSharp (런타임) — UNITY_EDITOR를 켜지 않는다 ──
+find "$ROOT/Assets/Scripts" -name '*.cs' -not -path '*/Editor/*' -printf '"%p"\n' > "$OUT/runtime.rsp"
+echo "── Assembly-CSharp ($(wc -l < "$OUT/runtime.rsp"))"
+"$DOTNET" "$CSC" "${COMMON[@]}" \
+  -out:"$OUT/Assembly-CSharp.dll" "${RUNTIME_REFS[@]}" "@$OUT/runtime.rsp" \
+  || { echo "COMPILE FAILED (Assembly-CSharp)"; exit 1; }
+
+# ── 2) Assembly-CSharp-Editor — 1)을 참조 ──
+find "$ROOT/Assets/Scripts" -name '*.cs' -path '*/Editor/*' -printf '"%p"\n' > "$OUT/editor.rsp"
+if [ -s "$OUT/editor.rsp" ]; then
+  echo "── Assembly-CSharp-Editor ($(wc -l < "$OUT/editor.rsp"))"
+  "$DOTNET" "$CSC" "${COMMON[@]}" -define:UNITY_EDITOR \
+    -out:"$OUT/Assembly-CSharp-Editor.dll" "${EDITOR_REFS[@]}" \
+    -r:"$OUT/Assembly-CSharp.dll" "@$OUT/editor.rsp" \
+    || { echo "COMPILE FAILED (Assembly-CSharp-Editor)"; exit 1; }
+fi
+
+echo "COMPILE OK"
 ```
 
 ```bash
@@ -318,14 +346,17 @@ chmod +x Tools/compile-check.sh
 ./Tools/compile-check.sh 2>&1 | tail -10
 ```
 
-기대: `COMPILE FAILED`와 함께 **정확히 아래 5건**의 `CS0234`.
+기대: `COMPILE FAILED (Assembly-CSharp)`와 함께 **정확히 아래 5건**의 `CS0234`.
+다섯 파일 모두 `Editor/` 밖이므로 1단계에서 걸린다.
 
 ```
+── Assembly-CSharp (169)
 SkillData.cs(6,20):    'VisualScripting' does not exist in the namespace 'Unity'
 OrbitManager.cs(6,13): 'VisualScripting' does not exist in the namespace 'Unity'
 RandMineTile.cs(3,20): 'VisualScripting' does not exist in the namespace 'Unity'
 RandMineTile.cs(5,36): 'DebugUI' does not exist in the namespace 'UnityEngine.Rendering'
 LunaPriest.cs(11,36):  'DebugUI' does not exist in the namespace 'UnityEngine.Rendering'
+COMPILE FAILED (Assembly-CSharp)
 ```
 
 **다른 에러가 섞여 나오면 하네스 문제다.** 아직 코드를 하나도 바꾸지 않은 상태이므로,
@@ -376,7 +407,13 @@ using static UnityEngine.Rendering.DebugUI;
 ./Tools/compile-check.sh 2>&1 | tail -5
 ```
 
-기대: `COMPILE OK` (1초 미만).
+기대 (약 0.8초):
+
+```
+── Assembly-CSharp (169)
+── Assembly-CSharp-Editor (3)
+COMPILE OK
+```
 
 - [ ] **Step 7: 커밋**
 
@@ -388,10 +425,17 @@ git add Tools/setup-compile-refs.sh Tools/compile-check.sh \
         "Assets/Scripts/Data/MonsterPresets/Wave4/LunaPriest/LunaPriest.cs"
 git commit -m "chore: Roslyn 컴파일 검증 환경 추가
 
-Unity 없이 타입·컴파일 오류를 확인한다. 참조는 Unity 6000.3.8f1 에디터
-tar에서 매니지드 DLL만 추출하고, ugui/inputsystem 패키지 소스는 원래
-어셈블리 이름으로 미리 DLL 빌드해 둔다 — 이름이 다르면 Unity 모듈의
-InternalsVisibleTo가 걸리지 않아 internal 접근이 막힌다.
+Unity 없이 타입·컴파일 오류를 확인한다. 리눅스 에디터 바이너리는 x86-64라
+이 ARM64 VM에서 실행할 수 없지만(실측: ELF e_machine 0x3e, ARM64 빌드는
+배포 안 됨), 매니지드 DLL은 순수 IL이라 참조는 된다.
+
+Unity의 어셈블리 분할을 흉내내 두 번 컴파일한다 — Assembly-CSharp는
+UNITY_EDITOR 없이 UnityEngine.*만 참조, Assembly-CSharp-Editor는 그 결과를
+참조. 한 덩어리로 묶으면 어셈블리 경계 internal 접근과 #if 밖 에디터 API
+사용을 둘 다 놓친다.
+
+ugui/inputsystem 패키지 소스는 원래 어셈블리 이름으로 미리 DLL 빌드한다 —
+이름이 다르면 Unity 모듈의 InternalsVisibleTo가 걸리지 않아 CS0122가 난다.
 
 미사용 using 5줄(Unity.VisualScripting 3, UnityEngine.Rendering.DebugUI 2)을
 함께 제거했다. 이게 있으면 하네스가 두 패키지를 통째로 빌드해야 한다."
