@@ -25,6 +25,14 @@ namespace DiceOrbit.UI
         [SerializeField] private RectTransform mapRoot;      // 스크롤 Content — 노드/간선이 그려지는 영역
         [SerializeField] private TextMeshProUGUI titleText;
 
+        [Header("노드 스킨 (선택 — 비우면 텍스트 카드). 통짜 이미지, 상태는 색조/테두리로 표현")]
+        [SerializeField] private Sprite battleSprite;
+        [SerializeField] private Sprite eliteSprite;
+        [SerializeField] private Sprite shopSprite;
+        [SerializeField] private Sprite restSprite;
+        [SerializeField] private Sprite eventSprite;
+        [SerializeField] private Sprite bossSprite;
+
         [Header("배치")]
         [SerializeField] private float nodeSize = 72f;
         [SerializeField] private float laneSpacing = 170f;   // 층 내 가로 간격
@@ -176,6 +184,7 @@ namespace DiceOrbit.UI
         private void CreateNodeButton(MapNode node, Vector2 pos, bool isSelectable, bool isCurrent)
         {
             float size = node.Type == MapNodeType.Boss ? nodeSize * 1.4f : nodeSize;
+            var skin = GetNodeSprite(node.Type);
 
             var go = new GameObject($"Node_{node.Id}", typeof(RectTransform));
             go.transform.SetParent(mapRoot, false);
@@ -184,43 +193,49 @@ namespace DiceOrbit.UI
             rect.anchoredPosition = pos;
             rect.sizeDelta = new Vector2(size, size);
 
-            // 선택 가능 노드: 골드 테두리
+            // 테두리: 금 = 선택 가능, 흰(잉크) = 현재 위치 (스킨 모드 — 금색 카드 배경 대체)
             if (isSelectable)
-            {
-                var edgeGo = new GameObject("Edge", typeof(RectTransform));
-                edgeGo.transform.SetParent(go.transform, false);
-                var edgeRect = (RectTransform)edgeGo.transform;
-                edgeRect.anchorMin = Vector2.zero; edgeRect.anchorMax = Vector2.one;
-                edgeRect.offsetMin = new Vector2(-5, -5); edgeRect.offsetMax = new Vector2(5, 5);
-                var edgeImg = edgeGo.AddComponent<Image>();
-                edgeImg.sprite = UiRoundedSprite.Get(20);
-                edgeImg.type = Image.Type.Sliced;
-                edgeImg.color = Gold;
-                edgeImg.raycastTarget = false;
-            }
+                CreateNodeRing(go.transform, Gold);
+            else if (isCurrent && skin != null)
+                CreateNodeRing(go.transform, Ink);
 
             var img = go.AddComponent<Image>();
-            img.sprite = UiRoundedSprite.Get(16);
-            img.type = Image.Type.Sliced;
-            img.color = isCurrent ? Gold
-                      : node.Visited ? new Color(Dim.r, Dim.g, Dim.b, 0.55f)
-                      : isSelectable ? CardEdge
-                      : Card;
+            if (skin != null)
+            {
+                // 통짜 이미지 스킨 — 상태는 색조로 (원색 = 현재/선택가능, 흐림 = 방문/잠김)
+                img.sprite = skin;
+                img.preserveAspect = true;
+                img.color = node.Visited && !isCurrent ? new Color(0.45f, 0.45f, 0.50f, 0.85f)
+                          : (isCurrent || isSelectable) ? Color.white
+                          : new Color(0.60f, 0.60f, 0.66f);
+            }
+            else
+            {
+                img.sprite = UiRoundedSprite.Get(16);
+                img.type = Image.Type.Sliced;
+                img.color = isCurrent ? Gold
+                          : node.Visited ? new Color(Dim.r, Dim.g, Dim.b, 0.55f)
+                          : isSelectable ? CardEdge
+                          : Card;
+            }
 
-            // 라벨
-            var labelGo = new GameObject("Label", typeof(RectTransform));
-            labelGo.transform.SetParent(go.transform, false);
-            var label = labelGo.AddComponent<TextMeshProUGUI>();
-            label.text = GetNodeLabel(node);
-            label.fontSize = node.Type == MapNodeType.Boss ? 22f : 16f;
-            label.fontStyle = FontStyles.Bold;
-            label.alignment = TextAlignmentOptions.Center;
-            label.color = isCurrent ? new Color(0.1f, 0.09f, 0.06f) : node.Visited ? Dim : Ink;
-            label.raycastTarget = false;
-            if (_font != null) label.font = _font;
-            var labelRect = label.rectTransform;
-            labelRect.anchorMin = Vector2.zero; labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = Vector2.zero; labelRect.offsetMax = Vector2.zero;
+            // 라벨 (스킨이 없을 때만 — 통짜 이미지는 아트가 타입을 표현)
+            if (skin == null)
+            {
+                var labelGo = new GameObject("Label", typeof(RectTransform));
+                labelGo.transform.SetParent(go.transform, false);
+                var label = labelGo.AddComponent<TextMeshProUGUI>();
+                label.text = GetNodeLabel(node);
+                label.fontSize = node.Type == MapNodeType.Boss ? 22f : 16f;
+                label.fontStyle = FontStyles.Bold;
+                label.alignment = TextAlignmentOptions.Center;
+                label.color = isCurrent ? new Color(0.1f, 0.09f, 0.06f) : node.Visited ? Dim : Ink;
+                label.raycastTarget = false;
+                if (_font != null) label.font = _font;
+                var labelRect = label.rectTransform;
+                labelRect.anchorMin = Vector2.zero; labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = Vector2.zero; labelRect.offsetMax = Vector2.zero;
+            }
 
             // 주사위 개조 예고 배지 (우상단 보라 점)
             if (node.DiceModReward && !node.Visited)
@@ -244,8 +259,16 @@ namespace DiceOrbit.UI
                 var btn = go.AddComponent<Button>();
                 btn.targetGraphic = img;
                 var cb = ColorBlock.defaultColorBlock;
-                cb.normalColor = Color.white;
-                cb.highlightedColor = new Color(1.2f, 1.2f, 1.2f);
+                if (skin != null)
+                {
+                    cb.normalColor = new Color(0.88f, 0.88f, 0.88f);   // 흰 틴트 이미지는 1 초과가 안 먹혀 — 평소 살짝 어둡게, 호버 시 원색
+                    cb.highlightedColor = Color.white;
+                }
+                else
+                {
+                    cb.normalColor = Color.white;
+                    cb.highlightedColor = new Color(1.2f, 1.2f, 1.2f);
+                }
                 cb.pressedColor = new Color(0.8f, 0.8f, 0.8f);
                 cb.fadeDuration = 0.08f;
                 btn.colors = cb;
@@ -253,6 +276,32 @@ namespace DiceOrbit.UI
                 btn.onClick.AddListener(() => GameFlowManager.Instance?.OnNodeSelected(id));
             }
         }
+
+        /// <summary>노드 둘레 링 (금 = 선택 가능, 잉크 = 현재 위치).</summary>
+        private static void CreateNodeRing(Transform parent, Color color)
+        {
+            var ringGo = new GameObject("Ring", typeof(RectTransform));
+            ringGo.transform.SetParent(parent, false);
+            var ringRect = (RectTransform)ringGo.transform;
+            ringRect.anchorMin = Vector2.zero; ringRect.anchorMax = Vector2.one;
+            ringRect.offsetMin = new Vector2(-5, -5); ringRect.offsetMax = new Vector2(5, 5);
+            var ringImg = ringGo.AddComponent<Image>();
+            ringImg.sprite = UiRoundedSprite.Get(20);
+            ringImg.type = Image.Type.Sliced;
+            ringImg.color = color;
+            ringImg.raycastTarget = false;
+        }
+
+        private Sprite GetNodeSprite(MapNodeType type) => type switch
+        {
+            MapNodeType.Battle => battleSprite,
+            MapNodeType.Elite  => eliteSprite,
+            MapNodeType.Shop   => shopSprite,
+            MapNodeType.Rest   => restSprite,
+            MapNodeType.Event  => eventSprite,
+            MapNodeType.Boss   => bossSprite,
+            _ => null,
+        };
 
         private static string GetNodeLabel(MapNode node) => node.Type switch
         {
