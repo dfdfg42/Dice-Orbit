@@ -150,8 +150,8 @@ namespace DiceOrbit.UI
                     if (!string.IsNullOrWhiteSpace(e.description)) desc = e.description;   // DB 수동 오버라이드
                 }
 
-                string dur = a.Duration < 0 ? "" : $"({a.Duration}T)";
-                string stackText = a.Value > 0 ? $"x{a.Value}" : "";
+                string dur = a.Duration < 0 ? "" : $"{a.Duration}T";
+                string stackText = a.Value > 0 ? a.Value.ToString() : "";
                 string meta = $"{stackText} {dur}".Trim();
                 string title = meta.Length > 0 ? $"{label}  {meta}" : label;
 
