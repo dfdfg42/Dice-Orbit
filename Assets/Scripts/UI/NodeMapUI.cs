@@ -33,6 +33,11 @@ namespace DiceOrbit.UI
         [SerializeField] private Sprite eventSprite;
         [SerializeField] private Sprite bossSprite;
 
+        [Header("간선 점선 (점 스프라이트는 선택 — 비우면 원형 점 자동 생성)")]
+        [SerializeField] private Sprite edgeDotSprite;
+        [SerializeField] private float edgeDotSize = 6f;
+        [SerializeField] private float edgeDotSpacing = 16f;
+
         [Header("배치")]
         [SerializeField] private float nodeSize = 72f;
         [SerializeField] private float laneSpacing = 170f;   // 층 내 가로 간격
@@ -65,16 +70,18 @@ namespace DiceOrbit.UI
             if (Instance != null) return;
             Instance = FindFirstObjectByType<NodeMapUI>(FindObjectsInactive.Include);
             if (Instance == null)
-            {
-                var go = new GameObject("NodeMapUI");
-                Instance = go.AddComponent<NodeMapUI>();
-            }
+                Debug.LogError("[NodeMapUI] 씬에 NodeMapUI가 없습니다 — 씬 배치 전용입니다 (런타임 생성 없음).");
         }
 
         // ── 공개 API ──────────────────────────────────────────
 
         public void Show()
         {
+            if (rootCanvas == null)
+            {
+                Debug.LogError("[NodeMapUI] rootCanvas 미배선 — 씬에서 슬롯을 연결하세요 (런타임 생성 없음).");
+                return;
+            }
             rootCanvas.SetActive(true);
             BattleInfoPanelUI.SetVisible(false);
             Rebuild();
@@ -166,19 +173,38 @@ namespace DiceOrbit.UI
 
         private void CreateEdge(Vector2 from, Vector2 to, Color color, float thickness)
         {
-            var go = new GameObject("Edge", typeof(RectTransform));
-            go.transform.SetParent(mapRoot, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);   // Content 아래 중앙 기준
-
             Vector2 delta = to - from;
-            rect.anchoredPosition = (from + to) * 0.5f;
-            rect.sizeDelta = new Vector2(delta.magnitude, thickness);
-            rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+            float length = delta.magnitude;
+            if (length < 0.01f) return;
+            Vector2 dir = delta / length;
+            float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+            float dotSize = edgeDotSize * (thickness >= 5f ? 1.5f : 1f);   // 활성 경로는 점을 굵게
 
-            var img = go.AddComponent<Image>();
-            img.color = color;
-            img.raycastTarget = false;
+            // 노드 밑에 깔리는 양 끝 구간은 건너뛰고 점을 찍는다
+            float margin = nodeSize * 0.55f;
+            for (float d = margin; d <= length - margin; d += edgeDotSpacing)
+            {
+                var dotGo = new GameObject("Dot", typeof(RectTransform));
+                dotGo.transform.SetParent(mapRoot, false);
+                var rect = (RectTransform)dotGo.transform;
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);   // Content 아래 중앙 기준
+                rect.anchoredPosition = from + dir * d;
+                rect.sizeDelta = new Vector2(dotSize, dotSize);
+                rect.localRotation = Quaternion.Euler(0f, 0f, angle);      // 방향성 스프라이트(발자국 등) 정렬용
+
+                var img = dotGo.AddComponent<Image>();
+                if (edgeDotSprite != null)
+                {
+                    img.sprite = edgeDotSprite;
+                    img.preserveAspect = true;
+                }
+                else
+                {
+                    img.sprite = UiRoundedSprite.Get(Mathf.CeilToInt(dotSize * 0.5f));   // 원형 점
+                }
+                img.color = color;
+                img.raycastTarget = false;
+            }
         }
 
         private void CreateNodeButton(MapNode node, Vector2 pos, bool isSelectable, bool isCurrent)
