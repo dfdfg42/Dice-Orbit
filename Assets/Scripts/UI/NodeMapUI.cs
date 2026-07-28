@@ -8,7 +8,7 @@ using DiceOrbit.Core.Run;
 namespace DiceOrbit.UI
 {
     /// <summary>
-    /// 노드맵 화면 (GameState.Map). 세로 진행형: 아래 출발 → 위 보스 (StS 방향), 세로 스크롤.
+    /// 노드맵 화면 (GameState.Map). 세로 진행형: 위 출발 → 아래 보스, 세로 스크롤.
     /// RunManager의 MapGraph를 그리고, 선택 가능 노드 클릭 → GameFlowManager.OnNodeSelected.
     ///
     /// "보드게임의 밤" 팔레트. 에디터 소유:
@@ -24,6 +24,10 @@ namespace DiceOrbit.UI
         [SerializeField] private ScrollRect scrollRect;
         [SerializeField] private RectTransform mapRoot;      // 스크롤 Content — 노드/간선이 그려지는 영역
         [SerializeField] private TextMeshProUGUI titleText;
+        [SerializeField] private Image backgroundImage;      // 배경 (씬 배치 — 스크롤뷰 밖이면 고정, mapRoot 안이면 맵과 함께 스크롤)
+
+        [Header("배경 스킨 (선택 — 비우면 펠트색)")]
+        [SerializeField] private Sprite backgroundSprite;
 
         [Header("노드 스킨 (선택 — 비우면 텍스트 카드). 통짜 이미지, 상태는 색조/테두리로 표현")]
         [SerializeField] private Sprite battleSprite;
@@ -84,6 +88,13 @@ namespace DiceOrbit.UI
             }
             rootCanvas.SetActive(true);
             BattleInfoPanelUI.SetVisible(false);
+
+            if (backgroundImage != null)
+            {
+                backgroundImage.sprite = backgroundSprite;
+                backgroundImage.color = backgroundSprite != null ? Color.white : Felt;
+            }
+
             Rebuild();
         }
 
@@ -112,16 +123,16 @@ namespace DiceOrbit.UI
             if (titleText != null)
                 titleText.text = run.CurrentAct != null ? run.CurrentAct.ActName : "노드맵";
 
-            // Content 높이 = 층 수 × 간격 + 상하 여백 (아래→위 진행)
+            // Content 높이 = 층 수 × 간격 + 상하 여백 (위→아래 진행)
             float contentHeight = verticalMargin * 2f + (map.FloorCount - 1) * floorSpacing;
             mapRoot.sizeDelta = new Vector2(mapRoot.sizeDelta.x, contentHeight);
 
-            // 노드 위치 계산 — 층 0이 맨 아래, 보스가 맨 위
+            // 노드 위치 계산 — 층 0이 맨 위, 보스가 맨 아래
             var positions = new Dictionary<int, Vector2>();
             for (int f = 0; f < map.FloorCount; f++)
             {
                 var floorNodes = map.GetFloor(f);
-                float y = verticalMargin + f * floorSpacing;
+                float y = contentHeight - verticalMargin - f * floorSpacing;
                 for (int i = 0; i < floorNodes.Count; i++)
                 {
                     float x = (i - (floorNodes.Count - 1) * 0.5f) * laneSpacing;
@@ -162,11 +173,12 @@ namespace DiceOrbit.UI
 
             float contentH = mapRoot.rect.height;
             float viewportH = scrollRect.viewport != null ? scrollRect.viewport.rect.height : 900f;
-            if (contentH <= viewportH) { scrollRect.verticalNormalizedPosition = 0f; return; }
+            if (contentH <= viewportH) { scrollRect.verticalNormalizedPosition = 1f; return; }
 
-            // 현재 층이 뷰포트 중앙보다 약간 아래 오도록
-            float targetY = verticalMargin + floor * floorSpacing - viewportH * 0.4f;
-            scrollRect.verticalNormalizedPosition = Mathf.Clamp01(targetY / (contentH - viewportH));
+            // 현재 층이 뷰포트 중앙보다 약간 위에 오도록 (위→아래 진행)
+            float nodeY = contentH - verticalMargin - floor * floorSpacing;
+            float targetBottom = nodeY - viewportH * 0.6f;
+            scrollRect.verticalNormalizedPosition = Mathf.Clamp01(targetBottom / (contentH - viewportH));
         }
 
         // ── 렌더링 ────────────────────────────────────────────
