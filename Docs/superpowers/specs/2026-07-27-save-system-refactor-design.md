@@ -25,6 +25,11 @@
    게임이 그대로 진행된다.
 7. **버그**: `ContinueGameFlow`가 `allModifiers`를 만들어 쓰지 않고, 모디파이어 **하나마다**
    `ModifierRegistry.CreateAll()`을 새로 호출한다.
+8. **복원이 획득 후보 목록에서 에셋을 찾는다.** `FindInPool`은 `artifactPool`/`potionPool`을 뒤지는데,
+   이 리스트는 원래 **상점 진열·드랍 후보**를 담는 게임 디자인용 목록이다. 풀 밖 경로(이벤트 보상 등)로
+   얻은 포션은 저장은 되지만 복원 때 찾지 못한다. 성격이 다른 두 역할을 한 리스트가 겸하고 있다.
+9. **캐릭터 프리셋 조회가 UI에 매달려 있다.** 복원이 `FindFirstObjectByType<CharacterSelectionUI>()`로
+   프리셋 목록을 얻으므로, 그 UI가 로드된 씬에 없으면 파티 복원이 통째로 실패한다.
 
 ## 2. 목표와 범위
 
@@ -93,12 +98,15 @@ private static List<IRunSaveParticipant> CollectParticipants(out string missing)
 public class RunRestoreContext
 {
     public CharacterSpawner Spawner;
-    public IReadOnlyList<CharacterPreset> AllPresets;   // CharacterSelectionUI.AllCharacters
+    public SaveIdCatalog Catalog;                       // 에셋 조회 출처 (§5)
     public RestoreReport Report;
 
     public CharacterPreset FindPreset(string saveId);   // 못 찾으면 null
 }
 ```
+
+프리셋 조회는 `CharacterSelectionUI.AllCharacters`가 아니라 **카탈로그**가 답한다(§1-9).
+복원이 UI 컴포넌트의 존재 여부에 의존하지 않게 하려는 것이다.
 
 ### 서비스
 
@@ -236,8 +244,7 @@ public class ArtifactData : ScriptableObject
     private void OnValidate()
     {
         if (string.IsNullOrEmpty(saveId))                     // 비어 있을 때만 = 최초 1회
-            saveId = effect != null ? effect.GetType().Name : name;
-        SaveIdValidator.WarnIfDuplicated(this);               // 아래 '복제 문제' 참조
+            saveId = name;                                    // 에셋 파일명
     }
 #endif
 }
@@ -255,25 +262,72 @@ Unity는 가장 파생된 클래스의 `OnValidate` 하나만 호출하므로, �
 
 | 대상 | 최초 값의 출처 | 예 |
 |---|---|---|
-| `ArtifactData` | `effect` 클래스명 | `"GoldenDice"` |
+| `ArtifactData` | 에셋 파일명 | `"PowerfullPunch"` |
 | `Potion` | 에셋 파일명 | `"NewHealPotion"` |
 | `CharacterPreset` | 에셋 파일명 | `"Warrior"` |
 | 모디파이어 | 클래스 타입명 (에셋 아님 — 코드 레지스트리) | `"SharpBladeModifier"` |
 
 한 번 채워진 뒤에는 표시 이름·에셋 파일명·클래스명·파라미터 값을 전부 바꿔도 `saveId`는 그대로다.
 
-### 왜 유물도 `saveId`인가
+에셋 파일명은 폴더가 다르면 겹칠 수 있다. 전역 유일성은 파일명이 아니라 **중복 검출기**가 보장한다.
 
-유물은 "클래스 1개 = 유물 1개" 규약이라 `effect.GetType().FullName`을 직접 저장할 수도 있었다
-(`ArtifactManager`는 이미 [`RemoveArtifact<T>()`](../../Assets/Scripts/Core/Run/Artifact/ArtifactManager.cs)로
-타입을 정체성으로 쓴다). 그러나 `saveId`로 통일했다.
+### 왜 타입명이 아니라 에셋 파일명인가
 
-- 복원 코드가 **한 갈래**로 유지된다. 유물만 별도 경로를 만들지 않는다.
+세 종류 모두 **"에셋 1개 = 게임 내 항목 1개"이고, 스크립트는 그 에셋 여럿에 대응할 수 있다**는
+전제 위에 있다. 그래서 정체성의 단위는 클래스가 아니라 에셋이고, ID도 에셋에서 나와야 한다.
+
 - 포션은 타입으로 식별할 수 없다 — `HealPotion.healAmount`처럼 튜닝 필드가 있어 회복량만 다른
   대/중/소 물약을 같은 클래스의 별도 에셋으로 만드는 것이 자연스럽다.
 - `CharacterPreset`은 클래스 하나에 에셋 넷이라 애초에 타입 식별이 불가능하다.
-- 유물 `saveId`의 기본값이 클래스명이므로 **파일에 들어가는 값은 타입 기반과 동일**하고,
-  나중에 같은 클래스로 에셋을 둘 만들 때 한쪽 `saveId`만 손으로 바꾸면 되는 탈출구가 남는다.
+- 유물도 마찬가지다. `ArtifactManager`가 [`RemoveArtifact<T>()`](../../Assets/Scripts/Core/Run/Artifact/ArtifactManager.cs)로
+  타입을 정체성처럼 쓰고 있어 한때 `effect` 클래스명을 기본값으로 삼았으나, **같은 효과 클래스로
+  에셋을 둘 이상 만들면 두 에셋이 같은 `saveId`로 자동 생성되어 충돌한다.** 1:N을 허용하는 이상
+  클래스명은 ID가 될 수 없다.
+
+결과적으로 복원 코드도 **한 갈래**로 유지된다. 유물만 별도 경로를 만들지 않는다.
+
+### 에셋 조회 — `SaveIdCatalog`
+
+`saveId`로 에셋을 되찾는 출처는 **획득 후보 풀이 아니다**(§1-8). `artifactPool`/`potionPool`은
+상점 진열·드랍 후보를 담는 게임 디자인용 목록이고, 풀 밖 경로로도 포션·유물이 게임에 들어온다.
+복원은 **프로젝트에 존재하는 모든 대상 에셋**을 볼 수 있어야 한다. 두 목록을 분리한다.
+
+| 목록 | 역할 | 성격 |
+|---|---|---|
+| `artifactPool` / `potionPool` | 획득 후보 — 상점 진열, 랜덤 드랍 | 게임 디자인. 의도적으로 일부만 담는다 |
+| `SaveIdCatalog` | 복원 조회 대상 | 세이브 인프라. 하나라도 빠지면 안 된다 |
+
+```csharp
+public class SaveIdCatalog : ScriptableObject
+{
+    [SerializeField] private List<ArtifactData>    artifacts;
+    [SerializeField] private List<Potion>          potions;
+    [SerializeField] private List<CharacterPreset> presets;
+
+    private static SaveIdCatalog _cached;
+    public static SaveIdCatalog Get() => _cached ??= Resources.Load<SaveIdCatalog>("SaveIdCatalog");
+
+    public ArtifactData    FindArtifact(string saveId);   // Dictionary 인덱스, 최초 1회 빌드
+    public Potion          FindPotion(string saveId);
+    public CharacterPreset FindPreset(string saveId);
+}
+```
+
+에셋은 `Assets/Resources/SaveIdCatalog.asset`에 둔다. 이 저장소는 이미 `TileAttributeVisualDatabase`,
+`TooltipKeywordDatabase`, `TileVfxDatabase`를 **정확히 이 방식**(`Resources.Load` + 정적 캐시)으로
+쓰고 있어 새로 만드는 관례가 아니다. `Resources` 아래에 있으므로 참조된 에셋이 빌드에서 스트립되지 않는다.
+
+조회는 리스트 선형 순회가 아니라 `Dictionary<string, T>` 인덱스로 한다. 인덱스를 만드는 시점이
+곧 **런타임 중복 `saveId` 검출 지점**이다.
+
+**수동 갱신 단계를 두지 않는 것이 이 안의 전제 조건이다.** "카탈로그에 등록하는 걸 깜빡해서 복원이
+깨진다"면 풀을 쓰던 때와 달라지는 게 없다. `AssetPostprocessor.OnPostprocessAllAssets`로 대상 타입
+에셋이 임포트·삭제·이동될 때 카탈로그를 자동 재스캔한다. 새 포션 에셋을 만들면 저절로 들어간다.
+
+대안으로 모든 대상 에셋을 `Assets/Resources/` 아래로 옮기고 `Resources.LoadAll<Potion>("")`로 런타임
+열거하는 방식이 있다. 동기화 단계가 아예 없다는 장점이 있으나, 에셋을 스크립트 옆에 두는 현재 배치
+(`Assets/Scripts/Data/Potions/HealPotion/`)를 포기해야 하고 폴더를 벗어난 에셋이 조용히 누락된다.
+카탈로그 쪽을 택한다 — 목록이 눈에 보이고 검사 지점이 명확하다.
 
 ### 에셋 복제 문제
 
@@ -281,11 +335,13 @@ Unity는 가장 파생된 클래스의 `OnValidate` 하나만 호출하므로, �
 새로 굽지 않는다. 그러면 풀에 같은 `saveId`가 둘이 되고 복원이 둘 중 아무거나 집는다 — 정확히
 이번에 없애려는 종류의 조용한 오류다. 에셋 복제는 흔한 작업이므로 반드시 막는다.
 
-대응은 **에디터 전용 중복 검사**다. `AssetDatabase.FindAssets`로 같은 타입 에셋을 전부 훑어
-같은 `saveId`가 있으면 콘솔에 에러를 띄운다. 에디터 전용 API이므로 `#if UNITY_EDITOR` 안에서만 쓴다.
+대응은 **카탈로그 재스캔에 얹은 중복 검사**다. 재스캔은 어차피 `AssetDatabase.FindAssets`로 대상
+타입 에셋을 전부 훑으므로, 그 자리에서 같은 `saveId`가 둘 이상인지 확인해 콘솔에 에러를 띄운다.
+에셋을 복제한 직후 임포트가 일어나면서 자동으로 걸린다. 에디터 전용 API이므로 `#if UNITY_EDITOR`
+안에서만 쓴다.
 
-추가로 **`도구 > Dice Orbit > 세이브 ID 전체 점검` 에디터 메뉴**를 만든다. 프로젝트의 대상 에셋을
-일괄 스캔해 빈 `saveId`를 채우고 중복을 보고한다.
+추가로 **`도구 > Dice Orbit > 세이브 ID 전체 점검` 에디터 메뉴**를 만든다. 강제 재스캔 + 빈 `saveId`
+채우기 + 중복 보고를 한 번에 실행하는 수동 진입점이다.
 
 ### 빈 값에는 폴백을 두지 않는다
 
@@ -327,8 +383,9 @@ public class RestoreReport
 
 - 세이브 파일 파싱 실패, `Version != 2`
 - `RunManager`/`PartyManager`/`CharacterSpawner` 부재, `firstAct` 미지정
-- 유물·포션 `Id`를 풀에서 찾지 못함
-- 프리셋 `PresetId`를 찾지 못함
+- `SaveIdCatalog` 자체를 로드하지 못함
+- 유물·포션 `Id`를 카탈로그에서 찾지 못함
+- 프리셋 `PresetId`를 카탈로그에서 찾지 못함
 - 모디파이어 `Id`가 레지스트리에 없음
 - `saveId`가 빈 에셋
 
@@ -401,7 +458,16 @@ public static void Write(RunSaveData data)
 
 네임스페이스는 `DiceOrbit.Core.Run` → `DiceOrbit.Core.Run.Save`로 바뀐다.
 
-에디터 전용 파일은 `Assets/Scripts/Editor/` 아래 `SaveIdValidator.cs`(중복 검사 + 일괄 점검 메뉴).
+`SaveIdCatalog.cs`는 런타임 코드이므로 위 폴더에 함께 둔다. 에디터 전용 파일은
+`Assets/Scripts/Editor/` 아래 두 개다.
+
+| 파일 | 내용 |
+|---|---|
+| `SaveIdCatalogPostprocessor.cs` | `OnPostprocessAllAssets`에서 카탈로그 자동 재스캔 + 중복 검출 |
+| `SaveIdValidator.cs` | `도구 > Dice Orbit > 세이브 ID 전체 점검` 메뉴 (수동 진입점) |
+
+`Assets/Resources/SaveIdCatalog.asset`은 **에디터에서 생성해야 하므로 이 환경에서 만들 수 없다.**
+Windows Unity 핸드오프 항목이다(§9).
 
 ### 수정
 
@@ -409,26 +475,65 @@ public static void Write(RunSaveData data)
 |---|---|
 | `RunManager` | `IRunSaveParticipant` 구현. 기존 4인자 `RestoreRun(...)` 제거 (호출자는 `GameFlowManager` 하나뿐) |
 | `GoldManager` | `IRunSaveParticipant` 구현 |
-| `ArtifactManager` | `IRunSaveParticipant` 구현, `ClearAll()` 추가, `FindInPool`을 `saveId` 기준으로 |
-| `PotionManager` | `IRunSaveParticipant` 구현, `ClearAll()` 추가, `FindInPool`을 `saveId` 기준으로 |
+| `ArtifactManager` | `IRunSaveParticipant` 구현, `ClearAll()` 추가, `FindInPool` 삭제, 디버그 스캐폴딩 삭제(아래) |
+| `PotionManager` | `IRunSaveParticipant` 구현, `ClearAll()` 추가, `FindInPool` 삭제, 디버그 스캐폴딩 삭제(아래) |
 | `PartyManager` | `IRunSaveParticipant` 구현, `ClearAll()` 추가 |
 | `ArtifactData` · `Potion` · `CharacterPreset` | `saveId` 필드 + `SaveId` + `OnValidate` |
 | `ModifierRegistry` | `Create(string id)` · `Exists(string id)` 추가 |
 | `GameFlowManager` | `ContinueGameFlow` 70줄 → 약 10줄 |
 | `MainMenuUI` | 네임스페이스 변경 반영 |
 
+`FindInPool`은 호출자가 [`GameFlowManager`의 복원 블록 두 줄](../../Assets/Scripts/Core/GameFlowManager.cs)뿐인
+**복원 전용 API**이므로 카탈로그 조회로 대체되며 삭제된다.
+
+### 디버그 스캐폴딩 삭제
+
+모든 포션·유물이 대응하는 `.asset`을 갖도록 리팩토링하므로, 에셋 없이 굴러가게 하던 임시 코드를
+함께 걷어낸다. 포션이 이미 간 길(`EnsureDefaultPool` 주석 처리)을 유물에도 적용하고, 양쪽 모두
+정식으로 제거한다.
+
+| 대상 | 삭제 내용 |
+|---|---|
+| `ArtifactManager` | `startingArtifacts` 필드, `EnsureDefaultPool()`, `CreateDefault()` |
+| `PotionManager` | `startingPotions` 필드, `EnsureDefaultPool()`, `CreateDefault()`, `RuntimePotion` |
+
+이것이 `saveId` 정책과 직결된다. `ScriptableObject.CreateInstance`로 런타임 생성한 SO에는
+**`OnValidate`가 호출되지 않아 `saveId`가 빈 채로 남는다.** "빈 `saveId`는 복원 실패"(§5) 정책과
+정면으로 충돌하므로, 런타임 생성 경로가 남아 있는 한 세이브가 성립하지 않는다.
+
+**현재 씬 상태와 그 여파** — `BattleScene.unity`에서 `artifactPool`과 `potionPool`은 둘 다 비어
+있고, `startingArtifacts`에 `PowerfullPunch.asset`, `startingPotions`에 `NewHealPotion.asset`이
+하나씩 들어 있다. 즉 지금 게임에 유물·포션이 들어오는 유일한 경로가 시작 목록이고, 상점·드랍
+후보는 전적으로 `EnsureDefaultPool`이 만든 런타임 5종에 의존한다. 삭제하면 **획득 후보가 0개가
+된다.** 유물 효과 클래스는 6개(`CozyBedroll` `GoldenDice` `LifeAmulet` `PhoenixFeather`
+`RegularStamp` `PowerfullPunch`) 있으나 `.asset`은 하나뿐이므로, 나머지 에셋 저작과 풀 등록이
+Windows Unity 쪽 작업으로 남는다(§9). 클래스 코드는 그대로 두므로 에셋만 만들면 된다.
+
 ## 9. 검증
 
 이 작업 환경에서는 Unity를 실행할 수 없으므로([CLAUDE.md](../../CLAUDE.md)) **Roslyn 컴파일로 타입·컴파일
 오류까지만** 확인한다. 실제 동작 확인은 브랜치를 push해 Windows Unity에서 한다.
 
-1. 대상 에셋 6개(유물 1 · 포션 1 · 프리셋 4)를 한 번씩 선택 → `saveId`가 자동으로 채워지는지
-2. `도구 > Dice Orbit > 세이브 ID 전체 점검` 실행 → 빈 값·중복 없음 확인
-3. 새 게임 → 유물·포션 획득 → 종료 → 이어하기 → 골드·유물·포션·파티 HP·모디파이어 일치
-4. `persistentDataPath/run_save.json`을 열어 v2 포맷 확인
-5. 세이브 파일을 중간에서 잘라 손상 → `.bak` 복구 또는 이어하기 버튼 비활성 확인
-6. 프리셋 `saveId`를 일부러 바꾼 뒤 → 반쪽 복원이 아니라 "복원 불가"로 처리되는지
-7. 한 세션에서 런 종료 후 다시 이어하기 → 이전 런의 유물·파티가 섞이지 않는지
+### 선행 작업 (에디터에서만 가능 — 이 환경에서 만들 수 없다)
+
+1. `Create > DiceOrbit > SaveIdCatalog`로 카탈로그 생성 → `Assets/Resources/SaveIdCatalog.asset`에 배치
+2. 유물 효과 클래스 5종(`CozyBedroll` `GoldenDice` `LifeAmulet` `PhoenixFeather` `RegularStamp`)의
+   `ArtifactData` 에셋 저작 → `artifactPool`에 등록 (§8 '디버그 스캐폴딩 삭제' 참조)
+3. 포션 에셋을 원하는 수만큼 저작 → `potionPool`에 등록
+
+### 검증 절차
+
+1. 대상 에셋을 한 번씩 선택 → `saveId`가 에셋 파일명으로 자동 채워지는지
+2. 에셋을 `Ctrl+D`로 복제 → 중복 `saveId` 에러가 콘솔에 뜨는지
+3. 새 에셋 생성 → 카탈로그에 **자동으로** 추가되는지 (수동 스캔 없이)
+4. `도구 > Dice Orbit > 세이브 ID 전체 점검` 실행 → 빈 값·중복 없음 확인
+5. 새 게임 → 유물·포션 획득 → 종료 → 이어하기 → 골드·유물·포션·파티 HP·모디파이어 일치
+6. **풀에 없는 포션**을 코드로 직접 지급 → 저장 → 이어하기 → 복원되는지 (§1-8이 닫혔는지)
+7. `CharacterSelectionUI`가 없는 씬에서 이어하기 → 파티가 복원되는지 (§1-9가 닫혔는지)
+8. `persistentDataPath/run_save.json`을 열어 v2 포맷 확인
+9. 세이브 파일을 중간에서 잘라 손상 → `.bak` 복구 또는 이어하기 버튼 비활성 확인
+10. 프리셋 `saveId`를 일부러 바꾼 뒤 → 반쪽 복원이 아니라 "복원 불가"로 처리되는지
+11. 한 세션에서 런 종료 후 다시 이어하기 → 이전 런의 유물·파티가 섞이지 않는지
 
 ## 10. 이번 범위 밖
 
@@ -439,3 +544,7 @@ public static void Write(RunSaveData data)
 - `PlayerPrefs` 환경설정([`SettingsUI`](../../Assets/Scripts/UI/SettingsUI.cs))과의 통합 — 별개 축이며 건드리지 않는다
 - 구 세이브 마이그레이션, 클래스 리네임용 별칭 테이블
 - 전투 중 저장 — 노드 단위 스냅샷 구조를 유지한다
+- **유물 1:N 대응에 따른 `ArtifactManager` API 정리.** 같은 효과 클래스로 에셋을 둘 이상 만들면
+  [`RemoveArtifact<T>()`](../../Assets/Scripts/Core/Run/Artifact/ArtifactManager.cs)가 다른 에셋의
+  유물까지 지우고, [`Owns(data)`](../../Assets/Scripts/Core/Run/Artifact/ArtifactManager.cs)의
+  중복 획득 판정 의미도 흔들린다. 세이브와 독립된 문제이므로 1:N 리팩토링 때 함께 본다.
