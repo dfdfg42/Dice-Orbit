@@ -40,11 +40,11 @@ namespace DiceOrbit.UI
             var rect = (RectTransform)go.transform;
             rect.anchorMin = new Vector2(0.5f, 0.5f);   // 형제들(HPBar 등)과 같은 중앙 앵커
             rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0f, 1f);           // 좌상단 피벗 — HP바 좌측 끝에서 오른쪽으로 하나씩
             rect.anchoredPosition = anchoredPos;
 
             var layout = go.AddComponent<HorizontalLayoutGroup>();
-            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childAlignment = TextAnchor.UpperLeft;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
 
