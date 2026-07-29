@@ -129,33 +129,11 @@ namespace DiceOrbit.UI
         /// <summary>선택지 문구: 판정 정보/결과 미리보기를 작은 글씨로 병기.</summary>
         private string BuildChoiceLabel(EventChoice choice)
         {
-            string goldHex = ColorUtility.ToHtmlStringRGB(GoldInk);
             if (choice.Resolution == EventResolution.DiceCheck)
                 return $"{choice.Label}  <size=65%>[주사위 {choice.DiceCount}개 · 합 {choice.SuccessThreshold}+]</size>";
 
-            string preview = PreviewOutcomes(choice.SuccessOutcomes);
+            string preview = EventOutcomes.Preview(choice.SuccessOutcomes);
             return string.IsNullOrEmpty(preview) ? choice.Label : $"{choice.Label}  <size=65%>[{preview}]</size>";
-        }
-
-        /// <summary>결과 미리보기 (적용 없이 요약만 — 즉시형 선택지용).</summary>
-        private static string PreviewOutcomes(List<EventOutcome> outcomes)
-        {
-            if (outcomes == null) return "";
-            var parts = new List<string>();
-            foreach (var o in outcomes)
-            {
-                if (o == null) continue;
-                switch (o.Type)
-                {
-                    case EventOutcomeType.GainGold: parts.Add($"골드 +{o.Value}"); break;
-                    case EventOutcomeType.LoseGold: parts.Add($"골드 -{o.Value}"); break;
-                    case EventOutcomeType.HealPartyPercent: parts.Add($"파티 {o.Value}% 회복"); break;
-                    case EventOutcomeType.DamagePartyFlat: parts.Add($"전원 {o.Value} 피해"); break;
-                    case EventOutcomeType.GainRandomPotion: parts.Add("포션"); break;
-                    case EventOutcomeType.GainRandomRelic: parts.Add("유물"); break;
-                }
-            }
-            return string.Join(" · ", parts);
         }
 
         private void OnChoicePicked(EventChoice choice)
@@ -286,8 +264,8 @@ namespace DiceOrbit.UI
                 Resolution = EventResolution.DiceCheck,
                 DiceCount = dice,
                 SuccessThreshold = threshold,
-                SuccessOutcomes = { new EventOutcome { Type = EventOutcomeType.GainGold, Value = gold } },
-                FailOutcomes = { new EventOutcome { Type = EventOutcomeType.DamagePartyFlat, Value = damage } },
+                SuccessOutcomes = { new GainGold { amount = gold } },
+                FailOutcomes = { new DamageParty { amount = damage } },
             });
             def.Choices.Add(new EventChoice { Label = "지나간다" });
             return def;
@@ -302,7 +280,7 @@ namespace DiceOrbit.UI
             def.Choices.Add(new EventChoice
             {
                 Label = "잔해를 뒤진다",
-                SuccessOutcomes = { new EventOutcome { Type = EventOutcomeType.GainGold, Value = 30 } },
+                SuccessOutcomes = { new GainGold { amount = 30 } },
                 SuccessText = "동전 주머니를 찾았다.",
             });
             def.Choices.Add(new EventChoice
@@ -311,9 +289,9 @@ namespace DiceOrbit.UI
                 Resolution = EventResolution.DiceCheck,
                 DiceCount = 2,
                 SuccessThreshold = 7,
-                SuccessOutcomes = { new EventOutcome { Type = EventOutcomeType.GainRandomRelic } },
+                SuccessOutcomes = { new GainRandomRelic() },
                 SuccessText = "구조된 상인이 보답으로 가보를 건넨다.",
-                FailOutcomes = { new EventOutcome { Type = EventOutcomeType.DamagePartyFlat, Value = 8 } },
+                FailOutcomes = { new DamageParty { amount = 8 } },
                 FailText = "잔해가 무너져 내렸다!",
             });
             def.Choices.Add(new EventChoice { Label = "지나친다" });
