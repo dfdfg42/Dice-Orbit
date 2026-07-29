@@ -16,9 +16,9 @@ namespace DiceOrbit.UI
     /// </summary>
     public class StatusIconRow : MonoBehaviour
     {
-        [Header("배치 (캔버스 단위)")]
-        [SerializeField] private float iconSize = 0.4f;
-        [SerializeField] private float spacing = 0.06f;
+        [Header("배치 (캔버스 자식 좌표 = 픽셀 스케일 — HP바 높이 14~20 기준)")]
+        [SerializeField] private float iconSize = 18f;
+        [SerializeField] private float spacing = 3f;
 
         private Unit _unit;
         private Camera _cam;
@@ -28,8 +28,9 @@ namespace DiceOrbit.UI
         private readonly List<(RectTransform rect, string tooltip)> _icons = new();
         private bool _hoverShown;
 
-        /// <summary>캔버스 하단에 아이콘 줄 생성 + 유닛 구독. CharacterUI/MonsterUI가 호출.</summary>
-        public static StatusIconRow Attach(Canvas canvas, Unit unit, Camera cam)
+        /// <summary>아이콘 줄 생성 + 유닛 구독. CharacterUI/MonsterUI가 HP바 아래 좌표를 지정해 호출.
+        /// (캔버스 rect는 런타임에 덮어써지는 명목값이라 형제들처럼 중앙 앵커 + 픽셀 좌표를 쓴다.)</summary>
+        public static StatusIconRow Attach(Canvas canvas, Unit unit, Camera cam, Vector2 anchoredPos)
         {
             if (canvas == null || unit == null) return null;
             if (canvas.GetComponentInChildren<StatusIconRow>(true) != null) return null;   // 중복 방지
@@ -37,11 +38,10 @@ namespace DiceOrbit.UI
             var go = new GameObject("StatusIconRow", typeof(RectTransform));
             go.transform.SetParent(canvas.transform, false);
             var rect = (RectTransform)go.transform;
-            rect.anchorMin = new Vector2(0.5f, 0f);
-            rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.anchorMin = new Vector2(0.5f, 0.5f);   // 형제들(HPBar 등)과 같은 중앙 앵커
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -0.05f);   // 캔버스(체력바) 바로 아래
-            rect.sizeDelta = new Vector2(0f, 0.5f);
+            rect.anchoredPosition = anchoredPos;
 
             var layout = go.AddComponent<HorizontalLayoutGroup>();
             layout.childAlignment = TextAnchor.UpperCenter;
@@ -50,6 +50,7 @@ namespace DiceOrbit.UI
 
             var fitter = go.AddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var row = go.AddComponent<StatusIconRow>();
             row.Init(unit, cam);
@@ -125,7 +126,7 @@ namespace DiceOrbit.UI
             {
                 // 폴백: 상태색 원형 칩 + 이름 첫 글자
                 var bg = go.AddComponent<Image>();
-                bg.sprite = UiRoundedSprite.Get(Mathf.CeilToInt(iconSize * 50f));
+                bg.sprite = UiRoundedSprite.Get(Mathf.CeilToInt(iconSize * 0.5f));   // 반지름 = 절반 → 원형
                 bg.type = Image.Type.Sliced;
                 bg.color = new Color(data.Color.r, data.Color.g, data.Color.b, 0.9f);
                 bg.raycastTarget = false;
@@ -146,8 +147,8 @@ namespace DiceOrbit.UI
                 shadow.fontStyle = FontStyles.Bold;
                 var shr = shadow.rectTransform;
                 shr.anchorMin = Vector2.zero; shr.anchorMax = Vector2.one;
-                shr.offsetMin = new Vector2(0.012f, -iconSize * 0.12f - 0.012f);
-                shr.offsetMax = new Vector2(iconSize * 0.12f + 0.012f, -0.012f);
+                shr.offsetMin = new Vector2(1f, -iconSize * 0.12f - 1f);
+                shr.offsetMax = new Vector2(iconSize * 0.12f + 1f, -1f);
 
                 var stack = CreateLabel(go, data.StackText, iconSize * 0.5f, Color.white);
                 stack.alignment = TextAlignmentOptions.BottomRight;
