@@ -3,7 +3,6 @@ using DiceOrbit.Core.Pipeline;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
-using static Unity.VisualScripting.Member;
 
 namespace DiceOrbit.Data
 {
