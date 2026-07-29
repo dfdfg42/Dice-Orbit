@@ -3969,7 +3969,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2a48715af2029e94c9cff5eb68ce8313, type: 3}
+  m_Sprite: {fileID: 21300000, guid: be68e86986a19ff47bc18dc476a83899, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -9460,7 +9460,7 @@ MonoBehaviour:
   mapRoot: {fileID: 1701387237}
   titleText: {fileID: 1692825512}
   backgroundImage: {fileID: 0}
-  backgroundSprite: {fileID: 0}
+  backgroundSprite: {fileID: 21300000, guid: 69c47d6a2be4b6740b0103e345111a33, type: 3}
   battleSprite: {fileID: 21300000, guid: 4acf7dd07d12f774d927d4614b53f9c8, type: 3}
   eliteSprite: {fileID: 21300000, guid: 4acf7dd07d12f774d927d4614b53f9c8, type: 3}
   shopSprite: {fileID: 21300000, guid: 2eb8aa5d10a71e64c99ffcb334a6a024, type: 3}
@@ -9841,8 +9841,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -4.595093, y: -2.585083}
-  m_SizeDelta: {x: -9.1901, y: -5.1697}
+  m_AnchoredPosition: {x: -727.3478, y: -479.1239}
+  m_SizeDelta: {x: -1454.6953, y: -958.2473}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &910316536
 MonoBehaviour:
@@ -18087,15 +18087,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.98, g: 0.953, b: 0.878, a: 0.98}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.98}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 2939855208016788276, guid: 0d527444a2994e24f94fcf262ecd8dd2, type: 2}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: db587d9cca933a34da4ee75cb061bf4b, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
