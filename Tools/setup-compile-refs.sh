@@ -5,9 +5,51 @@
 # 에디터 자체는 x86_64 전용이라 실행할 수 없지만, 참조만 하는 데는 문제없다.
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REFS="$HOME/unity-refs"
-UNITY_HASH="1c7db571dde0"          # 6000.3.8f1 — ProjectSettings/ProjectVersion.txt와 일치해야 한다
-INPUTSYSTEM_VER="1.17.0"
+
+# ── 0. 버전 고정값 대조 ──
+# 예전엔 UNITY_HASH가 주석만 달린 채 하드코딩돼 있었다. 프로젝트가 에디터 버전을 올리면
+# 스크립트는 조용히 옛 버전의 참조 어셈블리를 받고, 컴파일 검증은 실제와 다른 API로
+# 통과/실패하게 된다. 그래서 프로젝트 파일에서 읽어 고정값과 대조하고, 어긋나면 멈춘다.
+#
+# 고정값을 그냥 없애고 파일 값을 쓰지 않는 이유: ~/unity-refs와 prebuilt DLL은 특정 버전에
+# 묶여 있다. 버전이 바뀌면 그것들을 지우고 다시 받아야 하므로, 사람이 알아채야 한다.
+EXPECTED_UNITY_VERSION="6000.3.8f1"
+EXPECTED_UNITY_HASH="1c7db571dde0"
+EXPECTED_INPUTSYSTEM_VER="1.17.0"
+
+VERSION_FILE="$ROOT/ProjectSettings/ProjectVersion.txt"
+MANIFEST="$ROOT/Packages/manifest.json"
+[ -f "$VERSION_FILE" ] || { echo "ERROR: $VERSION_FILE 이 없습니다." >&2; exit 2; }
+[ -f "$MANIFEST" ]     || { echo "ERROR: $MANIFEST 이 없습니다." >&2; exit 2; }
+
+# m_EditorVersionWithRevision: 6000.3.8f1 (1c7db571dde0)
+REVISION_LINE="$(grep '^m_EditorVersionWithRevision:' "$VERSION_FILE" || true)"
+UNITY_VERSION="$(sed -n 's/^m_EditorVersionWithRevision: *\([^ ]*\) *(.*)$/\1/p' <<<"$REVISION_LINE")"
+UNITY_HASH="$(sed -n 's/^.*(\(.*\))$/\1/p' <<<"$REVISION_LINE")"
+if [ -z "$UNITY_VERSION" ] || [ -z "$UNITY_HASH" ]; then
+  echo "ERROR: ProjectVersion.txt에서 에디터 버전/해시를 읽지 못했습니다: '$REVISION_LINE'" >&2
+  exit 2
+fi
+if [ "$UNITY_VERSION" != "$EXPECTED_UNITY_VERSION" ] || [ "$UNITY_HASH" != "$EXPECTED_UNITY_HASH" ]; then
+  echo "ERROR: Unity 에디터 버전이 이 스크립트의 고정값과 다릅니다." >&2
+  echo "  프로젝트: $UNITY_VERSION ($UNITY_HASH)" >&2
+  echo "  스크립트: $EXPECTED_UNITY_VERSION ($EXPECTED_UNITY_HASH)" >&2
+  echo "  확인 후 이 스크립트의 EXPECTED_* 값을 고치고, rm -rf '$REFS' 로 다시 받으세요." >&2
+  exit 2
+fi
+
+# "com.unity.inputsystem": "1.17.0"
+INPUTSYSTEM_VER="$(sed -n 's/.*"com\.unity\.inputsystem" *: *"\([^"]*\)".*/\1/p' "$MANIFEST")"
+if [ "$INPUTSYSTEM_VER" != "$EXPECTED_INPUTSYSTEM_VER" ]; then
+  echo "ERROR: com.unity.inputsystem 버전이 고정값과 다릅니다." >&2
+  echo "  manifest.json: '${INPUTSYSTEM_VER:-(읽지 못함)}' / 스크립트: '$EXPECTED_INPUTSYSTEM_VER'" >&2
+  echo "  확인 후 EXPECTED_INPUTSYSTEM_VER을 고치고, rm -rf '$REFS/packages' '$REFS/prebuilt' 하세요." >&2
+  exit 2
+fi
+
+echo "── 대상: Unity $UNITY_VERSION ($UNITY_HASH), inputsystem $INPUTSYSTEM_VER"
 
 mkdir -p "$REFS/packages"
 
@@ -51,7 +93,8 @@ IS="$REFS/packages/com.unity.inputsystem-$INPUTSYSTEM_VER/package"
 mkdir -p "$PRE"
 
 DOTNET="$HOME/.dotnet/dotnet"
-CSC="$(ls -d "$HOME"/.dotnet/sdk/*/Roslyn/bincore/csc.dll | sort | tail -1)"
+# sort -V(버전 정렬)여야 한다. 그냥 sort는 사전식이라 9.0.100 < 9.0.9로 판정한다.
+CSC="$(ls -d "$HOME"/.dotnet/sdk/*/Roslyn/bincore/csc.dll | sort -V | tail -1)"
 
 UNITY_REFS=()
 while IFS= read -r d; do UNITY_REFS+=("-r:$d"); done < <(
@@ -69,6 +112,9 @@ build() {
   find "$root" -name '*.cs' -not -path '*/Tests/*' -not -path '*/Documentation*' \
        -printf '"%p"\n' > "$rsp"
   echo "── $name ($(wc -l < "$rsp")개 파일)"
+  # -unsafe는 여기선 필수다 — com.unity.inputsystem이 91개 파일에서 unsafe를 쓴다.
+  # 프로젝트 코드 컴파일(compile-check.sh)에서는 반대로 빼야 한다:
+  # ProjectSettings의 allowUnsafeCode가 0이라 실제 Unity가 CS0227로 거부하기 때문이다.
   "$DOTNET" "$CSC" -nologo -noconfig -nostdlib -target:library -langversion:9 -unsafe -warn:0 \
     -out:"$PRE/$name.dll" "${UNITY_REFS[@]}" "$@" "${DEFINES[@]}" "@$rsp"
 }

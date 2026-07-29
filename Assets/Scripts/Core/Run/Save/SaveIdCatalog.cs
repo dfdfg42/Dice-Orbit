@@ -86,11 +86,9 @@ namespace DiceOrbit.Core.Run.Save
 
         // 아래 둘은 internal이 아니라 public이어야 한다. Assets/Scripts/Editor/ 아래 코드는
         // Assembly-CSharp-Editor라는 별도 어셈블리로 컴파일되므로 internal이 보이지 않는다.
-        //
-        // #if UNITY_EDITOR로 감싸지 않는다 — UnityEditor 네임스페이스를 쓰지 않으므로 플레이어
-        // 빌드에 남아도 무해하고, compile-check.sh는 런타임 어셈블리를 UNITY_EDITOR 없이
-        // 컴파일하므로(에디터 API 누출 검출용) 감싸면 Assembly-CSharp-Editor 쪽에서
-        // 이 메서드를 찾지 못해 컴파일이 깨진다.
+        // 에디터 전용이므로 #if UNITY_EDITOR로 감싸 플레이어 빌드에서는 빠진다 —
+        // 에디터에서는 Assembly-CSharp도 UNITY_EDITOR가 켜진 채 컴파일되므로 에디터 쪽에서 보인다.
+#if UNITY_EDITOR
 
         /// <summary>에디터 재스캔 전용. 런타임에서 호출하지 않는다.</summary>
         public void EditorSetContents(
@@ -119,5 +117,6 @@ namespace DiceOrbit.Core.Run.Save
             for (int i = 0; i < a.Count; i++) if (a[i] != b[i]) return false;
             return true;
         }
+#endif
     }
 }
