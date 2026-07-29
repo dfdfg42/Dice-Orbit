@@ -10,6 +10,12 @@ namespace DiceOrbit.Core.Run
     [CreateAssetMenu(fileName = "New ArtifactData", menuName = "DiceOrbit/ArtifactData")]
     public class ArtifactData : ScriptableObject
     {
+        [Tooltip("세이브 식별자 — 자동으로 채워집니다. 직접 수정하지 마세요.")]
+        [SerializeField] private string saveId;
+
+        /// <summary>세이브가 이 에셋을 다시 찾는 키. 한 번 정해지면 바뀌지 않는다.</summary>
+        public string SaveId => saveId;
+
         public string artifactName = "유물 이름";
         [TextArea(2, 4)] public string artifactTooltip = "유물 설명";
         public Sprite artifactIcon;
@@ -17,5 +23,13 @@ namespace DiceOrbit.Core.Run
 
         [Header("효과 — 유물 1개 = 클래스 1개 (Data/Artifacts/)")]
         [SerializeReference, SubclassPicker] public RuntimeArtifact effect;
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            // 비어 있을 때만 = 최초 1회. 이후 파일명을 바꿔도 saveId는 그대로다.
+            if (string.IsNullOrEmpty(saveId)) saveId = name;
+        }
+#endif
     }
 }

@@ -9,6 +9,12 @@ namespace DiceOrbit.Core
     [CreateAssetMenu(fileName = "CharacterPreset", menuName = "DiceOrbit/Character Preset")]
     public class CharacterPreset : ScriptableObject
     {
+        [Tooltip("세이브 식별자 — 자동으로 채워집니다. 직접 수정하지 마세요.")]
+        [SerializeField] private string saveId;
+
+        /// <summary>세이브가 이 에셋을 다시 찾는 키. 한 번 정해지면 바뀌지 않는다.</summary>
+        public string SaveId => saveId;
+
         [Header("Basic Info")]
         public string CharacterName = "Hero";
         public Sprite Portrait;
@@ -68,5 +74,12 @@ namespace DiceOrbit.Core
             stats.SourcePreset = this;
             return stats;
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (string.IsNullOrEmpty(saveId)) saveId = name;
+        }
+#endif
     }
 }
