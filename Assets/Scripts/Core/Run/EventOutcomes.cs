@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using DiceOrbit.Data;
 
 namespace DiceOrbit.Core.Run
 {
@@ -137,5 +138,26 @@ namespace DiceOrbit.Core.Run
             return artifact != null ? $"유물 획득 — {artifact.artifactName}" : "";
         }
         public override string Preview() => "유물";
+    }
+
+    /// <summary>덱의 랜덤 주사위 하나에 효과를 부여한다 (이벤트 결과 → DieInstance.AttachedEffect).</summary>
+    [System.Serializable]
+    public class AttachDieEffectOutcome : EventOutcome
+    {
+        [SerializeReference, SubclassPicker] public DieEffect effect;
+
+        public override string Apply()
+        {
+            if (effect == null) return "";
+            var deck = DiceDeckManager.Instance?.Deck;
+            if (deck == null || deck.Count == 0) return "부여할 주사위가 없음";
+            int idx = Random.Range(0, deck.Count);
+            DiceDeckManager.Instance.AttachEffect(idx, effect);
+            string name = deck[idx].BaseDie != null ? deck[idx].BaseDie.Name : "주사위";
+            return $"{name}에 효과 부여 — {effect.Preview()}";
+        }
+
+        public override string Preview()
+            => effect != null ? $"주사위에 효과 부여 ({effect.Preview()})" : "주사위에 효과 부여";
     }
 }
