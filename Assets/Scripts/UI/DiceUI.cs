@@ -158,7 +158,7 @@ namespace DiceOrbit.UI
         public void MarkDiceAsUsed(DiceData diceData)
         {
             if (diceData == null) return;
-            diceData.State = DiceState.Used;
+            // 상태(Used) 세팅은 DiceManager.MarkUsed로 중앙화 — 여기선 시각 갱신/제거만.
 
             var element = diceElements.Find(e => e.Data == diceData);
             if (element != null)

@@ -564,8 +564,7 @@ namespace DiceOrbit.UI
 
         private void MarkDiceUsed(DiceData dice)
         {
-            var diceUI = FindFirstObjectByType<DiceUI>();
-            diceUI?.MarkDiceAsUsed(dice);
+            Core.DiceManager.Instance?.MarkUsed(dice, currentCharacter);
         }
 
         public void ReturnDiceElement()
