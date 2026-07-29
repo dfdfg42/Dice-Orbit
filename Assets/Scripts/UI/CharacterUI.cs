@@ -133,6 +133,10 @@ namespace DiceOrbit.UI
             if (hpText != null) hpText.transform.SetAsLastSibling();
 
             ConfigureNonBlockingRaycasts();
+
+            // 상태이상 시각화: 체력바 아래 아이콘 줄 + 유닛 위 오버레이 (스펙 2026-07-29)
+            StatusIconRow.Attach(worldCanvas, character, mainCamera);
+            Visuals.StatusOverlayStack.Attach(character);
         }
 
         private void ConfigureNonBlockingRaycasts()
