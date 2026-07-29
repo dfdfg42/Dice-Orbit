@@ -114,6 +114,15 @@ namespace DiceOrbit.Systems.Effects
                 case EffectType.BuffAttack:
                     return new BuffAttackStatus(value, duration);
 
+                case EffectType.Weak:
+                    return new WeakStatus(value, duration);
+
+                case EffectType.Power:
+                    return new PowerStatus(value, duration);
+
+                case EffectType.Poison:
+                    return new PoisonStatus(value, duration);
+
                 // 추후 BuffDefense, Dot 등 추가
 
                 default:

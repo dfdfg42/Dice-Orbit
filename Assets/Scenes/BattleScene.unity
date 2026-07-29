@@ -10944,7 +10944,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.Run.PotionManager
   slotCount: 3
-  potionPool: []
+  potionPool:
+  - {fileID: 11400000, guid: 231af6e6dbd967d4ea019099370fbc9d, type: 2}
+  - {fileID: 11400000, guid: 539e97eee527cab4aa46ba96b200e356, type: 2}
+  - {fileID: 11400000, guid: 08253b3e7ac80c14281b9e79dd6f2ec9, type: 2}
+  - {fileID: 11400000, guid: 969694a6bef0596458196f9b30029a04, type: 2}
+  - {fileID: 11400000, guid: fa957c2411e27a340a2dc8dacd9a1304, type: 2}
+  - {fileID: 11400000, guid: 817c1f3e9a31448498659134454e7483, type: 2}
+  - {fileID: 11400000, guid: 55b17139d9956124eb97c619405188a9, type: 2}
+  - {fileID: 11400000, guid: eaa2ae45a5fcb4a4bb7173f45681511e, type: 2}
   startingPotions:
   - {fileID: 11400000, guid: eaa2ae45a5fcb4a4bb7173f45681511e, type: 2}
 --- !u!1 &1035841696

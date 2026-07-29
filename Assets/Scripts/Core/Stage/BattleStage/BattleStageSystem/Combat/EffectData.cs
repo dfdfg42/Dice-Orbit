@@ -21,6 +21,9 @@ namespace DiceOrbit.Data
         Frozen,          // 빙결 상태이상
         Dodge,           // 회피율 (%)
         Frostbite,       // 동상: 입는 피해량 증가 (서리토템)
+        Weak,            // 쇠약: 가하는 피해 -V% (포션)
+        Poison,          // 독: 매턴 최대체력 V% 피해 (포션)
+        Power,           // 파워: 가하는 피해 +V% (포션)
     }
 
     /// <summary>
