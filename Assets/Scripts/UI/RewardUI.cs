@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Run;
+using DiceOrbit.Data;
 using DiceOrbit.Data.Modifiers;
 
 namespace DiceOrbit.UI
@@ -43,6 +44,8 @@ namespace DiceOrbit.UI
 
         private Character _pickedCharacter;
         private GameObject _upgradeRow;                             // 강화 행 (강화 완료 시 제거)
+        private DieDefinitionSO _pendingNewDie;                     // 주사위 보상: 교체할 새 주사위
+        private GameObject _diceRewardRow;                          // 주사위 보상 행 (교체 완료 시 제거)
         private bool _listenersWired;
         private TMP_FontAsset _font;
 
@@ -159,6 +162,16 @@ namespace DiceOrbit.UI
                     });
                 }
             }
+
+            // ⑤ 주사위 획득 (특수 주사위 풀에서 랜덤 → 현재 덱과 교체)
+            var newDie = DiceDeckManager.EnsureInstance()?.DrawRandomSpecial();
+            if (newDie != null)
+            {
+                _diceRewardRow = AddRewardRow($"🎲  주사위 — {newDie.Name}", row =>
+                {
+                    BeginDiceReplaceFlow(newDie);   // 수령 = 교체 슬롯 선택 완료 시점
+                });
+            }
         }
 
         /// <summary>보상 행 추가 (StS식 가로 바). 클릭 시 onClaim(자기 자신)을 호출.</summary>
@@ -254,6 +267,43 @@ namespace DiceOrbit.UI
 
             // 강화 행 수령 완료 → 제거
             if (_upgradeRow != null) { Destroy(_upgradeRow); _upgradeRow = null; }
+            ShowUpgradePanel(false);
+        }
+
+        // ─────────────────────────────────────────────
+        // 주사위 교체 흐름 (주사위 보상 행 클릭 → 덱 슬롯 선택 → 교체)
+        // ─────────────────────────────────────────────
+        private void BeginDiceReplaceFlow(DieDefinitionSO newDie)
+        {
+            _pendingNewDie = newDie;
+            if (upgradeHeader != null) upgradeHeader.text = $"[{newDie.Name}]로 교체할 주사위 선택";
+            ClearRow();
+
+            var deck = DiceDeckManager.Instance?.Deck;
+            if (deck != null)
+            {
+                for (int i = 0; i < deck.Count; i++)
+                {
+                    int idx = i;
+                    var inst = deck[i];
+                    string faces = inst.Faces != null ? string.Join(" ", inst.Faces) : "";
+                    string name = inst.BaseDie != null ? inst.BaseDie.Name : "주사위";
+                    AddChoiceButton($"{name}\n<size=60%>[{faces}]</size>", () => OnDiceSlotPicked(idx));
+                }
+            }
+            ShowUpgradePanel(true);
+        }
+
+        private void OnDiceSlotPicked(int index)
+        {
+            if (_pendingNewDie != null)
+            {
+                DiceDeckManager.Instance?.Replace(index, _pendingNewDie);
+                Debug.Log($"[Reward] 덱 {index}번을 '{_pendingNewDie.Name}'로 교체");
+            }
+            _pendingNewDie = null;
+
+            if (_diceRewardRow != null) { Destroy(_diceRewardRow); _diceRewardRow = null; }
             ShowUpgradePanel(false);
         }
 
