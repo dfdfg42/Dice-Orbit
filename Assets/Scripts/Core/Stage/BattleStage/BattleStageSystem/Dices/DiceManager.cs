@@ -11,11 +11,9 @@ namespace DiceOrbit.Core
     public class DiceManager : MonoBehaviour
     {
         [Header("Dice Settings")]
-        [SerializeField] private int diceCountPerTurn = 4;
+        // 주사위 개수/값은 이제 DiceDeckManager의 덱이 결정한다. min/max는 재굴림 폴백용.
         [SerializeField] private int minDiceValue = 1;
         [SerializeField] private int maxDiceValue = 6;
-        [SerializeField] private bool usePartyBasedDiceCount = true;
-        [SerializeField] private int dicePerCharacter = 2;
         
         [Header("References")]
         [SerializeField] private UI.DiceUI diceUI;
@@ -55,14 +53,7 @@ namespace DiceOrbit.Core
 
         private void Start()
         {
-            // 시작 시점에 파티 인원 기준으로 주사위 개수를 동기화합니다.
-            RefreshDiceCountFromParty();
-
-            var partyManager = PartyManager.Instance;
-            if (partyManager != null)
-            {
-                partyManager.OnPartyChanged += HandlePartyChanged;
-            }
+            // 덱은 DiceDeckManager가 소유·시드한다 (파티 기반 개수 동기화 제거).
         }
 
         private void OnDestroy()
@@ -71,61 +62,34 @@ namespace DiceOrbit.Core
             {
                 instance = null;
             }
-
-            var partyManager = PartyManager.Instance;
-            if (partyManager != null)
-            {
-                partyManager.OnPartyChanged -= HandlePartyChanged;
-            }
         }
         
-        /// <summary>
-        /// 주사위 굴리기
-        /// </summary>
+        /// <summary>소유 덱을 굴린다 — 각 DieInstance의 면에서 랜덤 1개.</summary>
         public void RollDice()
         {
-            // 매 턴 주사위 굴림 직전에 파티 인원 기반 개수를 보정합니다.
-            RefreshDiceCountFromParty();
-            RollDice(diceCountPerTurn);
-        }
-        
-        /// <summary>
-        /// 주사위 굴리기 (개수 지정)
-        /// </summary>
-        public void RollDice(int count)
-        {
-            // 기존 주사위 초기화
             currentDice.Clear();
-            
-            // 새로운 주사위 생성
-            for (int i = 0; i < count; i++)
+
+            var deck = DiceDeckManager.EnsureInstance()?.Deck;
+            if (deck == null || deck.Count == 0)
             {
-                int value = Random.Range(minDiceValue, maxDiceValue + 1);
-                DiceData dice = new DiceData(diceIdCounter++, value);
-                currentDice.Add(dice);
+                Debug.LogWarning("[DiceManager] 덱이 비어 있습니다 — 굴릴 주사위 없음. DiceDeckManager/standardDie 확인.");
             }
-            
-            // 일기예보 바이어스 적용
+            else
+            {
+                foreach (var inst in deck)
+                    currentDice.Add(new DiceData(diceIdCounter++, inst.RollFace(), inst));
+            }
+
+            // 일기예보 바이어스 (기존 유지)
             if (_forecastBiasTurnsLeft > 0 && _forecastBiasPercent > 0)
             {
                 foreach (var die in currentDice)
-                {
                     if (die.Value > 3 && Random.value < _forecastBiasPercent / 100f)
                         die.SetValue(Random.Range(1, 4));
-                }
                 _forecastBiasTurnsLeft--;
-                Debug.Log($"[ForecastBias] 적용됨 ({_forecastBiasPercent}%). 남은 턴: {_forecastBiasTurnsLeft}");
             }
 
-            Debug.Log($"Rolled {count} dice: {string.Join(", ", currentDice.Select(d => d.Value))}");
-
-            // UI 업데이트
-            if (diceUI != null)
-            {
-                diceUI.DisplayDice(currentDice);
-            }
-            
-            // 이벤트 발생
+            if (diceUI != null) diceUI.DisplayDice(currentDice);
             OnDiceRolled?.Invoke(currentDice);
         }
         
@@ -138,7 +102,7 @@ namespace DiceOrbit.Core
             if (available.Count == 0) return;
 
             foreach (var die in available)
-                die.SetValue(Random.Range(minDiceValue, maxDiceValue + 1));
+                die.SetValue(die.Source != null ? die.Source.RollFace() : Random.Range(minDiceValue, maxDiceValue + 1));
 
             Debug.Log($"[DiceManager] 재굴림: {string.Join(", ", available.Select(d => d.Value))}");
             if (diceUI != null) diceUI.DisplayDice(currentDice);
@@ -172,6 +136,22 @@ namespace DiceOrbit.Core
             return true;
         }
         
+        /// <summary>주사위 사용 확정 — 상태를 Used로, 부착 효과를 발동, 시각 제거.</summary>
+        public void MarkUsed(DiceData dice, Character user)
+        {
+            if (dice == null) return;
+            dice.State = DiceState.Used;
+
+            var effect = dice.Source?.Effect;
+            if (effect != null)
+            {
+                string summary = effect.Apply(new DieUseContext { User = user, RolledValue = dice.Value });
+                Debug.Log($"[DiceManager] 주사위 효과 발동: {summary}");
+            }
+
+            diceUI?.MarkDiceAsUsed(dice);   // 시각 제거(상태는 위에서 세팅)
+        }
+
         /// <summary>
         /// 주사위 할당 해제
         /// </summary>
@@ -232,25 +212,5 @@ namespace DiceOrbit.Core
             diceUI = ui;
         }
 
-        private void HandlePartyChanged(int partySize)
-        {
-            RefreshDiceCountFromParty();
-            Debug.Log($"[DiceManager] 파티 변경 감지: 인원 {partySize}, 턴당 주사위 {diceCountPerTurn}");
-        }
-
-        private void RefreshDiceCountFromParty()
-        {
-            if (!usePartyBasedDiceCount) return;
-
-            var partyManager = PartyManager.Instance;
-            if (partyManager == null)
-            {
-                return;
-            }
-
-            int partySize = partyManager.PartySize;
-            int resolvedDiceCount = Mathf.Max(0, partySize * Mathf.Max(1, dicePerCharacter));
-            diceCountPerTurn = resolvedDiceCount;
-        }
     }
 }
