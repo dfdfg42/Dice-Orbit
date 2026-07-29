@@ -137,13 +137,21 @@ namespace DiceOrbit.UI
             }
 
             // 스택 수 (값>0일 때, 우하단 — 정보 패널과 같은 표기: 숫자만)
+            // 주의: 갓 생성한 TMP에 outlineWidth를 설정하면 내부 머티리얼 미초기화로 NRE —
+            // 가독성은 그림자 라벨(검정, 1px 오프셋)로 대신한다.
             if (!string.IsNullOrEmpty(data.StackText))
             {
+                var shadow = CreateLabel(go, data.StackText, iconSize * 0.5f, Color.black);
+                shadow.alignment = TextAlignmentOptions.BottomRight;
+                shadow.fontStyle = FontStyles.Bold;
+                var shr = shadow.rectTransform;
+                shr.anchorMin = Vector2.zero; shr.anchorMax = Vector2.one;
+                shr.offsetMin = new Vector2(0.012f, -iconSize * 0.12f - 0.012f);
+                shr.offsetMax = new Vector2(iconSize * 0.12f + 0.012f, -0.012f);
+
                 var stack = CreateLabel(go, data.StackText, iconSize * 0.5f, Color.white);
                 stack.alignment = TextAlignmentOptions.BottomRight;
                 stack.fontStyle = FontStyles.Bold;
-                stack.outlineWidth = 0.25f;
-                stack.outlineColor = Color.black;
                 var sr = stack.rectTransform;
                 sr.anchorMin = Vector2.zero; sr.anchorMax = Vector2.one;
                 sr.offsetMin = new Vector2(0f, -iconSize * 0.12f);
