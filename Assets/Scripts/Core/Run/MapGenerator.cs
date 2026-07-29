@@ -70,13 +70,6 @@ namespace DiceOrbit.Core.Run
                     Debug.LogWarning($"[MapGenerator] 노드 {node.Id}({node.Type}, 층 {node.Floor})에 배정할 몹 세트가 없습니다 — ActDefinition의 티어 풀/폴백 DB를 확인하세요.");
             }
 
-            // ── 주사위 개조 예고 (중반 일반 전투에만) ──
-            var diceModCandidates = graph.Nodes
-                .Where(nd => nd.Type == MapNodeType.Battle && nd.Floor >= act.IntroFloors && nd.Floor < floors - 2)
-                .OrderBy(_ => rng.Next())
-                .Take(act.DiceModBattleCount);
-            foreach (var nd in diceModCandidates) nd.DiceModReward = true;
-
             return graph;
         }
 
@@ -152,7 +145,7 @@ namespace DiceOrbit.Core.Run
                 {
                     string icon = n.Type switch
                     {
-                        MapNodeType.Battle => n.DiceModReward ? "⚔🎲" : "⚔",
+                        MapNodeType.Battle => "⚔",
                         MapNodeType.Elite => "💀",
                         MapNodeType.Shop => "🛒",
                         MapNodeType.Rest => "🏕",

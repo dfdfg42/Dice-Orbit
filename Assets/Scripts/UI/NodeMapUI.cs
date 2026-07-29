@@ -271,22 +271,6 @@ namespace DiceOrbit.UI
                 labelRect.offsetMin = Vector2.zero; labelRect.offsetMax = Vector2.zero;
             }
 
-            // 주사위 개조 예고 배지 (우상단 보라 점)
-            if (node.DiceModReward && !node.Visited)
-            {
-                var badgeGo = new GameObject("DiceBadge", typeof(RectTransform));
-                badgeGo.transform.SetParent(go.transform, false);
-                var badgeRect = (RectTransform)badgeGo.transform;
-                badgeRect.anchorMin = badgeRect.anchorMax = new Vector2(1f, 1f);
-                badgeRect.anchoredPosition = new Vector2(-2f, -2f);
-                badgeRect.sizeDelta = new Vector2(18f, 18f);
-                var badgeImg = badgeGo.AddComponent<Image>();
-                badgeImg.sprite = UiRoundedSprite.Get(9);
-                badgeImg.type = Image.Type.Sliced;
-                badgeImg.color = new Color(0.42f, 0.28f, 0.72f);
-                badgeImg.raycastTarget = false;
-            }
-
             // 클릭 (선택 가능일 때만)
             if (isSelectable)
             {
