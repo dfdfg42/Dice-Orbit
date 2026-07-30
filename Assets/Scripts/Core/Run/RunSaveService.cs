@@ -23,6 +23,8 @@ namespace DiceOrbit.Core.Run
             => ArtifactNames.Count > 0 ? ArtifactNames : RelicNames;
         public List<string> PotionNames = new List<string>();
         public List<string> BanishedPresetNames = new List<string>();
+        public List<int> EventTileInstallTypes = new List<int>();   // TileAttributeType 캐스팅 저장
+        public List<string> SeenEventNames = new List<string>();
         public List<CharacterSave> Party = new List<CharacterSave>();
     }
 
@@ -92,6 +94,12 @@ namespace DiceOrbit.Core.Run
 
             if (PotionManager.Instance != null)
                 data.PotionNames.AddRange(PotionManager.Instance.Slots.Where(p => p != null).Select(p => p.PotionName));
+
+            if (EventRunState.Instance != null)
+            {
+                data.EventTileInstallTypes.AddRange(EventRunState.Instance.TileInstallTypes.Select(t => (int)t));
+                data.SeenEventNames.AddRange(EventRunState.Instance.SeenEventNames);
+            }
 
             var party = PartyManager.Instance?.Party;
             if (party != null)

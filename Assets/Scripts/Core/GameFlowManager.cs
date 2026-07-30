@@ -462,6 +462,10 @@ namespace DiceOrbit.Core
             foreach (var name in data.PotionNames)
                 potions.TryAdd(potions.FindInPool(name));
 
+            // 이벤트 상태 (타일 설치 예약 + 본 이벤트)
+            Run.EventRunState.EnsureInstance()
+                .RestoreFrom(data.EventTileInstallTypes, data.SeenEventNames);
+
             // 파티 스폰 + 스탯/모디파이어 복원
             var spawner = Object.FindFirstObjectByType<CharacterSpawner>();
             var allModifiers = Data.Modifiers.ModifierRegistry.CreateAll();
