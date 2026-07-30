@@ -13,6 +13,10 @@ namespace DiceOrbit.Data.Monsters
     {
         [Header("Stats")]
         public MonsterStats BaseStats;
+
+        [Header("Faction (세트)")]
+        [Tooltip("세트 지원 로직(가호/흑점/만월)이 같은 진영끼리 대상으로 삼을 때 사용. 무소속이면 세트 로직 없음.")]
+        public MonsterFaction Faction = MonsterFaction.None;
         
         [Header("AI & Skills")]
         [SerializeReference] // Inspector에서 AI 타입 선택 가능
