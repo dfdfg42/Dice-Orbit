@@ -586,6 +586,7 @@ namespace DiceOrbit.Core
 
             // 런/플로우 상태 초기화
             RunManager.Instance?.EndRun();
+            Run.EventRunState.Instance?.ClearAll();   // 이벤트 타일 예약/본 이벤트 기록 (씬 재로드 대비 명시 클리어)
             pendingRestart = true;
 
             UI.GameResultUI.Instance?.Hide();
