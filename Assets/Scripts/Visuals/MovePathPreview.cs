@@ -20,7 +20,7 @@ namespace DiceOrbit.Visuals
 
         [Header("체브론 모양")]
         [SerializeField] private float chevronSize = 0.5f;
-        [SerializeField] private float thickness = 0.07f;
+        [SerializeField] private float thickness = 0.12f;
         [SerializeField] private float elevation = 0.15f;
         [SerializeField] private Color color = new Color(1f, 0.95f, 0.3f, 0.9f);   // 트레일 Neutral 색 계열
 
@@ -35,7 +35,7 @@ namespace DiceOrbit.Visuals
         [SerializeField] private float pingDuration = 0.8f;    // 링 1회 퍼지는 시간
         [SerializeField] private float pingInterval = 1.1f;    // 핑 반복 주기
         [SerializeField] private float pingScale = 1.25f;      // 링 최대 확장 배율
-        [SerializeField] private float pingThickness = 0.09f;
+        [SerializeField] private float pingThickness = 0.15f;
 
         private GameObject _container;
         private Material _mat;

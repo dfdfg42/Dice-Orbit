@@ -117,6 +117,11 @@ namespace DiceOrbit.UI
             }
 
             ConfigureNonBlockingRaycasts();
+
+            // 상태이상 시각화: 체력바 아래 아이콘 줄 + 유닛 위 오버레이 (스펙 2026-07-29)
+            // HPBar(중심 x=2.95, 실폭 117) 좌측 끝 x=-56, 바 하단(27.8) 바로 아래 y=26
+            StatusIconRow.Attach(worldCanvas, monster, mainCamera, new Vector2(-56f, 26f));
+            Visuals.StatusOverlayStack.Attach(monster);
         }
 
         private void ConfigureNonBlockingRaycasts()

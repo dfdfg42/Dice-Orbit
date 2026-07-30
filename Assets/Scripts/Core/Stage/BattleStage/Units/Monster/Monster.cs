@@ -49,6 +49,9 @@ namespace DiceOrbit.Core
         // 정체성 색상: 웨이브 시작 시 1회 배정되어 웨이브 내내 고정. 바닥 마커/타일 색 오버레이가 사용.
         [System.NonSerialized] public Color IdentityColor = Color.white;
         [System.NonSerialized] public bool HasIdentityColor = false;
+
+        // 세트(진영) — 프리셋에서 배정. 세트 지원 패시브/스킬이 같은 진영 대상 필터에 사용.
+        public Data.Monsters.MonsterFaction Faction { get; private set; } = Data.Monsters.MonsterFaction.None;
         
         protected override void Awake()
         {
@@ -99,6 +102,7 @@ namespace DiceOrbit.Core
                 return;
             }
             preset = monsterPreset;
+            Faction = monsterPreset.Faction;
 
             InitializeStats();
             InitializeVisuals();

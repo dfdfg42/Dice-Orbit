@@ -14,6 +14,9 @@ namespace DiceOrbit.Systems.Effects
         // Restore activeEffects
         private Dictionary<EffectType, StatusEffect> activeEffects = new Dictionary<EffectType, StatusEffect>();
 
+        /// <summary>상태 목록/스택 변경 통지 — 상태 아이콘 줄·오버레이 스택 등 UI가 구독.</summary>
+        public event System.Action OnChanged;
+
         public int Priority => 10;
 
         public void Initialize(Unit unit)
@@ -40,6 +43,7 @@ namespace DiceOrbit.Systems.Effects
                 newEffect.EffectApplied();
                 Debug.Log($"[Status] Added {newEffect.Type} to {name}");
             }
+            OnChanged?.Invoke();
         }
 
         public void RemoveEffect(EffectType type)
@@ -48,6 +52,7 @@ namespace DiceOrbit.Systems.Effects
             {
                 activeEffects[type].EffectExpired(); // 효과 만료 시 필요한 로직 실행
                 activeEffects.Remove(type);
+                OnChanged?.Invoke();
             }
         }
 
@@ -108,6 +113,15 @@ namespace DiceOrbit.Systems.Effects
             {
                 case EffectType.BuffAttack:
                     return new BuffAttackStatus(value, duration);
+
+                case EffectType.Weak:
+                    return new WeakStatus(value, duration);
+
+                case EffectType.Power:
+                    return new PowerStatus(value, duration);
+
+                case EffectType.Poison:
+                    return new PoisonStatus(value, duration);
 
                 // 추후 BuffDefense, Dot 등 추가
 

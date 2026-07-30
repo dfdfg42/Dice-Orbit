@@ -9,7 +9,7 @@ namespace DiceOrbit.UI
     /// <summary>
     /// 개별 주사위 UI 요소 (클릭 선택)
     /// </summary>
-    public class DiceElement : MonoBehaviour, IPointerClickHandler
+    public class DiceElement : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         [Header("References")]
         [SerializeField] private Image backgroundImage;
@@ -117,6 +117,17 @@ namespace DiceOrbit.UI
 
             parentDiceUI = parentDiceUI != null ? parentDiceUI : GetComponentInParent<DiceUI>();
             parentDiceUI?.HandleDiceElementClicked(this);
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (diceData?.Source == null) return;
+            DiceHoverTooltipUI.EnsureInstance()?.Show(this);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            DiceHoverTooltipUI.Instance?.Hide();
         }
 
         public void SetSelected(bool selected)
