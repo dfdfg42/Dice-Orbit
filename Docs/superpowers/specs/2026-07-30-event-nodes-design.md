@@ -29,13 +29,13 @@
 
 ## 3. 아키텍처 변경
 
-### 3.1 EventChoice.RepeatLimit
-`EventChoice`에 `RepeatLimit` int 필드 추가 (0 = 무제한, N = 최대 N회). 결과가 하나도 없는 선택지("넘어간다")는 이벤트 종료 버튼으로 동작.
+### 3.1 EventDefinition.UseLimit (이벤트 단위 반복 — 플랜 단계에서 정정)
+`EventDefinition`에 `UseLimit` int 필드 추가 (0 = 무제한, N = 방문당 최대 N회). 선택지 단위가 아니라 **이벤트 단위**로 카운트 — ONE OR ALL처럼 "둘 중 하나만 1회" 이벤트가 자연스럽게 표현된다 (선택지 단위면 양쪽을 각 1회씩 고를 수 있는 결함). 결과가 하나도 없는 Instant 선택지("넘어간다")는 이벤트 종료 버튼으로 동작하며 카운트를 소모하지 않는다.
 
 EventUI 흐름 변경:
 - 선택 해소 후 결과 텍스트를 갱신하되 화면 유지, 선택지 재표시.
-- 선택지 라벨에 남은 횟수 병기 (`[2회 남음]`), 소진 시 비활성(회색).
-- "넘어간다" 클릭 또는 모든 선택지 소진 시 [확인] → `OnEventComplete`.
+- UseLimit > 0이면 제목에 남은 횟수 병기 (`[2회 남음]`), 소진 시 "넘어간다" 외 선택지 비활성(회색).
+- "넘어간다" 클릭 → `OnEventComplete`.
 
 ### 3.2 대상 선택 — TargetedEventOutcome
 ```
@@ -93,8 +93,8 @@ DiceDeckManager 면 조작 API:
 - 설치 지속: 영구(-1). 매 전투 재배치되므로 전투 내 제거(중화 포션 등)는 그 전투에만 유효.
 - 중화 포션의 디버프 목록에 Dull/Disharmony 추가.
 
-### 3.6 타일 설치 예약 — EventTileInstalls
-- PotionManager식 DontDestroyOnLoad 매니저. 내부: `List<TileAttributeType>` (설치 1건 = 타입 1개).
+### 3.6 타일 설치 예약 + 본 이벤트 기록 — EventRunState (플랜 단계에서 통합)
+- 매니저 1개(`EventRunState`)가 타일 설치 예약과 §3.7의 seen 목록을 함께 보관 (둘 다 런 수명 상태 + 세이브 대상이라 통합). ArtifactManager식 씬 로컬 싱글톤 + EnsureInstance. 내부: `List<TileAttributeType>` (설치 1건 = 타입 1개).
 - 이벤트 결과가 `Enqueue(type)` — 즉시 요약 문자열 반환 ("예리함 타일 설치 예약").
 - 전투 시작(CombatManager.OnCombatStart) 시 목록 전부를 무작위 타일에 배치. 한 전투에서 같은 타일 중복 회피 (설치 수 > 타일 수면 남는 것부터 중복 허용).
 - 세이브: 타입 리스트 직렬화 (기존 세이브 구조에 필드 추가 — 구현 시 GameFlowManager 세이브 확인).
