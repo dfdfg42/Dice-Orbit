@@ -20,6 +20,7 @@ namespace DiceOrbit.Data.Tile
         Sturdy,         // 단단함: 통과/턴 종료 시 방어도 +V (이벤트)
         Harmony,        // 조화: 턴 종료 시 최대체력 V% 회복 (이벤트)
         Disharmony,     // 부조화: 턴 종료 시 최대체력 V% 피해 (이벤트)
+        Flame,          // 불꽃: 턴 종료 시 V 피해 / 통과 시 소화 (Wave5)
     }
 
     /// <summary>
@@ -110,6 +111,7 @@ namespace DiceOrbit.Data.Tile
                 TileAttributeType.Sturdy => "단단함",
                 TileAttributeType.Harmony => "조화",
                 TileAttributeType.Disharmony => "부조화",
+                TileAttributeType.Flame => "불꽃",
                 _ => Type.ToString()
             };
         }

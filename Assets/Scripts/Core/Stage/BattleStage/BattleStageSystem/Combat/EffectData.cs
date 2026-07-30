@@ -24,6 +24,9 @@ namespace DiceOrbit.Data
         Weak,            // 쇠약: 가하는 피해 -V% (포션)
         Poison,          // 독: 매턴 최대체력 V% 피해 (포션)
         Power,           // 파워: 가하는 피해 +V% (포션)
+        FireExtinguishMark, // 불꽃 소화 마커: 이번 턴 이미 불을 껐음 (Wave5)
+        FireDamageTaken,    // 불꽃 요정용: 이번 턴 받은 누적 피해 (Wave5)
+        FireGuard,          // 불의 가호: 방어도 보유 시 받는 피해 감소 (Wave5)
     }
 
     /// <summary>
