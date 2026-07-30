@@ -45,4 +45,38 @@ namespace DiceOrbit.Data
         }
         public override string Preview() => $"HP +{amount}";
     }
+
+    /// <summary>사용 시 사용자에게 일시 방어도 +N (인챈트 이벤트 — 수호).</summary>
+    [System.Serializable]
+    public class GainArmorOnUse : DieEffect
+    {
+        public int amount = 10;
+        public override string Apply(DieUseContext ctx)
+        {
+            var u = ctx?.User;
+            if (u == null || !u.IsAlive || u.Stats == null) return "";
+            u.Stats.TempArmor += amount;
+            DiceOrbit.UI.CombatNotifier.Notify(u, $"방어도 +{amount}", new Color(0.6f, 0.75f, 1f));
+            return $"방어도 +{amount}";
+        }
+        public override string Preview() => $"사용 시 방어도 +{amount}";
+    }
+
+    /// <summary>사용 시 사용자에게 파워(피해 +N%, 1턴) 부여 (인챈트 이벤트 — 공세).</summary>
+    [System.Serializable]
+    public class EmpowerOnUse : DieEffect
+    {
+        public int percent = 10;
+        public override string Apply(DieUseContext ctx)
+        {
+            var u = ctx?.User;
+            if (u == null || !u.IsAlive || u.StatusEffects == null) return "";
+            u.StatusEffects.AddEffect(
+                DiceOrbit.Systems.Effects.StatusEffectManager.CreateEffect(EffectType.Power, percent, 1));
+            var data = DiceOrbit.UI.TooltipKeywordFormatter.BuildStatusDisplayData(EffectType.Power.ToString(), percent, 1);
+            DiceOrbit.UI.CombatNotifier.NotifyStatus(u, data.Name, data.Color);
+            return $"피해 +{percent}% (1턴)";
+        }
+        public override string Preview() => $"사용 시 피해 +{percent}% (1턴)";
+    }
 }
