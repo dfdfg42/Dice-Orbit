@@ -19,6 +19,10 @@ namespace DiceOrbit.Core.Run
         /// <summary>선택지 라벨용 미리보기 (적용/부작용 없이 짧은 요약). 기본은 표시 안 함.</summary>
         public virtual string Preview() => "";
 
+        /// <summary>이 결과를 지금 적용할 수 있는가 — EventUI가 선택지 활성 판정에 AND로 사용
+        /// (예: 고대 요정 = 유물 보유, ONE OR ALL = 파티 2인 이상).</summary>
+        public virtual bool CanApply() => true;
+
         /// <summary>살아있는 파티원 (파티 대상 결과 공용 헬퍼).</summary>
         protected static IEnumerable<Character> AliveParty()
         {
@@ -29,11 +33,37 @@ namespace DiceOrbit.Core.Run
         }
     }
 
+    /// <summary>대상 선택 종류 — 순서가 선택 UI 순서 (Die 먼저).</summary>
+    public enum EventSelectionKind { Die = 0, Character = 1 }
+
+    /// <summary>이벤트 선택지에서 사용자가 고른 대상 묶음 — 같은 선택지의 Outcome들이 공유.</summary>
+    public class EventTargetContext
+    {
+        public int SelectedDieIndex = -1;         // DiceDeckManager.Deck 인덱스
+        public Character SelectedCharacter;
+    }
+
+    /// <summary>대상 지정이 필요한 결과. EventUI가 Kind별 선택 패널을 먼저 띄운 뒤 Apply(ctx)를 부른다.</summary>
+    [System.Serializable]
+    public abstract class TargetedEventOutcome : EventOutcome
+    {
+        public abstract EventSelectionKind Kind { get; }
+
+        /// <summary>대상 없이 호출 금지 — 잘못 배선된 경우 빈 문자열 (로그로 표시).</summary>
+        public sealed override string Apply()
+        {
+            UnityEngine.Debug.LogWarning($"[Event] {GetType().Name}: 대상 없이 Apply 호출됨 — EventTargetContext 경로를 쓰세요.");
+            return "";
+        }
+
+        public abstract string Apply(EventTargetContext ctx);
+    }
+
     /// <summary>결과 리스트 실행/미리보기 유틸.</summary>
     public static class EventOutcomes
     {
-        /// <summary>결과를 전부 적용하고 합쳐진 요약을 돌려준다.</summary>
-        public static string Apply(List<EventOutcome> outcomes)
+        /// <summary>결과를 전부 적용하고 합쳐진 요약을 돌려준다. 대상형은 ctx 경유.</summary>
+        public static string Apply(List<EventOutcome> outcomes, EventTargetContext ctx)
         {
             if (outcomes == null || outcomes.Count == 0) return "";
 
@@ -41,13 +71,17 @@ namespace DiceOrbit.Core.Run
             foreach (var outcome in outcomes)
             {
                 if (outcome == null) continue;
-                string line = outcome.Apply();
+                string line = outcome is TargetedEventOutcome targeted
+                    ? (ctx != null ? targeted.Apply(ctx) : targeted.Apply())
+                    : outcome.Apply();
                 if (string.IsNullOrEmpty(line)) continue;
                 if (sb.Length > 0) sb.Append("  ·  ");
                 sb.Append(line);
             }
             return sb.ToString();
         }
+
+        public static string Apply(List<EventOutcome> outcomes) => Apply(outcomes, null);
 
         /// <summary>선택지 라벨용 미리보기 (적용 없이 — 각 결과의 Preview 조합).</summary>
         public static string Preview(List<EventOutcome> outcomes)
