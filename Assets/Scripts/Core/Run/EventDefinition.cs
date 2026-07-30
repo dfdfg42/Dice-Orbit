@@ -40,6 +40,8 @@ namespace DiceOrbit.Core.Run
         [Tooltip("전체 배경 (비우면 기본 펠트)")]
         public Sprite Background;
         [TextArea(3, 6)] public string FlavorText = "";
+        [Tooltip("방문당 선택 가능 횟수 (0 = 무제한). 결과 없는 넘어가기 선택지는 카운트 안 함")]
+        public int UseLimit = 0;
         public List<EventChoice> Choices = new List<EventChoice>();
     }
 }

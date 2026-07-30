@@ -40,6 +40,7 @@ namespace DiceOrbit.UI
 
         private EventDefinition _current;
         private bool _resolving;
+        private int _usesThisVisit;
         private TMP_FontAsset _font;
         private readonly List<TextMeshProUGUI> _diceLabels = new List<TextMeshProUGUI>();
 
@@ -85,7 +86,16 @@ namespace DiceOrbit.UI
             BattleInfoPanelUI.SetVisible(false);
 
             _resolving = false;
-            var pool = eventPool.Where(e => e != null && e.Choices.Count > 0).ToList();
+            _usesThisVisit = 0;
+
+            // 본 이벤트는 런에서 제외 — 풀 소진 시 전체 리셋 (스펙 §3.7)
+            var runState = EventRunState.EnsureInstance();
+            var pool = eventPool.Where(e => e != null && e.Choices.Count > 0 && !runState.HasSeen(e.name)).ToList();
+            if (pool.Count == 0)
+            {
+                runState.ResetSeen();
+                pool = eventPool.Where(e => e != null && e.Choices.Count > 0).ToList();
+            }
             _current = pool.Count > 0 ? pool[Random.Range(0, pool.Count)] : null;
             if (_current == null)
             {
@@ -93,6 +103,7 @@ namespace DiceOrbit.UI
                 GameFlowManager.Instance?.OnEventComplete();
                 return;
             }
+            runState.MarkSeen(_current.name);
 
             if (backgroundImage != null)
             {
@@ -118,12 +129,44 @@ namespace DiceOrbit.UI
         private void ShowChoices()
         {
             ClearChoices();
+            RefreshTitle();
             foreach (var choice in _current.Choices)
             {
                 var captured = choice;
-                bool isGamble = choice.Resolution == EventResolution.DiceCheck;
-                CreateChoiceBar(BuildChoiceLabel(choice), primary: isGamble, () => OnChoicePicked(captured));
+                if (IsExitChoice(choice))
+                {
+                    // 종료는 상태 전환(OnEventComplete → Map)이 Hide까지 처리 — 여기서 Hide 호출 금지 (이중 호출)
+                    CreateChoiceBar(choice.Label, primary: false, () => GameFlowManager.Instance?.OnEventComplete());
+                    continue;
+                }
+                bool enabled = RemainingUses() > 0 && CanApplyAll(choice);
+                CreateChoiceBar(BuildChoiceLabel(choice),
+                    primary: choice.Resolution == EventResolution.DiceCheck,
+                    () => OnChoicePicked(captured), enabled);
             }
+        }
+
+        /// <summary>결과 없는 Instant 선택지 = 이벤트 종료 버튼 (카운트 미소모).</summary>
+        private static bool IsExitChoice(EventChoice c)
+            => c.Resolution == EventResolution.Instant
+               && (c.SuccessOutcomes == null || c.SuccessOutcomes.Count == 0);
+
+        private int RemainingUses()
+            => _current.UseLimit <= 0 ? int.MaxValue : Mathf.Max(0, _current.UseLimit - _usesThisVisit);
+
+        private static bool CanApplyAll(EventChoice c)
+        {
+            foreach (var o in c.SuccessOutcomes)
+                if (o != null && !o.CanApply()) return false;
+            return true;
+        }
+
+        private void RefreshTitle()
+        {
+            if (titleText == null || _current == null) return;
+            titleText.text = _current.UseLimit > 0
+                ? $"{_current.Title}  <size=55%>[{RemainingUses()}회 남음]</size>"
+                : _current.Title;
         }
 
         /// <summary>선택지 문구: 판정 정보/결과 미리보기를 작은 글씨로 병기.</summary>
@@ -142,13 +185,72 @@ namespace DiceOrbit.UI
             _resolving = true;
             ClearChoices();
 
-            if (choice.Resolution == EventResolution.DiceCheck)
-                StartCoroutine(RollRoutine(choice));
-            else
-                Resolve(choice, success: true, sum: -1);
+            var kinds = choice.SuccessOutcomes.Concat(choice.FailOutcomes)
+                .OfType<TargetedEventOutcome>()
+                .Select(o => o.Kind).Distinct().OrderBy(k => (int)k).ToList();
+
+            RunSelection(choice, kinds, new EventTargetContext());
         }
 
-        private IEnumerator RollRoutine(EventChoice choice)
+        /// <summary>필요한 대상 종류를 순서대로 고르게 한 뒤 해소. 취소 = 선택지로 복귀 (카운트 미소모).</summary>
+        private void RunSelection(EventChoice choice, List<EventSelectionKind> pending, EventTargetContext ctx)
+        {
+            if (pending.Count == 0)
+            {
+                if (choice.Resolution == EventResolution.DiceCheck) StartCoroutine(RollRoutine(choice, ctx));
+                else Resolve(choice, success: true, sum: -1, ctx);
+                return;
+            }
+
+            var kind = pending[0];
+            var rest = pending.GetRange(1, pending.Count - 1);
+            System.Action cancel = () => { _resolving = false; ShowChoices(); };
+
+            if (kind == EventSelectionKind.Die)
+                ShowDieSelection(i => { ctx.SelectedDieIndex = i; RunSelection(choice, rest, ctx); }, cancel);
+            else
+                ShowCharacterSelection(c => { ctx.SelectedCharacter = c; RunSelection(choice, rest, ctx); }, cancel);
+        }
+
+        private void ShowDieSelection(System.Action<int> onPicked, System.Action onCancel)
+        {
+            ClearChoices();
+            var dm = DiceDeckManager.EnsureInstance();
+            var deck = dm != null ? dm.Deck : null;
+            if (deck == null || deck.Count == 0) { onCancel(); return; }
+
+            CreateChoiceBar("주사위를 선택하세요", primary: false, () => { }, interactable: false);
+            for (int i = 0; i < deck.Count; i++)
+            {
+                int idx = i;
+                var inst = deck[i];
+                string dieName = inst.BaseDie != null ? inst.BaseDie.Name : "주사위";
+                string faces = string.Join(" ", inst.Faces);
+                string suffix = inst.Effect != null ? $" · {inst.Effect.Preview()}" : "";
+                CreateChoiceBar($"{dieName}  <size=65%>[{faces}]{suffix}</size>",
+                    primary: false, () => onPicked(idx));
+            }
+            CreateChoiceBar("취소", primary: true, () => onCancel());
+        }
+
+        private void ShowCharacterSelection(System.Action<Character> onPicked, System.Action onCancel)
+        {
+            ClearChoices();
+            var party = PartyManager.Instance?.Party;
+            var alive = party?.Where(c => c != null && c.IsAlive && c.Stats != null).ToList();
+            if (alive == null || alive.Count == 0) { onCancel(); return; }
+
+            CreateChoiceBar("캐릭터를 선택하세요", primary: false, () => { }, interactable: false);
+            foreach (var c in alive)
+            {
+                var captured = c;
+                CreateChoiceBar($"{c.Stats.CharacterName}  <size=65%>[HP {c.Stats.CurrentHP}/{c.Stats.MaxHP}]</size>",
+                    primary: false, () => onPicked(captured));
+            }
+            CreateChoiceBar("취소", primary: true, () => onCancel());
+        }
+
+        private IEnumerator RollRoutine(EventChoice choice, EventTargetContext ctx)
         {
             SetupDiceLabels(choice.DiceCount);
 
@@ -171,13 +273,15 @@ namespace DiceOrbit.UI
                 yield return new WaitForSeconds(settleInterval);
             }
 
-            Resolve(choice, sum >= choice.SuccessThreshold, sum);
+            Resolve(choice, sum >= choice.SuccessThreshold, sum, ctx);
         }
 
-        private void Resolve(EventChoice choice, bool success, int sum)
+        private void Resolve(EventChoice choice, bool success, int sum, EventTargetContext ctx)
         {
+            _usesThisVisit++;
+
             var outcomes = success ? choice.SuccessOutcomes : choice.FailOutcomes;
-            string summary = EventOutcomes.Apply(outcomes);
+            string summary = EventOutcomes.Apply(outcomes, ctx);
             string flavor = success ? choice.SuccessText : choice.FailText;
 
             if (resultText != null)
@@ -190,9 +294,8 @@ namespace DiceOrbit.UI
                 resultText.text = sb.ToString();
             }
 
-            // [확인] 하나만 남긴다
-            ClearChoices();
-            CreateChoiceBar("확인", primary: true, () => GameFlowManager.Instance?.OnEventComplete());
+            _resolving = false;
+            ShowChoices();   // 화면 유지 — 반복 선택. 종료는 넘어가기 선택지로.
         }
 
         private void ClearChoices()
@@ -298,8 +401,8 @@ namespace DiceOrbit.UI
             return def;
         }
 
-        /// <summary>선택지 바 (StS식 — 칼럼 폭 전체, 세로 스택).</summary>
-        private Button CreateChoiceBar(string label, bool primary, System.Action onClick)
+        /// <summary>선택지 바 (StS식 — 칼럼 폭 전체, 세로 스택). interactable=false → 비활성(회색).</summary>
+        private Button CreateChoiceBar(string label, bool primary, System.Action onClick, bool interactable = true)
         {
             var go = new GameObject("Choice", typeof(RectTransform));
             go.transform.SetParent(choiceColumn, false);
@@ -319,12 +422,15 @@ namespace DiceOrbit.UI
             cb.highlightedColor = Color.Lerp(fill, Color.white, 0.12f);
             cb.pressedColor = Color.Lerp(fill, Color.black, 0.2f);
             cb.selectedColor = fill;
+            cb.disabledColor = new Color(fill.r * 0.45f, fill.g * 0.45f, fill.b * 0.45f);
             cb.fadeDuration = 0.08f;
             btn.colors = cb;
+            btn.interactable = interactable;
             btn.onClick.AddListener(() => onClick());
 
             var txt = CreateText(go, label, 26, FontStyles.Bold);
             txt.color = primary ? GoldInk : Ink;
+            if (!interactable) txt.color = new Color(txt.color.r, txt.color.g, txt.color.b, 0.45f);
             Stretch(txt);
             return btn;
         }
