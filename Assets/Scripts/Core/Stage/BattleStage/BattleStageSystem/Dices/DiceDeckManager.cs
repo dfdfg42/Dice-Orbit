@@ -74,12 +74,58 @@ namespace DiceOrbit.Core
             if (index < 0 || index >= deck.Count || newBase == null) return;
             deck[index].BaseDie = newBase;
             deck[index].AttachedEffect = null;   // 교체 시 붙은 효과 초기화
+            deck[index].FaceOverride = null;     // 교체 시 면 변형 초기화
         }
 
         public void AttachEffect(int index, DieEffect effect)
         {
             if (index < 0 || index >= deck.Count) return;
             deck[index].AttachedEffect = effect;
+        }
+
+        // ── 면 조작 (이벤트 노드 — 스펙 2026-07-30 §3.3) ─────────
+
+        /// <summary>무작위 면 count개를 각각 1~6 무작위 값으로 (서로 다른 면 — 교정기 1).</summary>
+        public void RandomizeFaces(int index, int count)
+        {
+            var faces = FacesFor(index);
+            if (faces == null) return;
+            foreach (int f in PickDistinctFaces(faces.Length, count))
+                faces[f] = Random.Range(1, 7);
+        }
+
+        /// <summary>무작위 면 count개에 delta (하한 0 — 교정기 2).</summary>
+        public void AddToRandomFaces(int index, int count, int delta)
+        {
+            var faces = FacesFor(index);
+            if (faces == null) return;
+            foreach (int f in PickDistinctFaces(faces.Length, count))
+                faces[f] = Mathf.Max(0, faces[f] + delta);
+        }
+
+        /// <summary>무작위 면 1개를 0으로 (인챈트/회복기 대가).</summary>
+        public void ZeroRandomFace(int index)
+        {
+            var faces = FacesFor(index);
+            if (faces == null || faces.Length == 0) return;
+            faces[Random.Range(0, faces.Length)] = 0;
+        }
+
+        private int[] FacesFor(int index)
+            => (index >= 0 && index < deck.Count) ? deck[index].EnsureFaceOverride() : null;
+
+        /// <summary>0..total-1에서 서로 다른 인덱스 count개 (count >= total이면 전부).</summary>
+        private static List<int> PickDistinctFaces(int total, int count)
+        {
+            var all = new List<int>(total);
+            for (int i = 0; i < total; i++) all.Add(i);
+            for (int i = all.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (all[i], all[j]) = (all[j], all[i]);
+            }
+            if (count < all.Count) all.RemoveRange(count, all.Count - count);
+            return all;
         }
     }
 }

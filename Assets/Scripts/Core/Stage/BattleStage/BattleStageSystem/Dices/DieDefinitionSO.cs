@@ -20,18 +20,33 @@ namespace DiceOrbit.Data
     }
 
     /// <summary>
-    /// 덱의 한 칸 (런타임). 베이스 주사위(SO) + 이벤트로 붙은 효과(선택).
-    /// 교체 = BaseDie 스왑 / 효과 부여 = AttachedEffect 세팅 (Phase 2~3).
+    /// 덱의 한 칸 (런타임). 베이스 주사위(SO) + 이벤트로 붙은 효과/면 변형(선택).
+    /// 교체 = BaseDie 스왑 / 효과 부여 = AttachedEffect / 면 변형 = FaceOverride.
     /// </summary>
     public class DieInstance
     {
         public DieDefinitionSO BaseDie;
         public DieEffect AttachedEffect;   // 없으면 BaseDie.Effect 사용
+        public int[] FaceOverride;         // 이벤트로 변형된 면 (null = 원본)
 
         public DieInstance(DieDefinitionSO baseDie) { BaseDie = baseDie; }
 
-        public int[] Faces => BaseDie != null ? BaseDie.Faces : System.Array.Empty<int>();
+        public int[] Faces => FaceOverride ?? (BaseDie != null ? BaseDie.Faces : System.Array.Empty<int>());
         public DieEffect Effect => AttachedEffect ?? BaseDie?.Effect;
-        public int RollFace() => BaseDie != null ? BaseDie.RollFace() : 1;
+
+        /// <summary>인스턴스 면(변형 반영)에서 굴린다 — BaseDie 직행 금지.</summary>
+        public int RollFace()
+        {
+            var faces = Faces;
+            return faces.Length > 0 ? faces[Random.Range(0, faces.Length)] : 1;
+        }
+
+        /// <summary>면 변형 준비 — 오버라이드가 없으면 원본 복사본 생성 후 반환.</summary>
+        public int[] EnsureFaceOverride()
+        {
+            if (FaceOverride == null)
+                FaceOverride = (int[])Faces.Clone();
+            return FaceOverride;
+        }
     }
 }
