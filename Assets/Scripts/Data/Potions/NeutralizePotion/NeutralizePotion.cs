@@ -16,6 +16,8 @@ namespace DiceOrbit.Data.Potions
             TileAttributeType.Honey,
             TileAttributeType.SnowPrison,
             TileAttributeType.Bone,
+            TileAttributeType.Dull,
+            TileAttributeType.Disharmony,
         };
 
         private void Reset()
