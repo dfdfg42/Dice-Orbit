@@ -1449,7 +1449,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.52}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: 3.0947}
+  m_AnchoredPosition: {x: 0, y: 3.0947037}
   m_SizeDelta: {x: 71.4329, y: -10.1893}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &115597673
@@ -2903,7 +2903,7 @@ RectTransform:
   m_AnchorMin: {x: 0.7, y: 1}
   m_AnchorMax: {x: 0.7, y: 1}
   m_AnchoredPosition: {x: 94, y: -20}
-  m_SizeDelta: {x: 242.6062, y: 170}
+  m_SizeDelta: {x: 242.6062, y: 0}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &288293040
 MonoBehaviour:
@@ -10375,9 +10375,9 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 2017480676}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 50, y: -50}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1002012029
@@ -10955,6 +10955,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: eaa2ae45a5fcb4a4bb7173f45681511e, type: 2}
   startingPotions:
   - {fileID: 11400000, guid: eaa2ae45a5fcb4a4bb7173f45681511e, type: 2}
+  - {fileID: 11400000, guid: 969694a6bef0596458196f9b30029a04, type: 2}
+  - {fileID: 11400000, guid: 231af6e6dbd967d4ea019099370fbc9d, type: 2}
 --- !u!1 &1035841696
 GameObject:
   m_ObjectHideFlags: 0
@@ -15103,10 +15105,10 @@ RectTransform:
   - {fileID: 1857401504}
   m_Father: {fileID: 288293039}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 121.3031, y: -85}
-  m_SizeDelta: {x: 242.6062, y: 170}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1602640673
 MonoBehaviour:
@@ -17280,7 +17282,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.04, y: 0.88}
   m_AnchorMax: {x: 0.96, y: 0.995}
-  m_AnchoredPosition: {x: 0, y: -20.302582}
+  m_AnchoredPosition: {x: 0, y: -20.302612}
   m_SizeDelta: {x: 0, y: 40.6053}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1887001024
@@ -18366,7 +18368,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3348186fce559334eaf360d2702490da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.EventUI
-  eventPool: []
+  eventPool:
+  - {fileID: 11400000, guid: c025daa0641c5b44cb49e652eeea5370, type: 2}
+  - {fileID: 11400000, guid: f62acb0b17e7b894d8f41a22e3c7ea73, type: 2}
+  - {fileID: 11400000, guid: 16d1791dfa6c4bd4982b665da4bdf192, type: 2}
+  - {fileID: 11400000, guid: d186f22d719ed2a4c96a1474b1e3dec2, type: 2}
+  - {fileID: 11400000, guid: ac35facf0b32648439b9d4856e924447, type: 2}
+  - {fileID: 11400000, guid: a43a1eea1dd24b6429d1be9bf750c515, type: 2}
+  - {fileID: 11400000, guid: 5578a752839697d49b84f77d1973eb57, type: 2}
+  - {fileID: 11400000, guid: 6ba26a4b7387360438ba748bb08e68ff, type: 2}
+  - {fileID: 11400000, guid: 1da3fbb1bcd35de43923e7190ccab9d2, type: 2}
   rollDuration: 0.7
   settleInterval: 0.25
   rootCanvas: {fileID: 1531586610}
