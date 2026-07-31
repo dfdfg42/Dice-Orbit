@@ -91,7 +91,10 @@ namespace DiceOrbit.Visuals
             if (cue == null || cue.prefab == null) return;
             var go = Instantiate(cue.prefab, at + cue.offset, Quaternion.identity, vfxRoot);
             if (cue.lifetime > 0f) Destroy(go, cue.lifetime);
-            // 임팩트 피드백 훅은 Task 3에서 여기 삽입
+            if (cue.shake != null && cue.shake.amplitude > 0f)
+                ImpactFeedback.Shake(cue.shake.amplitude, cue.shake.duration);
+            if (cue.hitStop > 0f)
+                ImpactFeedback.HitStop(cue.hitStop);
         }
 
         private void SpawnLoop(string tag, Unit unit)
