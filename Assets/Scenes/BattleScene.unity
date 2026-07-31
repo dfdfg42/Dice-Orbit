@@ -10867,7 +10867,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1238762782}
-  - component: {fileID: 1238762783}
   - component: {fileID: 1238762784}
   m_Layer: 0
   m_Name: VfxManager
@@ -10891,22 +10890,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 51532390}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1238762783
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1238762781}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7bd9d9a19a9bfa4408a33e2326faa8af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Visuals.VfxManager
-  defaultAttackHitVfx: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
-  defaultHealVfx: {fileID: 9157105887711914197, guid: c4f829cb7dd4b864caf8832ec5b1ee55, type: 3}
-  fallbackLifetime: 2.5
-  vfxRoot: {fileID: 0}
 --- !u!114 &1238762784
 MonoBehaviour:
   m_ObjectHideFlags: 0
