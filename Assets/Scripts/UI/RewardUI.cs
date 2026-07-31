@@ -341,7 +341,7 @@ namespace DiceOrbit.UI
             // 손패의 카드 한 장 — 호버 시 밝아짐 (집어 드는 느낌)
             var go = CreateChild(choiceRow, "Choice");
             var le = go.gameObject.AddComponent<LayoutElement>();
-            le.preferredWidth = 250; le.preferredHeight = 220;
+            le.preferredWidth = 340; le.preferredHeight = 320;
 
             var img = go.gameObject.AddComponent<Image>();
             img.sprite = UiRoundedSprite.Get(ButtonRadius);
