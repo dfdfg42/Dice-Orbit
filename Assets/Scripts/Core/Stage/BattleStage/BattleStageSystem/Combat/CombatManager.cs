@@ -207,6 +207,8 @@ namespace DiceOrbit.Core
             Debug.Log($"Combat started! {activeMonsters.Count} monster(s)");
 
             OnCombatStart?.Invoke();
+            DiceOrbit.Visuals.VfxService.Play(DiceOrbit.Visuals.VfxTags.CombatStart,
+                Camera.main != null ? Camera.main.transform.position + Camera.main.transform.forward * 6f : Vector3.zero);
 
             // 첫 플레이어 턴은 안내 띄우고 시작
             StartCoroutine(AnnounceAndStartPlayerTurn());
@@ -271,6 +273,10 @@ namespace DiceOrbit.Core
             {
                 Debug.Log("Defeat! Party wiped out!");
             }
+
+            var screenAt = Camera.main != null ? Camera.main.transform.position + Camera.main.transform.forward * 6f : Vector3.zero;
+            DiceOrbit.Visuals.VfxService.Play(
+                victory ? DiceOrbit.Visuals.VfxTags.Victory : DiceOrbit.Visuals.VfxTags.Defeat, screenAt);
 
             OnCombatEnd?.Invoke();
 
