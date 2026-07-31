@@ -163,7 +163,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b3e5131587118e4f999b251dd17389b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.Run.RunManager
-  firstAct: {fileID: 11400000, guid: c25691e8ea99b064b9b004b47a6bc55f, type: 2}
+  firstAct: {fileID: 11400000, guid: fb8672e9e92e7b34cb0580788afe70e5, type: 2}
   seed: 0
 --- !u!1 &4742567
 GameObject:
@@ -9814,9 +9814,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 55b17139d9956124eb97c619405188a9, type: 2}
   - {fileID: 11400000, guid: eaa2ae45a5fcb4a4bb7173f45681511e, type: 2}
   startingPotions:
-  - {fileID: 11400000, guid: eaa2ae45a5fcb4a4bb7173f45681511e, type: 2}
-  - {fileID: 11400000, guid: 969694a6bef0596458196f9b30029a04, type: 2}
-  - {fileID: 11400000, guid: 231af6e6dbd967d4ea019099370fbc9d, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!1 &1035841696
 GameObject:
   m_ObjectHideFlags: 0
@@ -13350,7 +13350,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.Run.ArtifactManager
   artifactPool: []
   startingArtifacts:
-  - {fileID: 11400000, guid: afc13aec2fa62d446bb6f0cd6a4df300, type: 2}
+  - {fileID: 0}
 --- !u!1 &1692375588
 GameObject:
   m_ObjectHideFlags: 0
