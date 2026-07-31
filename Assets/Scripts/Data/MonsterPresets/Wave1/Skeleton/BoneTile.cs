@@ -1,4 +1,5 @@
 using DiceOrbit.Core;
+using DiceOrbit.Systems.Effects;
 
 namespace DiceOrbit.Data.Tile
 {
@@ -30,10 +31,11 @@ namespace DiceOrbit.Data.Tile
 
         private void Activate()
         {
-            // 지정된 해골 병사에게만 방어도 부여 (살아있을 때)
+            // 지정된 해골 병사에게만 방어도 부여 (살아있을 때) + 이번 라운드 발동 마커
             if (beneficiary != null && beneficiary.IsAlive)
             {
                 beneficiary.Stats.TempArmor += Value;
+                beneficiary.StatusEffects?.AddEffect(new BoneMarkStatus());
             }
         }
 

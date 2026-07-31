@@ -125,6 +125,13 @@ namespace DiceOrbit.Core.Pipeline
                     }
             }
 
+            // F. 활성 몬스터 전체에서 Reactor 수집 (반응형 몬스터 패시브 — 서리 갑옷 등)
+            if (Core.CombatManager.Instance != null && Core.CombatManager.Instance.ActiveMonsters != null)
+            {
+                foreach (var m in Core.CombatManager.Instance.ActiveMonsters)
+                    if (m != null) CollectReactors(m, reactors);
+            }
+
             // D. 유물에서 Reactor 수집 (ArtifactManager — 보유 런타임 인스턴스 자체가 ICombatReactor)
             if (Core.Run.ArtifactManager.Instance != null)
             {

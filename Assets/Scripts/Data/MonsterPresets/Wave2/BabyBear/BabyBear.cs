@@ -75,15 +75,22 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
     // 패시브 [아기 곰은 꿀을 좋아해]
     // ==========================================
     /// <summary>
-    /// 플레이어가 먹은 꿀의 양만큼 아기곰의 피해량이 1씩 영구 증가.
+    /// [아기 곰은 꿀을 좋아해] 공격 시 피격 대상 주변 ±honeyRadius칸 꿀 타일 개수 × damagePerHoney 만큼 피해 증가.
+    /// + 아기곰이 피격되면 그 공격자를 BearPackTracker.LastBabyAttacker로 기록(엄마곰 보호 본능용).
     /// </summary>
     [System.Serializable]
     public class HoneyLoverPassive : PassiveAbility
     {
+        [Header("Passive Settings")]
+        [Tooltip("피격 대상 주변 ±칸")]
+        [SerializeField] private int honeyRadius = 2;
+        [Tooltip("주변 꿀 1개당 추가 피해")]
+        [SerializeField] private int damagePerHoney = 3;
+
         public HoneyLoverPassive()
         {
             passiveName = "아기 곰은 꿀을 좋아해";
-            description = "플레이어가 먹은 꿀의 양만큼 피해량이 1씩 영구 증가";
+            description = "공격 대상 주변 꿀 타일 개수 × 3 만큼 피해 증가";
             priority = 10;
             isStackable = false;
         }
@@ -95,17 +102,25 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
         }
 
         public override string GetDynamicDescription()
-            => $"먹은 꿀 1개당 피해 +1 (현재 +{BearPackTracker.HoneyEaten})";
+            => $"공격 대상 주변 ±{honeyRadius}칸 꿀 1개당 피해 +{damagePerHoney}";
 
         public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
 
-            // 아기곰 공격 → 먹은 꿀 양만큼 피해 증가
-            if (trigger == CombatTrigger.OnCalculateOutput &&
-                context.SourceUnit == owner)
+            // 아기곰 공격 → 피격 대상 주변 꿀 × N 추가 피해
+            if (trigger == CombatTrigger.OnCalculateOutput && context.SourceUnit == owner
+                && context.Target is Character victim && victim.CurrentTile != null)
             {
-                context.OutputValue += BearPackTracker.HoneyEaten;
+                int honey = BearPackTracker.HoneyTilesNear(victim.CurrentTile.TileIndex, honeyRadius);
+                context.OutputValue += honey * damagePerHoney;
+            }
+
+            // 아기곰 피격 → 최근 공격자 기록 (실제 명중, 시뮬 제외)
+            if (trigger == CombatTrigger.OnHit && context.Target == owner
+                && !context.IsSimulation && context.SourceUnit is Character attacker)
+            {
+                BearPackTracker.SetLastBabyAttacker(attacker);
             }
         }
 

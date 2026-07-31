@@ -15,6 +15,11 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2
     {
         public static int HoneyEaten { get; private set; }
 
+        /// <summary>아기곰을 가장 최근에 공격한 캐릭터 (엄마곰 [보호 본능]용). 웨이브 시작 시 null.</summary>
+        public static Character LastBabyAttacker { get; private set; }
+
+        public static void SetLastBabyAttacker(Character c) => LastBabyAttacker = c;
+
         private static CombatManager hookedManager;
 
         // 캐릭터별 (마지막으로 카운트한 턴, 그 턴의 꿀 밟기 횟수)
@@ -24,6 +29,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2
         {
             HoneyEaten = 0;
             HoneySteps.Clear();
+            LastBabyAttacker = null;
         }
 
         public static void RegisterHoneyEaten()
@@ -42,6 +48,33 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2
             entry.count++;
             HoneySteps[character] = entry;
             return entry.count;
+        }
+
+        /// <summary>중심 타일 ±radius 안 꿀 타일 개수 (궤도 모듈로).</summary>
+        public static int HoneyTilesNear(int centerTileIndex, int radius)
+        {
+            var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
+            if (orbit?.Tiles == null) return 0;
+            int total = orbit.Tiles.Count;
+            if (total == 0) return 0;
+
+            int count = 0;
+            for (int i = -radius; i <= radius; i++)
+            {
+                int idx = (centerTileIndex + i) % total;
+                if (idx < 0) idx += total;
+                var tile = orbit.GetTile(idx);
+                if (tile != null && tile.HasAttribute(TileAttributeType.Honey)) count++;
+            }
+            return count;
+        }
+
+        /// <summary>해당 캐릭터가 그 턴에 밟은 꿀 수(읽기 전용).</summary>
+        public static int GetHoneySteps(Character character, int turn)
+        {
+            if (character == null) return 0;
+            if (HoneySteps.TryGetValue(character, out var entry) && entry.turn == turn) return entry.count;
+            return 0;
         }
 
         /// <summary>현재 필드에 깔린 꿀 타일 수.</summary>
