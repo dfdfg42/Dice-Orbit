@@ -6,12 +6,7 @@ using UnityEngine;
 
 namespace DiceOrbit.Visuals
 {
-    public enum TileVfxTrigger
-    {
-        OnTraverse,
-        OnArrive,
-        OnEndTurn
-    }
+    // TileVfxTrigger enum은 VfxCue.cs로 이전됨 (통합 VFX 시스템). 이 파일은 Task 6에서 제거 예정.
 
     [CreateAssetMenu(fileName = "TileVfxDatabase", menuName = "Dice Orbit/VFX/Tile VFX Database")]
     public class TileVfxDatabase : ScriptableObject
