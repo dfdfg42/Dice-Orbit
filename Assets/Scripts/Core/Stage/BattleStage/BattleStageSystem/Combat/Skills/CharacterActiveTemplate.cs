@@ -39,7 +39,9 @@ namespace DiceOrbit.Data.Skills
         [SerializeField] public int targetCount = 1;
 
         [Header("VFX")]
-        [SerializeField] protected CombatVfxProfile vfxProfile;
+        [Tooltip("큐 태그. 비우면 루트(cast/impact) 폴백")]
+        [SerializeField] protected string castCue = "";
+        [SerializeField] protected string impactCue = "";
 
         public string SkillName   => skillName;
         public string Description => description;
@@ -47,7 +49,6 @@ namespace DiceOrbit.Data.Skills
         public CharacterSkillTargetType TargetType => targetType;
         public TilePreviewStyle PreviewStyle       => previewStyle;
         public int              TargetCount        => Mathf.Max(1, targetCount);
-        public CombatVfxProfile VfxProfile         => vfxProfile;
 
         public bool CanUse(int diceValue) => requirement.CanUse(diceValue);
 
@@ -108,14 +109,14 @@ namespace DiceOrbit.Data.Skills
                 return true;
             }
 
-            VfxManager.PlayCast(vfxProfile, source);
+            VfxService.PlayOn(string.IsNullOrEmpty(castCue) ? VfxTags.Cast : castCue, source);
 
             foreach (var target in targets)
             {
                 if (target == null || !target.IsAlive) continue;
 
                 var context = new AttackContext(source, target, skillName, rawDamage);
-                context.VfxProfile = vfxProfile;   // 재생 판단은 파이프라인 ApplyAction 한 곳에서
+                context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
                 CombatPipeline.Instance?.Process(context);
             }
 

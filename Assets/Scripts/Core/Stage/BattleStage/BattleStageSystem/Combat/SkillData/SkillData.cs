@@ -30,8 +30,9 @@ namespace DiceOrbit.Data
         [SerializeField] protected string skillName = "";
         [SerializeField] protected string description = "";
 
-        [Tooltip("이 스킬의 VFX 프로필 (시전/히트/타일). 비우면 전역 기본 히트/힐만 재생")]
-        [SerializeField] protected DiceOrbit.Visuals.CombatVfxProfile vfxProfile;
+        [Tooltip("이 스킬의 큐 태그. 비우면 루트(cast/impact) 폴백")]
+        [SerializeField] protected string castCue = "";
+        [SerializeField] protected string impactCue = "";
 
         public virtual string SkillName => skillName;
         public virtual string Description => description;
@@ -81,8 +82,9 @@ namespace DiceOrbit.Data
 
             var targetTiles = intent.TargetTiles ?? new List<TileData>();
 
-            // 시전 VFX는 스킬 실행 직전 1회 (프로필 없으면 no-op) — 모든 몬스터 스킬 공통
-            DiceOrbit.Visuals.VfxManager.PlayCast(vfxProfile, source);
+            // 시전 VFX는 스킬 실행 직전 1회 (큐 없으면 루트 cast) — 모든 몬스터 스킬 공통
+            DiceOrbit.Visuals.VfxService.PlayOn(
+                string.IsNullOrEmpty(castCue) ? DiceOrbit.Visuals.VfxTags.Cast : castCue, source);
 
             Execute(source, targetUnits, targetTiles, 0);
         }
@@ -107,7 +109,7 @@ namespace DiceOrbit.Data
                     target,
                     SkillName, damage
                 );
-                context.VfxProfile = vfxProfile;   // 재생 판단은 파이프라인이
+                context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
                 CombatPipeline.Instance?.Process(context);
 
                 Debug.Log($"[{SkillName}] {source.name} attacks {target.name} for {damage} damage");
@@ -137,7 +139,7 @@ namespace DiceOrbit.Data
                     character,
                     SkillName, damage
                 );
-                context.VfxProfile = vfxProfile;   // 재생 판단은 파이프라인이
+                context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
                 CombatPipeline.Instance?.Process(context);
                 Debug.Log($"[{SkillName}] {source.name} attacks {character.name} on tile for {damage} damage");
             }
