@@ -117,7 +117,7 @@ namespace DiceOrbit.Core
         protected virtual void HandleDeath()
         {
             Debug.Log($"{name} has died.");
-            // 사망 처리 (애니메이션, 제거 등)
+            DiceOrbit.Visuals.VfxService.PlayOn(DiceOrbit.Visuals.VfxTags.Death, this);
         }
 
         /// <summary>

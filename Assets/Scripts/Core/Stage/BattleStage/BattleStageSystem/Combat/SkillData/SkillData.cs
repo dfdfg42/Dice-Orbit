@@ -119,6 +119,18 @@ namespace DiceOrbit.Data
         public virtual void AttackTiles(Unit source, List<TileData> targetTiles, int damage)
         {
             if (source == null || !source.IsAlive) return;
+
+            // 조준된 모든 타일(빈 칸 포함)에 착탄 연출 — 유닛 히트는 아래 파이프라인이 별도 처리
+            if (targetTiles != null)
+            {
+                string tileCue = string.IsNullOrEmpty(impactCue) ? DiceOrbit.Visuals.VfxTags.TileImpact : impactCue;
+                foreach (var tile in targetTiles)
+                {
+                    if (tile == null) continue;
+                    DiceOrbit.Visuals.VfxService.PlayOn(tileCue, tile);
+                }
+            }
+
             List<Core.Unit> targets = new();
             foreach (var tile in targetTiles)
             {
