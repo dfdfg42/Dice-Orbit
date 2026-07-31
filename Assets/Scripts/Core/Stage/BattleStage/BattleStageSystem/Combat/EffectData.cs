@@ -27,6 +27,7 @@ namespace DiceOrbit.Data
         FireExtinguishMark, // 불꽃 소화 마커: 이번 턴 이미 불을 껐음 (Wave5)
         FireDamageTaken,    // 불꽃 요정용: 이번 턴 받은 누적 피해 (Wave5)
         FireGuard,          // 불의 가호: 방어도 보유 시 받는 피해 감소 (Wave5)
+        BoneMark,           // 뼈무덤 발동 마커: 이번 라운드 해골병사가 뼈 방어도 획득함 (Wave1)
     }
 
     /// <summary>
