@@ -34,27 +34,32 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
             return result;
         }
 
-        // 눈사람이 이번 라운드(직전 플레이어 턴) 동안 받은 피해 누적
-        private static readonly Dictionary<Monster, int> DamageTakenThisRound = new();
-
+        // 눈사람이 이번 라운드(직전 플레이어 턴) 동안 받은 피해 누적 → 상태이상으로 저장(가시화).
+        // 진창눈(ThrowSnow)이 예약됐을 때만 붙는다(HappySnowmanPassive가 게이트).
         public static void AddDamageTaken(Monster snowman, int amount)
         {
-            if (snowman == null) return;
-            DamageTakenThisRound.TryGetValue(snowman, out int cur);
-            DamageTakenThisRound[snowman] = cur + Mathf.Max(0, amount);
+            if (snowman == null || snowman.StatusEffects == null || amount <= 0) return;
+            snowman.StatusEffects.AddEffect(new SnowDamageStatus(amount));
         }
 
         public static int GetDamageTaken(Monster snowman)
         {
-            if (snowman == null) return 0;
-            DamageTakenThisRound.TryGetValue(snowman, out int cur);
-            return cur;
+            if (snowman == null || snowman.StatusEffects == null) return 0;
+            return snowman.StatusEffects.GetEffectValue(EffectType.SnowDamageTaken);
         }
 
         public static void ResetDamageTaken(Monster snowman)
         {
-            if (snowman != null) DamageTakenThisRound[snowman] = 0;
+            if (snowman == null || snowman.StatusEffects == null) return;
+            snowman.StatusEffects.RemoveEffect(EffectType.SnowDamageTaken);
         }
+    }
+
+    /// <summary>[받은 피해] 눈사람이 이번 라운드 받은 누적 피해(가시화). 진창눈 취소 판정용.
+    /// 순수 카운터, 영구(-1), 누적(IsStackable). 눈사람 턴 종료 시 제거.</summary>
+    public class SnowDamageStatus : StatusEffect
+    {
+        public SnowDamageStatus(int amount) : base(EffectType.SnowDamageTaken, amount, -1, isStackable: true) { }
     }
 
     /// <summary>[진창눈] 무작위 대상 1명에게 damage 피해. 눈사람이 이번 라운드 cancelDamageThreshold 이상 받았으면 취소.</summary>
@@ -74,10 +79,14 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
 
         public override int GetPreviewDamage() => damage;
 
+        /// <summary>이번 라운드 받은 피해가 임계값 이상이면 진창눈을 취소해야 한다.</summary>
+        public bool ShouldCancel(Monster snowman)
+            => snowman != null && SnowSet.GetDamageTaken(snowman) >= cancelDamageThreshold;
+
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
             var snowman = source as Monster;
-            if (snowman != null && SnowSet.GetDamageTaken(snowman) >= cancelDamageThreshold)
+            if (ShouldCancel(snowman))
             {
                 Debug.Log($"[진창눈] {source.name} 피해 {SnowSet.GetDamageTaken(snowman)} ≥ {cancelDamageThreshold} → 취소");
                 return;
@@ -134,9 +143,17 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
             if (owner == null) return;
             if (trigger != CombatTrigger.OnHit || context.IsSimulation || !context.IsEffected) return;
 
-            // 눈사람이 받은 피해 누적 (진창눈 취소 판정용)
+            // 눈사람이 받은 피해 누적 — 단, 진창눈(취소 가능 패턴)이 예약됐을 때만 붙이고 표시한다.
             if (context.Target == owner)
-                SnowSet.AddDamageTaken(owner as Monster, Mathf.RoundToInt(context.OutputValue));
+            {
+                var m = owner as Monster;
+                var throwSnow = m?.NextSkill?.skillData as ThrowSnow;
+                if (throwSnow != null)
+                {
+                    SnowSet.AddDamageTaken(m, Mathf.RoundToInt(context.OutputValue));
+                    if (throwSnow.ShouldCancel(m)) m.CancelIntent(); // 임계값 도달 → 의도선 즉시 제거 + 공격 취소
+                }
+            }
 
             // 눈사람 공격이 적중한 적 → 다음 턴 이동 불가
             if (context.SourceUnit == owner && context.Target is Character victim && victim.IsAlive)
