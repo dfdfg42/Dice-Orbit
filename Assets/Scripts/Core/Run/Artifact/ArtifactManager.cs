@@ -153,9 +153,5 @@ namespace DiceOrbit.Core.Run
         public List<ArtifactData> GetShopOfferings(int count)
             => artifactPool.Where(d => d != null && d.effect != null && !Owns(d))
                 .OrderBy(_ => Random.value).Take(count).ToList();
-
-        /// <summary>이름으로 풀에서 찾기 (세이브 복원용).</summary>
-        public ArtifactData FindInPool(string artifactName)
-            => artifactPool.FirstOrDefault(d => d != null && d.artifactName == artifactName);
     }
 }

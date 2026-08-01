@@ -1,7 +1,7 @@
-using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using DiceOrbit.Core.Run;
+using DiceOrbit.Core.Run.Save;
 
 namespace DiceOrbit.Core
 {
@@ -424,11 +424,22 @@ namespace DiceOrbit.Core
             ContinueGameFlow();
         }
 
-        /// <summary>세이브 복원 — 태스크 12에서 RunSaveService 기반으로 다시 쓴다.</summary>
+        /// <summary>세이브 복원 — 참가자 전원 검증 통과 시에만 적용된다.</summary>
         private void ContinueGameFlow()
         {
-            Debug.LogWarning("[GameFlow] 세이브 복원이 리팩토링 중입니다 — 새 게임으로 시작합니다.");
-            StartGameFlow();
+            var report = RunSaveService.RestoreCurrent();
+            if (!report.Success)
+            {
+                Debug.LogWarning($"[GameFlow] 세이브 복원 실패 — 새 게임으로 시작합니다.\n{report}");
+                RunSaveService.Delete();
+                StartGameFlow();
+                return;
+            }
+
+            if (report.Warnings.Count > 0)
+                Debug.LogWarning($"[GameFlow] 복원 경고\n{report}");
+
+            ChangeState(GameState.Map);
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
