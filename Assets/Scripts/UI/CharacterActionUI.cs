@@ -223,9 +223,9 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            if (!currentCharacter.Stats.canMove())
+            if (!currentCharacter.Stats.canMove() || !currentCharacter.Stats.canAct())
             {
-                Debug.LogWarning("[CharacterActionUI] 이동 불가 상태(속박 등)입니다.");
+                Debug.LogWarning("[CharacterActionUI] 이동 불가 상태(속박/기절 등)입니다.");
                 ReturnDiceElement();
                 return;
             }
@@ -596,8 +596,9 @@ namespace DiceOrbit.UI
                 canUseSelectedDiceForSkill = primaryAbility.CanUse(currentDice.Value);
             }
 
-            bool canMove = hasDice && playerTurn && currentCharacter.Stats.canMove() && combatManager.CanSpendMove(currentCharacter);
-            bool canSkill = hasDice && playerTurn && canUseSelectedDiceForSkill && combatManager.CanSpendAction(currentCharacter);
+            bool canAct = currentCharacter.Stats.canAct();
+            bool canMove = hasDice && playerTurn && canAct && currentCharacter.Stats.canMove() && combatManager.CanSpendMove(currentCharacter);
+            bool canSkill = hasDice && playerTurn && canAct && canUseSelectedDiceForSkill && combatManager.CanSpendAction(currentCharacter);
 
             if (moveButton != null) moveButton.interactable = canMove;
             if (skillButton != null) skillButton.interactable = canSkill;
