@@ -37,8 +37,9 @@ namespace DiceOrbit.Core
             return new GameObject("EncounterSpawner").AddComponent<EncounterSpawner>();
         }
 
-        /// <summary>몹 세트를 스폰해 목록으로 반환. 등록/전멸 감지는 호출자(CombatManager) 몫.</summary>
-        public List<Monster> Spawn(EncounterDefinition encounter)
+        /// <summary>몹 세트를 스폰해 목록으로 반환. 등록/전멸 감지는 호출자(CombatManager) 몫.
+        /// startHidden=true면 스케일 0으로 숨겨 스폰 (전투 시작 연출이 순차로 드러냄).</summary>
+        public List<Monster> Spawn(EncounterDefinition encounter, bool startHidden = false)
         {
             var spawned = new List<Monster>();
 
@@ -67,6 +68,7 @@ namespace DiceOrbit.Core
                     continue;
                 }
                 monster.InitializeFromPreset(presets[i]);
+                if (startHidden) monster.transform.localScale = Vector3.zero;   // 연출이 순차로 드러냄
                 spawned.Add(monster);
             }
 

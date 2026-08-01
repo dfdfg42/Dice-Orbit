@@ -17,6 +17,7 @@ namespace DiceOrbit.Visuals
         public const string Defeat = "defeat";
         public const string LevelUp = "levelUp";
         public const string Status = "status";
+        public const string Summon = "summon";
 
         /// <summary>태그와 조상들을 구체→일반 순으로 반환. "impact.fire" → impact.fire, impact.</summary>
         public static IEnumerable<string> Lineage(string tag)
