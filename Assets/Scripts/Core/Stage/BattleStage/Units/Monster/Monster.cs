@@ -43,6 +43,9 @@ namespace DiceOrbit.Core
         // 사망 이벤트 (외부 구독용 — 장부 제거는 Die()의 CombatManager.OnMonsterDefeated 직접 호출)
         public event System.Action<Monster> OnDeath;
 
+        // 전투 시작 연출용: 숨기기 직전의 원래 루트 스케일 (CombatIntroDirector가 복원)
+        [System.NonSerialized] public Vector3 IntroBaseScale = Vector3.one;
+
         // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
         public new MonsterStats Stats => stat;
 

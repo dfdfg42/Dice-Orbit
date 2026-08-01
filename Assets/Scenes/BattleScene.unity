@@ -2691,7 +2691,7 @@ RectTransform:
   m_AnchorMin: {x: 0.7, y: 1}
   m_AnchorMax: {x: 0.7, y: 1}
   m_AnchoredPosition: {x: 94, y: -20}
-  m_SizeDelta: {x: 242.6062, y: 0}
+  m_SizeDelta: {x: 242.6062, y: 170}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &288293040
 MonoBehaviour:
@@ -9338,9 +9338,9 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 2017480676}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 50, y: -50}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1002012029
@@ -13045,10 +13045,10 @@ RectTransform:
   - {fileID: 1857401504}
   m_Father: {fileID: 288293039}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 121.3031, y: -85}
+  m_SizeDelta: {x: 242.6062, y: 170}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1602640673
 MonoBehaviour:
@@ -15939,15 +15939,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4eee4721cb0cdc44d89f0bb7123820af, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Visuals.CombatIntroDirector
-  tileDropHeight: 6
-  tileDropDuration: 0.22
+  tileDropHeight: 14
+  tileDropDuration: 0.5
   tileStagger: 0.03
   tileStartScale: 0.6
   clockwise: 1
-  charPopDuration: 0.25
-  charStagger: 0.1
-  monsterPopDuration: 0.25
-  monsterStagger: 0.2
+  afterTilesDelay: 0.35
+  afterCharsDelay: 0.35
+  charPopDuration: 0.3
+  charStagger: 0.2
+  monsterPopDuration: 0.3
+  monsterStagger: 0.25
 --- !u!4 &2075587032
 Transform:
   m_ObjectHideFlags: 0

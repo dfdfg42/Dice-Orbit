@@ -15,20 +15,24 @@ namespace DiceOrbit.Visuals
         public static CombatIntroDirector Instance { get; private set; }
 
         [Header("타일 낙하")]
-        [SerializeField] private float tileDropHeight = 6f;
-        [SerializeField] private float tileDropDuration = 0.22f;
+        [SerializeField] private float tileDropHeight = 14f;
+        [SerializeField] private float tileDropDuration = 0.5f;
         [SerializeField] private float tileStagger = 0.03f;
         [SerializeField] private float tileStartScale = 0.6f;
         [Tooltip("화면상 시계방향이 되도록 순회 방향 (플레이로 맞춤)")]
         [SerializeField] private bool clockwise = true;
 
+        [Header("페이즈 간 딜레이")]
+        [SerializeField] private float afterTilesDelay = 0.35f;   // 타일 낙하 → 캐릭터
+        [SerializeField] private float afterCharsDelay = 0.35f;   // 캐릭터 → 몬스터 소환
+
         [Header("캐릭터 팝인")]
-        [SerializeField] private float charPopDuration = 0.25f;
-        [SerializeField] private float charStagger = 0.10f;
+        [SerializeField] private float charPopDuration = 0.3f;
+        [SerializeField] private float charStagger = 0.2f;
 
         [Header("몬스터 소환")]
-        [SerializeField] private float monsterPopDuration = 0.25f;
-        [SerializeField] private float monsterStagger = 0.20f;
+        [SerializeField] private float monsterPopDuration = 0.3f;
+        [SerializeField] private float monsterStagger = 0.25f;
 
         private void Awake()
         {
@@ -50,7 +54,9 @@ namespace DiceOrbit.Visuals
         public IEnumerator Play(IReadOnlyList<Monster> spawnedMonsters)
         {
             yield return TileDropPhase();
+            if (afterTilesDelay > 0f) yield return new WaitForSeconds(afterTilesDelay);
             yield return CharacterPopPhase();
+            if (afterCharsDelay > 0f) yield return new WaitForSeconds(afterCharsDelay);
             yield return MonsterSummonPhase(spawnedMonsters);
         }
 
@@ -137,7 +143,7 @@ namespace DiceOrbit.Visuals
             {
                 if (m == null) continue;
                 VfxService.PlayOn(VfxTags.Summon, m);
-                StartCoroutine(PopIn(m.transform, Vector3.one, monsterPopDuration));   // 숨길 때 0 → 원스케일 1로
+                StartCoroutine(PopIn(m.transform, m.IntroBaseScale, monsterPopDuration));   // 숨길 때 캡처한 원래 스케일로 복원
                 if (monsterStagger > 0f) yield return new WaitForSeconds(monsterStagger);
             }
             yield return new WaitForSeconds(monsterPopDuration);

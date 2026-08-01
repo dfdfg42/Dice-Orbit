@@ -68,7 +68,11 @@ namespace DiceOrbit.Core
                     continue;
                 }
                 monster.InitializeFromPreset(presets[i]);
-                if (startHidden) monster.transform.localScale = Vector3.zero;   // 연출이 순차로 드러냄
+                if (startHidden)
+                {
+                    monster.IntroBaseScale = monster.transform.localScale;   // 원래 스케일 보존 (프리셋별로 다름)
+                    monster.transform.localScale = Vector3.zero;             // 연출이 순차로 드러냄
+                }
                 spawned.Add(monster);
             }
 
