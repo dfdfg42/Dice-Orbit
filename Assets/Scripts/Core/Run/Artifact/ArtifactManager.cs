@@ -10,13 +10,13 @@ namespace DiceOrbit.Core.Run
     /// 유물 = ArtifactData(에셋) + RuntimeArtifact(획득 시 CreateInstance로 복제한 런타임 인스턴스).
     /// 보유 인스턴스 자체가 ICombatReactor라 CombatPipeline이 Artifacts를 그대로 수집한다.
     /// 규칙형 효과는 소비처(상점/휴식/보상/부활/전투 시작)가 프로퍼티로 합산값을 읽는다.
-    /// artifactPool이 비어 있으면 기본 5종을 런타임 생성 (에셋 셋업 전에도 동작).
+    /// 모든 유물은 대응하는 ArtifactData .asset을 갖는다 — 런타임 생성 없음, artifactPool은 에셋 등록 필수.
     /// </summary>
     public class ArtifactManager : MonoBehaviour
     {
         public static ArtifactManager Instance { get; private set; }
 
-        [Header("유물 풀 — 획득 후보 (엘리트 드랍/상점 진열). 비우면 기본 세트 런타임 생성")]
+        [Header("유물 풀 — 획득 후보 (엘리트 드랍/상점 진열). 에셋 등록 필수 — 비어 있으면 후보 없음")]
         [SerializeField] private List<ArtifactData> artifactPool = new List<ArtifactData>();
 
         private readonly List<RuntimeArtifact> artifacts = new List<RuntimeArtifact>();

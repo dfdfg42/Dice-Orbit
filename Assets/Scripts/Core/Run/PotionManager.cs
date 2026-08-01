@@ -8,7 +8,7 @@ namespace DiceOrbit.Core.Run
     /// 포션 인벤토리 (파티 공용 3슬롯) + 효과 실행 (스펙 §5).
     /// 사용: 전투 중 아무 때나, 행동 소모 없음. 슬롯 확장은 유물 거리(후속).
     ///
-    /// potionPool이 비어 있으면 기본 세트를 런타임 생성.
+    /// 모든 포션은 대응하는 Potion .asset을 갖는다 — 런타임 생성 없음, potionPool은 에셋 등록 필수.
     /// 획득: 상점 구매 + 전투 보상 저확률 드랍.
     /// </summary>
     public class PotionManager : MonoBehaviour
@@ -18,7 +18,7 @@ namespace DiceOrbit.Core.Run
         [Header("설정")]
         [SerializeField] private int slotCount = 3;
 
-        [Header("포션 풀 — 획득 '후보' 목록 (상점 진열/드랍). 비우면 기본 세트 런타임 생성")]
+        [Header("포션 풀 — 획득 '후보' 목록 (상점 진열/드랍). 에셋 등록 필수 — 비어 있으면 후보 없음")]
         [SerializeField] private List<Potion> potionPool = new List<Potion>();
 
         private readonly List<Potion> _slots = new List<Potion>();
