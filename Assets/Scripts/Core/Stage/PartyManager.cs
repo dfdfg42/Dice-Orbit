@@ -173,6 +173,9 @@ namespace DiceOrbit.Core
             if (ctx.Spawner == null)
                 ctx.Report.Fail("CharacterSpawner를 찾지 못해 파티를 복원할 수 없습니다.");
 
+            if (data.Party.Count > maxPartySize)
+                ctx.Report.Fail($"세이브의 파티 인원이 {data.Party.Count}명으로 최대 {maxPartySize}명을 넘습니다 — 손상된 세이브입니다.");
+
             foreach (var save in data.Party)
             {
                 if (string.IsNullOrEmpty(save.PresetId))
@@ -183,6 +186,10 @@ namespace DiceOrbit.Core
                 {
                     ctx.Report.Fail($"프리셋 '{save.PresetId}'를 카탈로그에서 찾지 못했습니다.");
                 }
+
+                // Apply가 CurrentHP를 Clamp(_, 1, MaxHp)로 넣으므로 MaxHp가 1 미만이면 범위가 뒤집힌다.
+                if (save.MaxHp < 1)
+                    ctx.Report.Fail($"'{save.PresetId}'의 MaxHp가 {save.MaxHp}입니다 — 손상된 세이브입니다.");
 
                 foreach (var mod in save.Modifiers)
                     if (!ModifierRegistry.Exists(mod.Id))
@@ -200,7 +207,14 @@ namespace DiceOrbit.Core
 
                 // CharacterSpawner.Spawn이 PartyManager.AddCharacter를 자동 호출하므로 별도 등록은 없다.
                 var character = ctx.Spawner.Spawn(ctx.FindPreset(save.PresetId), i, data.Party.Count);
-                if (character == null || character.Stats == null) continue;
+                if (character == null || character.Stats == null)
+                {
+                    // 조용히 건너뛰면 파티 0명짜리 반쪽 복원이 성공으로 보고되고, 그대로 세이브를 덮어쓴다.
+                    // Apply 단계 실패는 롤백되지 않지만 ContinueGameFlow의 !report.Success 분기가
+                    // 새 게임 폴백 + 세이브 삭제로 처리한다 — 조용한 반쪽 복원보다 정직한 실패가 낫다.
+                    ctx.Report.Fail($"파티 복원 중 '{save.PresetId}' 스폰에 실패했습니다.");
+                    continue;
+                }
 
                 character.Stats.MaxHP = save.MaxHp;
                 character.Stats.CurrentHP = Mathf.Clamp(save.CurrentHp, 1, save.MaxHp);

@@ -424,6 +424,26 @@ namespace DiceOrbit.Core
             ContinueGameFlow();
         }
 
+        /// <summary>
+        /// 이어하기 복원을 한 프레임 늦춘다.
+        ///
+        /// 이유: SceneManager.sceneLoaded는 씬 오브젝트들의 Awake 뒤·Start 전에 불린다.
+        /// 그런데 파티 복원(PartyManager.Apply → CharacterSpawner.Spawn)은 궤도 타일을 필요로 하고,
+        /// 타일은 OrbitManager.Start()의 GenerateOrbit()이 만든다. 여기서 바로 복원하면
+        /// 타일이 없어 Spawn이 null을 돌려주고 파티가 0명으로 복원된다.
+        /// yield return null 한 번이면 그 프레임의 모든 Start()가 끝난 뒤로 밀린다.
+        ///
+        /// [Windows Unity 검증 포인트]
+        ///  - 메인메뉴 → 이어하기 → BattleScene 진입 시 파티원이 세이브 인원수대로 궤도에 배치되는지.
+        ///  - 콘솔에 "파티 복원 중 '...' 스폰에 실패했습니다" 가 뜨지 않는지.
+        ///  - 맵 진입 직후 자동 저장(GameState.Map)이 파티 0명으로 덮어쓰지 않는지.
+        /// </summary>
+        private System.Collections.IEnumerator ContinueGameFlowNextFrame()
+        {
+            yield return null;   // 씬 오브젝트들의 Start()가 모두 돈 뒤
+            ContinueGameFlow();
+        }
+
         /// <summary>세이브 복원 — 참가자 전원 검증 통과 시에만 적용된다.</summary>
         private void ContinueGameFlow()
         {
@@ -456,7 +476,7 @@ namespace DiceOrbit.Core
             if (pendingContinue && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
             {
                 pendingContinue = false;
-                ContinueGameFlow();
+                StartCoroutine(ContinueGameFlowNextFrame());
             }
 
             // 저장된 환경설정(볼륨/전체화면) 적용 — 씬의 AudioManager가 새로 뜬 뒤에
