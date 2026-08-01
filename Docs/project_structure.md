@@ -22,7 +22,7 @@ Assets/Scripts/
 │   │   ├── Artifact/                        # 유물: ArtifactData(SO) + RuntimeArtifact + ArtifactManager
 │   │   ├── PotionDefinition/PotionManager   # 포션 3슬롯
 │   │   ├── EventDefinition.cs               # 다중 선택지 이벤트 SO
-│   │   └── Save/                            # 런 세이브 v2 (7개 파일) — RunSaveService는 오케스트레이션만(고정 참가자 목록 순회, DiceOrbit.Core.Run.Save), 실제 저장/복원은 각 매니저가 IRunSaveParticipant(Capture/Validate/Apply)로 직접 수행. 에셋 조회는 SaveIdCatalog의 불변 saveId(표시 이름 아님). 마이그레이션 없음(v1 폐기)
+│   │   └── Save/                            # 런 세이브 v2 (7개 파일) — RunSaveService는 오케스트레이션만(고정 참가자 목록 순회, DiceOrbit.Core.Run.Save), 실제 저장/복원은 각 매니저가 IRunSaveParticipant(Capture/Validate/Apply)로 직접 수행. 에셋 조회는 SaveIdCatalog의 불변 saveId(표시 이름 아님). 마이그레이션 없음(v1 폐기). **필수 에셋: `Assets/Resources/SaveIdCatalog.asset`** — 런타임이 `Resources.Load`로 이 경로만 찾으므로, 없거나 다른 폴더에 있으면 복원이 통째로 실패한다
 │   └── Stage/
 │       ├── PartyManager.cs                  # 파티(플레이어 캐릭터) 관리
 │       └── BattleStage/
@@ -56,6 +56,8 @@ Assets/Scripts/
 │   └── Waves/                               # WaveSpawnPoint (스폰 지점 마커 — WaveDatabase는 Act 풀로 이관 후 삭제)
 │
 ├── Editor/                                  # 커스텀 인스펙터 (CharacterPresetEditor, MonsterPresetEditor)
+│                                            # + SaveIdValidator(카탈로그 재스캔·빈 saveId 백필·중복 검출, 메뉴 「도구/Dice Orbit/세이브 ID 전체 점검」)
+│                                            # + SaveIdCatalogPostprocessor(에셋 임포트 시 재스캔 자동 호출)
 │
 ├── Legacy/                                  # (비어 있음 - EMPTY, 파일 없음)
 │
