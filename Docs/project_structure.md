@@ -1,7 +1,7 @@
 # 프로젝트 전체 구조 (Project Structure Overview)
 
 Dice Orbit 프로젝트의 파일 구조와 시스템 아키텍처에 대한 개요입니다.
-(Unity 6000.3 기준, 2026-07-21 갱신 — Artifact 재구축 · ActionType 제거 · WaveManager 폐지 반영.)
+(Unity 6000.3 기준, 2026-08-01 갱신 — Artifact 재구축 · ActionType 제거 · WaveManager 폐지 · 세이브 시스템 v2(참가자 방식) 반영.)
 
 ## 1. 폴더 구조 (Folder Structure)
 
@@ -22,7 +22,7 @@ Assets/Scripts/
 │   │   ├── Artifact/                        # 유물: ArtifactData(SO) + RuntimeArtifact + ArtifactManager
 │   │   ├── PotionDefinition/PotionManager   # 포션 3슬롯
 │   │   ├── EventDefinition.cs               # 다중 선택지 이벤트 SO
-│   │   └── RunSaveService.cs                # 런 세이브/이어하기 (JsonUtility)
+│   │   └── Save/                            # 런 세이브 v2 (7개 파일) — RunSaveService는 오케스트레이션만(고정 참가자 목록 순회, DiceOrbit.Core.Run.Save), 실제 저장/복원은 각 매니저가 IRunSaveParticipant(Capture/Validate/Apply)로 직접 수행. 에셋 조회는 SaveIdCatalog의 불변 saveId(표시 이름 아님). 마이그레이션 없음(v1 폐기)
 │   └── Stage/
 │       ├── PartyManager.cs                  # 파티(플레이어 캐릭터) 관리
 │       └── BattleStage/

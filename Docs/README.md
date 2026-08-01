@@ -56,6 +56,7 @@
 | [ui_hover_tooltip_system_design.md](ui_hover_tooltip_system_design.md) | 구 Hover 툴팁 UI 설계 (키워드·상태이상 패널) | 대체됨 (→ battle_info_panel_system.md — 경량 ShowPinned만 존치) |
 | [superpowers/specs/2026-07-05-battle-info-panel-design.md](superpowers/specs/2026-07-05-battle-info-panel-design.md) | 전투 정보 패널 **설계안** | 구현됨 (→ battle_info_panel_system.md) |
 | [superpowers/specs/2026-07-07-run-structure-node-map-design.md](superpowers/specs/2026-07-07-run-structure-node-map-design.md) | 런 구조·노드맵 **기획 스펙** (의도의 진실 소스) | 구현됨 (→ run_structure_system.md) |
+| [superpowers/plans/2026-07-28-save-system-refactor.md](superpowers/plans/2026-07-28-save-system-refactor.md) | 세이브 시스템 리팩토링 **구현 계획** — 참가자 방식 전환 + saveId 도입 | 구현됨 (→ project_structure.md) |
 
 ---
 
