@@ -162,6 +162,10 @@ namespace DiceOrbit.Core
             CurrentEncounter = encounter;
             CurrentFloorNumber = floorNumber;
 
+            // 배경은 연출 전에 미리 세팅 (OnCombatStart는 연출 후 발화되므로 배경만 앞당김)
+            var bg = FindFirstObjectByType<BackgroundManager>(FindObjectsInactive.Include);
+            if (bg != null) bg.ApplyEncounterBackground();
+
             // 숨긴 채 전량 스폰 (전멸 판정/인텐트 로직은 즉시 유효, 연출이 순차로 드러냄)
             var spawned = EncounterSpawner.EnsureInstance().Spawn(encounter, startHidden: true);
             foreach (var m in spawned)
