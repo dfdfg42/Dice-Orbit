@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using DiceOrbit.Core.Run.Save;
+using DiceOrbit.Data.Modifiers;
 
 namespace DiceOrbit.Core
 {
@@ -8,7 +10,7 @@ namespace DiceOrbit.Core
     /// 파티 관리자 (싱글톤)
     /// 최대 4명의 캐릭터 관리
     /// </summary>
-    public class PartyManager : MonoBehaviour
+    public class PartyManager : MonoBehaviour, IRunSaveParticipant
     {
         public static PartyManager Instance { get; private set; }
         
@@ -135,6 +137,83 @@ namespace DiceOrbit.Core
             party.Clear();
             selectedCharacter = null;
             OnPartyChanged?.Invoke(party.Count);
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(RunSaveData data)
+        {
+            data.Party.Clear();
+            foreach (var character in party)
+            {
+                if (character == null || character.Stats == null) continue;
+
+                var save = new CharacterSaveData
+                {
+                    PresetId = character.Stats.SourcePreset != null
+                        ? character.Stats.SourcePreset.SaveId
+                        : null,
+                    CurrentHp = character.Stats.CurrentHP,
+                    MaxHp = character.Stats.MaxHP,
+                    RevivalStock = character.Stats.RevivalStock,
+                };
+
+                var mods = character.Stats.Modifiers != null ? character.Stats.Modifiers.Modifiers : null;
+                if (mods != null)
+                    foreach (var mod in mods)
+                        if (mod != null)
+                            save.Modifiers.Add(new ModifierSaveData { Id = mod.GetType().Name });
+
+                data.Party.Add(save);
+            }
+        }
+
+        public void Validate(RunSaveData data, RunRestoreContext ctx)
+        {
+            if (ctx.Spawner == null)
+                ctx.Report.Fail("CharacterSpawner를 찾지 못해 파티를 복원할 수 없습니다.");
+
+            foreach (var save in data.Party)
+            {
+                if (string.IsNullOrEmpty(save.PresetId))
+                {
+                    ctx.Report.Fail("파티 구성원의 PresetId가 비어 있습니다.");
+                }
+                else if (ctx.FindPreset(save.PresetId) == null)
+                {
+                    ctx.Report.Fail($"프리셋 '{save.PresetId}'를 카탈로그에서 찾지 못했습니다.");
+                }
+
+                foreach (var mod in save.Modifiers)
+                    if (!ModifierRegistry.Exists(mod.Id))
+                        ctx.Report.Fail($"모디파이어 '{mod.Id}'가 레지스트리에 없습니다.");
+            }
+        }
+
+        public void Apply(RunSaveData data, RunRestoreContext ctx)
+        {
+            ClearAll();
+
+            for (int i = 0; i < data.Party.Count; i++)
+            {
+                var save = data.Party[i];
+
+                // CharacterSpawner.Spawn이 PartyManager.AddCharacter를 자동 호출하므로 별도 등록은 없다.
+                var character = ctx.Spawner.Spawn(ctx.FindPreset(save.PresetId), i, data.Party.Count);
+                if (character == null || character.Stats == null) continue;
+
+                character.Stats.MaxHP = save.MaxHp;
+                character.Stats.CurrentHP = Mathf.Clamp(save.CurrentHp, 1, save.MaxHp);
+                character.Stats.RevivalStock = save.RevivalStock;
+
+                foreach (var mod in save.Modifiers)
+                {
+                    // 캐릭터마다 독립 인스턴스가 필요하므로 매번 새로 만든다.
+                    var instance = ModifierRegistry.Create(mod.Id);
+                    if (instance != null && character.Stats.Modifiers != null)
+                        character.Stats.Modifiers.Add(instance);
+                }
+            }
         }
 
         /// <summary>
