@@ -80,38 +80,45 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalCore
         }
     }
 
-    /// <summary>[수정 폭풍] 자수정 타일을 제외한 모든 타일의 적에게 damage 피해 + 기절 부여.
+    /// <summary>[수정 폭풍] 자수정 타일을 제외한 모든 타일의 적에게 damage 피해.
+    /// 발동 시 수정 중첩을 0으로 초기화하고, 시전자(수정 핵) 자신이 다음 몬스터 턴에 기절(1회 스킵).
     /// (AllTargets + Characters로 배선; Execute에서 자수정 위 캐릭터 제외)</summary>
     [System.Serializable]
     public class CrystalStormSkill : SkillData
     {
         [Header("Skill Settings")]
         [SerializeField] private int damage = 20;
-        [Tooltip("기절 지속 턴 (SnowMan 빙결과 동일 컨벤션 = 2 → 다음 턴 스킵)")]
-        [SerializeField] private int stunDuration = 2;
+        [Tooltip("수정 핵 자기 기절 지속 턴 (1 = 다음 턴 1회 스킵)")]
+        [SerializeField] private int stunTurns = 1;
 
         public CrystalStormSkill()
         {
             skillName = "수정 폭풍";
-            description = "자수정 타일을 제외한 모든 타일의 적에게 피해 + 다음 턴 기절";
+            description = "자수정 제외 모든 타일 적에게 피해 + 수정 중첩 초기화 + 수정 핵 다음 턴 기절";
         }
 
         public override int GetPreviewDamage() => damage;
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            if (targetUnits == null) return;
-            var victims = targetUnits
-                .OfType<Character>()
-                .Where(c => c.IsAlive && !(c.CurrentTile != null && c.CurrentTile.HasAttribute(TileAttributeType.Amethyst)))
-                .Cast<Unit>()
-                .ToList();
+            if (targetUnits != null)
+            {
+                var victims = targetUnits
+                    .OfType<Character>()
+                    .Where(c => c.IsAlive && !(c.CurrentTile != null && c.CurrentTile.HasAttribute(TileAttributeType.Amethyst)))
+                    .Cast<Unit>()
+                    .ToList();
+                AttackUnits(source, victims, damage);
+            }
 
-            AttackUnits(source, victims, damage);
-
-            foreach (var u in victims)
-                if (u is Character c && c.IsAlive && c.StatusEffects != null)
-                    c.StatusEffects.AddEffect(new StunDebuff(stunDuration));
+            // 발동 시: 수정 중첩 0으로 초기화 + 시전자(수정 핵) 자신이 다음 몬스터 턴에 기절(stunTurns만큼 스킵).
+            var core = source as Monster;
+            if (core != null)
+            {
+                CrystalSet.ResetStacks(core);
+                if (core.StatusEffects != null)
+                    core.StatusEffects.AddEffect(new StunDebuff(stunTurns)); // StunDebuff.OnTurnEvent가 몬스터 턴 스킵 처리
+            }
         }
     }
 
