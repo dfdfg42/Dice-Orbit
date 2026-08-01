@@ -110,7 +110,27 @@ namespace DiceOrbit.Core.Run
         public void Validate(Save.RunSaveData data, RunRestoreContext ctx)
         {
             if (firstAct == null)
+            {
                 ctx.Report.Fail("RunManager.firstAct가 지정되지 않아 맵을 복원할 수 없습니다.");
+                return;
+            }
+
+            // 맵 재생성은 순수 함수(시드 → 그래프)라 부작용이 없다. Apply가 쓸 맵을 미리 만들어
+            // 저장된 노드 ID가 실제로 해결되는지 본다 — 막 정의가 바뀐 세이브를 여기서 걸러야
+            // Apply가 현재 노드 없는 런을 만들어 놓는 사태를 막는다.
+            var map = MapGenerator.Generate(firstAct, data.Progress.Seed);
+            if (map == null)
+            {
+                ctx.Report.Fail("맵 재생성에 실패했습니다 — 막 정의를 확인하세요.");
+                return;
+            }
+
+            if (data.Progress.CurrentNodeId >= 0 && map.Get(data.Progress.CurrentNodeId) == null)
+                ctx.Report.Fail($"현재 노드 {data.Progress.CurrentNodeId}를 재생성된 맵에서 찾지 못했습니다 — 맵 정의가 변경된 세이브입니다.");
+
+            foreach (int id in data.Progress.VisitedNodeIds)
+                if (map.Get(id) == null)
+                    ctx.Report.Fail($"방문 노드 {id}를 재생성된 맵에서 찾지 못했습니다 — 맵 정의가 변경된 세이브입니다.");
         }
 
         public void Apply(Save.RunSaveData data, RunRestoreContext ctx)

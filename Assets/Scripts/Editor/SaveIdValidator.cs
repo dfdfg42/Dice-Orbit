@@ -64,13 +64,34 @@ namespace DiceOrbit.EditorTools
             }
         }
 
+        /// <summary>런타임은 Resources.Load로 이 경로 하나만 찾는다 — 다른 데 있으면 복원이 통째로 실패한다.</summary>
+        private const string CatalogPath = "Assets/Resources/SaveIdCatalog.asset";
+
         private static SaveIdCatalog FindCatalog()
         {
-            foreach (var guid in AssetDatabase.FindAssets("t:SaveIdCatalog"))
+            var guids = AssetDatabase.FindAssets("t:SaveIdCatalog");
+            if (guids.Length > 1)
+            {
+                var paths = new List<string>(guids.Length);
+                foreach (var guid in guids) paths.Add(AssetDatabase.GUIDToAssetPath(guid));
+                Debug.LogError(
+                    $"[SaveId] SaveIdCatalog 에셋이 {guids.Length}개 있습니다 — 하나만 남기세요.\n  " +
+                    string.Join("\n  ", paths));
+            }
+
+            foreach (var guid in guids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 var found = AssetDatabase.LoadAssetAtPath<SaveIdCatalog>(path);
-                if (found != null) return found;
+                if (found == null) continue;
+
+                if (path != CatalogPath)
+                    Debug.LogError(
+                        $"[SaveId] SaveIdCatalog가 {path}에 있습니다 — Resources.Load가 찾지 못합니다. " +
+                        $"{CatalogPath}으로 옮기세요.", found);
+
+                // 위치가 틀려도 스캔 자체는 계속한다 — 신호만 정직하게 남긴다.
+                return found;
             }
             return null;
         }
@@ -109,6 +130,8 @@ namespace DiceOrbit.EditorTools
                 prop.stringValue = asset.name;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(asset);
+                // 디스크에 쓰지 않으면 에디터를 껐다 켤 때 백필이 날아가 saveId가 다시 빈 값이 된다.
+                AssetDatabase.SaveAssetIfDirty(asset);
                 Debug.Log($"[SaveId] {label} '{asset.name}'의 saveId를 '{asset.name}'으로 채웠습니다.");
             }
         }

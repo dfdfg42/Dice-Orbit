@@ -111,7 +111,14 @@ namespace DiceOrbit.Core.Run
             data.Artifacts.Clear();
             foreach (var artifact in artifacts)
             {
-                if (artifact == null || artifact.data == null) continue;
+                if (artifact == null) continue;
+                if (artifact.data == null)
+                {
+                    // AddArtifact(디버그/특수 경로)로 들어온 에셋 없는 유물은 saveId가 없어 복원할 수 없다.
+                    // 조용히 사라지면 이어하기 후 유물이 하나 빈 것을 알 길이 없으므로 남긴다.
+                    Debug.LogWarning($"[RunSave] 에셋 없는 런타임 유물 '{artifact.GetType().Name}'은(는) 저장되지 않습니다.");
+                    continue;
+                }
                 data.Artifacts.Add(new ArtifactSaveData { Id = artifact.data.SaveId });
             }
         }
