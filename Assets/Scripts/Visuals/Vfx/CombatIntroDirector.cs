@@ -18,7 +18,6 @@ namespace DiceOrbit.Visuals
         [SerializeField] private float tileDropHeight = 14f;
         [SerializeField] private float tileDropDuration = 0.5f;
         [SerializeField] private float tileStagger = 0.03f;
-        [SerializeField] private float tileStartScale = 0.6f;
         [Tooltip("화면상 시계방향이 되도록 순회 방향 (플레이로 맞춤)")]
         [SerializeField] private bool clockwise = true;
 
@@ -33,6 +32,9 @@ namespace DiceOrbit.Visuals
         [Header("몬스터 소환")]
         [SerializeField] private float monsterPopDuration = 0.3f;
         [SerializeField] private float monsterStagger = 0.25f;
+
+        // 연출 시작 시 숨긴 캐릭터 (트랜스폼, 원래 스케일) — 자기 차례에 복원
+        private readonly List<KeyValuePair<Transform, Vector3>> _hiddenChars = new List<KeyValuePair<Transform, Vector3>>();
 
         private void Awake()
         {
@@ -53,11 +55,26 @@ namespace DiceOrbit.Visuals
         /// <summary>3단계 순차 연출. 완료 후 반환 → 호출자가 BroadcastCombatStart/StartCombat 진행.</summary>
         public IEnumerator Play(IReadOnlyList<Monster> spawnedMonsters)
         {
+            HideCharacters();   // 연출 시작 즉시 캐릭터를 숨겨 타일 낙하 동안 안 보이게
             yield return TileDropPhase();
             if (afterTilesDelay > 0f) yield return new WaitForSeconds(afterTilesDelay);
             yield return CharacterPopPhase();
             if (afterCharsDelay > 0f) yield return new WaitForSeconds(afterCharsDelay);
             yield return MonsterSummonPhase(spawnedMonsters);
+        }
+
+        /// <summary>파티 캐릭터의 원래 스케일을 캐시하고 즉시 숨김 (스케일 0).</summary>
+        private void HideCharacters()
+        {
+            _hiddenChars.Clear();
+            var party = PartyManager.Instance != null ? PartyManager.Instance.Party : null;
+            if (party == null) return;
+            foreach (var c in party)
+            {
+                if (c == null || !c.IsAlive) continue;
+                _hiddenChars.Add(new KeyValuePair<Transform, Vector3>(c.transform, c.transform.localScale));
+                c.transform.localScale = Vector3.zero;
+            }
         }
 
         // ── Phase 1: 타일 시계방향 낙하 ──────────────────────
@@ -69,7 +86,7 @@ namespace DiceOrbit.Visuals
             var tiles = new List<DiceOrbit.Data.TileData>(orbit.Tiles);
             if (clockwise) tiles.Reverse();
 
-            // 원래 값 캐시 + 시작값(위·축소)으로 즉시 세팅
+            // 원래 값 캐시 + 시작 위치(위)로 즉시 세팅. 스케일은 원래 크기 그대로 (중력 낙하 = 크기 변화 없음)
             int n = tiles.Count;
             var origPos = new Vector3[n];
             var origScale = new Vector3[n];
@@ -80,7 +97,6 @@ namespace DiceOrbit.Visuals
                 origPos[i] = t.transform.position;
                 origScale[i] = t.transform.localScale;
                 t.transform.position = origPos[i] + Vector3.up * tileDropHeight;
-                t.transform.localScale = origScale[i] * tileStartScale;
             }
 
             // 순차 낙하 (겹쳐서 진행 — stagger로 하나씩 시작)
@@ -105,14 +121,12 @@ namespace DiceOrbit.Visuals
         private IEnumerator DropOne(Transform t, Vector3 targetPos, Vector3 targetScale)
         {
             Vector3 startPos = t.position;
-            Vector3 startScale = t.localScale;
             float elapsed = 0f;
             while (elapsed < tileDropDuration)
             {
                 if (t == null) yield break;
-                float k = EaseOutQuad(elapsed / tileDropDuration);
+                float k = EaseInQuad(elapsed / tileDropDuration);   // 중력 낙하 = 가속(t^2)
                 t.position = Vector3.LerpUnclamped(startPos, targetPos, k);
-                t.localScale = Vector3.LerpUnclamped(startScale, targetScale, k);
                 elapsed += Time.deltaTime;
                 yield return null;
             }
@@ -122,16 +136,16 @@ namespace DiceOrbit.Visuals
         // ── Phase 2: 캐릭터 순차 팝인 ────────────────────────
         private IEnumerator CharacterPopPhase()
         {
-            var party = PartyManager.Instance != null ? PartyManager.Instance.Party : null;
-            if (party == null) yield break;
+            if (_hiddenChars.Count == 0) yield break;
 
-            foreach (var c in party)
+            foreach (var pair in _hiddenChars)
             {
-                if (c == null || !c.IsAlive) continue;
-                StartCoroutine(PopIn(c.transform, c.transform.localScale, charPopDuration));
+                if (pair.Key == null) continue;
+                StartCoroutine(PopIn(pair.Key, pair.Value, charPopDuration));   // 캐시한 원래 스케일로 복원
                 if (charStagger > 0f) yield return new WaitForSeconds(charStagger);
             }
             yield return new WaitForSeconds(charPopDuration);
+            _hiddenChars.Clear();
         }
 
         // ── Phase 3: 몬스터 순차 소환 ────────────────────────
@@ -167,6 +181,7 @@ namespace DiceOrbit.Visuals
         }
 
         // ── 이징 ──────────────────────────────────────────────
+        private static float EaseInQuad(float x) => x * x;   // 가속 (중력 낙하)
         private static float EaseOutQuad(float x) => 1f - (1f - x) * (1f - x);
         private static float EaseOutBack(float x)
         {
