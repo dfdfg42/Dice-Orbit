@@ -17,7 +17,7 @@ namespace DiceOrbit.Visuals
         [Header("타일 낙하")]
         [SerializeField] private float tileDropHeight = 14f;
         [SerializeField] private float tileDropDuration = 0.5f;
-        [SerializeField] private float tileStagger = 0.03f;
+        [SerializeField] private float tileStagger = 0.08f;
         [Tooltip("화면상 시계방향이 되도록 순회 방향 (플레이로 맞춤)")]
         [SerializeField] private bool clockwise = true;
 
