@@ -28,6 +28,9 @@ namespace DiceOrbit.Data
         FireDamageTaken,    // 불꽃 요정용: 이번 턴 받은 누적 피해 (Wave5)
         FireGuard,          // 불의 가호: 방어도 보유 시 받는 피해 감소 (Wave5)
         BoneMark,           // 뼈무덤 발동 마커: 이번 라운드 해골병사가 뼈 방어도 획득함 (Wave1)
+        Stunned,            // 기절: 다음 턴 행동 불가(이동+스킬) (Wave3 수정)
+        CrystalStack,       // 수정 중첩: 수정 핵 스택 카운터(가시화용 상태) (Wave3 수정)
+        SnowDamageTaken,    // 받은 피해: 눈사람 진창눈 취소 판정용 누적 피해(가시화) (Wave3 눈사람)
     }
 
     /// <summary>

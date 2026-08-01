@@ -21,6 +21,8 @@ namespace DiceOrbit.Data.Tile
         Harmony,        // 조화: 턴 종료 시 최대체력 V% 회복 (이벤트)
         Disharmony,     // 부조화: 턴 종료 시 최대체력 V% 피해 (이벤트)
         Flame,          // 불꽃: 턴 종료 시 V 피해 / 통과 시 소화 (Wave5)
+        Slime,          // 점액: 통과/턴 종료 시 쇠약 부여 (Wave0)
+        Amethyst,       // 자수정: 통과/턴 종료 시 수정 핵에 수정 중첩 +1, 영구 (Wave3 수정)
     }
 
     /// <summary>
@@ -112,6 +114,8 @@ namespace DiceOrbit.Data.Tile
                 TileAttributeType.Harmony => "조화",
                 TileAttributeType.Disharmony => "부조화",
                 TileAttributeType.Flame => "불꽃",
+                TileAttributeType.Slime => "점액",
+                TileAttributeType.Amethyst => "자수정",
                 _ => Type.ToString()
             };
         }

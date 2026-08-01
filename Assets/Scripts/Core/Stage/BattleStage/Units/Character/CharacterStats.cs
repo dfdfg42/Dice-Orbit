@@ -27,6 +27,7 @@ namespace DiceOrbit.Data
         public int MoveDebuff  = 0;
         public int MoveOnThisTurn = 0;
         public int BindDebuff  = 0;
+        public int StunDebuff  = 0;
 
         [HideInInspector]
         public Data.Modifiers.IModifierManager Modifiers;
@@ -42,5 +43,6 @@ namespace DiceOrbit.Data
         // (캐릭터 레벨/HP 성장 커브는 철거됨 — 성장은 전부 모디파이어로, 기획 REV05)
 
         public bool canMove() => BindDebuff == 0;
+        public bool canAct()  => StunDebuff == 0;
     }
 }

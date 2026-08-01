@@ -118,6 +118,8 @@ namespace DiceOrbit.UI
                 { "Silence",       "침묵"    },
                 { "Frozen",        "빙결"    },
                 { "Frostbite",     "동상"    },
+                { "CrystalStack",  "수정 중첩" },
+                { "SnowDamageTaken", "받은 피해" },
                 { "BuffAttack",    "공격력 증가" },
                 { "BuffDefense",   "방어력 증가" },
                 { "DebuffAttack",  "공격력 감소" },

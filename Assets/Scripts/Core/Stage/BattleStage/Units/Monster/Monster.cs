@@ -248,7 +248,18 @@ namespace DiceOrbit.Core
             // 다음 의도 준비
             SelectNextIntent();
         }
-        
+
+        /// <summary>
+        /// 이번 턴에 예약된 행동을 취소한다. 의도가 없으면 ExecuteIntent가 자동으로 아무것도 하지 않는다.
+        /// 기절 등 "행동 불가" 효과가 소유자 턴 시작 시 호출한다(효과별 하드코딩 대신 상태이상이 주도).
+        /// </summary>
+        public void CancelIntent()
+        {
+            nextSkill = null;
+            nextIntent = null;
+            UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
+        }
+
         /// <summary>
         /// 턴 시작 (Pipeline TurnStart)
         /// </summary>
