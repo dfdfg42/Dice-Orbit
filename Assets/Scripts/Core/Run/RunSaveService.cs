@@ -83,7 +83,8 @@ namespace DiceOrbit.Core.Run
             foreach (var node in run.Map.Nodes)
                 if (node.Visited) data.VisitedNodeIds.Add(node.Id);
 
-            data.BanishedPresetNames.AddRange(run.BanishedNames);
+            // 태스크 12까지 임시: BanishedNames는 새 참가자 경로(RunManager.Capture)로 이관됨.
+            // 구 복원 경로는 이미 스텁 처리라 이 파일의 세이브는 읽히지 않는다.
 
             if (ArtifactManager.Instance != null)
                 data.ArtifactNames.AddRange(ArtifactManager.Instance.Artifacts

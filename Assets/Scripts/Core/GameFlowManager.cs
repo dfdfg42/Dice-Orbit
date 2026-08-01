@@ -424,76 +424,11 @@ namespace DiceOrbit.Core
             ContinueGameFlow();
         }
 
-        /// <summary>세이브 복원: 맵(시드 재생성) → 골드/유물/포션 → 파티 스폰+스탯/모디파이어 → 맵 화면.</summary>
+        /// <summary>세이브 복원 — 태스크 12에서 RunSaveService 기반으로 다시 쓴다.</summary>
         private void ContinueGameFlow()
         {
-            var data = RunSaveService.Load();
-            var run = RunManager.Instance;
-            if (data == null || run == null || !run.RestoreRun(data.Seed, data.CurrentNodeId, data.VisitedNodeIds, data.BattlesCleared))
-            {
-                Debug.LogWarning("[GameFlow] 세이브 복원 실패 — 새 게임으로 시작합니다.");
-                StartGameFlow();
-                return;
-            }
-
-            var selection = Object.FindFirstObjectByType<UI.CharacterSelectionUI>(FindObjectsInactive.Include);
-
-            // 소멸 캐릭터 (재영입 불가 목록)
-            if (selection != null)
-            {
-                foreach (var name in data.BanishedPresetNames)
-                {
-                    var preset = selection.AllCharacters.FirstOrDefault(p => p != null && p.CharacterName == name);
-                    if (preset != null) run.RegisterBanished(preset);
-                }
-            }
-
-            // 골드
-            var goldManager = GoldManager.EnsureInstance();
-            goldManager.ResetGold();
-            goldManager.AddGold(data.Gold);
-
-            // 유물 / 포션 (이름 매칭 — 구 세이브는 RelicNames 폴백)
-            var artifactManager = ArtifactManager.EnsureInstance();
-            foreach (var name in data.EffectiveArtifactNames)
-                artifactManager.Grant(artifactManager.FindInPool(name));
-
-            var potions = PotionManager.EnsureInstance();
-            foreach (var name in data.PotionNames)
-                potions.TryAdd(potions.FindInPool(name));
-
-            // 파티 스폰 + 스탯/모디파이어 복원
-            var spawner = Object.FindFirstObjectByType<CharacterSpawner>();
-            var allModifiers = Data.Modifiers.ModifierRegistry.CreateAll();
-            for (int i = 0; i < data.Party.Count; i++)
-            {
-                var save = data.Party[i];
-                var preset = selection?.AllCharacters.FirstOrDefault(p => p != null && p.CharacterName == save.PresetName);
-                if (preset == null || spawner == null)
-                {
-                    Debug.LogWarning($"[GameFlow] 파티 복원 실패 — 프리셋 '{save.PresetName}'을 찾을 수 없습니다.");
-                    continue;
-                }
-
-                var character = spawner.Spawn(preset, i, data.Party.Count);
-                if (character == null || character.Stats == null) continue;
-
-                character.Stats.MaxHP = save.MaxHp;
-                character.Stats.CurrentHP = Mathf.Clamp(save.CurrentHp, 1, save.MaxHp);
-                character.Stats.RevivalStock = save.RevivalStock;
-
-                foreach (var modName in save.ModifierNames)
-                {
-                    // 캐릭터마다 독립 인스턴스가 필요하므로 매번 새로 생성해 매칭
-                    var mod = Data.Modifiers.ModifierRegistry.CreateAll()
-                        .FirstOrDefault(m => m != null && m.ModifierName == modName);
-                    if (mod != null) character.Stats.Modifiers?.Add(mod);
-                    else Debug.LogWarning($"[GameFlow] 모디파이어 '{modName}' 복원 실패 (레지스트리에 없음)");
-                }
-            }
-
-            Debug.Log($"[GameFlow] 이어하기 완료 — 파티 {data.Party.Count}명, 골드 {data.Gold}");
-            ChangeState(GameState.Map);
+            Debug.LogWarning("[GameFlow] 세이브 복원이 리팩토링 중입니다 — 새 게임으로 시작합니다.");
+            StartGameFlow();
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)

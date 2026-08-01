@@ -1,3 +1,4 @@
+using DiceOrbit.Core.Run.Save;
 using UnityEngine;
 
 namespace DiceOrbit.Core
@@ -6,7 +7,7 @@ namespace DiceOrbit.Core
     /// 골드(통화) 관리자. 런(run) 동안 누적되며 씬 재로드(다시 시작) 시 초기화된다.
     /// 현재는 보상으로 받아 누적만 하고, 추후 상점에서 소비할 수 있다.
     /// </summary>
-    public class GoldManager : MonoBehaviour
+    public class GoldManager : MonoBehaviour, IRunSaveParticipant
     {
         public static GoldManager Instance { get; private set; }
 
@@ -57,6 +58,21 @@ namespace DiceOrbit.Core
         public void ResetGold()
         {
             gold = 0;
+            OnGoldChanged?.Invoke(gold);
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(RunSaveData data) => data.Gold = gold;
+
+        public void Validate(RunSaveData data, RunRestoreContext ctx)
+        {
+            // 정수 하나라 해결할 ID가 없다 — 검증할 것이 없다.
+        }
+
+        public void Apply(RunSaveData data, RunRestoreContext ctx)
+        {
+            gold = Mathf.Max(0, data.Gold);
             OnGoldChanged?.Invoke(gold);
         }
     }
