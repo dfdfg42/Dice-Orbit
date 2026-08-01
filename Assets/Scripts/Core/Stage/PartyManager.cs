@@ -118,10 +118,25 @@ namespace DiceOrbit.Core
                 OnPartyChanged?.Invoke(party.Count);
                 return true;
             }
-            
+
             return false;
         }
-        
+
+        /// <summary>
+        /// 파티 전원 제거 + 오브젝트 파괴 — 세이브 복원이 이전 런의 잔여 파티 위에 스폰하지 않게 한다.
+        /// </summary>
+        public void ClearAll()
+        {
+            for (int i = party.Count - 1; i >= 0; i--)
+            {
+                var character = party[i];
+                if (character != null) Destroy(character.gameObject);
+            }
+            party.Clear();
+            selectedCharacter = null;
+            OnPartyChanged?.Invoke(party.Count);
+        }
+
         /// <summary>
         /// 캐릭터 선택
         /// </summary>

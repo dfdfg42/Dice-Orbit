@@ -21,9 +21,6 @@ namespace DiceOrbit.Core.Run
         [Header("포션 풀 — 획득 '후보' 목록 (상점 진열/드랍). 비우면 기본 세트 런타임 생성")]
         [SerializeField] private List<Potion> potionPool = new List<Potion>();
 
-        [Header("시작 포션 — 게임 시작 시 슬롯에 지급 (테스트/디버그용)")]
-        [SerializeField] private List<Potion> startingPotions = new List<Potion>();
-
         private readonly List<Potion> _slots = new List<Potion>();
 
         public int SlotCount => slotCount;
@@ -33,19 +30,14 @@ namespace DiceOrbit.Core.Run
 
         private void Awake()
         {
-            if (Instance != null && Instance != this) 
-            { 
-                Destroy(gameObject); 
-                return; 
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
             }
             Instance = this;
             transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
-
-            EnsureDefaultPool();
-
-            foreach (var potion in startingPotions)
-                TryAdd(potion);
         }
 
         private void OnDestroy()
@@ -76,6 +68,14 @@ namespace DiceOrbit.Core.Run
             if (index < 0 || index >= _slots.Count) return;
             Debug.Log($"[Potion] 버림: {_slots[index].PotionName}");
             _slots.RemoveAt(index);
+            OnChanged?.Invoke();
+        }
+
+        /// <summary>슬롯 전부 비우기 — 세이브 복원이 이전 런의 잔여 상태 위에 덮어쓰지 않게 한다.</summary>
+        public void ClearAll()
+        {
+            if (_slots.Count == 0) return;
+            _slots.Clear();
             OnChanged?.Invoke();
         }
 
@@ -157,65 +157,5 @@ namespace DiceOrbit.Core.Run
             return potionPool.Where(p => p != null).OrderBy(_ => Random.value).Take(count).ToList();
         }
 
-        // ── 기본 풀 (에셋 미지정 폴백) ─────────────────────────
-
-        private class RuntimePotion : Potion
-        {
-            public System.Func<Unit, bool> onUse;
-            public override bool Use(Unit target = null) => onUse?.Invoke(target) ?? false;
-        }
-
-        private void EnsureDefaultPool()
-        {
-            if (potionPool.Count > 0) return;
-
-            //potionPool.Add(CreateDefault("회복 물약", "선택한 아군의 HP를 30 회복", PotionTargetType.Ally, 40, false, (t) => {
-            //    if (t is Character c && c.Stats != null) { c.Stats.CurrentHP = Mathf.Min(c.Stats.MaxHP, c.Stats.CurrentHP + 30); return true; }
-            //    return false;
-            //}));
-
-            //potionPool.Add(CreateDefault("연회의 물약", "파티 전원의 HP를 15 회복", PotionTargetType.None, 55, false, (t) => {
-            //    var party = PartyManager.Instance?.Party;
-            //    if (party == null) return false;
-            //    foreach (var c in party) {
-            //        if (c == null || !c.IsAlive || c.Stats == null) continue;
-            //        c.Stats.CurrentHP = Mathf.Min(c.Stats.MaxHP, c.Stats.CurrentHP + 15);
-            //    }
-            //    return true;
-            //}));
-
-            //potionPool.Add(CreateDefault("재굴림 물약", "남은 주사위를 전부 다시 굴린다 (전투 중)", PotionTargetType.None, 60, true, (t) => {
-            //    var dm = DiceManager.Instance;
-            //    if (dm == null || dm.AvailableDiceCount == 0) return false;
-            //    dm.RerollAvailableDice();
-            //    return true;
-            //}));
-
-            //potionPool.Add(CreateDefault("정화 물약", "파티의 이동 저하/속박을 해제", PotionTargetType.None, 45, false, (t) => {
-            //    var party = PartyManager.Instance?.Party;
-            //    if (party == null) return false;
-            //    foreach (var c in party) {
-            //        if (c == null || !c.IsAlive || c.Stats == null) continue;
-            //        c.Stats.MoveDebuff = 0;
-            //        c.Stats.BindDebuff = 0;
-            //    }
-            //    return true;
-            //}));
-
-            //Debug.Log("[PotionManager] 포션 풀이 비어 있어 기본 4종을 런타임 생성했습니다 (에셋으로 교체 권장).");
-        }
-
-        private static Potion CreateDefault(string name, string desc, PotionTargetType targetType, int price, bool combatOnly, System.Func<Unit, bool> onUse)
-        {
-            var def = ScriptableObject.CreateInstance<RuntimePotion>();
-            def.name = name;
-            def.PotionName = name;
-            def.Description = desc;
-            def.TargetType = targetType;
-            def.ShopPrice = price;
-            def.CombatOnly = combatOnly;
-            def.onUse = onUse;
-            return def;
-        }
     }
 }

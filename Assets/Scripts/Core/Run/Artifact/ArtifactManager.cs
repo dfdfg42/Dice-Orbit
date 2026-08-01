@@ -19,9 +19,6 @@ namespace DiceOrbit.Core.Run
         [Header("유물 풀 — 획득 후보 (엘리트 드랍/상점 진열). 비우면 기본 세트 런타임 생성")]
         [SerializeField] private List<ArtifactData> artifactPool = new List<ArtifactData>();
 
-        [Header("시작 유물 — 게임 시작 시 바로 보유 (테스트/디버그용)")]
-        [SerializeField] private List<ArtifactData> startingArtifacts = new List<ArtifactData>();
-
         private readonly List<RuntimeArtifact> artifacts = new List<RuntimeArtifact>();
 
         public IReadOnlyList<RuntimeArtifact> Artifacts => artifacts;
@@ -37,10 +34,6 @@ namespace DiceOrbit.Core.Run
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
-            EnsureDefaultPool();
-
-            foreach (var data in startingArtifacts)
-                Grant(data);
         }
 
         private void OnDestroy()
@@ -102,6 +95,14 @@ namespace DiceOrbit.Core.Run
             return true;
         }
 
+        /// <summary>보유 유물 전부 제거 — 세이브 복원이 이전 런의 잔여 상태 위에 덮어쓰지 않게 한다.</summary>
+        public void ClearAll()
+        {
+            if (artifacts.Count == 0) return;
+            artifacts.Clear();
+            OnArtifactsChanged?.Invoke();
+        }
+
         // ── 풀 (드랍/상점/세이브) ─────────────────────────────
 
         /// <summary>미보유 풀에서 랜덤 1개 획득. 없으면 null.</summary>
@@ -122,30 +123,5 @@ namespace DiceOrbit.Core.Run
         /// <summary>이름으로 풀에서 찾기 (세이브 복원용).</summary>
         public ArtifactData FindInPool(string artifactName)
             => artifactPool.FirstOrDefault(d => d != null && d.artifactName == artifactName);
-
-        // ── 기본 풀 (에셋 미지정 폴백) ─────────────────────────
-
-        private void EnsureDefaultPool()
-        {
-            if (artifactPool.Count > 0) return;
-
-            artifactPool.Add(CreateDefault("단골 도장", "상점 가격 20% 할인", new RegularStamp(), 100));
-            artifactPool.Add(CreateDefault("포근한 침낭", "휴식 회복량 +20%p", new CozyBedroll(), 110));
-            artifactPool.Add(CreateDefault("황금 주사위", "전투 보상 골드 +25", new GoldenDice(), 130));
-            artifactPool.Add(CreateDefault("불사조 깃털", "부활 HP +15%p", new PhoenixFeather(), 150));
-            artifactPool.Add(CreateDefault("생명의 부적", "전투 시작 시 파티 전원 5 회복", new LifeAmulet(), 120));
-            Debug.Log("[ArtifactManager] 유물 풀이 비어 있어 기본 5종을 런타임 생성했습니다 (에셋으로 교체 권장).");
-        }
-
-        private static ArtifactData CreateDefault(string name, string desc, RuntimeArtifact effect, int price)
-        {
-            var data = ScriptableObject.CreateInstance<ArtifactData>();
-            data.name = name;
-            data.artifactName = name;
-            data.artifactTooltip = desc;
-            data.effect = effect;
-            data.shopPrice = price;
-            return data;
-        }
     }
 }
