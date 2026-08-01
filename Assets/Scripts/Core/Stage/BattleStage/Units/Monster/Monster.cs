@@ -232,6 +232,16 @@ namespace DiceOrbit.Core
         public void ExecuteIntent()
         {
             if (!IsAlive) return;
+
+            // 기절: 이번 몬스터 턴 행동 스킵 (1회 소비). 예: 수정 핵의 [수정 폭풍] 자기 기절.
+            if (StatusEffects != null && StatusEffects.HasEffect(DiceOrbit.Data.EffectType.Stunned))
+            {
+                Debug.Log($"[Monster] {stat?.MonsterName} 기절 — 이번 턴 행동 스킵");
+                StatusEffects.RemoveEffect(DiceOrbit.Data.EffectType.Stunned);
+                SelectNextIntent();
+                return;
+            }
+
             if (nextIntent != null && nextSkill != null)
             {
                 // AttackIntent의 유효성 확인 (죽은 타겟 제거)
