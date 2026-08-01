@@ -86,7 +86,7 @@ namespace DiceOrbit.Visuals
             var tiles = new List<DiceOrbit.Data.TileData>(orbit.Tiles);
             if (clockwise) tiles.Reverse();
 
-            // 원래 값 캐시 + 시작 위치(위)로 즉시 세팅. 스케일은 원래 크기 그대로 (중력 낙하 = 크기 변화 없음)
+            // 원래 값 캐시 + 시작 위치(위)로 올리고 전부 숨김(스케일 0) — 자기 차례에 나타나며 떨어짐
             int n = tiles.Count;
             var origPos = new Vector3[n];
             var origScale = new Vector3[n];
@@ -97,12 +97,14 @@ namespace DiceOrbit.Visuals
                 origPos[i] = t.transform.position;
                 origScale[i] = t.transform.localScale;
                 t.transform.position = origPos[i] + Vector3.up * tileDropHeight;
+                t.transform.localScale = Vector3.zero;   // 차례 오기 전엔 숨김
             }
 
-            // 순차 낙하 (겹쳐서 진행 — stagger로 하나씩 시작)
+            // 순차 낙하: 자기 차례에 나타나며(원래 크기 복원) 떨어짐
             for (int i = 0; i < n; i++)
             {
                 if (tiles[i] == null) continue;
+                tiles[i].transform.localScale = origScale[i];   // 이 타일만 나타남
                 StartCoroutine(DropOne(tiles[i].transform, origPos[i], origScale[i]));
                 if (tileStagger > 0f) yield return new WaitForSeconds(tileStagger);
             }
