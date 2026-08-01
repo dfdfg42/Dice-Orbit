@@ -78,12 +78,18 @@ namespace DiceOrbit.Systems.Effects
 
         public virtual void EffectApplied()
         {
-            // 효과가 적용될 때 추가로 처리할 로직이 있다면 여기에 구현
+            if (Owner == null) return;
+            DiceOrbit.Visuals.VfxService.StartLoop(StatusCueTag(), Owner);
         }
 
         public virtual void EffectExpired()
         {
-            // 효과가 만료될 때 추가로 처리할 로직이 있다면 여기에 구현
+            if (Owner == null) return;
+            DiceOrbit.Visuals.VfxService.StopLoop(Owner, StatusCueTag());
         }
+
+        /// <summary>상태별 큐 태그. 예: status.poison. 미등록이면 라이브러리가 status로 폴백.</summary>
+        protected string StatusCueTag()
+            => DiceOrbit.Visuals.VfxTags.Status + "." + Type.ToString().ToLowerInvariant();
     }
 }

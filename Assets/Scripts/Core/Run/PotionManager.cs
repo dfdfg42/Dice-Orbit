@@ -145,6 +145,8 @@ namespace DiceOrbit.Core.Run
             if (!potion.Use()) return false;
 
             Debug.Log($"[Potion] 사용: {potion.PotionName}");
+            var user = PartyManager.Instance?.Party?.FirstOrDefault(c => c != null && c.IsAlive);
+            if (user != null) DiceOrbit.Visuals.VfxService.PlayOn(DiceOrbit.Visuals.VfxTags.Potion, user);
             _slots.RemoveAt(index);
             OnChanged?.Invoke();
             return true;
@@ -175,6 +177,7 @@ namespace DiceOrbit.Core.Run
             if (!potion.Use(target)) return false;
 
             Debug.Log($"[Potion] 사용: {potion.PotionName} → {target.name}");
+            DiceOrbit.Visuals.VfxService.PlayOn(DiceOrbit.Visuals.VfxTags.Potion, target);
             _slots.RemoveAt(index);
             OnChanged?.Invoke();
             return true;
@@ -197,6 +200,7 @@ namespace DiceOrbit.Core.Run
             if (!potion.UseOnTile(tile)) return false;
 
             Debug.Log($"[Potion] 사용: {potion.PotionName} → 타일 {tile.name}");
+            DiceOrbit.Visuals.VfxService.PlayOn(DiceOrbit.Visuals.VfxTags.Potion, tile);
             _slots.RemoveAt(index);
             OnChanged?.Invoke();
             return true;

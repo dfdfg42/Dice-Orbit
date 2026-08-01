@@ -108,7 +108,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
 
             // 시전 VFX는 SkillData.ExecuteSkillWithIntent가 공통 처리. 타일 폭발만 여기서.
             foreach (var tile in affectedTiles)
-                VfxManager.PlayTile(vfxProfile, tile);
+                DiceOrbit.Visuals.VfxService.PlayOn(
+                    string.IsNullOrEmpty(impactCue) ? DiceOrbit.Visuals.VfxTags.TileImpact : impactCue, tile);
 
             foreach (var character in partyManager.GetAliveCharacters())
             {
@@ -116,7 +117,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
                 if (character.CurrentTile == null || !affectedTiles.Contains(character.CurrentTile)) continue;
 
                 var context = new AttackContext(source, character, SkillName, damage);
-                context.VfxProfile = vfxProfile;   // 재생 판단은 파이프라인이
+                context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
                 CombatPipeline.Instance?.Process(context);
             }
 

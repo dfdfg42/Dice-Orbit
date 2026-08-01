@@ -153,7 +153,7 @@ namespace DiceOrbit.Core
             return null;
         }
 
-        /// <summary>전투 진입점 (노드맵 흐름). 스폰 → CombatStart 방송 → 턴 시퀀스.</summary>
+        /// <summary>전투 진입점 (노드맵 흐름). 몬스터 숨겨 스폰 → 시작 연출 → CombatStart 방송 → 턴 시퀀스.</summary>
         public void StartEncounter(Run.EncounterDefinition encounter, int floorNumber)
         {
             if (inCombat) return;
@@ -162,11 +162,23 @@ namespace DiceOrbit.Core
             CurrentEncounter = encounter;
             CurrentFloorNumber = floorNumber;
 
-            var spawned = EncounterSpawner.EnsureInstance().Spawn(encounter);
+            // 배경은 연출 전에 미리 세팅 (OnCombatStart는 연출 후 발화되므로 배경만 앞당김)
+            var bg = FindFirstObjectByType<BackgroundManager>(FindObjectsInactive.Include);
+            if (bg != null) bg.ApplyEncounterBackground();
+
+            // 숨긴 채 전량 스폰 (전멸 판정/인텐트 로직은 즉시 유효, 연출이 순차로 드러냄)
+            var spawned = EncounterSpawner.EnsureInstance().Spawn(encounter, startHidden: true);
             foreach (var m in spawned)
                 RegisterMonster(m);
             // 사망 구독 불필요 — Monster가 사망 시 OnMonsterDefeated를 직접 호출한다 (이중 호출 금지).
 
+            StartCoroutine(IntroThenStart(spawned));
+        }
+
+        /// <summary>시작 연출(타일→캐릭터→몬스터) 후 전투 개시.</summary>
+        private System.Collections.IEnumerator IntroThenStart(System.Collections.Generic.List<Monster> spawned)
+        {
+            yield return Visuals.CombatIntroDirector.EnsureInstance().Play(spawned);
             BroadcastCombatStart();
             StartCombat();
         }
@@ -207,6 +219,8 @@ namespace DiceOrbit.Core
             Debug.Log($"Combat started! {activeMonsters.Count} monster(s)");
 
             OnCombatStart?.Invoke();
+            DiceOrbit.Visuals.VfxService.Play(DiceOrbit.Visuals.VfxTags.CombatStart,
+                Camera.main != null ? Camera.main.transform.position + Camera.main.transform.forward * 6f : Vector3.zero);
 
             // 첫 플레이어 턴은 안내 띄우고 시작
             StartCoroutine(AnnounceAndStartPlayerTurn());
@@ -271,6 +285,10 @@ namespace DiceOrbit.Core
             {
                 Debug.Log("Defeat! Party wiped out!");
             }
+
+            var screenAt = Camera.main != null ? Camera.main.transform.position + Camera.main.transform.forward * 6f : Vector3.zero;
+            DiceOrbit.Visuals.VfxService.Play(
+                victory ? DiceOrbit.Visuals.VfxTags.Victory : DiceOrbit.Visuals.VfxTags.Defeat, screenAt);
 
             OnCombatEnd?.Invoke();
 
