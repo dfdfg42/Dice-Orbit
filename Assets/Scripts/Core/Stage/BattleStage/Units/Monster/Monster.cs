@@ -232,16 +232,6 @@ namespace DiceOrbit.Core
         public void ExecuteIntent()
         {
             if (!IsAlive) return;
-
-            // 기절: 이번 몬스터 턴 행동 스킵 (1회 소비). 예: 수정 핵의 [수정 폭풍] 자기 기절.
-            if (StatusEffects != null && StatusEffects.HasEffect(DiceOrbit.Data.EffectType.Stunned))
-            {
-                Debug.Log($"[Monster] {stat?.MonsterName} 기절 — 이번 턴 행동 스킵");
-                StatusEffects.RemoveEffect(DiceOrbit.Data.EffectType.Stunned);
-                SelectNextIntent();
-                return;
-            }
-
             if (nextIntent != null && nextSkill != null)
             {
                 // AttackIntent의 유효성 확인 (죽은 타겟 제거)
@@ -258,7 +248,18 @@ namespace DiceOrbit.Core
             // 다음 의도 준비
             SelectNextIntent();
         }
-        
+
+        /// <summary>
+        /// 이번 턴에 예약된 행동을 취소한다. 의도가 없으면 ExecuteIntent가 자동으로 아무것도 하지 않는다.
+        /// 기절 등 "행동 불가" 효과가 소유자 턴 시작 시 호출한다(효과별 하드코딩 대신 상태이상이 주도).
+        /// </summary>
+        public void CancelIntent()
+        {
+            nextSkill = null;
+            nextIntent = null;
+            UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
+        }
+
         /// <summary>
         /// 턴 시작 (Pipeline TurnStart)
         /// </summary>

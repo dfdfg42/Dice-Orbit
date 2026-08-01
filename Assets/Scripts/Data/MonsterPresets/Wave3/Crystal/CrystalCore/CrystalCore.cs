@@ -88,6 +88,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalCore
     {
         [Header("Skill Settings")]
         [SerializeField] private int damage = 20;
+        [Tooltip("수정 핵 자기 기절 지속 턴 (1 = 다음 턴 1회 스킵)")]
+        [SerializeField] private int stunTurns = 1;
 
         public CrystalStormSkill()
         {
@@ -109,13 +111,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalCore
                 AttackUnits(source, victims, damage);
             }
 
-            // 발동 시: 수정 중첩 0으로 초기화 + 시전자(수정 핵) 자신이 다음 몬스터 턴에 기절(1회 스킵).
+            // 발동 시: 수정 중첩 0으로 초기화 + 시전자(수정 핵) 자신이 다음 몬스터 턴에 기절(stunTurns만큼 스킵).
             var core = source as Monster;
             if (core != null)
             {
                 CrystalSet.ResetStacks(core);
                 if (core.StatusEffects != null)
-                    core.StatusEffects.AddEffect(new StunDebuff(-1)); // 영구 부여 → 다음 ExecuteIntent에서 소비
+                    core.StatusEffects.AddEffect(new StunDebuff(stunTurns)); // StunDebuff.OnTurnEvent가 몬스터 턴 스킵 처리
             }
         }
     }
