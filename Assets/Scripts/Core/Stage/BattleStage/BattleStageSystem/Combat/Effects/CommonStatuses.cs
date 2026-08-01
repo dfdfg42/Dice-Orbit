@@ -1,3 +1,4 @@
+using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
 using UnityEngine;
@@ -55,6 +56,28 @@ namespace DiceOrbit.Systems.Effects
             int damage = Mathf.Max(1, Mathf.RoundToInt(Owner.Stats.MaxHP * (Value / 100f)));
             var tick = new AttackContext(null, Owner, "독", damage);
             CombatPipeline.Instance?.Process(tick);
+        }
+    }
+
+    /// <summary>기절 — 다음 턴 행동 불가(이동+스킬). Frozen/BindDebuff 패턴 미러.
+    /// 적용 시 CharacterStats.StunDebuff++, 만료 시 --. canAct()가 이를 읽어 게이트한다.</summary>
+    public class StunDebuff : StatusEffect
+    {
+        public StunDebuff(int duration) : base(EffectType.Stunned, 0, duration)
+        {
+            IsStackable = false;
+        }
+
+        public override void EffectApplied()
+        {
+            if (Owner != null && Owner.Stats is CharacterStats c) c.StunDebuff++;
+            Debug.Log($"[StunDebuff] {Owner?.name} 기절! (지속: {Duration}턴)");
+        }
+
+        public override void EffectExpired()
+        {
+            if (Owner != null && Owner.Stats is CharacterStats c) c.StunDebuff--;
+            Debug.Log($"[StunDebuff] {Owner?.name} 기절 해제.");
         }
     }
 }

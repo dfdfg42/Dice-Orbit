@@ -88,6 +88,13 @@ namespace DiceOrbit.Core
                 return;
             }
 
+            if (!source.Stats.canAct())
+            {
+                Debug.LogWarning("[SkillManager] 기절 상태 — 행동할 수 없습니다.");
+                CharacterActionUI.Instance?.ReturnDiceElement();
+                return;
+            }
+
             // TargetType이 None이나 AllTiles일 때는 여기서 처음 AssignDice를 호출함.
             // OneEnemy나 OneTile일 때는 이미 StartTargetSelection에서 락(Reserved)을 걸어두었음.
             if (dice.State != DiceState.Reserved)
