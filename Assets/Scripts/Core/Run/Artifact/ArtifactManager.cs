@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DiceOrbit.Core.Run.Save;
 using DiceOrbit.Data.Artifacts;
 using UnityEngine;
 
@@ -12,7 +13,7 @@ namespace DiceOrbit.Core.Run
     /// 규칙형 효과는 소비처(상점/휴식/보상/부활/전투 시작)가 프로퍼티로 합산값을 읽는다.
     /// 모든 유물은 대응하는 ArtifactData .asset을 갖는다 — 런타임 생성 없음, artifactPool은 에셋 등록 필수.
     /// </summary>
-    public class ArtifactManager : MonoBehaviour
+    public class ArtifactManager : MonoBehaviour, IRunSaveParticipant
     {
         public static ArtifactManager Instance { get; private set; }
 
@@ -101,6 +102,39 @@ namespace DiceOrbit.Core.Run
             if (artifacts.Count == 0) return;
             artifacts.Clear();
             OnArtifactsChanged?.Invoke();
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(Save.RunSaveData data)
+        {
+            data.Artifacts.Clear();
+            foreach (var artifact in artifacts)
+            {
+                if (artifact == null || artifact.data == null) continue;
+                data.Artifacts.Add(new ArtifactSaveData { Id = artifact.data.SaveId });
+            }
+        }
+
+        public void Validate(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            foreach (var saved in data.Artifacts)
+            {
+                if (string.IsNullOrEmpty(saved.Id))
+                {
+                    ctx.Report.Fail("유물 Id가 비어 있습니다.");
+                    continue;
+                }
+                if (ctx.Catalog == null || ctx.Catalog.FindArtifact(saved.Id) == null)
+                    ctx.Report.Fail($"유물 '{saved.Id}'를 카탈로그에서 찾지 못했습니다.");
+            }
+        }
+
+        public void Apply(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            ClearAll();
+            foreach (var saved in data.Artifacts)
+                Grant(ctx.Catalog.FindArtifact(saved.Id));
         }
 
         // ── 풀 (드랍/상점/세이브) ─────────────────────────────

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DiceOrbit.Core.Run.Save;
 using UnityEngine;
 
 namespace DiceOrbit.Core.Run
@@ -11,7 +12,7 @@ namespace DiceOrbit.Core.Run
     /// 모든 포션은 대응하는 Potion .asset을 갖는다 — 런타임 생성 없음, potionPool은 에셋 등록 필수.
     /// 획득: 상점 구매 + 전투 보상 저확률 드랍.
     /// </summary>
-    public class PotionManager : MonoBehaviour
+    public class PotionManager : MonoBehaviour, IRunSaveParticipant
     {
         public static PotionManager Instance { get; private set; }
 
@@ -77,6 +78,39 @@ namespace DiceOrbit.Core.Run
             if (_slots.Count == 0) return;
             _slots.Clear();
             OnChanged?.Invoke();
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(Save.RunSaveData data)
+        {
+            data.Potions.Clear();
+            foreach (var potion in _slots)
+            {
+                if (potion == null) continue;
+                data.Potions.Add(new PotionSaveData { Id = potion.SaveId });
+            }
+        }
+
+        public void Validate(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            foreach (var saved in data.Potions)
+            {
+                if (string.IsNullOrEmpty(saved.Id))
+                {
+                    ctx.Report.Fail("포션 Id가 비어 있습니다.");
+                    continue;
+                }
+                if (ctx.Catalog == null || ctx.Catalog.FindPotion(saved.Id) == null)
+                    ctx.Report.Fail($"포션 '{saved.Id}'를 카탈로그에서 찾지 못했습니다.");
+            }
+        }
+
+        public void Apply(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            ClearAll();
+            foreach (var saved in data.Potions)
+                TryAdd(ctx.Catalog.FindPotion(saved.Id));
         }
 
         /// <summary>대상 지정이 필요한 포션인가 (조준 아크 진입 대상 — PotionTargetSelector).</summary>
