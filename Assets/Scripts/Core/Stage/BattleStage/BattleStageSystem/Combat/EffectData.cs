@@ -29,6 +29,7 @@ namespace DiceOrbit.Data
         FireGuard,          // 불의 가호: 방어도 보유 시 받는 피해 감소 (Wave5)
         BoneMark,           // 뼈무덤 발동 마커: 이번 라운드 해골병사가 뼈 방어도 획득함 (Wave1)
         Stunned,            // 기절: 다음 턴 행동 불가(이동+스킬) (Wave3 수정)
+        CrystalStack,       // 수정 중첩: 수정 핵 스택 카운터(가시화용 상태) (Wave3 수정)
     }
 
     /// <summary>
