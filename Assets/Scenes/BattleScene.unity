@@ -163,7 +163,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b3e5131587118e4f999b251dd17389b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.Run.RunManager
-  firstAct: {fileID: 11400000, guid: fb8672e9e92e7b34cb0580788afe70e5, type: 2}
+  firstAct: {fileID: 11400000, guid: c25691e8ea99b064b9b004b47a6bc55f, type: 2}
   seed: 0
 --- !u!1 &4742567
 GameObject:
