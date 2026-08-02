@@ -43,12 +43,18 @@ namespace DiceOrbit.Core
         // 사망 이벤트 (외부 구독용 — 장부 제거는 Die()의 CombatManager.OnMonsterDefeated 직접 호출)
         public event System.Action<Monster> OnDeath;
 
+        // 전투 시작 연출용: 숨기기 직전의 원래 루트 스케일 (CombatIntroDirector가 복원)
+        [System.NonSerialized] public Vector3 IntroBaseScale = Vector3.one;
+
         // MonsterStats 타입으로 반환 (기존 코드 호환성 유지)
         public new MonsterStats Stats => stat;
 
         // 정체성 색상: 웨이브 시작 시 1회 배정되어 웨이브 내내 고정. 바닥 마커/타일 색 오버레이가 사용.
         [System.NonSerialized] public Color IdentityColor = Color.white;
         [System.NonSerialized] public bool HasIdentityColor = false;
+
+        // 세트(진영) — 프리셋에서 배정. 세트 지원 패시브/스킬이 같은 진영 대상 필터에 사용.
+        public Data.Monsters.MonsterFaction Faction { get; private set; } = Data.Monsters.MonsterFaction.None;
         
         protected override void Awake()
         {
@@ -99,6 +105,7 @@ namespace DiceOrbit.Core
                 return;
             }
             preset = monsterPreset;
+            Faction = monsterPreset.Faction;
 
             InitializeStats();
             InitializeVisuals();
@@ -241,7 +248,18 @@ namespace DiceOrbit.Core
             // 다음 의도 준비
             SelectNextIntent();
         }
-        
+
+        /// <summary>
+        /// 이번 턴에 예약된 행동을 취소한다. 의도가 없으면 ExecuteIntent가 자동으로 아무것도 하지 않는다.
+        /// 기절 등 "행동 불가" 효과가 소유자 턴 시작 시 호출한다(효과별 하드코딩 대신 상태이상이 주도).
+        /// </summary>
+        public void CancelIntent()
+        {
+            nextSkill = null;
+            nextIntent = null;
+            UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
+        }
+
         /// <summary>
         /// 턴 시작 (Pipeline TurnStart)
         /// </summary>

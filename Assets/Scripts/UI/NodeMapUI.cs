@@ -8,7 +8,7 @@ using DiceOrbit.Core.Run;
 namespace DiceOrbit.UI
 {
     /// <summary>
-    /// 노드맵 화면 (GameState.Map). 세로 진행형: 아래 출발 → 위 보스 (StS 방향), 세로 스크롤.
+    /// 노드맵 화면 (GameState.Map). 세로 진행형: 위 출발 → 아래 보스, 세로 스크롤.
     /// RunManager의 MapGraph를 그리고, 선택 가능 노드 클릭 → GameFlowManager.OnNodeSelected.
     ///
     /// "보드게임의 밤" 팔레트. 에디터 소유:
@@ -24,6 +24,23 @@ namespace DiceOrbit.UI
         [SerializeField] private ScrollRect scrollRect;
         [SerializeField] private RectTransform mapRoot;      // 스크롤 Content — 노드/간선이 그려지는 영역
         [SerializeField] private TextMeshProUGUI titleText;
+        [SerializeField] private Image backgroundImage;      // 배경 (씬 배치 — 스크롤뷰 밖이면 고정, mapRoot 안이면 맵과 함께 스크롤)
+
+        [Header("배경 스킨 (선택 — 비우면 펠트색)")]
+        [SerializeField] private Sprite backgroundSprite;
+
+        [Header("노드 스킨 (선택 — 비우면 텍스트 카드). 통짜 이미지, 상태는 밝기로 표현 (밝음=갈 수 있음, 어두움=현재/지나옴)")]
+        [SerializeField] private Sprite battleSprite;
+        [SerializeField] private Sprite eliteSprite;
+        [SerializeField] private Sprite shopSprite;
+        [SerializeField] private Sprite restSprite;
+        [SerializeField] private Sprite eventSprite;
+        [SerializeField] private Sprite bossSprite;
+
+        [Header("간선 점선 (점 스프라이트는 선택 — 비우면 원형 점 자동 생성)")]
+        [SerializeField] private Sprite edgeDotSprite;
+        [SerializeField] private float edgeDotSize = 6f;
+        [SerializeField] private float edgeDotSpacing = 16f;
 
         [Header("배치")]
         [SerializeField] private float nodeSize = 72f;
@@ -57,18 +74,27 @@ namespace DiceOrbit.UI
             if (Instance != null) return;
             Instance = FindFirstObjectByType<NodeMapUI>(FindObjectsInactive.Include);
             if (Instance == null)
-            {
-                var go = new GameObject("NodeMapUI");
-                Instance = go.AddComponent<NodeMapUI>();
-            }
+                Debug.LogError("[NodeMapUI] 씬에 NodeMapUI가 없습니다 — 씬 배치 전용입니다 (런타임 생성 없음).");
         }
 
         // ── 공개 API ──────────────────────────────────────────
 
         public void Show()
         {
+            if (rootCanvas == null)
+            {
+                Debug.LogError("[NodeMapUI] rootCanvas 미배선 — 씬에서 슬롯을 연결하세요 (런타임 생성 없음).");
+                return;
+            }
             rootCanvas.SetActive(true);
             BattleInfoPanelUI.SetVisible(false);
+
+            if (backgroundImage != null)
+            {
+                backgroundImage.sprite = backgroundSprite;
+                backgroundImage.color = backgroundSprite != null ? Color.white : Felt;
+            }
+
             Rebuild();
         }
 
@@ -97,16 +123,16 @@ namespace DiceOrbit.UI
             if (titleText != null)
                 titleText.text = run.CurrentAct != null ? run.CurrentAct.ActName : "노드맵";
 
-            // Content 높이 = 층 수 × 간격 + 상하 여백 (아래→위 진행)
+            // Content 높이 = 층 수 × 간격 + 상하 여백 (위→아래 진행)
             float contentHeight = verticalMargin * 2f + (map.FloorCount - 1) * floorSpacing;
             mapRoot.sizeDelta = new Vector2(mapRoot.sizeDelta.x, contentHeight);
 
-            // 노드 위치 계산 — 층 0이 맨 아래, 보스가 맨 위
+            // 노드 위치 계산 — 층 0이 맨 위, 보스가 맨 아래
             var positions = new Dictionary<int, Vector2>();
             for (int f = 0; f < map.FloorCount; f++)
             {
                 var floorNodes = map.GetFloor(f);
-                float y = verticalMargin + f * floorSpacing;
+                float y = contentHeight - verticalMargin - f * floorSpacing;
                 for (int i = 0; i < floorNodes.Count; i++)
                 {
                     float x = (i - (floorNodes.Count - 1) * 0.5f) * laneSpacing;
@@ -147,35 +173,56 @@ namespace DiceOrbit.UI
 
             float contentH = mapRoot.rect.height;
             float viewportH = scrollRect.viewport != null ? scrollRect.viewport.rect.height : 900f;
-            if (contentH <= viewportH) { scrollRect.verticalNormalizedPosition = 0f; return; }
+            if (contentH <= viewportH) { scrollRect.verticalNormalizedPosition = 1f; return; }
 
-            // 현재 층이 뷰포트 중앙보다 약간 아래 오도록
-            float targetY = verticalMargin + floor * floorSpacing - viewportH * 0.4f;
-            scrollRect.verticalNormalizedPosition = Mathf.Clamp01(targetY / (contentH - viewportH));
+            // 현재 층이 뷰포트 중앙보다 약간 위에 오도록 (위→아래 진행)
+            float nodeY = contentH - verticalMargin - floor * floorSpacing;
+            float targetBottom = nodeY - viewportH * 0.6f;
+            scrollRect.verticalNormalizedPosition = Mathf.Clamp01(targetBottom / (contentH - viewportH));
         }
 
         // ── 렌더링 ────────────────────────────────────────────
 
         private void CreateEdge(Vector2 from, Vector2 to, Color color, float thickness)
         {
-            var go = new GameObject("Edge", typeof(RectTransform));
-            go.transform.SetParent(mapRoot, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);   // Content 아래 중앙 기준
-
             Vector2 delta = to - from;
-            rect.anchoredPosition = (from + to) * 0.5f;
-            rect.sizeDelta = new Vector2(delta.magnitude, thickness);
-            rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+            float length = delta.magnitude;
+            if (length < 0.01f) return;
+            Vector2 dir = delta / length;
+            float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+            float dotSize = edgeDotSize * (thickness >= 5f ? 1.5f : 1f);   // 활성 경로는 점을 굵게
 
-            var img = go.AddComponent<Image>();
-            img.color = color;
-            img.raycastTarget = false;
+            // 노드 밑에 깔리는 양 끝 구간은 건너뛰고 점을 찍는다
+            float margin = nodeSize * 0.55f;
+            for (float d = margin; d <= length - margin; d += edgeDotSpacing)
+            {
+                var dotGo = new GameObject("Dot", typeof(RectTransform));
+                dotGo.transform.SetParent(mapRoot, false);
+                var rect = (RectTransform)dotGo.transform;
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);   // Content 아래 중앙 기준
+                rect.anchoredPosition = from + dir * d;
+                rect.sizeDelta = new Vector2(dotSize, dotSize);
+                rect.localRotation = Quaternion.Euler(0f, 0f, angle);      // 방향성 스프라이트(발자국 등) 정렬용
+
+                var img = dotGo.AddComponent<Image>();
+                if (edgeDotSprite != null)
+                {
+                    img.sprite = edgeDotSprite;
+                    img.preserveAspect = true;
+                }
+                else
+                {
+                    img.sprite = UiRoundedSprite.Get(Mathf.CeilToInt(dotSize * 0.5f));   // 원형 점
+                }
+                img.color = color;
+                img.raycastTarget = false;
+            }
         }
 
         private void CreateNodeButton(MapNode node, Vector2 pos, bool isSelectable, bool isCurrent)
         {
             float size = node.Type == MapNodeType.Boss ? nodeSize * 1.4f : nodeSize;
+            var skin = GetNodeSprite(node.Type);
 
             var go = new GameObject($"Node_{node.Id}", typeof(RectTransform));
             go.transform.SetParent(mapRoot, false);
@@ -184,58 +231,44 @@ namespace DiceOrbit.UI
             rect.anchoredPosition = pos;
             rect.sizeDelta = new Vector2(size, size);
 
-            // 선택 가능 노드: 골드 테두리
-            if (isSelectable)
+            var img = go.AddComponent<Image>();
+            if (skin != null)
             {
-                var edgeGo = new GameObject("Edge", typeof(RectTransform));
-                edgeGo.transform.SetParent(go.transform, false);
-                var edgeRect = (RectTransform)edgeGo.transform;
-                edgeRect.anchorMin = Vector2.zero; edgeRect.anchorMax = Vector2.one;
-                edgeRect.offsetMin = new Vector2(-5, -5); edgeRect.offsetMax = new Vector2(5, 5);
-                var edgeImg = edgeGo.AddComponent<Image>();
-                edgeImg.sprite = UiRoundedSprite.Get(20);
-                edgeImg.type = Image.Type.Sliced;
-                edgeImg.color = Gold;
-                edgeImg.raycastTarget = false;
+                // 통짜 이미지 스킨 — 상태는 밝기로: 갈 수 있는 노드 = 원색(밝음),
+                // 현재 위치 = 어둡게, 지나온/잠긴 노드 = 그 사이 흐림
+                img.sprite = skin;
+                img.preserveAspect = true;
+                img.color = isSelectable ? Color.white
+                          : isCurrent ? new Color(0.42f, 0.42f, 0.48f)
+                          : node.Visited ? new Color(0.50f, 0.50f, 0.55f, 0.85f)
+                          : new Color(0.65f, 0.65f, 0.70f);
+            }
+            else
+            {
+                img.sprite = UiRoundedSprite.Get(16);
+                img.type = Image.Type.Sliced;
+                img.color = isSelectable ? CardEdge
+                          : isCurrent ? new Color(0.07f, 0.08f, 0.12f)
+                          : node.Visited ? new Color(Dim.r, Dim.g, Dim.b, 0.55f)
+                          : Card;
             }
 
-            var img = go.AddComponent<Image>();
-            img.sprite = UiRoundedSprite.Get(16);
-            img.type = Image.Type.Sliced;
-            img.color = isCurrent ? Gold
-                      : node.Visited ? new Color(Dim.r, Dim.g, Dim.b, 0.55f)
-                      : isSelectable ? CardEdge
-                      : Card;
-
-            // 라벨
-            var labelGo = new GameObject("Label", typeof(RectTransform));
-            labelGo.transform.SetParent(go.transform, false);
-            var label = labelGo.AddComponent<TextMeshProUGUI>();
-            label.text = GetNodeLabel(node);
-            label.fontSize = node.Type == MapNodeType.Boss ? 22f : 16f;
-            label.fontStyle = FontStyles.Bold;
-            label.alignment = TextAlignmentOptions.Center;
-            label.color = isCurrent ? new Color(0.1f, 0.09f, 0.06f) : node.Visited ? Dim : Ink;
-            label.raycastTarget = false;
-            if (_font != null) label.font = _font;
-            var labelRect = label.rectTransform;
-            labelRect.anchorMin = Vector2.zero; labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = Vector2.zero; labelRect.offsetMax = Vector2.zero;
-
-            // 주사위 개조 예고 배지 (우상단 보라 점)
-            if (node.DiceModReward && !node.Visited)
+            // 라벨 (스킨이 없을 때만 — 통짜 이미지는 아트가 타입을 표현)
+            if (skin == null)
             {
-                var badgeGo = new GameObject("DiceBadge", typeof(RectTransform));
-                badgeGo.transform.SetParent(go.transform, false);
-                var badgeRect = (RectTransform)badgeGo.transform;
-                badgeRect.anchorMin = badgeRect.anchorMax = new Vector2(1f, 1f);
-                badgeRect.anchoredPosition = new Vector2(-2f, -2f);
-                badgeRect.sizeDelta = new Vector2(18f, 18f);
-                var badgeImg = badgeGo.AddComponent<Image>();
-                badgeImg.sprite = UiRoundedSprite.Get(9);
-                badgeImg.type = Image.Type.Sliced;
-                badgeImg.color = new Color(0.42f, 0.28f, 0.72f);
-                badgeImg.raycastTarget = false;
+                var labelGo = new GameObject("Label", typeof(RectTransform));
+                labelGo.transform.SetParent(go.transform, false);
+                var label = labelGo.AddComponent<TextMeshProUGUI>();
+                label.text = GetNodeLabel(node);
+                label.fontSize = node.Type == MapNodeType.Boss ? 22f : 16f;
+                label.fontStyle = FontStyles.Bold;
+                label.alignment = TextAlignmentOptions.Center;
+                label.color = node.Visited && !isCurrent ? Dim : Ink;
+                label.raycastTarget = false;
+                if (_font != null) label.font = _font;
+                var labelRect = label.rectTransform;
+                labelRect.anchorMin = Vector2.zero; labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = Vector2.zero; labelRect.offsetMax = Vector2.zero;
             }
 
             // 클릭 (선택 가능일 때만)
@@ -245,14 +278,40 @@ namespace DiceOrbit.UI
                 btn.targetGraphic = img;
                 var cb = ColorBlock.defaultColorBlock;
                 cb.normalColor = Color.white;
-                cb.highlightedColor = new Color(1.2f, 1.2f, 1.2f);
+                cb.highlightedColor = skin != null ? Color.white : new Color(1.2f, 1.2f, 1.2f);
                 cb.pressedColor = new Color(0.8f, 0.8f, 0.8f);
                 cb.fadeDuration = 0.08f;
                 btn.colors = cb;
+
+                go.AddComponent<NodeHoverPop>();   // 호버 시 살짝 커지는 팝
                 int id = node.Id;
                 btn.onClick.AddListener(() => GameFlowManager.Instance?.OnNodeSelected(id));
             }
         }
+
+        /// <summary>마우스 오버 시 노드가 살짝 커지는 팝 효과 (선택 가능 노드에만 부착).</summary>
+        private class NodeHoverPop : MonoBehaviour,
+            UnityEngine.EventSystems.IPointerEnterHandler, UnityEngine.EventSystems.IPointerExitHandler
+        {
+            private Vector3 _target = Vector3.one;
+
+            public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData e) => _target = Vector3.one * 1.12f;
+            public void OnPointerExit(UnityEngine.EventSystems.PointerEventData e) => _target = Vector3.one;
+
+            private void Update()
+                => transform.localScale = Vector3.Lerp(transform.localScale, _target, Time.unscaledDeltaTime * 14f);
+        }
+
+        private Sprite GetNodeSprite(MapNodeType type) => type switch
+        {
+            MapNodeType.Battle => battleSprite,
+            MapNodeType.Elite  => eliteSprite,
+            MapNodeType.Shop   => shopSprite,
+            MapNodeType.Rest   => restSprite,
+            MapNodeType.Event  => eventSprite,
+            MapNodeType.Boss   => bossSprite,
+            _ => null,
+        };
 
         private static string GetNodeLabel(MapNode node) => node.Type switch
         {

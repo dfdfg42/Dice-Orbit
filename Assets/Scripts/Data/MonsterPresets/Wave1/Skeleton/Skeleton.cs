@@ -9,13 +9,7 @@ using DiceOrbit.Data.Monsters;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
 {
-    // ==========================================
-    // 패턴 1 [뼈 화살]
-    // ==========================================
-    /// <summary>
-    /// 턴 시작 기준 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해.
-    /// 대상/범위는 MonsterSkill 설정으로 결정 (RandomCharacter + Tiles + range 2).
-    /// </summary>
+    /// <summary>[뼈 검] 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해. (RandomCharacter + Tiles + range 2)</summary>
     [System.Serializable]
     public class SkeletonWhip : SkillData
     {
@@ -24,7 +18,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
 
         public SkeletonWhip()
         {
-            skillName = "뼈 화살";
+            skillName = "뼈 검";
             description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
         }
 
@@ -36,64 +30,49 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
         }
     }
 
-    // ==========================================
-    // 패턴 2 [칼슘 충전]
-    // ==========================================
-    /// <summary>
-    /// 자기 강화: 다음 턴 피해량 +5(공격력 버프) 및 일시 방어도 +5.
-    /// 타겟 없는 자기 버프이므로 MonsterSkill 설정: TargetType=Self, IntentType=Buff.
-    /// </summary>
+    /// <summary>[뼈 화살] 무작위 대상 1명에게 피해. 이번 라운드 뼈무덤 발동(BoneMark) 시 취소. (RandomCharacter + Characters)</summary>
     [System.Serializable]
-    public class CalciumChargeSkill : SkillData
+    public class BoneArrowSkill : SkillData
     {
         [Header("Skill Settings")]
-        [Tooltip("다음 턴까지 부여할 공격력 버프")]
-        [SerializeField] private int attackBuff = 5;
-        [Tooltip("부여할 일시 방어도")]
-        [SerializeField] private int armorGain = 5;
+        [SerializeField] private int damage = 15;
 
-        public CalciumChargeSkill()
+        public BoneArrowSkill()
         {
-            skillName = "칼슘 충전";
-            description = "다음 턴 피해량 +5 및 일시 방어도 +5 부여";
+            skillName = "뼈 화살";
+            description = "무작위 대상 1명에게 피해 (이번 라운드 뼈무덤 발동 시 취소)";
         }
+
+        public override int GetPreviewDamage() => damage;
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            if (source == null || !source.IsAlive) return;
-
-            // 다음 턴 공격까지 살아남도록 duration 2 (자기 턴 시작 시 1 감소 → 다음 공격 적용 → 그 다음 턴 시작 시 만료)
-            source.StatusEffects?.AddEffect(StatusEffectManager.CreateEffect(EffectType.BuffAttack, attackBuff, 2));
-
-            // 일시 방어도 부여 (다음 자기 턴 시작 시 초기화됨)
-            if (source.Stats != null)
-                source.Stats.TempArmor += armorGain;
-
-            Debug.Log($"[칼슘 충전] {source.name} 공격력 +{attackBuff}, 방어도 +{armorGain}");
+            if (source?.StatusEffects != null && source.StatusEffects.HasEffect(EffectType.BoneMark))
+            {
+                Debug.Log("[뼈 화살] 취소 — 이번 라운드 뼈무덤 발동");
+                return;
+            }
+            AttackUnits(source, targetUnits, damage);
         }
     }
 
-    // ==========================================
-    // 패시브 [뼈 무덤]
-    // ==========================================
     /// <summary>
-    /// 웨이브 시작 시 4, 9, 14, 19 타일에 뼈 타일을 생성한다.
-    /// 캐릭터가 지나가거나 턴 종료 시 해골 병사에게 일시 방어도를 부여한다.
-    /// 타일은 영구 유지되며 해골 병사 사망 시 SkeletonDeath가 제거한다.
+    /// [뼈 무덤] 웨이브 시작 시 4·10·16 타일에 뼈 타일. 통과/턴 종료 시 해골병사 방어도 +armorAmount(영구, 사망 시 삭제).
+    /// 해골병사 턴 종료 시 BoneMark 마커를 리셋한다(이번 라운드 판정 종료).
     /// </summary>
     [System.Serializable]
     public class PlantBonePassive : PassiveAbility
     {
         [Header("Bone Settings")]
         [Tooltip("뼈 타일이 부여하는 일시 방어도")]
-        [SerializeField] private int armorAmount = 10;
+        [SerializeField] private int armorAmount = 5;
 
         private CombatManager hookedManager;
 
         public PlantBonePassive()
         {
             passiveName = "뼈 무덤";
-            description = "웨이브 시작 시 4, 9, 14, 19 타일에 뼈 타일 생성. 통과/턴 종료 시 해골 병사 방어도 +10";
+            description = "웨이브 시작 시 4·10·16 타일에 뼈 타일 생성. 통과/턴 종료 시 해골 병사 방어도 +5";
             priority = 10;
             isStackable = false;
         }
@@ -104,8 +83,6 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
         {
             base.Initialize(Owner);
             SubscribeCombatStart();
-
-            // 전투 진행 중에 합류한 경우 즉시 설치
             if (CombatManager.Instance != null && CombatManager.Instance.InCombat)
                 PlantBones();
         }
@@ -115,7 +92,6 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
             var cm = CombatManager.Instance;
             if (cm == null) return;
             if (hookedManager == cm) return;
-
             if (hookedManager != null) hookedManager.OnCombatStart -= HandleCombatStart;
             cm.OnCombatStart += HandleCombatStart;
             hookedManager = cm;
@@ -127,34 +103,35 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
             PlantBones();
         }
 
-        // 전투 반응 없음 (뼈 설치는 CombatManager.OnCombatStart 구독으로 처리)
-
         private void PlantBones()
         {
             var orbitManager = GameManager.Instance?.GetOrbitManager();
             if (orbitManager == null) return;
 
             var skeleton = owner as Monster;
-
-            for (int index = 4; index < 20; index += 5)
+            foreach (int index in new[] { 4, 10, 16 })
             {
                 var tile = orbitManager.GetTile(index);
                 if (tile == null) continue;
                 if (tile.HasAttribute(TileAttributeType.Bone)) continue;
-
                 tile.AddAttribute(new BoneTile(TileAttributeType.Bone, armorAmount, -1, skeleton));
+            }
+        }
+
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        {
+            // 해골병사 턴 종료 시 이번 라운드 뼈무덤 발동 마커 제거
+            if (owner != null && trigger == CombatTrigger.OnPostAction
+                && context.Phase == EventPhase.TurnEnd && context.SourceUnit == owner)
+            {
+                owner.StatusEffects?.RemoveEffect(EffectType.BoneMark);
             }
         }
 
         public override bool AllowSamePassive(IPassive incoming) => false;
     }
 
-    // ==========================================
-    // 사망 효과
-    // ==========================================
-    /// <summary>
-    /// 해골 병사 사망 시 모든 뼈 타일을 제거한다.
-    /// </summary>
+    /// <summary>해골 병사 사망 시 모든 뼈 타일을 제거한다.</summary>
     [System.Serializable]
     public class SkelettonDeath : DeathEffect
     {
@@ -167,12 +144,19 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Skeleton
         public override void Execute(Monster deadMonster)
         {
             Debug.Log($"[SkeletonDeath] {deadMonster.name} died. 뼈 타일 제거.");
-
             var tiles = GameManager.Instance?.GetOrbitManager()?.Tiles;
             if (tiles == null) return;
-
             foreach (var tile in tiles)
                 if (tile != null) tile.RemoveAttributeType(TileAttributeType.Bone);
         }
+    }
+}
+
+namespace DiceOrbit.Systems.Effects
+{
+    /// <summary>뼈무덤 발동 마커: 존재 여부만 사용(전투 효과 없음). 해골병사 TurnEnd에 RemoveEffect로 제거.</summary>
+    public class BoneMarkStatus : StatusEffect
+    {
+        public BoneMarkStatus() : base(DiceOrbit.Data.EffectType.BoneMark, 0, -1) { }
     }
 }

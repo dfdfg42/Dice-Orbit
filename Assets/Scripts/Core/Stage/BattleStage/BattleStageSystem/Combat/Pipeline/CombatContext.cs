@@ -35,7 +35,7 @@ namespace DiceOrbit.Core.Pipeline
         /// 이 행위에 쓸 VFX 프로필 — 실행부(스킬)가 지정만 하고,
         /// 재생 판단은 파이프라인 ApplyAction 한 곳에서 한다 (히트/힐 프리팹 없으면 전역 기본).
         /// </summary>
-        public Visuals.CombatVfxProfile VfxProfile;
+        public string VfxCue;   // 적중/힐 시 재생할 큐 태그 (스킬이 지정, 비면 파이프라인이 루트 사용)
 
         protected EffectContext(Unit source, Unit target, string name, float baseValue)
             : base(source, target)

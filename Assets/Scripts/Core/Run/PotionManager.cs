@@ -41,9 +41,49 @@ namespace DiceOrbit.Core.Run
             DontDestroyOnLoad(gameObject);
         }
 
+        private void Start()
+        {
+            EnsureCombatHook();
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            if (_hookedCombat != null) _hookedCombat.OnCombatStart -= RerollRandomPotions;
+        }
+
+        // ── 랜덤 포션 변신 (스펙 2026-07-29 §4) ────────────────
+
+        private CombatManager _hookedCombat;
+
+        /// <summary>전투 시작 구독 보장 — 씬 리로드로 CombatManager가 바뀌어도 재구독 (Skeleton 훅 패턴).</summary>
+        private void EnsureCombatHook()
+        {
+            var cm = CombatManager.Instance;
+            if (cm == null || _hookedCombat == cm) return;
+
+            if (_hookedCombat != null) _hookedCombat.OnCombatStart -= RerollRandomPotions;
+            cm.OnCombatStart += RerollRandomPotions;
+            _hookedCombat = cm;
+        }
+
+        /// <summary>슬롯의 랜덤 포션을 풀의 무작위 일반 포션으로 교체 (전투 시작마다).</summary>
+        private void RerollRandomPotions()
+        {
+            bool changed = false;
+            for (int i = 0; i < _slots.Count; i++)
+            {
+                if (!(_slots[i] is Data.Potions.RandomPotion)) continue;
+
+                var candidates = potionPool.Where(p => p != null && !(p is Data.Potions.RandomPotion)).ToList();
+                if (candidates.Count == 0) continue;
+
+                var picked = candidates[Random.Range(0, candidates.Count)];
+                Debug.Log($"[Potion] 랜덤 포션 변신 → {picked.PotionName}");
+                _slots[i] = picked;
+                changed = true;
+            }
+            if (changed) OnChanged?.Invoke();
         }
 
         public static PotionManager EnsureInstance()
@@ -60,6 +100,7 @@ namespace DiceOrbit.Core.Run
         {
             if (potion == null || !HasFreeSlot) return false;
             _slots.Add(potion);
+            EnsureCombatHook();   // 씬 리로드 후에도 변신 구독 유지
             OnChanged?.Invoke();
             return true;
         }
@@ -138,6 +179,8 @@ namespace DiceOrbit.Core.Run
             if (!potion.Use()) return false;
 
             Debug.Log($"[Potion] 사용: {potion.PotionName}");
+            var user = PartyManager.Instance?.Party?.FirstOrDefault(c => c != null && c.IsAlive);
+            if (user != null) DiceOrbit.Visuals.VfxService.PlayOn(DiceOrbit.Visuals.VfxTags.Potion, user);
             _slots.RemoveAt(index);
             OnChanged?.Invoke();
             return true;
@@ -168,6 +211,30 @@ namespace DiceOrbit.Core.Run
             if (!potion.Use(target)) return false;
 
             Debug.Log($"[Potion] 사용: {potion.PotionName} → {target.name}");
+            DiceOrbit.Visuals.VfxService.PlayOn(DiceOrbit.Visuals.VfxTags.Potion, target);
+            _slots.RemoveAt(index);
+            OnChanged?.Invoke();
+            return true;
+        }
+
+        /// <summary>타일 대상 포션 사용 (예: 중화 포션).</summary>
+        public bool TryUseOnTile(int index, Data.TileData tile)
+        {
+            if (index < 0 || index >= _slots.Count) return false;
+            var potion = _slots[index];
+
+            if (potion.TargetType != PotionTargetType.Tile || tile == null) return false;
+
+            if (potion.CombatOnly && GameFlowManager.Instance?.CurrentState != GameState.Combat)
+            {
+                Debug.Log($"[Potion] '{potion.PotionName}'은(는) 전투 중에만 사용 가능.");
+                return false;
+            }
+
+            if (!potion.UseOnTile(tile)) return false;
+
+            Debug.Log($"[Potion] 사용: {potion.PotionName} → 타일 {tile.name}");
+            DiceOrbit.Visuals.VfxService.PlayOn(DiceOrbit.Visuals.VfxTags.Potion, tile);
             _slots.RemoveAt(index);
             OnChanged?.Invoke();
             return true;

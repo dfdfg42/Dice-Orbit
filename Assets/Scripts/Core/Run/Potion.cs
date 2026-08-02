@@ -14,7 +14,8 @@ namespace DiceOrbit.Core.Run
         None,   // 타겟 지정 없음 (기본, 자동 발동 형태)
         Ally,   // 아군 캐릭터 지정
         Enemy,  // 적 몬스터 지정
-        Any     // 아군 및 적 모두 지정 가능
+        Any,    // 아군 및 적 모두 지정 가능
+        Tile    // 보드 타일 지정 (예: 중화 포션)
     }
 
     public abstract class Potion : ScriptableObject
@@ -37,6 +38,9 @@ namespace DiceOrbit.Core.Run
         /// 타겟을 받아 포션의 효과를 실행합니다.
         /// </summary>
         public abstract bool Use(Unit target = null);
+
+        /// <summary>타일 대상 포션(TargetType.Tile)이 구현. 기본은 사용 불가.</summary>
+        public virtual bool UseOnTile(Data.TileData tile) => false;
 
 #if UNITY_EDITOR
         /// <summary>

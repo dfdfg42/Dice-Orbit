@@ -47,8 +47,8 @@ namespace DiceOrbit.UI
         public readonly struct StatusDisplayData
         {
             public readonly string Name;         // 표시 이름 (예: "집중") — enum 이름이 아닌 한국어
-            public readonly string StackText;    // 스택 텍스트 (예: "x3"), 스택이 없으면 빈 문자열
-            public readonly string DurationText; // 지속 텍스트 (예: "(2T)" / "(∞T)")
+            public readonly string StackText;    // 스택 수 (예: "3"), 스택이 없으면 빈 문자열
+            public readonly string DurationText; // 지속 텍스트 (예: "2T"), 무한 지속은 빈 문자열
             public readonly string Description;  // 상태이상 설명
             public readonly Color  Color;        // 텍스트 강조 색상
 
@@ -110,13 +110,16 @@ namespace DiceOrbit.UI
                 { "Honey",         "꿀"      },
                 { "SlushSnow",     "진창눈"   },
                 { "Focus",         "집중"    },
-                { "Poison",        "중독"    },
-                { "Weak",          "약화"    },
+                { "Poison",        "독"     },
+                { "Weak",          "쇠약"    },
+                { "Power",         "파워"    },
                 { "Vulnerable",    "취약"    },
                 { "Stun",          "기절"    },
                 { "Silence",       "침묵"    },
                 { "Frozen",        "빙결"    },
                 { "Frostbite",     "동상"    },
+                { "CrystalStack",  "수정 중첩" },
+                { "SnowDamageTaken", "받은 피해" },
                 { "BuffAttack",    "공격력 증가" },
                 { "BuffDefense",   "방어력 증가" },
                 { "DebuffAttack",  "공격력 감소" },
@@ -400,11 +403,11 @@ namespace DiceOrbit.UI
             // 열거형 이름을 게임 내 표시 이름으로 변환합니다 (예: "Focus" → "집중")
             string displayName = ResolveStatusDisplayName(rawName);
 
-            // 스택이 있을 때만 스택 텍스트를 표시합니다 (예: "x3")
-            string stackText = value > 0 ? $"x{value}" : string.Empty;
+            // 스택이 있을 때만 스택 수를 표시합니다 (예: "3" — 중첩 수, x 접두 없음)
+            string stackText = value > 0 ? value.ToString() : string.Empty;
 
-            // 지속 턴 텍스트: 남은 턴 표시 (예: "(2T)"). -1(무한/영구)은 표기 생략 — "(∞T)"는 유저에게 부자연스러움
-            string durationText = duration < 0 ? string.Empty : $"({duration}T)";
+            // 지속 턴 텍스트: 남은 턴 표시 (예: "2T"). -1(무한/영구)은 표기 생략
+            string durationText = duration < 0 ? string.Empty : $"{duration}T";
 
             // 설명: 표시 이름으로 먼저 검색, 없으면 원본 열거형 이름으로 재검색합니다
             if (!TryGetDescription(displayName, out string description))

@@ -80,7 +80,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
     public class MineBombSkill : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 10;
+        [SerializeField] private int damage = 15;
         // vfxProfile은 SkillData 베이스로 승격됨 (필드명 동일 → 기존 직렬화 데이터 보존)
 
         public MineBombSkill()
@@ -108,7 +108,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
 
             // 시전 VFX는 SkillData.ExecuteSkillWithIntent가 공통 처리. 타일 폭발만 여기서.
             foreach (var tile in affectedTiles)
-                VfxManager.PlayTile(vfxProfile, tile);
+                DiceOrbit.Visuals.VfxService.PlayOn(
+                    string.IsNullOrEmpty(impactCue) ? DiceOrbit.Visuals.VfxTags.TileImpact : impactCue, tile);
 
             foreach (var character in partyManager.GetAliveCharacters())
             {
@@ -116,7 +117,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
                 if (character.CurrentTile == null || !affectedTiles.Contains(character.CurrentTile)) continue;
 
                 var context = new AttackContext(source, character, SkillName, damage);
-                context.VfxProfile = vfxProfile;   // 재생 판단은 파이프라인이
+                context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
                 CombatPipeline.Instance?.Process(context);
             }
 
@@ -145,7 +146,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
     {
         [Header("Mine Settings")]
         [Tooltip("설치할 지뢰의 피해량")]
-        [SerializeField] private int mineDamage = 30;
+        [SerializeField] private int mineDamage = 20;
 
         [Tooltip("매 턴 설치할 지뢰 개수")]
         [SerializeField] private int minesPerTurn = 2;
@@ -153,7 +154,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public PlantMinePassive()
         {
             passiveName = "지뢰 설치";
-            description = "매 턴 시작 시 무작위 타일에 지뢰를 설치합니다. 지나가거나 턴 종료 시 피해, 발동 후 삭제";
+            description = "매 턴 종료 시 무작위 타일에 지뢰를 설치합니다. 지나가거나 턴 종료 시 피해, 발동 후 삭제";
             priority = 10;
             isStackable = false;
         }
@@ -165,11 +166,11 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         }
 
         public override string GetDynamicDescription()
-            => $"매 턴 시작 시 무작위 타일 {minesPerTurn}개에 {mineDamage} 피해 지뢰 설치 (중첩 가능)";
+            => $"매 턴 종료 시 무작위 타일 {minesPerTurn}개에 {mineDamage} 피해 지뢰 설치 (중첩 가능)";
 
         public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
         {
-            if (context.Phase == EventPhase.TurnStart && context.SourceUnit == owner && trigger == CombatTrigger.OnPreAction)
+            if (context.Phase == EventPhase.TurnEnd && context.SourceUnit == owner && trigger == CombatTrigger.OnPostAction)
             {
                 PlantMines();
             }

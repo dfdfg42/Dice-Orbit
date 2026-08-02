@@ -10,6 +10,7 @@
 |---|---|
 | [project_structure.md](project_structure.md) | 스크립트 폴더 구조 + 전투 아키텍처 개요 |
 | [run_structure_system.md](run_structure_system.md) | **런 구조 (노드맵)** — 맵 생성/경제/파티/점감 부활/유물/포션/이벤트/상점 (2026-07) |
+| [dice_deck_system.md](dice_deck_system.md) | **주사위 덱** — 소유 덱/커스텀 면/사용 효과/호버 툴팁/보상 교체/이벤트 효과 부여 (2026-07-29) |
 | [skill_system_structure.md](skill_system_structure.md) | 전투 도메인 클래스 다이어그램, 스킬/패시브/컨텍스트 구조 |
 | [skill_targeting_system.md](skill_targeting_system.md) | 액티브 스킬 타겟 선택 시스템 (OneEnemy~MultiTile) |
 | [combat_reactor_dispatch.md](combat_reactor_dispatch.md) | ICombatReactor DIM 타입별 디스패치 (OnAttack/OnHeal/OnMove/OnTurnEvent) |
@@ -56,7 +57,8 @@
 | [ui_hover_tooltip_system_design.md](ui_hover_tooltip_system_design.md) | 구 Hover 툴팁 UI 설계 (키워드·상태이상 패널) | 대체됨 (→ battle_info_panel_system.md — 경량 ShowPinned만 존치) |
 | [superpowers/specs/2026-07-05-battle-info-panel-design.md](superpowers/specs/2026-07-05-battle-info-panel-design.md) | 전투 정보 패널 **설계안** | 구현됨 (→ battle_info_panel_system.md) |
 | [superpowers/specs/2026-07-07-run-structure-node-map-design.md](superpowers/specs/2026-07-07-run-structure-node-map-design.md) | 런 구조·노드맵 **기획 스펙** (의도의 진실 소스) | 구현됨 (→ run_structure_system.md) |
-| [superpowers/plans/2026-07-28-save-system-refactor.md](superpowers/plans/2026-07-28-save-system-refactor.md) | 세이브 시스템 리팩토링 **구현 계획** — 참가자 방식 전환 + saveId 도입 | 구현됨 (→ project_structure.md) |
+| [superpowers/specs/2026-07-29-dice-deck-design.md](superpowers/specs/2026-07-29-dice-deck-design.md) | 주사위 덱 **설계안** (3 Phase) | 구현됨 (→ dice_deck_system.md) |
+| [superpowers/plans/2026-07-29-dice-deck-phase1.md](superpowers/plans/2026-07-29-dice-deck-phase1.md) | 주사위 덱 Phase 1 **구현 계획** | 완료 |
 
 ---
 

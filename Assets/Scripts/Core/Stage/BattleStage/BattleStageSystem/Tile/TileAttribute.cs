@@ -15,6 +15,14 @@ namespace DiceOrbit.Data.Tile
         Cloud,          // 구름 타일 (기상학자 패시브)
         ScoutHeal,      // 정찰병 치유 타일
         Reagent,        // 시약 타일 (연금술사 패시브)
+        Sharp,          // 예리함: 이 타일에서 공격 시 피해 +V% (이벤트)
+        Dull,           // 약화: 이 타일에서 공격 시 피해 -V% (이벤트)
+        Sturdy,         // 단단함: 통과/턴 종료 시 방어도 +V (이벤트)
+        Harmony,        // 조화: 턴 종료 시 최대체력 V% 회복 (이벤트)
+        Disharmony,     // 부조화: 턴 종료 시 최대체력 V% 피해 (이벤트)
+        Flame,          // 불꽃: 턴 종료 시 V 피해 / 통과 시 소화 (Wave5)
+        Slime,          // 점액: 통과/턴 종료 시 쇠약 부여 (Wave0)
+        Amethyst,       // 자수정: 통과/턴 종료 시 수정 핵에 수정 중첩 +1, 영구 (Wave3 수정)
     }
 
     /// <summary>
@@ -100,6 +108,14 @@ namespace DiceOrbit.Data.Tile
                 TileAttributeType.Honey => "꿀",
                 TileAttributeType.Cloud => "구름 타일",
                 TileAttributeType.Reagent => "시약 타일",
+                TileAttributeType.Sharp => "예리함",
+                TileAttributeType.Dull => "약화",
+                TileAttributeType.Sturdy => "단단함",
+                TileAttributeType.Harmony => "조화",
+                TileAttributeType.Disharmony => "부조화",
+                TileAttributeType.Flame => "불꽃",
+                TileAttributeType.Slime => "점액",
+                TileAttributeType.Amethyst => "자수정",
                 _ => Type.ToString()
             };
         }

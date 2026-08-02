@@ -75,12 +75,12 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.FrostTotem
     {
         [Header("Skill Settings")]
         [Tooltip("아군 전체에 영구 부여할 공격력 증가량")]
-        [SerializeField] private int damageBuff = 2;
+        [SerializeField] private int damageBuff = 3;
 
         public DewPoint()
         {
             skillName = "이슬점";
-            description = "아군 전체의 피해량 +2 영구 증가";
+            description = "아군 전체의 피해량 +3 영구 증가";
         }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
@@ -101,59 +101,44 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.FrostTotem
     }
 
     // ==========================================
-    // 패시브 [동상]
+    // 패시브 [서리 갑옷]
     // ==========================================
     /// <summary>
-    /// 턴 종료 시, 이번 턴에 다른 타일로 이동하지 않은 적에게 동상 디버프를 부여한다.
-    /// 동상: 일정 턴 동안 받는 피해량 증가. 중첩 불가.
+    /// [서리 갑옷] 다른 아군 몬스터의 공격이 적중하면, 모든 아군 몬스터에게 일시 방어도를 부여한다.
+    /// (파이프라인이 방관 몬스터 패시브도 디스패치하므로 owner가 당사자가 아니어도 발화)
     /// </summary>
     [System.Serializable]
-    public class FrostbitePassive : PassiveAbility
+    public class FrostArmorPassive : PassiveAbility
     {
         [Header("Passive Settings")]
-        [Tooltip("동상 피해 증가 퍼센트")]
-        [SerializeField] private int damageIncreasePercent = 20;
-        [Tooltip("동상 지속 턴")]
-        [SerializeField] private int duration = 2;
+        [Tooltip("다른 아군 공격 적중 시 전 아군에 부여할 방어도")]
+        [SerializeField] private int armorAmount = 10;
 
-        public FrostbitePassive()
+        public FrostArmorPassive()
         {
-            passiveName = "동상";
-            description = "턴 종료 시 이동하지 않은 적에게 동상(받는 피해 +20%, 2턴, 중첩 불가) 부여";
+            passiveName = "서리 갑옷";
+            description = "다른 아군의 공격이 적중하면 모든 아군에게 일시 방어도 부여";
             priority = 10;
             isStackable = false;
         }
 
         public override string GetDynamicDescription()
-            => $"턴 종료 시 이동하지 않은 적에게 받는 피해 +{damageIncreasePercent}% ({duration}턴)";
+            => $"다른 아군 공격 적중 시 모든 아군 방어도 +{armorAmount}";
 
-        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
+            if (trigger != CombatTrigger.OnHit || context.IsSimulation || !context.IsEffected) return;
+            if (!(context.SourceUnit is Monster attacker) || attacker == owner) return;  // 다른 아군 몬스터만
 
-            if (trigger == CombatTrigger.OnPostAction &&
-                context.Phase == EventPhase.TurnEnd &&
-                context.SourceUnit == owner)
+            var monsters = CombatManager.Instance?.ActiveMonsters;
+            if (monsters == null) return;
+            foreach (var m in monsters)
             {
-                ApplyFrostbiteToNonMovers();
+                if (m == null || !m.IsAlive || m.Stats == null) continue;
+                m.Stats.TempArmor += armorAmount;
             }
-        }
-
-        private void ApplyFrostbiteToNonMovers()
-        {
-            var alive = PartyManager.Instance?.GetAliveCharacters();
-            if (alive == null) return;
-
-            foreach (var c in alive)
-            {
-                if (c == null || !c.IsAlive || c.StatusEffects == null) continue;
-
-                // 이번 턴에 이동하지 않은 적만
-                int moved = (c.Stats as CharacterStats)?.MoveOnThisTurn ?? 0;
-                if (moved > 0) continue;
-
-                c.StatusEffects.AddEffect(new FrostbiteDebuff(damageIncreasePercent, duration));
-            }
+            Debug.Log($"[서리 갑옷] {attacker.name} 명중 → 전 아군 방어도 +{armorAmount}");
         }
 
         public override bool AllowSamePassive(IPassive incoming) => false;

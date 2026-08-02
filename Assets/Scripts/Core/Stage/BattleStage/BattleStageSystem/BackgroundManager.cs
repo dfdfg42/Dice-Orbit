@@ -81,8 +81,11 @@ namespace DiceOrbit.Core
             backgroundRenderer.transform.localScale = new Vector3(scale, scale, 1f);
         }
 
-        /// <summary>배경 결정: 몹 세트 오버라이드 → 막 기본 (스펙 2026-07-21 §4).</summary>
-        private void OnCombatStart()
+        private void OnCombatStart() => ApplyEncounterBackground();
+
+        /// <summary>배경 결정: 몹 세트 오버라이드 → 막 기본 (스펙 2026-07-21 §4).
+        /// 전투 시작 연출보다 먼저 배경이 떠 있도록 StartEncounter에서 직접 호출 가능.</summary>
+        public void ApplyEncounterBackground()
         {
             var encounter = CombatManager.Instance != null ? CombatManager.Instance.CurrentEncounter : null;
             Sprite sprite = encounter != null ? encounter.BackgroundSprite : null;

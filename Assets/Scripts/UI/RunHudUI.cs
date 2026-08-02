@@ -25,9 +25,8 @@ namespace DiceOrbit.UI
         [Header("슬롯 (씬에서 배치·배선)")]
         [SerializeField] private GameObject rootCanvas;
         [SerializeField] private TextMeshProUGUI goldText;
-        [SerializeField] private RectTransform relicRow;
+        [SerializeField] private RectTransform relicRow;   // 화면 하단 중앙 — 유물 아이콘 한 줄
         [SerializeField] private RectTransform potionRow;
-        [SerializeField] private Button settingsButton;    // 환경설정 (ESC로도 열림)
 
         [Header("배치")]
         [SerializeField] private float chipSize = 52f;
@@ -65,11 +64,7 @@ namespace DiceOrbit.UI
             var canvas = rootCanvas != null ? rootCanvas.GetComponent<Canvas>() : null;
             if (canvas != null) canvas.sortingOrder = hudSortingOrder;
 
-            settingsButton?.onClick.AddListener(() =>
-            {
-                SettingsUI.EnsureInstance();
-                SettingsUI.Instance?.Open();
-            });
+            // (설정 버튼 제거 — 환경설정은 ESC 토글로만 진입)
 
             // 데이터 변경 구독
             GoldManager.EnsureInstance().OnGoldChanged += _ => RefreshGold();
@@ -148,7 +143,7 @@ namespace DiceOrbit.UI
                 if (artifact == null) continue;
                 var data = artifact.data;
                 string title = data != null ? data.artifactName : artifact.GetType().Name;
-                var chip = CreateChip(relicRow, data != null ? data.artifactIcon : null, title, RelicTint);
+                var chip = CreateChip(relicRow, data != null ? data.artifactIcon : null, title, RelicTint, bare: true);
                 AddHoverTooltip(chip, $"<b>[{title}]</b>\n{(data != null ? data.artifactTooltip : "")}");
             }
         }
@@ -200,8 +195,9 @@ namespace DiceOrbit.UI
 
         // ── 위젯 생성 ─────────────────────────────────────────
 
-        /// <summary>아이콘 칩. 아이콘 없으면 이름 첫 글자, empty면 빈 홈. 프리팹이 있으면 그걸로 찍는다.</summary>
-        private GameObject CreateChip(RectTransform parent, Sprite icon, string fallbackName, Color tint, bool empty = false)
+        /// <summary>아이콘 칩. 아이콘 없으면 이름 첫 글자, empty면 빈 홈, bare면 배경판 없이 아이콘만.
+        /// 프리팹이 있으면 그걸로 찍는다 (bare는 기본 생성 경로에만 적용).</summary>
+        private GameObject CreateChip(RectTransform parent, Sprite icon, string fallbackName, Color tint, bool empty = false, bool bare = false)
         {
             if (chipPrefab != null)
                 return CreateChipFromPrefab(parent, icon, fallbackName, tint, empty);
@@ -211,10 +207,13 @@ namespace DiceOrbit.UI
             var le = go.AddComponent<LayoutElement>();
             le.preferredWidth = chipSize; le.preferredHeight = chipSize;
 
+            bool bareIcon = bare && icon != null;   // 아이콘 없는 유물은 글자 칩으로 폴백 (배경 유지)
+
             var bg = go.AddComponent<Image>();
             bg.sprite = UiRoundedSprite.Get(12);
             bg.type = Image.Type.Sliced;
-            bg.color = empty ? CardWell : Color.Lerp(CardWell, tint, 0.35f);
+            // bare 칩의 배경은 투명 — 시각적으론 아이콘만, 호버 히트 영역으로만 기능
+            bg.color = bareIcon ? Color.clear : empty ? CardWell : Color.Lerp(CardWell, tint, 0.35f);
 
             if (empty) return go;
 
@@ -224,7 +223,8 @@ namespace DiceOrbit.UI
                 iconGo.transform.SetParent(go.transform, false);
                 var iconRect = (RectTransform)iconGo.transform;
                 iconRect.anchorMin = Vector2.zero; iconRect.anchorMax = Vector2.one;
-                iconRect.offsetMin = new Vector2(6, 6); iconRect.offsetMax = new Vector2(-6, -6);
+                float inset = bareIcon ? 0f : 6f;
+                iconRect.offsetMin = new Vector2(inset, inset); iconRect.offsetMax = new Vector2(-inset, -inset);
                 var img = iconGo.AddComponent<Image>();
                 img.sprite = icon;
                 img.preserveAspect = true;

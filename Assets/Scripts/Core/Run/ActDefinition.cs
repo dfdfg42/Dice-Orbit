@@ -48,8 +48,6 @@ namespace DiceOrbit.Core.Run
         [Min(0)] public int ShopCount = 1;
         [Min(0)] public int RestCount = 1;
         [Min(0)] public int EventCount = 2;
-        [Tooltip("주사위 개조 드랍을 예고하는 전투 노드 수")]
-        [Min(0)] public int DiceModBattleCount = 2;
 
         [Header("전투 내용 — 층 구간별 몹 세트 풀")]
         [Tooltip("일반 전투: 층이 속한 구간의 풀에서 노드마다 랜덤 1개")]

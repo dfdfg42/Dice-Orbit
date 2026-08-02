@@ -54,6 +54,8 @@ namespace DiceOrbit.UI
             }
         }
 
+        private PotionTargetType _targetType = PotionTargetType.Ally;
+
         /// <summary>조준 모드 진입. chipScreenPos = 클릭한 포션 칩의 화면 좌표 (아크 시작점).</summary>
         public void Begin(int potionIndex, Vector2 chipScreenPos)
         {
@@ -62,9 +64,22 @@ namespace DiceOrbit.UI
             IsSelecting = true;
             if (_cam == null) _cam = Camera.main;
 
+            // 포션의 타겟 타입에 따라 조준 대상을 결정 (아군/적/아무나/타일)
+            var slots = PotionManager.Instance?.Slots;
+            _targetType = (slots != null && potionIndex >= 0 && potionIndex < slots.Count)
+                ? slots[potionIndex].TargetType : PotionTargetType.Ally;
+
+            string guide = _targetType switch
+            {
+                PotionTargetType.Enemy => "대상 몬스터를 클릭하세요",
+                PotionTargetType.Any   => "대상 유닛을 클릭하세요",
+                PotionTargetType.Tile  => "대상 타일을 클릭하세요",
+                _                      => "대상 아군을 클릭하세요",
+            };
+
             DashedArcLine.SetVisible(_arc, _arrow, true);
             HoverTooltipUI.EnsureInstance();
-            HoverTooltipUI.Instance?.ShowPinned("<b>대상 선택</b>\n회복할 아군을 클릭하세요 <size=80%><color=#8B8B8B>(우클릭 취소)</color></size>");
+            HoverTooltipUI.Instance?.ShowPinned($"<b>대상 선택</b>\n{guide} <size=80%><color=#8B8B8B>(우클릭 취소)</color></size>");
         }
 
         public void End()
@@ -95,27 +110,48 @@ namespace DiceOrbit.UI
             Vector2 mousePos = mouse.position.ReadValue();
             Vector3 start = ScreenToGround(_chipScreenPos) + Vector3.up * 0.2f;
 
-            // 커서 아래 아군 탐색
-            Character hovered = null;
+            // 커서 아래에서 타겟 타입에 맞는 대상 탐색
+            Unit hoveredUnit = null;
+            Data.TileData hoveredTile = null;
             Vector3 end;
             Ray ray = _cam.ScreenPointToRay(mousePos);
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
-                hovered = hit.collider.GetComponentInParent<Character>();
-                if (hovered != null && !hovered.IsAlive) hovered = null;
-                end = hovered != null ? hovered.transform.position + Vector3.up * 0.3f : hit.point;
+                if (_targetType == PotionTargetType.Tile)
+                {
+                    hoveredTile = hit.collider.GetComponentInParent<Data.TileData>();
+                }
+                else
+                {
+                    hoveredUnit = _targetType switch
+                    {
+                        PotionTargetType.Enemy => hit.collider.GetComponentInParent<Monster>(),
+                        PotionTargetType.Any   => hit.collider.GetComponentInParent<Unit>(),
+                        _                      => hit.collider.GetComponentInParent<Character>(),
+                    };
+                    if (hoveredUnit != null && !hoveredUnit.IsAlive) hoveredUnit = null;
+                }
+
+                bool valid = hoveredUnit != null || hoveredTile != null;
+                end = hoveredUnit != null ? hoveredUnit.transform.position + Vector3.up * 0.3f
+                    : hoveredTile != null ? hoveredTile.transform.position + Vector3.up * 0.15f
+                    : hit.point;
             }
             else
             {
                 end = ScreenToGround(mousePos);
             }
 
-            DashedArcLine.SetArcWithArrow(_arc, _arrow, start, end, hovered != null ? validColor : invalidColor);
+            bool hasTarget = hoveredUnit != null || hoveredTile != null;
+            DashedArcLine.SetArcWithArrow(_arc, _arrow, start, end, hasTarget ? validColor : invalidColor);
 
-            // 확정: 아군 위에서 좌클릭
-            if (hovered != null && mouse.leftButton.wasPressedThisFrame)
+            // 확정: 유효 대상 위에서 좌클릭
+            if (hasTarget && mouse.leftButton.wasPressedThisFrame)
             {
-                PotionManager.Instance?.TryUseOn(_potionIndex, hovered);
+                if (hoveredTile != null)
+                    PotionManager.Instance?.TryUseOnTile(_potionIndex, hoveredTile);
+                else
+                    PotionManager.Instance?.TryUseOn(_potionIndex, hoveredUnit);
                 End();
             }
         }

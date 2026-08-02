@@ -24,7 +24,7 @@ namespace DiceOrbit.Visuals
         [Header("브래킷 모양")]
         [Tooltip("변 길이 대비 ㄱ자 팔 길이 비율 (모서리에서 양쪽 변을 따라 뻗는 길이)")]
         [SerializeField, Range(0.05f, 0.5f)] private float bracketLength = 0.3f;
-        [SerializeField] private float thickness = 0.11f;
+        [SerializeField] private float thickness = 0.18f;
         [SerializeField] private float elevation = 0.16f;   // 타일 윗면에서 띄우는 높이
         [SerializeField] private Color bracketColor = new Color(0.3f, 0.9f, 1f, 0.9f);
 

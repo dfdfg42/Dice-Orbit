@@ -20,13 +20,15 @@ namespace DiceOrbit.Data.Potions
 
         public override bool Use(Unit target = null)
         {
-            // 타겟이 아군(Character)인지 검증 후 회복
+            // 타겟이 아군(Character)인지 검증 후 파이프라인 경유 회복
+            // (직접 HP 대입 금지 — 힐 알림/VFX/유물·패시브 반응이 전부 파이프라인에 달려 있음)
             if (target is Character character && character.IsAlive && character.Stats != null)
             {
-                character.Stats.CurrentHP = Mathf.Min(character.Stats.MaxHP, character.Stats.CurrentHP + healAmount);
-                return true; // 성공적으로 사용됨
+                var heal = new DiceOrbit.Core.Pipeline.HealContext(null, character, PotionName, healAmount);
+                DiceOrbit.Core.Pipeline.CombatPipeline.Instance?.Process(heal);
+                return true;
             }
-            
+
             return false; // 조건 불충족으로 사용 취소
         }
     }

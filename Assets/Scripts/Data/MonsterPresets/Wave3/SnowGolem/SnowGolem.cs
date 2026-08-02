@@ -22,9 +22,9 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
     public class SnowSmash : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 20;
+        [SerializeField] private int damage = 25;
         [Tooltip("중심 타일 기준 좌우 확장 칸 수")]
-        [SerializeField] private int range = 2;
+        [SerializeField] private int range = 3;
 
         public SnowSmash()
         {
@@ -58,35 +58,52 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
     }
 
     // ==========================================
-    // 패턴 2 [눈 방패]
+    // 패턴 2 [눈 주먹]
     // ==========================================
-    /// <summary>
-    /// 모든 아군 몬스터(자신 포함)에게 일시 방어도를 부여한다.
-    /// 타겟 없는 팀 버프이므로 MonsterSkill: TargetType=Self, IntentType=Defend.
-    /// </summary>
+    /// <summary>[눈 주먹] 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해. (RandomCharacter + Tiles + range 2)</summary>
     [System.Serializable]
-    public class SnowShield : SkillData
+    public class SnowFistSkill : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int armorAmount = 5;
+        [SerializeField] private int damage = 25;
 
-        public SnowShield()
+        public SnowFistSkill()
         {
-            skillName = "눈 방패";
-            description = "모든 아군에게 일시 방어도 부여";
+            skillName = "눈 주먹";
+            description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
         }
+
+        public override int GetPreviewDamage() => damage;
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            var monsters = CombatManager.Instance?.ActiveMonsters;
-            if (monsters == null) return;
+            AttackTiles(source, targetTiles, damage);
+        }
+    }
 
-            foreach (var m in monsters)
-            {
-                if (m == null || !m.IsAlive || m.Stats == null) continue;
-                m.Stats.TempArmor += armorAmount;
-            }
-            Debug.Log($"[눈 방패] 모든 아군 방어도 +{armorAmount}");
+    // ==========================================
+    // 조건부 AI [SnowGolemPattern]
+    // ==========================================
+    /// <summary>
+    /// 눈골렘 AI. availableSkills 순서 = [0 눈강타, 1 눈주먹].
+    /// 살아있는 적 중 이동불가(Frozen)가 하나라도 있으면 눈강타, 없으면 눈주먹.
+    /// </summary>
+    [System.Serializable]
+    public class SnowGolemPattern : DiceOrbit.Data.MonsterAI.MonsterAI
+    {
+        public override MonsterSkill GetNextSkill()
+        {
+            if (availableSkills == null || availableSkills.Count == 0) return null;
+
+            var alive = PartyManager.Instance?.GetAliveCharacters();
+            bool anyFrozen = false;
+            if (alive != null)
+                foreach (var c in alive)
+                    if (c != null && c.StatusEffects != null &&
+                        c.StatusEffects.HasEffect(DiceOrbit.Data.EffectType.Frozen)) { anyFrozen = true; break; }
+
+            if (anyFrozen) return availableSkills[0];                              // 눈강타
+            return availableSkills.Count >= 2 ? availableSkills[1] : availableSkills[0]; // 눈주먹
         }
     }
 

@@ -197,7 +197,9 @@ namespace DiceOrbit.Data
 
         public void OnArrive(Core.Character character)
         {
-            TileVfxManager.PlayTileEvent(this, TileVfxTrigger.OnArrive, character);
+            DiceOrbit.Visuals.VfxService.PlayTileEvent(this, DiceOrbit.Visuals.TileVfxTrigger.OnArrive);
+            if (tileIndex == 0)
+                DiceOrbit.Visuals.VfxService.PlayOn(DiceOrbit.Visuals.VfxTags.LevelUp, this);
             foreach (var attribute in attributes.Values.ToList())
             {
                 if (attribute == null) continue;
@@ -207,7 +209,7 @@ namespace DiceOrbit.Data
 
         internal void OnTraverse(Character character)
         {
-            TileVfxManager.PlayTileEvent(this, TileVfxTrigger.OnTraverse, character);
+            DiceOrbit.Visuals.VfxService.PlayTileEvent(this, DiceOrbit.Visuals.TileVfxTrigger.OnTraverse);
             foreach (var attribute in attributes.Values.ToList())
             {
                 if (attribute == null) continue;
@@ -217,7 +219,7 @@ namespace DiceOrbit.Data
 
         public void OnEndTurn(Core.Character character)
         {
-            TileVfxManager.PlayTileEvent(this, TileVfxTrigger.OnEndTurn, character);
+            DiceOrbit.Visuals.VfxService.PlayTileEvent(this, DiceOrbit.Visuals.TileVfxTrigger.OnEndTurn);
             foreach (var attribute in attributes.Values.ToList())
             {
                 if (attribute == null) continue;

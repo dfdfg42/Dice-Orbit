@@ -25,6 +25,7 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI nameText;
         [SerializeField] private TextMeshProUGUI hpText;
         [SerializeField] private TextMeshProUGUI flavorText;
+        private bool _flavorHoverRegistered;   // 상태이상 줄의 키워드 링크 호버 등록 1회 가드
 
         [Header("섹션 컨테이너 슬롯 (씬에서 배치 — 내용 행이 이 안에 생성됨)")]
         [SerializeField] private TextMeshProUGUI activesTitle;      // 액티브 섹션 제목 (캐릭터 "액티브" / 몬스터 "다음 행동"으로 교체됨)
@@ -238,6 +239,14 @@ namespace DiceOrbit.UI
             ClearContainer(statusesContainer);
         }
 
+        /// <summary>상태이상 줄(flavorText)을 키워드 링크 호버 대상으로 1회 등록.</summary>
+        private void RegisterFlavorHover()
+        {
+            if (_flavorHoverRegistered || flavorText == null) return;
+            KeywordLinkHover.Register(flavorText);
+            _flavorHoverRegistered = true;
+        }
+
         private void RenderUnit(UnitInfoData d)
         {
             // ── Header ──
@@ -245,17 +254,23 @@ namespace DiceOrbit.UI
             SetText(hpText, $"HP {d.CurrentHp}/{d.MaxHp}" + (d.Armor > 0 ? $"   방어도 {d.Armor}" : ""));
 
             // 상태이상 라인 (체력 바로 아래): 별도 섹션 대신 헤더에 요약 — 없으면 "상태이상 없음"
+            // 설명이 있는 상태이상은 키워드 링크(<link="kw:...">)로 감싸 KeywordLinkHover가
+            // 호버 시 커서 옆 툴팁으로 설명을 띄운다 (스킬 설명 속 키워드와 같은 언어).
             string statusLine = "";
             if (d.Statuses != null)
             {
                 foreach (var s in d.Statuses)
                 {
                     string stack = string.IsNullOrWhiteSpace(s.StackText) ? "" : $" {s.StackText}";
-                    string one = $"<color=#{ColorUtility.ToHtmlStringRGB(InfoPanelRows.OnLight(s.Color))}>{s.Name}{stack}</color>";
+                    string colorHex = ColorUtility.ToHtmlStringRGB(InfoPanelRows.OnLight(s.Color));
+                    string one = string.IsNullOrWhiteSpace(s.Description)
+                        ? $"<color=#{colorHex}>{s.Name}{stack}</color>"
+                        : $"<link=\"kw:{s.Name}\"><color=#{colorHex}><u>{s.Name}</u>{stack}</color></link>";
                     statusLine = statusLine.Length == 0 ? one : $"{statusLine}    {one}";
                 }
             }
             SetText(flavorText, statusLine.Length == 0 ? "상태이상 없음" : statusLine);
+            RegisterFlavorHover();
 
             // 액티브 섹션 제목: 캐릭터 "액티브" / 몬스터 "다음 행동" (빌더가 결정)
             if (!string.IsNullOrWhiteSpace(d.ActivesLabel))
