@@ -52,15 +52,51 @@ namespace DiceOrbit.Visuals
             return new GameObject("CombatIntroDirector").AddComponent<CombatIntroDirector>();
         }
 
-        /// <summary>3단계 순차 연출. 완료 후 반환 → 호출자가 BroadcastCombatStart/StartCombat 진행.</summary>
+        /// <summary>3단계 순차 연출. 완료 후 반환 → 호출자가 BroadcastCombatStart/StartCombat 진행.
+        /// 각 페이즈는 예외 격리(RunSafe) — 어느 하나가 죽어도 연출은 끝까지 가고, 마지막에
+        /// 타일/캐릭터/몬스터를 최종 표시 상태로 강제 복원한다. 인트로가 전투를 절대 막지 않게.</summary>
         public IEnumerator Play(IReadOnlyList<Monster> spawnedMonsters)
         {
             HideCharacters();   // 연출 시작 즉시 캐릭터를 숨겨 타일 낙하 동안 안 보이게
-            yield return TileDropPhase();
+            yield return RunSafe(TileDropPhase(), "타일 낙하");
             if (afterTilesDelay > 0f) yield return new WaitForSeconds(afterTilesDelay);
-            yield return CharacterPopPhase();
+            yield return RunSafe(CharacterPopPhase(), "캐릭터 팝인");
             if (afterCharsDelay > 0f) yield return new WaitForSeconds(afterCharsDelay);
-            yield return MonsterSummonPhase(spawnedMonsters);
+            yield return RunSafe(MonsterSummonPhase(spawnedMonsters), "몬스터 소환");
+
+            RevealAll(spawnedMonsters);   // 안전망: 무슨 일이 있어도 전부 표시 상태로 확정
+        }
+
+        /// <summary>코루틴 예외 격리 — inner가 던져도 잡아서 로그만 남기고 조용히 종료(전투는 계속).</summary>
+        private IEnumerator RunSafe(IEnumerator inner, string label)
+        {
+            while (true)
+            {
+                object current;
+                try
+                {
+                    if (!inner.MoveNext()) yield break;
+                    current = inner.Current;
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[CombatIntro] {label} 중단(무시하고 전투 진행): {ex}");
+                    yield break;
+                }
+                yield return current;
+            }
+        }
+
+        /// <summary>캐릭터·몬스터를 최종 스케일로 강제 복원 (페이즈가 중단됐어도 숨긴 채 남지 않게).</summary>
+        private void RevealAll(IReadOnlyList<Monster> monsters)
+        {
+            foreach (var pair in _hiddenChars)
+                if (pair.Key != null) pair.Key.localScale = pair.Value;
+            _hiddenChars.Clear();
+
+            if (monsters == null) return;
+            foreach (var m in monsters)
+                if (m != null) m.transform.localScale = m.IntroBaseScale;
         }
 
         /// <summary>파티 캐릭터의 원래 스케일을 캐시하고 즉시 숨김 (스케일 0).</summary>
@@ -100,23 +136,27 @@ namespace DiceOrbit.Visuals
                 t.transform.localScale = Vector3.zero;   // 차례 오기 전엔 숨김
             }
 
-            // 순차 낙하: 자기 차례에 나타나며(원래 크기 복원) 떨어짐
-            for (int i = 0; i < n; i++)
+            // 순차 낙하 — try/finally로 타일 원위치 복원을 보장 (중단돼도 타일이 떠 있으면 보드가 깨짐)
+            try
             {
-                if (tiles[i] == null) continue;
-                tiles[i].transform.localScale = origScale[i];   // 이 타일만 나타남
-                StartCoroutine(DropOne(tiles[i].transform, origPos[i], origScale[i]));
-                if (tileStagger > 0f) yield return new WaitForSeconds(tileStagger);
+                for (int i = 0; i < n; i++)
+                {
+                    if (tiles[i] == null) continue;
+                    tiles[i].transform.localScale = origScale[i];   // 이 타일만 나타남
+                    StartCoroutine(DropOne(tiles[i].transform, origPos[i], origScale[i]));
+                    if (tileStagger > 0f) yield return new WaitForSeconds(tileStagger);
+                }
+                yield return new WaitForSeconds(tileDropDuration);   // 마지막 낙하까지 대기
             }
-            // 마지막 낙하까지 대기
-            yield return new WaitForSeconds(tileDropDuration);
-
-            // 안전: 전부 정확히 원위치·원스케일로 확정
-            for (int i = 0; i < n; i++)
+            finally
             {
-                if (tiles[i] == null) continue;
-                tiles[i].transform.position = origPos[i];
-                tiles[i].transform.localScale = origScale[i];
+                // 안전: 전부 정확히 원위치·원스케일로 확정 (tile.Position을 캐릭터 배치가 참조)
+                for (int i = 0; i < n; i++)
+                {
+                    if (tiles[i] == null) continue;
+                    tiles[i].transform.position = origPos[i];
+                    tiles[i].transform.localScale = origScale[i];
+                }
             }
         }
 
