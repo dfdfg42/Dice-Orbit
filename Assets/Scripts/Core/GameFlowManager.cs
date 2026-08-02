@@ -1,7 +1,7 @@
-using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using DiceOrbit.Core.Run;
+using DiceOrbit.Core.Run.Save;
 
 namespace DiceOrbit.Core
 {
@@ -424,79 +424,41 @@ namespace DiceOrbit.Core
             ContinueGameFlow();
         }
 
-        /// <summary>세이브 복원: 맵(시드 재생성) → 골드/유물/포션 → 파티 스폰+스탯/모디파이어 → 맵 화면.</summary>
+        /// <summary>
+        /// 이어하기 복원을 한 프레임 늦춘다.
+        ///
+        /// 이유: SceneManager.sceneLoaded는 씬 오브젝트들의 Awake 뒤·Start 전에 불린다.
+        /// 그런데 파티 복원(PartyManager.Apply → CharacterSpawner.Spawn)은 궤도 타일을 필요로 하고,
+        /// 타일은 OrbitManager.Start()의 GenerateOrbit()이 만든다. 여기서 바로 복원하면
+        /// 타일이 없어 Spawn이 null을 돌려주고 파티가 0명으로 복원된다.
+        /// yield return null 한 번이면 그 프레임의 모든 Start()가 끝난 뒤로 밀린다.
+        ///
+        /// [Windows Unity 검증 포인트]
+        ///  - 메인메뉴 → 이어하기 → BattleScene 진입 시 파티원이 세이브 인원수대로 궤도에 배치되는지.
+        ///  - 콘솔에 "파티 복원 중 '...' 스폰에 실패했습니다" 가 뜨지 않는지.
+        ///  - 맵 진입 직후 자동 저장(GameState.Map)이 파티 0명으로 덮어쓰지 않는지.
+        /// </summary>
+        private System.Collections.IEnumerator ContinueGameFlowNextFrame()
+        {
+            yield return null;   // 씬 오브젝트들의 Start()가 모두 돈 뒤
+            ContinueGameFlow();
+        }
+
+        /// <summary>세이브 복원 — 참가자 전원 검증 통과 시에만 적용된다.</summary>
         private void ContinueGameFlow()
         {
-            var data = RunSaveService.Load();
-            var run = RunManager.Instance;
-            if (data == null || run == null || !run.RestoreRun(data.Seed, data.CurrentNodeId, data.VisitedNodeIds, data.BattlesCleared))
+            var report = RunSaveService.RestoreCurrent();
+            if (!report.Success)
             {
-                Debug.LogWarning("[GameFlow] 세이브 복원 실패 — 새 게임으로 시작합니다.");
+                Debug.LogWarning($"[GameFlow] 세이브 복원 실패 — 새 게임으로 시작합니다.\n{report}");
+                RunSaveService.Delete();
                 StartGameFlow();
                 return;
             }
 
-            var selection = Object.FindFirstObjectByType<UI.CharacterSelectionUI>(FindObjectsInactive.Include);
+            if (report.Warnings.Count > 0)
+                Debug.LogWarning($"[GameFlow] 복원 경고\n{report}");
 
-            // 소멸 캐릭터 (재영입 불가 목록)
-            if (selection != null)
-            {
-                foreach (var name in data.BanishedPresetNames)
-                {
-                    var preset = selection.AllCharacters.FirstOrDefault(p => p != null && p.CharacterName == name);
-                    if (preset != null) run.RegisterBanished(preset);
-                }
-            }
-
-            // 골드
-            var goldManager = GoldManager.EnsureInstance();
-            goldManager.ResetGold();
-            goldManager.AddGold(data.Gold);
-
-            // 유물 / 포션 (이름 매칭 — 구 세이브는 RelicNames 폴백)
-            var artifactManager = ArtifactManager.EnsureInstance();
-            foreach (var name in data.EffectiveArtifactNames)
-                artifactManager.Grant(artifactManager.FindInPool(name));
-
-            var potions = PotionManager.EnsureInstance();
-            foreach (var name in data.PotionNames)
-                potions.TryAdd(potions.FindInPool(name));
-
-            // 이벤트 상태 (타일 설치 예약 + 본 이벤트)
-            Run.EventRunState.EnsureInstance()
-                .RestoreFrom(data.EventTileInstallTypes, data.SeenEventNames);
-
-            // 파티 스폰 + 스탯/모디파이어 복원
-            var spawner = Object.FindFirstObjectByType<CharacterSpawner>();
-            var allModifiers = Data.Modifiers.ModifierRegistry.CreateAll();
-            for (int i = 0; i < data.Party.Count; i++)
-            {
-                var save = data.Party[i];
-                var preset = selection?.AllCharacters.FirstOrDefault(p => p != null && p.CharacterName == save.PresetName);
-                if (preset == null || spawner == null)
-                {
-                    Debug.LogWarning($"[GameFlow] 파티 복원 실패 — 프리셋 '{save.PresetName}'을 찾을 수 없습니다.");
-                    continue;
-                }
-
-                var character = spawner.Spawn(preset, i, data.Party.Count);
-                if (character == null || character.Stats == null) continue;
-
-                character.Stats.MaxHP = save.MaxHp;
-                character.Stats.CurrentHP = Mathf.Clamp(save.CurrentHp, 1, save.MaxHp);
-                character.Stats.RevivalStock = save.RevivalStock;
-
-                foreach (var modName in save.ModifierNames)
-                {
-                    // 캐릭터마다 독립 인스턴스가 필요하므로 매번 새로 생성해 매칭
-                    var mod = Data.Modifiers.ModifierRegistry.CreateAll()
-                        .FirstOrDefault(m => m != null && m.ModifierName == modName);
-                    if (mod != null) character.Stats.Modifiers?.Add(mod);
-                    else Debug.LogWarning($"[GameFlow] 모디파이어 '{modName}' 복원 실패 (레지스트리에 없음)");
-                }
-            }
-
-            Debug.Log($"[GameFlow] 이어하기 완료 — 파티 {data.Party.Count}명, 골드 {data.Gold}");
             ChangeState(GameState.Map);
         }
 
@@ -514,7 +476,7 @@ namespace DiceOrbit.Core
             if (pendingContinue && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
             {
                 pendingContinue = false;
-                ContinueGameFlow();
+                StartCoroutine(ContinueGameFlowNextFrame());
             }
 
             // 저장된 환경설정(볼륨/전체화면) 적용 — 씬의 AudioManager가 새로 뜬 뒤에

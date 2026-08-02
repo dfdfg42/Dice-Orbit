@@ -50,7 +50,7 @@ namespace DiceOrbit.UI
 
             // 이어하기: 세이브가 있을 때만 누를 수 있게
             if (continueButton != null)
-                continueButton.interactable = Core.Run.RunSaveService.HasSave();
+                continueButton.interactable = Core.Run.Save.RunSaveService.HasSave();
 
             characterDisplay?.PlayEntranceAnimation();
         }

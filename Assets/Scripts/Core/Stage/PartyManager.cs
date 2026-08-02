@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using DiceOrbit.Core.Run.Save;
+using DiceOrbit.Data.Modifiers;
 
 namespace DiceOrbit.Core
 {
@@ -8,7 +10,7 @@ namespace DiceOrbit.Core
     /// 파티 관리자 (싱글톤)
     /// 최대 4명의 캐릭터 관리
     /// </summary>
-    public class PartyManager : MonoBehaviour
+    public class PartyManager : MonoBehaviour, IRunSaveParticipant
     {
         public static PartyManager Instance { get; private set; }
         
@@ -118,10 +120,116 @@ namespace DiceOrbit.Core
                 OnPartyChanged?.Invoke(party.Count);
                 return true;
             }
-            
+
             return false;
         }
-        
+
+        /// <summary>
+        /// 파티 전원 제거 + 오브젝트 파괴 — 세이브 복원이 이전 런의 잔여 파티 위에 스폰하지 않게 한다.
+        /// </summary>
+        public void ClearAll()
+        {
+            for (int i = party.Count - 1; i >= 0; i--)
+            {
+                var character = party[i];
+                if (character != null) Destroy(character.gameObject);
+            }
+            party.Clear();
+            selectedCharacter = null;
+            OnPartyChanged?.Invoke(party.Count);
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(RunSaveData data)
+        {
+            data.Party.Clear();
+            foreach (var character in party)
+            {
+                if (character == null || character.Stats == null) continue;
+
+                var save = new CharacterSaveData
+                {
+                    PresetId = character.Stats.SourcePreset != null
+                        ? character.Stats.SourcePreset.SaveId
+                        : null,
+                    CurrentHp = character.Stats.CurrentHP,
+                    MaxHp = character.Stats.MaxHP,
+                    RevivalStock = character.Stats.RevivalStock,
+                };
+
+                var mods = character.Stats.Modifiers != null ? character.Stats.Modifiers.Modifiers : null;
+                if (mods != null)
+                    foreach (var mod in mods)
+                        if (mod != null)
+                            save.Modifiers.Add(new ModifierSaveData { Id = mod.GetType().Name });
+
+                data.Party.Add(save);
+            }
+        }
+
+        public void Validate(RunSaveData data, RunRestoreContext ctx)
+        {
+            if (ctx.Spawner == null)
+                ctx.Report.Fail("CharacterSpawner를 찾지 못해 파티를 복원할 수 없습니다.");
+
+            if (data.Party.Count > maxPartySize)
+                ctx.Report.Fail($"세이브의 파티 인원이 {data.Party.Count}명으로 최대 {maxPartySize}명을 넘습니다 — 손상된 세이브입니다.");
+
+            foreach (var save in data.Party)
+            {
+                if (string.IsNullOrEmpty(save.PresetId))
+                {
+                    ctx.Report.Fail("파티 구성원의 PresetId가 비어 있습니다.");
+                }
+                else if (ctx.FindPreset(save.PresetId) == null)
+                {
+                    ctx.Report.Fail($"프리셋 '{save.PresetId}'를 카탈로그에서 찾지 못했습니다.");
+                }
+
+                // Apply가 CurrentHP를 Clamp(_, 1, MaxHp)로 넣으므로 MaxHp가 1 미만이면 범위가 뒤집힌다.
+                if (save.MaxHp < 1)
+                    ctx.Report.Fail($"'{save.PresetId}'의 MaxHp가 {save.MaxHp}입니다 — 손상된 세이브입니다.");
+
+                foreach (var mod in save.Modifiers)
+                    if (!ModifierRegistry.Exists(mod.Id))
+                        ctx.Report.Fail($"모디파이어 '{mod.Id}'가 레지스트리에 없습니다.");
+            }
+        }
+
+        public void Apply(RunSaveData data, RunRestoreContext ctx)
+        {
+            ClearAll();
+
+            for (int i = 0; i < data.Party.Count; i++)
+            {
+                var save = data.Party[i];
+
+                // CharacterSpawner.Spawn이 PartyManager.AddCharacter를 자동 호출하므로 별도 등록은 없다.
+                var character = ctx.Spawner.Spawn(ctx.FindPreset(save.PresetId), i, data.Party.Count);
+                if (character == null || character.Stats == null)
+                {
+                    // 조용히 건너뛰면 파티 0명짜리 반쪽 복원이 성공으로 보고되고, 그대로 세이브를 덮어쓴다.
+                    // Apply 단계 실패는 롤백되지 않지만 ContinueGameFlow의 !report.Success 분기가
+                    // 새 게임 폴백 + 세이브 삭제로 처리한다 — 조용한 반쪽 복원보다 정직한 실패가 낫다.
+                    ctx.Report.Fail($"파티 복원 중 '{save.PresetId}' 스폰에 실패했습니다.");
+                    continue;
+                }
+
+                character.Stats.MaxHP = save.MaxHp;
+                character.Stats.CurrentHP = Mathf.Clamp(save.CurrentHp, 1, save.MaxHp);
+                character.Stats.RevivalStock = save.RevivalStock;
+
+                foreach (var mod in save.Modifiers)
+                {
+                    // 캐릭터마다 독립 인스턴스가 필요하므로 매번 새로 만든다.
+                    var instance = ModifierRegistry.Create(mod.Id);
+                    if (instance != null && character.Stats.Modifiers != null)
+                        character.Stats.Modifiers.Add(instance);
+                }
+            }
+        }
+
         /// <summary>
         /// 캐릭터 선택
         /// </summary>

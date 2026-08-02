@@ -21,6 +21,44 @@ namespace DiceOrbit.Data.Modifiers
             () => new Mage.MageFocusBoost(),
         };
 
+        // 팩토리를 한 번씩만 돌려 얻은 타입명 캐시 — Exists가 매번 인스턴스를 만들지 않게 한다.
+        private static string[] _ids;
+
+        private static string[] Ids
+        {
+            get
+            {
+                if (_ids == null)
+                {
+                    _ids = new string[Factories.Length];
+                    for (int i = 0; i < Factories.Length; i++) _ids[i] = Factories[i]().GetType().Name;
+                }
+                return _ids;
+            }
+        }
+
+        /// <summary>
+        /// 세이브 ID(클래스 타입명)로 모디파이어 새 인스턴스 생성. 없으면 null.
+        /// 캐릭터마다 독립 인스턴스가 필요하므로 매번 새로 만든다.
+        /// </summary>
+        public static CharacterModifier Create(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            var ids = Ids;
+            for (int i = 0; i < ids.Length; i++)
+                if (ids[i] == id) return Factories[i]();
+            return null;
+        }
+
+        /// <summary>Validate 단계용 — 인스턴스를 만들지 않는다.</summary>
+        public static bool Exists(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            foreach (var known in Ids)
+                if (known == id) return true;
+            return false;
+        }
+
         /// <summary>전체 모디파이어를 새 인스턴스로 생성.</summary>
         public static List<CharacterModifier> CreateAll()
         {

@@ -20,6 +20,12 @@ namespace DiceOrbit.Core.Run
 
     public abstract class Potion : ScriptableObject
     {
+        [Tooltip("세이브 식별자 — 자동으로 채워집니다. 직접 수정하지 마세요.")]
+        [SerializeField] private string saveId;
+
+        /// <summary>세이브가 이 에셋을 다시 찾는 키. 한 번 정해지면 바뀌지 않는다.</summary>
+        public string SaveId => saveId;
+
         public string PotionName = "물약";
         [TextArea(2, 4)] public string Description = "물약 설명";
         public Sprite Icon;
@@ -35,5 +41,17 @@ namespace DiceOrbit.Core.Run
 
         /// <summary>타일 대상 포션(TargetType.Tile)이 구현. 기본은 사용 불가.</summary>
         public virtual bool UseOnTile(Data.TileData tile) => false;
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// protected virtual이어야 한다. Unity는 가장 파생된 클래스의 OnValidate 하나만 호출하므로,
+        /// private으로 두면 HealPotion이 자기 OnValidate를 추가하는 순간 saveId 채우기가 조용히 멈춘다.
+        /// 서브클래스가 OnValidate를 override하면 반드시 base.OnValidate()를 호출할 것.
+        /// </summary>
+        protected virtual void OnValidate()
+        {
+            if (string.IsNullOrEmpty(saveId)) saveId = name;
+        }
+#endif
     }
 }

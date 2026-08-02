@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DiceOrbit.Core.Run.Save;
 using UnityEngine;
 
 namespace DiceOrbit.Core.Run
@@ -9,7 +10,7 @@ namespace DiceOrbit.Core.Run
     ///
     /// 씬에 배치하고 firstAct를 지정 (없으면 노드맵 비활성 → 기존 순차 웨이브 흐름 폴백).
     /// </summary>
-    public class RunManager : MonoBehaviour
+    public class RunManager : MonoBehaviour, IRunSaveParticipant
     {
         public static RunManager Instance { get; private set; }
 
@@ -35,11 +36,6 @@ namespace DiceOrbit.Core.Run
 
         // 상점 교체로 내보낸 캐릭터 — 이번 런에서 재영입 불가 (스펙 §3: 리롤 세탁 방지)
         private readonly List<CharacterPreset> _banishedPresets = new List<CharacterPreset>();
-
-        public IEnumerable<string> BanishedNames
-        {
-            get { foreach (var p in _banishedPresets) if (p != null) yield return p.CharacterName; }
-        }
 
         public void RegisterBanished(CharacterPreset preset)
         {
@@ -83,39 +79,6 @@ namespace DiceOrbit.Core.Run
             return true;
         }
 
-        /// <summary>
-        /// 세이브 복원: 같은 시드로 맵을 재생성하고 진행 상태(방문/현재 위치/카운터)를 되돌린다.
-        /// 골드/파티/유물 복원은 GameFlowManager.ContinueGame 몫.
-        /// </summary>
-        public bool RestoreRun(int seed, int currentNodeId, List<int> visitedNodeIds, int battlesCleared)
-        {
-            CurrentAct = firstAct;
-            if (CurrentAct == null)
-            {
-                Debug.LogWarning("[RunManager] ActDefinition이 없어 복원할 수 없습니다.");
-                return false;
-            }
-
-            CurrentSeed = seed;
-            Map = MapGenerator.Generate(CurrentAct, seed);
-            _banishedPresets.Clear();
-
-            if (visitedNodeIds != null)
-            {
-                foreach (int id in visitedNodeIds)
-                {
-                    var node = Map.Get(id);
-                    if (node != null) node.Visited = true;
-                }
-            }
-
-            _currentNodeId = currentNodeId;
-            BattlesCleared = battlesCleared;
-
-            Debug.Log($"[RunManager] 런 복원 — 시드 {seed}, 현재 노드 {currentNodeId}, 전투 {battlesCleared}회 클리어");
-            return true;
-        }
-
         public void EndRun()
         {
             Map = null;
@@ -123,6 +86,80 @@ namespace DiceOrbit.Core.Run
             _currentNodeId = -1;
             BattlesCleared = 0;
             _banishedPresets.Clear();
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(Save.RunSaveData data)
+        {
+            var p = data.Progress;
+            p.Seed = CurrentSeed;
+            p.CurrentNodeId = CurrentNode != null ? CurrentNode.Id : -1;
+            p.BattlesCleared = BattlesCleared;
+
+            p.VisitedNodeIds.Clear();
+            if (Map != null)
+                foreach (var node in Map.Nodes)
+                    if (node.Visited) p.VisitedNodeIds.Add(node.Id);
+
+            p.BanishedPresetIds.Clear();
+            foreach (var preset in _banishedPresets)
+                if (preset != null) p.BanishedPresetIds.Add(preset.SaveId);
+        }
+
+        public void Validate(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            if (firstAct == null)
+            {
+                ctx.Report.Fail("RunManager.firstAct가 지정되지 않아 맵을 복원할 수 없습니다.");
+                return;
+            }
+
+            // 맵 재생성은 순수 함수(시드 → 그래프)라 부작용이 없다. Apply가 쓸 맵을 미리 만들어
+            // 저장된 노드 ID가 실제로 해결되는지 본다 — 막 정의가 바뀐 세이브를 여기서 걸러야
+            // Apply가 현재 노드 없는 런을 만들어 놓는 사태를 막는다.
+            var map = MapGenerator.Generate(firstAct, data.Progress.Seed);
+            if (map == null)
+            {
+                ctx.Report.Fail("맵 재생성에 실패했습니다 — 막 정의를 확인하세요.");
+                return;
+            }
+
+            if (data.Progress.CurrentNodeId >= 0 && map.Get(data.Progress.CurrentNodeId) == null)
+                ctx.Report.Fail($"현재 노드 {data.Progress.CurrentNodeId}를 재생성된 맵에서 찾지 못했습니다 — 맵 정의가 변경된 세이브입니다.");
+
+            foreach (int id in data.Progress.VisitedNodeIds)
+                if (map.Get(id) == null)
+                    ctx.Report.Fail($"방문 노드 {id}를 재생성된 맵에서 찾지 못했습니다 — 맵 정의가 변경된 세이브입니다.");
+        }
+
+        public void Apply(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            var p = data.Progress;
+
+            CurrentAct = firstAct;
+            CurrentSeed = p.Seed;
+            Map = MapGenerator.Generate(CurrentAct, p.Seed);   // 같은 시드 → 같은 맵
+            _banishedPresets.Clear();
+
+            foreach (int id in p.VisitedNodeIds)
+            {
+                var node = Map.Get(id);
+                if (node != null) node.Visited = true;
+            }
+
+            _currentNodeId = p.CurrentNodeId;
+            BattlesCleared = p.BattlesCleared;
+
+            // 소멸 캐릭터를 못 찾아도 런은 정상 진행된다 — 그 캐릭터가 다시 영입 가능해질 뿐.
+            foreach (string saveId in p.BanishedPresetIds)
+            {
+                var preset = ctx.FindPreset(saveId);
+                if (preset != null) _banishedPresets.Add(preset);
+                else ctx.Report.Warn($"소멸 캐릭터 ID '{saveId}'를 찾지 못했습니다 — 재영입 가능해집니다.");
+            }
+
+            Debug.Log($"[RunManager] 런 복원 — 시드 {p.Seed}, 현재 노드 {p.CurrentNodeId}, 전투 {p.BattlesCleared}회 클리어");
         }
 
         // ── 이동 ──────────────────────────────────────────────

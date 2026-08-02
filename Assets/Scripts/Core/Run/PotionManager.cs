@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DiceOrbit.Core.Run.Save;
 using UnityEngine;
 
 namespace DiceOrbit.Core.Run
@@ -8,21 +9,18 @@ namespace DiceOrbit.Core.Run
     /// 포션 인벤토리 (파티 공용 3슬롯) + 효과 실행 (스펙 §5).
     /// 사용: 전투 중 아무 때나, 행동 소모 없음. 슬롯 확장은 유물 거리(후속).
     ///
-    /// potionPool이 비어 있으면 기본 세트를 런타임 생성.
+    /// 모든 포션은 대응하는 Potion .asset을 갖는다 — 런타임 생성 없음, potionPool은 에셋 등록 필수.
     /// 획득: 상점 구매 + 전투 보상 저확률 드랍.
     /// </summary>
-    public class PotionManager : MonoBehaviour
+    public class PotionManager : MonoBehaviour, IRunSaveParticipant
     {
         public static PotionManager Instance { get; private set; }
 
         [Header("설정")]
         [SerializeField] private int slotCount = 3;
 
-        [Header("포션 풀 — 획득 '후보' 목록 (상점 진열/드랍). 비우면 기본 세트 런타임 생성")]
+        [Header("포션 풀 — 획득 '후보' 목록 (상점 진열/드랍). 에셋 등록 필수 — 비어 있으면 후보 없음")]
         [SerializeField] private List<Potion> potionPool = new List<Potion>();
-
-        [Header("시작 포션 — 게임 시작 시 슬롯에 지급 (테스트/디버그용)")]
-        [SerializeField] private List<Potion> startingPotions = new List<Potion>();
 
         private readonly List<Potion> _slots = new List<Potion>();
 
@@ -33,19 +31,14 @@ namespace DiceOrbit.Core.Run
 
         private void Awake()
         {
-            if (Instance != null && Instance != this) 
-            { 
-                Destroy(gameObject); 
-                return; 
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
             }
             Instance = this;
             transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
-
-            EnsureDefaultPool();
-
-            foreach (var potion in startingPotions)
-                TryAdd(potion);
         }
 
         private void Start()
@@ -118,6 +111,47 @@ namespace DiceOrbit.Core.Run
             Debug.Log($"[Potion] 버림: {_slots[index].PotionName}");
             _slots.RemoveAt(index);
             OnChanged?.Invoke();
+        }
+
+        /// <summary>슬롯 전부 비우기 — 세이브 복원이 이전 런의 잔여 상태 위에 덮어쓰지 않게 한다.</summary>
+        public void ClearAll()
+        {
+            if (_slots.Count == 0) return;
+            _slots.Clear();
+            OnChanged?.Invoke();
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(Save.RunSaveData data)
+        {
+            data.Potions.Clear();
+            foreach (var potion in _slots)
+            {
+                if (potion == null) continue;
+                data.Potions.Add(new PotionSaveData { Id = potion.SaveId });
+            }
+        }
+
+        public void Validate(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            foreach (var saved in data.Potions)
+            {
+                if (string.IsNullOrEmpty(saved.Id))
+                {
+                    ctx.Report.Fail("포션 Id가 비어 있습니다.");
+                    continue;
+                }
+                if (ctx.Catalog == null || ctx.Catalog.FindPotion(saved.Id) == null)
+                    ctx.Report.Fail($"포션 '{saved.Id}'를 카탈로그에서 찾지 못했습니다.");
+            }
+        }
+
+        public void Apply(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            ClearAll();
+            foreach (var saved in data.Potions)
+                TryAdd(ctx.Catalog.FindPotion(saved.Id));
         }
 
         /// <summary>대상 지정이 필요한 포션인가 (조준 아크 진입 대상 — PotionTargetSelector).</summary>
@@ -214,75 +248,11 @@ namespace DiceOrbit.Core.Run
             return TryAdd(picked) ? picked : null;
         }
 
-        /// <summary>이름으로 풀에서 찾기 (세이브 복원용).</summary>
-        public Potion FindInPool(string potionName)
-            => potionPool.FirstOrDefault(p => p != null && p.PotionName == potionName);
-
         /// <summary>상점 진열용 랜덤 count개 (중복 종류 허용 안 함).</summary>
         public List<Potion> GetShopOfferings(int count)
         {
             return potionPool.Where(p => p != null).OrderBy(_ => Random.value).Take(count).ToList();
         }
 
-        // ── 기본 풀 (에셋 미지정 폴백) ─────────────────────────
-
-        private class RuntimePotion : Potion
-        {
-            public System.Func<Unit, bool> onUse;
-            public override bool Use(Unit target = null) => onUse?.Invoke(target) ?? false;
-        }
-
-        private void EnsureDefaultPool()
-        {
-            if (potionPool.Count > 0) return;
-
-            //potionPool.Add(CreateDefault("회복 물약", "선택한 아군의 HP를 30 회복", PotionTargetType.Ally, 40, false, (t) => {
-            //    if (t is Character c && c.Stats != null) { c.Stats.CurrentHP = Mathf.Min(c.Stats.MaxHP, c.Stats.CurrentHP + 30); return true; }
-            //    return false;
-            //}));
-
-            //potionPool.Add(CreateDefault("연회의 물약", "파티 전원의 HP를 15 회복", PotionTargetType.None, 55, false, (t) => {
-            //    var party = PartyManager.Instance?.Party;
-            //    if (party == null) return false;
-            //    foreach (var c in party) {
-            //        if (c == null || !c.IsAlive || c.Stats == null) continue;
-            //        c.Stats.CurrentHP = Mathf.Min(c.Stats.MaxHP, c.Stats.CurrentHP + 15);
-            //    }
-            //    return true;
-            //}));
-
-            //potionPool.Add(CreateDefault("재굴림 물약", "남은 주사위를 전부 다시 굴린다 (전투 중)", PotionTargetType.None, 60, true, (t) => {
-            //    var dm = DiceManager.Instance;
-            //    if (dm == null || dm.AvailableDiceCount == 0) return false;
-            //    dm.RerollAvailableDice();
-            //    return true;
-            //}));
-
-            //potionPool.Add(CreateDefault("정화 물약", "파티의 이동 저하/속박을 해제", PotionTargetType.None, 45, false, (t) => {
-            //    var party = PartyManager.Instance?.Party;
-            //    if (party == null) return false;
-            //    foreach (var c in party) {
-            //        if (c == null || !c.IsAlive || c.Stats == null) continue;
-            //        c.Stats.MoveDebuff = 0;
-            //        c.Stats.BindDebuff = 0;
-            //    }
-            //    return true;
-            //}));
-
-            //Debug.Log("[PotionManager] 포션 풀이 비어 있어 기본 4종을 런타임 생성했습니다 (에셋으로 교체 권장).");
-        }
-
-        private static Potion CreateDefault(string name, string desc, PotionTargetType targetType, int price, bool combatOnly, System.Func<Unit, bool> onUse)
-        {
-            var def = ScriptableObject.CreateInstance<RuntimePotion>();
-            def.name = name;
-            def.PotionName = name;
-            def.Description = desc;
-            def.TargetType = targetType;
-            def.ShopPrice = price;
-            def.CombatOnly = combatOnly;
-            def.onUse = onUse;
-            return def;
-        }
     }
 }

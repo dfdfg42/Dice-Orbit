@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using DiceOrbit.Core.Run.Save;
 using DiceOrbit.Data.Artifacts;
 using UnityEngine;
 
@@ -10,17 +11,14 @@ namespace DiceOrbit.Core.Run
     /// 유물 = ArtifactData(에셋) + RuntimeArtifact(획득 시 CreateInstance로 복제한 런타임 인스턴스).
     /// 보유 인스턴스 자체가 ICombatReactor라 CombatPipeline이 Artifacts를 그대로 수집한다.
     /// 규칙형 효과는 소비처(상점/휴식/보상/부활/전투 시작)가 프로퍼티로 합산값을 읽는다.
-    /// artifactPool이 비어 있으면 기본 5종을 런타임 생성 (에셋 셋업 전에도 동작).
+    /// 모든 유물은 대응하는 ArtifactData .asset을 갖는다 — 런타임 생성 없음, artifactPool은 에셋 등록 필수.
     /// </summary>
-    public class ArtifactManager : MonoBehaviour
+    public class ArtifactManager : MonoBehaviour, IRunSaveParticipant
     {
         public static ArtifactManager Instance { get; private set; }
 
-        [Header("유물 풀 — 획득 후보 (엘리트 드랍/상점 진열). 비우면 기본 세트 런타임 생성")]
+        [Header("유물 풀 — 획득 후보 (엘리트 드랍/상점 진열). 에셋 등록 필수 — 비어 있으면 후보 없음")]
         [SerializeField] private List<ArtifactData> artifactPool = new List<ArtifactData>();
-
-        [Header("시작 유물 — 게임 시작 시 바로 보유 (테스트/디버그용)")]
-        [SerializeField] private List<ArtifactData> startingArtifacts = new List<ArtifactData>();
 
         private readonly List<RuntimeArtifact> artifacts = new List<RuntimeArtifact>();
 
@@ -37,10 +35,6 @@ namespace DiceOrbit.Core.Run
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
-            EnsureDefaultPool();
-
-            foreach (var data in startingArtifacts)
-                Grant(data);
         }
 
         private void OnDestroy()
@@ -102,6 +96,54 @@ namespace DiceOrbit.Core.Run
             return true;
         }
 
+        /// <summary>보유 유물 전부 제거 — 세이브 복원이 이전 런의 잔여 상태 위에 덮어쓰지 않게 한다.</summary>
+        public void ClearAll()
+        {
+            if (artifacts.Count == 0) return;
+            artifacts.Clear();
+            OnArtifactsChanged?.Invoke();
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(Save.RunSaveData data)
+        {
+            data.Artifacts.Clear();
+            foreach (var artifact in artifacts)
+            {
+                if (artifact == null) continue;
+                if (artifact.data == null)
+                {
+                    // AddArtifact(디버그/특수 경로)로 들어온 에셋 없는 유물은 saveId가 없어 복원할 수 없다.
+                    // 조용히 사라지면 이어하기 후 유물이 하나 빈 것을 알 길이 없으므로 남긴다.
+                    Debug.LogWarning($"[RunSave] 에셋 없는 런타임 유물 '{artifact.GetType().Name}'은(는) 저장되지 않습니다.");
+                    continue;
+                }
+                data.Artifacts.Add(new ArtifactSaveData { Id = artifact.data.SaveId });
+            }
+        }
+
+        public void Validate(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            foreach (var saved in data.Artifacts)
+            {
+                if (string.IsNullOrEmpty(saved.Id))
+                {
+                    ctx.Report.Fail("유물 Id가 비어 있습니다.");
+                    continue;
+                }
+                if (ctx.Catalog == null || ctx.Catalog.FindArtifact(saved.Id) == null)
+                    ctx.Report.Fail($"유물 '{saved.Id}'를 카탈로그에서 찾지 못했습니다.");
+            }
+        }
+
+        public void Apply(Save.RunSaveData data, RunRestoreContext ctx)
+        {
+            ClearAll();
+            foreach (var saved in data.Artifacts)
+                Grant(ctx.Catalog.FindArtifact(saved.Id));
+        }
+
         // ── 풀 (드랍/상점/세이브) ─────────────────────────────
 
         /// <summary>미보유 풀에서 랜덤 1개 획득. 없으면 null.</summary>
@@ -118,34 +160,5 @@ namespace DiceOrbit.Core.Run
         public List<ArtifactData> GetShopOfferings(int count)
             => artifactPool.Where(d => d != null && d.effect != null && !Owns(d))
                 .OrderBy(_ => Random.value).Take(count).ToList();
-
-        /// <summary>이름으로 풀에서 찾기 (세이브 복원용).</summary>
-        public ArtifactData FindInPool(string artifactName)
-            => artifactPool.FirstOrDefault(d => d != null && d.artifactName == artifactName);
-
-        // ── 기본 풀 (에셋 미지정 폴백) ─────────────────────────
-
-        private void EnsureDefaultPool()
-        {
-            if (artifactPool.Count > 0) return;
-
-            artifactPool.Add(CreateDefault("단골 도장", "상점 가격 20% 할인", new RegularStamp(), 100));
-            artifactPool.Add(CreateDefault("포근한 침낭", "휴식 회복량 +20%p", new CozyBedroll(), 110));
-            artifactPool.Add(CreateDefault("황금 주사위", "전투 보상 골드 +25", new GoldenDice(), 130));
-            artifactPool.Add(CreateDefault("불사조 깃털", "부활 HP +15%p", new PhoenixFeather(), 150));
-            artifactPool.Add(CreateDefault("생명의 부적", "전투 시작 시 파티 전원 5 회복", new LifeAmulet(), 120));
-            Debug.Log("[ArtifactManager] 유물 풀이 비어 있어 기본 5종을 런타임 생성했습니다 (에셋으로 교체 권장).");
-        }
-
-        private static ArtifactData CreateDefault(string name, string desc, RuntimeArtifact effect, int price)
-        {
-            var data = ScriptableObject.CreateInstance<ArtifactData>();
-            data.name = name;
-            data.artifactName = name;
-            data.artifactTooltip = desc;
-            data.effect = effect;
-            data.shopPrice = price;
-            return data;
-        }
     }
 }
