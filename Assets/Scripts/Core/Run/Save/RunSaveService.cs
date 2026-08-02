@@ -81,6 +81,7 @@ namespace DiceOrbit.Core.Run.Save
                 GoldManager.EnsureInstance(),
                 ArtifactManager.EnsureInstance(),
                 PotionManager.EnsureInstance(),
+                EventRunState.EnsureInstance(),     // 이벤트 타일 예약 + 본 이벤트
                 party,                              // 파티 스폰 — 맨 마지막
             };
         }

@@ -15,7 +15,15 @@ namespace DiceOrbit.Core.Run.Save
         public int Gold;                                                          // 주인: GoldManager
         public List<ArtifactSaveData>  Artifacts = new List<ArtifactSaveData>();  // 주인: ArtifactManager
         public List<PotionSaveData>    Potions   = new List<PotionSaveData>();    // 주인: PotionManager
+        public EventStateSave          EventState = new EventStateSave();         // 주인: EventRunState
         public List<CharacterSaveData> Party     = new List<CharacterSaveData>(); // 주인: PartyManager
+    }
+
+    [System.Serializable]
+    public class EventStateSave
+    {
+        public List<int> TileInstalls = new List<int>();      // TileAttributeType 캐스팅 (이벤트 타일 설치 예약)
+        public List<string> SeenEvents = new List<string>();  // 본 이벤트 이름 (재등장 방지)
     }
 
     [System.Serializable]

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using DiceOrbit.Data.Tile;
+using DiceOrbit.Core.Run.Save;
 
 namespace DiceOrbit.Core.Run
 {
@@ -9,9 +10,9 @@ namespace DiceOrbit.Core.Run
     /// 이벤트 노드의 런 수명 상태 (스펙 2026-07-30 §3.6~3.7).
     /// ① 타일 설치 예약 — 이벤트에서 Enqueue, 매 전투 시작(OnCombatStart)마다 무작위 타일에 배치 (런 내내 누적).
     /// ② 본 이벤트 기록 — 같은 이벤트가 한 런에 다시 안 나오게 (풀 소진 시 리셋).
-    /// ArtifactManager식 씬 로컬 싱글톤 — 런 종료(EndRun)와 함께 ClearAll.
+    /// ArtifactManager식 씬 로컬 싱글톤 — 런 종료(EndRun)와 함께 ClearAll. 세이브 참가자.
     /// </summary>
-    public class EventRunState : MonoBehaviour
+    public class EventRunState : MonoBehaviour, IRunSaveParticipant
     {
         public static EventRunState Instance { get; private set; }
 
@@ -102,7 +103,7 @@ namespace DiceOrbit.Core.Run
             seenEvents.Clear();
         }
 
-        /// <summary>세이브 복원 (RunSaveService → GameFlowManager 이어하기 경로).</summary>
+        /// <summary>세이브 복원 (참가자 Apply / 레거시 경로 공용).</summary>
         public void RestoreFrom(List<int> installTypes, List<string> seenNames)
         {
             ClearAll();
@@ -111,6 +112,23 @@ namespace DiceOrbit.Core.Run
             if (seenNames != null)
                 foreach (var n in seenNames) seenEvents.Add(n);
             EnsureCombatHook();
+        }
+
+        // ── 세이브 참가자 ──────────────────────────────────────
+
+        public void Capture(RunSaveData data)
+        {
+            data.EventState.TileInstalls = tileInstalls.Select(t => (int)t).ToList();
+            data.EventState.SeenEvents = seenEvents.ToList();
+        }
+
+        /// <summary>타일 타입(enum)·이벤트 이름은 카탈로그 조회가 없어 항상 유효 — 검증 불필요.</summary>
+        public void Validate(RunSaveData data, RunRestoreContext ctx) { }
+
+        public void Apply(RunSaveData data, RunRestoreContext ctx)
+        {
+            var ev = data.EventState;
+            RestoreFrom(ev != null ? ev.TileInstalls : null, ev != null ? ev.SeenEvents : null);
         }
     }
 }
