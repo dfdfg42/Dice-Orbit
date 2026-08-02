@@ -130,11 +130,13 @@ namespace DiceOrbit.UI
         {
             ClearChoices();
             RefreshTitle();
+            bool hasExit = false;
             foreach (var choice in _current.Choices)
             {
                 var captured = choice;
                 if (IsExitChoice(choice))
                 {
+                    hasExit = true;
                     // 종료는 상태 전환(OnEventComplete → Map)이 Hide까지 처리 — 여기서 Hide 호출 금지 (이중 호출)
                     CreateChoiceBar(choice.Label, primary: false, () => GameFlowManager.Instance?.OnEventComplete());
                     continue;
@@ -144,6 +146,11 @@ namespace DiceOrbit.UI
                     primary: choice.Resolution == EventResolution.DiceCheck,
                     () => OnChoicePicked(captured), enabled);
             }
+
+            // 어떤 이벤트든 나갈 수 있게 보장 — 데이터에 종료 선택지가 없으면 "넘어가기"를 자동 추가.
+            // (없으면 결과 적용 후/사용 제한 소진 후 나갈 방법이 없어 소프트락)
+            if (!hasExit)
+                CreateChoiceBar("넘어가기", primary: false, () => GameFlowManager.Instance?.OnEventComplete());
         }
 
         /// <summary>결과 없는 Instant 선택지 = 이벤트 종료 버튼 (카운트 미소모).</summary>

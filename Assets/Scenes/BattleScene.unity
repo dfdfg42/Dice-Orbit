@@ -412,7 +412,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.91, g: 0.894, b: 0.847, a: 1}
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -9917,10 +9917,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 817c1f3e9a31448498659134454e7483, type: 2}
   - {fileID: 11400000, guid: 55b17139d9956124eb97c619405188a9, type: 2}
   - {fileID: 11400000, guid: eaa2ae45a5fcb4a4bb7173f45681511e, type: 2}
-  startingPotions:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
 --- !u!1 &1035841696
 GameObject:
   m_ObjectHideFlags: 0
@@ -12488,7 +12484,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4292404456
-  m_fontColor: {r: 0.91, g: 0.894, b: 0.847, a: 1}
+  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -13420,8 +13416,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.Run.ArtifactManager
   artifactPool: []
-  startingArtifacts:
-  - {fileID: 0}
 --- !u!1 &1692375588
 GameObject:
   m_ObjectHideFlags: 0

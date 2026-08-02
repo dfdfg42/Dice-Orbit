@@ -11,6 +11,8 @@ public class AudioManager : MonoBehaviour
     [Header("BGM")]
     [SerializeField] private AudioMixerGroup bgmMixerGroup;
     [SerializeField] private float defaultBgmFadeTime = 0.35f;
+    [Tooltip("지정하면 시작 시 자동으로 이 곡을 배경음악으로 재생(루프). 비우면 자동재생 안 함.")]
+    [SerializeField] private AudioClip startupBgm;
 
     [Header("SFX")]
     [SerializeField] private AudioMixerGroup sfxMixerGroup;
@@ -51,6 +53,17 @@ public class AudioManager : MonoBehaviour
         EnsureBgmSources();
         Ensure2DSfxSource();
         Initialize3DSfxPool();
+    }
+
+    /// <summary>
+    /// 시작 배경음악이 지정돼 있으면 재생한다.
+    /// </summary>
+    private void Start()
+    {
+        if (startupBgm != null)
+        {
+            PlayBGM(startupBgm);
+        }
     }
 
     /// <summary>
