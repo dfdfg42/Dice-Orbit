@@ -15941,7 +15941,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Visuals.CombatIntroDirector
   tileDropHeight: 14
   tileDropDuration: 0.5
-  tileStagger: 0.03
+  tileStagger: 0.08
   clockwise: 1
   afterTilesDelay: 0.35
   afterCharsDelay: 0.35
