@@ -459,6 +459,11 @@ namespace DiceOrbit.Core
             if (report.Warnings.Count > 0)
                 Debug.LogWarning($"[GameFlow] 복원 경고\n{report}");
 
+            // 씬의 모집 UI(RecuritUI)는 기본 활성으로 저작돼 있다. 새 게임은 Recruit 상태가
+            // 이 UI를 소유하지만, 이어하기는 MainMenu → Map으로 건너뛰므로 여기서 숨기지
+            // 않으면 복원된 파티 위에 추가 영입이 가능해진다 (파티 +2 버그).
+            if (characterSelectionUI != null) characterSelectionUI.Hide();
+
             ChangeState(GameState.Map);
         }
 
