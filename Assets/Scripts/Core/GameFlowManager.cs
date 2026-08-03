@@ -133,10 +133,16 @@ namespace DiceOrbit.Core
                     break;
 
                 case GameState.Tutorial:
-                    Debug.Log("[GameFlow] Enter Tutorial (스텁 — 데모/Director는 후속 태스크)");
-                    // 임시: 아직 튜토리얼 미구현이므로 그냥 실제 런으로 넘어간다.
-                    StartGameInternal();
+                {
+                    Debug.Log("[GameFlow] Enter Tutorial");
+                    if (combatUI != null) combatUI.SetActive(true);
+                    var scenario = Core.Tutorial.TutorialScenario.EnsureInstance();
+                    var director = UI.Tutorial.TutorialDirector.EnsureInstance();
+                    director.TutorialSkipHandler = FinishTutorialToRun;   // 스킵 → 실제 런
+                    scenario.SpawnDemo();
+                    director.Play(scenario.BuildCombatSteps(), OnTutorialCombatDone);
                     break;
+                }
 
                 case GameState.Combat:
                     StartCombat();
@@ -509,6 +515,25 @@ namespace DiceOrbit.Core
                 pendingRestart = false;
                 StartGameFlow();
             }
+        }
+
+        // ── 튜토리얼 흐름 ──────────────────────────────────────
+        private bool _tutorialAwaitingRecruit;
+
+        /// <summary>튜토리얼 전투(1~12) 완료 → 데모 정리 → 실제 런(Recruit). step 13은 Recruit에서 이어짐(T7).</summary>
+        private void OnTutorialCombatDone()
+        {
+            Core.Tutorial.TutorialScenario.Instance?.Cleanup();
+            _tutorialAwaitingRecruit = true;
+            StartGameInternal();
+        }
+
+        /// <summary>튜토리얼 스킵 → 완료 플래그 + 데모 정리 + 실제 런.</summary>
+        private void FinishTutorialToRun()
+        {
+            PlayerPrefs.SetInt("tutorial_done", 1); PlayerPrefs.Save();
+            Core.Tutorial.TutorialScenario.Instance?.Cleanup();
+            StartGameInternal();
         }
 
         private void StartGameFlow()

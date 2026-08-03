@@ -22,6 +22,8 @@ namespace DiceOrbit.UI
 
         [Header("패널 루트 (슬라이드 대상)")]
         [SerializeField] private RectTransform panelRoot;
+        /// <summary>튜토리얼 하이라이트용 — 액션 패널 루트.</summary>
+        public RectTransform PanelRoot => panelRoot;
         [SerializeField] private Vector2 hiddenPosition = new Vector2(600f, -200f);  // 화면 오른쪽 바깥
         [SerializeField] private Vector2 shownPosition  = new Vector2(-20f,  -20f);  // 오른쪽 하단
         [SerializeField] private float slideInDuration  = 0.25f;

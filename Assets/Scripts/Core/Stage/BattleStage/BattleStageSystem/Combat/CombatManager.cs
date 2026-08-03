@@ -43,6 +43,9 @@ namespace DiceOrbit.Core
         [SerializeField] private Button endTurnButton;
         [SerializeField] private TextMeshProUGUI turnCountText;
 
+        /// <summary>튜토리얼 하이라이트용 — 턴 종료 버튼 Rect.</summary>
+        public RectTransform EndTurnRect => endTurnButton != null ? endTurnButton.transform as RectTransform : null;
+
         // Events
         public System.Action OnCombatStart;
         public System.Action OnCombatEnd;

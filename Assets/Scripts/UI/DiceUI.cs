@@ -23,7 +23,10 @@ namespace DiceOrbit.UI
         [SerializeField] private bool autoHideRollButton = true;
         [SerializeField] private bool useRollAnimation = true;
     [SerializeField] private CanvasGroup panelCanvasGroup;
-        
+
+        /// <summary>튜토리얼 하이라이트용 — 주사위 손패 패널 Rect.</summary>
+        public RectTransform PanelRect => panelCanvasGroup != null ? panelCanvasGroup.transform as RectTransform : null;
+
         // Runtime
         private List<DiceElement> diceElements = new List<DiceElement>();
         private DiceElement selectedElement;

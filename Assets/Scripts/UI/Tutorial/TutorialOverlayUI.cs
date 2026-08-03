@@ -113,7 +113,12 @@ namespace DiceOrbit.UI.Tutorial
         public static Rect GetScreenRect(RectTransform rt)
         {
             var corners = new Vector3[4];
-            rt.GetWorldCorners(corners); // Overlay 캔버스면 월드=스크린 픽셀
+            rt.GetWorldCorners(corners);
+            // 대상 캔버스 모드에 맞춰 스크린 픽셀로 변환 (Overlay면 cam=null → 그대로 스크린).
+            var canvas = rt.GetComponentInParent<Canvas>();
+            Camera cam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? canvas.worldCamera : null;
+            for (int i = 0; i < 4; i++)
+                corners[i] = RectTransformUtility.WorldToScreenPoint(cam, corners[i]);
             float xMin = Mathf.Min(corners[0].x, corners[2].x);
             float yMin = Mathf.Min(corners[0].y, corners[2].y);
             float xMax = Mathf.Max(corners[0].x, corners[2].x);
