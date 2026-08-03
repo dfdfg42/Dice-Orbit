@@ -131,6 +131,7 @@ namespace DiceOrbit.Core.Tutorial
             }
             _onMoved = null; _onSkill = null;
             ScreenBoxProvider.ClearAll();
+            DiceManager.Instance?.SetScriptedRoll(null);   // 잔여 통제 주사위가 실제 런으로 새지 않게
 
             PartyManager.Instance?.ClearAll();   // 데모 파티 제거 + 오브젝트 파괴
             foreach (var m in UnityEngine.Object.FindObjectsByType<Monster>(FindObjectsSortMode.None))

@@ -135,6 +135,7 @@ namespace DiceOrbit.Core
                 case GameState.Tutorial:
                 {
                     Debug.Log("[GameFlow] Enter Tutorial");
+                    _tutorialActive = true;
                     if (combatUI != null) combatUI.SetActive(true);
                     var scenario = Core.Tutorial.TutorialScenario.EnsureInstance();
                     var director = UI.Tutorial.TutorialDirector.EnsureInstance();
@@ -317,6 +318,7 @@ namespace DiceOrbit.Core
 
         public void OnEncounterCleared()
         {
+            if (_tutorialActive) return;   // 튜토리얼 전투 승리는 Director가 흐름을 잡는다 (Reward로 새지 않게)
             Debug.Log("[GameFlow] Encounter Cleared.");
 
             // 승리 확정 → 리타이어한 파티원 점감 부활 (스펙 §4: 전투 종료 후 부활)
@@ -388,6 +390,7 @@ namespace DiceOrbit.Core
 
         public void OnCombatDefeat()
         {
+            if (_tutorialActive) return;   // 튜토리얼 중 패배도 Director가 처리 (GameOver로 새지 않게)
             ChangeState(GameState.GameOver);
         }
 
@@ -539,11 +542,16 @@ namespace DiceOrbit.Core
         }
 
         // ── 튜토리얼 흐름 ──────────────────────────────────────
+        private bool _tutorialActive;           // 튜토리얼 전투 중 — 전투 종료가 Reward/GameOver로 새지 않게 가드
         private bool _tutorialAwaitingRecruit;
+
+        /// <summary>튜토리얼 전투 중인지 (전투 결과 라우팅 가드용).</summary>
+        public bool IsTutorialActive => _tutorialActive;
 
         /// <summary>튜토리얼 전투(1~12) 완료 → 데모 정리 → 실제 런(Recruit). step 13은 Recruit에서 이어짐(T7).</summary>
         private void OnTutorialCombatDone()
         {
+            _tutorialActive = false;
             Core.Tutorial.TutorialScenario.Instance?.Cleanup();
             _tutorialAwaitingRecruit = true;
             StartGameInternal();
@@ -552,6 +560,7 @@ namespace DiceOrbit.Core
         /// <summary>튜토리얼 스킵 → 완료 플래그 + 데모 정리 + 실제 런.</summary>
         private void FinishTutorialToRun()
         {
+            _tutorialActive = false;
             PlayerPrefs.SetInt("tutorial_done", 1); PlayerPrefs.Save();
             Core.Tutorial.TutorialScenario.Instance?.Cleanup();
             StartGameInternal();
