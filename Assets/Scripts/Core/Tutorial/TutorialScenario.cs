@@ -143,7 +143,7 @@ namespace DiceOrbit.Core.Tutorial
                     { Target = M, Advance = TutorialAdvance.Custom,
                       Done = () => cm == null || !cm.InCombat || cm.PlayerTurnActive },
                 new TutorialStep("이제 마무리! 남은 몬스터를 처치하세요.")
-                    { Advance = TutorialAdvance.Custom, Done = () => cm == null || !cm.InCombat },
+                    { NoSpotlight = true, Advance = TutorialAdvance.Custom, Done = () => cm == null || !cm.InCombat },
             };
         }
 
