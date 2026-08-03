@@ -10,15 +10,16 @@
 
 - **범위**: 첫 전투에서 — 주사위 굴림·배정, 이동/스킬(액티브) **턴 예산(이동 1·행동 1)**,
   캐릭터 **패시브 자동 발동**(전사=인접 아군, 도적=이동 거리), 몬스터 **의도·공격범위 타일** 읽기,
-  턴 종료·몬스터 턴.
+  턴 종료·몬스터 턴. **+ 전투 후 실제 런의 첫 캐릭터 선택(2명 고르기) 안내**.
 - **비범위**: 노드맵/런 구조, 유물/포션/모디파이어, 상점/이벤트, 로컬라이제이션. (이후 별도 스코프)
 
 ## 진입 & 흐름
 
 - 메인메뉴 `게임 시작`(StartGame) → `PlayerPrefs "tutorial_done"` **미완료 시** 확인 프롬프트:
   "튜토리얼을 하시겠어요? [예] [아니오]".
-- **예** → `GameState.Tutorial` 진입 → 튜토리얼 전투 → 완료 시 `tutorial_done=1` + **실제 런**(`StartGameFlow` → Recruit → Map).
-- **아니오** → 즉시 실제 런 (기존 StartGame 흐름).
+- **예** → `GameState.Tutorial` 진입 → 튜토리얼 전투(1부) → 승리 시 **실제 런 개시**(`StartGameFlow` → Recruit)
+  → 첫 캐릭터 선택 화면에서 **"2명 고르기" 안내(2부)** → 선택 완료 → `tutorial_done=1` → 이후 Map(정상).
+- **아니오** → 즉시 실제 런 (기존 StartGame 흐름, 안내 없음).
 - 완료 후엔 자동 프롬프트 안 뜸. (선택) 메인메뉴 "튜토리얼 다시보기" 버튼으로 언제든 재생(플래그 무시).
 - 오버레이 구석에 **"튜토리얼 스킵"** 최소 제공 → 즉시 실제 런.
 
@@ -61,6 +62,9 @@
    조건 감지. **단계 리스트는 코드에 정의**(무거운 SO 미사용; 후속 데이터화 여지).
    - 방어: 어떤 단계가 예외로 죽어도 전투/게임이 멈추지 않게 격리 → 최악의 경우 오버레이 제거 후
      자유 플레이 폴백.
+   - **상태 전환 지속**: 전투(Tutorial) → 실제 런(Recruit)는 BattleScene 내 상태 전환이라 Director가
+     그대로 유지되어 step 13(캐릭터 선택 안내)을 이어서 재생. `RecruitComplete`는 GameFlow의
+     `OnRecruitComplete`/CharacterSelectionUI 신호로 감지.
 3. **`TutorialOverlayUI`** (전용 Canvas, 최상위 sortingOrder): 전체 딤 + **스포트라이트 컷아웃**
    (대상 RectTransform/월드 오브젝트의 화면 영역만 밝게 + 테두리) + 말풍선(안내문 + "다음/확인").
    gateInput 시 대상 밖 클릭 차단(풀스크린 Raycast 블로커 + 대상 홀). 월드 오브젝트(캐릭터/몬스터/타일)는
@@ -69,7 +73,9 @@
 5. **최소 침습 알림**: CombatManager에 이동/스킬/턴 완료 알림이 없으면 추가(있으면 재사용),
    DiceManager에 굴림 고정 훅.
 
-## 단계 시퀀스 (12)
+## 단계 시퀀스 (13)
+
+**1부 — 튜토리얼 전투** (고정 데모, `GameState.Tutorial`)
 
 | # | 내용 | 하이라이트 | 진행조건 | 입력잠금 |
 |---|---|---|---|---|
@@ -86,19 +92,25 @@
 | 11 | 몬스터 턴 관전(색 타일 범위로 공격) | 몬스터·색 타일 | MonsterActed | - |
 | 12 | 마무리·승리 → "이제 진짜 모험!" | 몬스터 | CombatWon | - |
 
-승리 → 완료 처리(tutorial_done=1) → 데모 정리 → `StartGameFlow`(실제 런).
+**2부 — 첫 캐릭터 선택** (실제 런 `GameState.Recruit`, Director가 상태 전환 넘어 계속)
+
+| # | 내용 | 하이라이트 | 진행조건 | 입력잠금 |
+|---|---|---|---|---|
+| 13 | "여기서 파티에 넣을 **캐릭터 2명**을 고르세요" (각자 액티브·패시브 보유 — 1부 회상) | 캐릭터 선택 UI + 2/2 카운터 | RecruitComplete(2명 선택) | 경량(선택 UI만 허용) |
+
+승리 → 실제 런 개시(`StartGameFlow` → Recruit) → 13단계 안내 → 2명 선택 완료 → `tutorial_done=1` → 데모 정리 → 이후 Map(정상).
 
 ## 데이터 흐름
 
 ```
 StartGame → (프롬프트 "예") → GameFlow: GameState.Tutorial
   → 데모 셋업 스폰(전사+도적 인접, 약체 타일공격 몬스터, 통제 주사위)
-  → CombatManager 전투 개시
-  → TutorialDirector.Play(steps) 코루틴 (전투와 병행, 입력 게이팅)
-  → 각 단계 advance까지 대기 → CombatWon
-  → Director 종료 → 데모 정리 → tutorial_done=1
-  → StartGameFlow (실제 런: Recruit → Map)
+  → CombatManager 전투 개시 → TutorialDirector.Play(steps 1~12) (전투 병행, 입력 게이팅)
+  → CombatWon → 데모 전투 정리 → StartGameFlow (실제 런: Recruit)
+  → Director가 Recruit 상태 감지 → step 13 "2명 고르기" 안내 → RecruitComplete
+  → tutorial_done=1 → Director 종료 → 이후 Map (정상)
 ```
+(Tutorial·Recruit 모두 BattleScene 내 상태 전환이라 씬 리로드 없음 → Director가 전환을 넘어 지속.)
 
 ## 엣지 / 에러 처리
 
@@ -120,7 +132,8 @@ StartGame → (프롬프트 "예") → GameFlow: GameState.Tutorial
 - **신규**: `TutorialDirector.cs`, `TutorialStep.cs`, `TutorialOverlayUI.cs`, 튜토리얼 시작 프롬프트 UI,
   튜토리얼 데모 데이터(고정 EncounterDefinition/파티 참조).
 - **수정**: `GameFlowManager`(Tutorial 상태 + 프롬프트), `MainMenuUI`(다시보기 버튼, 선택),
-  `CombatManager`(이동/스킬/턴 알림 필요 시), `DiceManager`(굴림 고정 훅).
+  `CombatManager`(이동/스킬/턴 알림 필요 시), `DiceManager`(굴림 고정 훅),
+  `CharacterSelectionUI`(step 13 하이라이트 대상 + 2명 선택 완료 신호).
 
 ## 비범위 / 후속
 
