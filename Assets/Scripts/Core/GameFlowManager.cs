@@ -136,6 +136,9 @@ namespace DiceOrbit.Core
                 {
                     Debug.Log("[GameFlow] Enter Tutorial");
                     _tutorialActive = true;
+                    // 씬의 모집 UI는 기본 활성 — 튜토리얼도 Recruit를 건너뛰는 흐름이라 명시적으로 숨긴다.
+                    // (참고: fix/continue-recruit-ui 커밋 3387cd8 — 같은 원인의 파티 +2 버그)
+                    if (characterSelectionUI != null) characterSelectionUI.Hide();
                     if (combatUI != null) combatUI.SetActive(true);
                     var scenario = Core.Tutorial.TutorialScenario.EnsureInstance();
                     var director = UI.Tutorial.TutorialDirector.EnsureInstance();
