@@ -132,6 +132,12 @@ namespace DiceOrbit.Core
                     UI.EventUI.Instance?.Show();
                     break;
 
+                case GameState.Tutorial:
+                    Debug.Log("[GameFlow] Enter Tutorial (스텁 — 데모/Director는 후속 태스크)");
+                    // 임시: 아직 튜토리얼 미구현이므로 그냥 실제 런으로 넘어간다.
+                    StartGameInternal();
+                    break;
+
                 case GameState.Combat:
                     StartCombat();
                     break;
@@ -381,6 +387,19 @@ namespace DiceOrbit.Core
         // === 게임 시작/재시작 ===
 
         public void StartGame()
+        {
+            // 튜토리얼 미완료 시 물어본다. 예 → 튜토리얼, 아니오 → 기존 흐름.
+            if (PlayerPrefs.GetInt("tutorial_done", 0) == 0)
+            {
+                UI.Tutorial.TutorialPromptUI.Show(
+                    onYes: () => ChangeState(GameState.Tutorial),
+                    onNo:  () => StartGameInternal());
+                return;
+            }
+            StartGameInternal();
+        }
+
+        private void StartGameInternal()
         {
             Debug.Log("[GameFlow] StartGame called");
             RunSaveService.Delete();   // 새 게임 = 기존 이어하기 폐기
