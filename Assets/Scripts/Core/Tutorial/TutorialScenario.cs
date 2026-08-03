@@ -52,6 +52,17 @@ namespace DiceOrbit.Core.Tutorial
             Warrior = spawner?.Spawn(warriorPreset, 0, tileCount);
             Rogue   = spawner?.Spawn(roguePreset,   1, tileCount);
 
+            // 캐릭터 지연 배치(Character.InitializeAfterDelay)가 끝난 뒤 전투 개시.
+            // 인트로의 타일 이동과 레이스가 나면 캐릭터가 엉뚱한(공중) 위치에 고정된다.
+            StartCoroutine(StartCombatAfterSettle());
+        }
+
+        private System.Collections.IEnumerator StartCombatAfterSettle()
+        {
+            float t = 0f;
+            while ((Warrior == null || Warrior.CurrentTile == null) && t < 1f) { t += Time.deltaTime; yield return null; }
+            yield return null; // 여유 한 프레임
+
             if (demoMonster != null && CombatManager.Instance != null)
             {
                 var enc = new EncounterDefinition { MonsterPresets = new List<MonsterPreset> { demoMonster } };
