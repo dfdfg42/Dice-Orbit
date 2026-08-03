@@ -149,12 +149,33 @@ namespace DiceOrbit.Core
                     break;
 
                 case GameState.Recruit:
+                {
                     Debug.Log("Enter Recruit State");
-                    if (characterSelectionUI != null)
+                    if (characterSelectionUI != null) characterSelectionUI.Show();
+
+                    // 튜토리얼 2부: 전투 튜토리얼 직후 첫 Recruit에서 "2명 고르기" 안내(step 13).
+                    if (_tutorialAwaitingRecruit)
                     {
-                        characterSelectionUI.Show();
+                        _tutorialAwaitingRecruit = false;
+                        var csu = characterSelectionUI;
+                        var step13 = new System.Collections.Generic.List<UI.Tutorial.TutorialStep>
+                        {
+                            new UI.Tutorial.TutorialStep("여기서 파티에 넣을 캐릭터 2명을 고르세요. 각 캐릭터는 액티브 스킬과 패시브를 가져요 (방금 배운 것처럼).")
+                            {
+                                Target = () => csu != null ? csu.CardContainerRect : null,
+                                Advance = UI.Tutorial.TutorialAdvance.Custom,
+                                Done = () => csu == null || csu.RemainingToSelect == 0,
+                                GateInput = false
+                            }
+                        };
+                        UI.Tutorial.TutorialDirector.EnsureInstance().Play(step13, () =>
+                        {
+                            PlayerPrefs.SetInt("tutorial_done", 1); PlayerPrefs.Save();
+                            Debug.Log("[Tutorial] 완료 — 이후 정상 진행");
+                        });
                     }
                     break;
+                }
 
                 case GameState.Reward:
                     if (characterSelectionUI != null) characterSelectionUI.Hide();
