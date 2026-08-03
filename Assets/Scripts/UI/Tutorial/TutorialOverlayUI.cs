@@ -98,11 +98,24 @@ namespace DiceOrbit.UI.Tutorial
             SetRect(dim[2], 0, yMin, Mathf.Max(0, r.xMin), bandH);     // left
             SetRect(dim[3], r.xMax, yMin, Mathf.Max(0, w - r.xMax), bandH); // right
 
-            // 말풍선: 대상 아래(공간 없으면 위), 중심 피벗.
-            float bubbleH = bubble.sizeDelta.y;
-            float bx = Mathf.Clamp(r.center.x, 300, w - 300);
-            float by = r.yMin - 20 - bubbleH * 0.5f;
-            if (by - bubbleH * 0.5f < 0) by = r.yMax + 20 + bubbleH * 0.5f;
+            // 말풍선 위치. 유효 대상이 있으면 그 아래(공간 없으면 위), 없으면(전체 딤) 화면 하단-중앙.
+            float bubbleH = bubble.sizeDelta.y, bubbleW = bubble.sizeDelta.x;
+            bool hasTarget = r.xMax > 0f && r.yMax > 0f && r.width > 0f && r.height > 0f;
+            float bx, by;
+            if (hasTarget)
+            {
+                bx = r.center.x;
+                by = r.yMin - 24 - bubbleH * 0.5f;                                  // 대상 아래
+                if (by - bubbleH * 0.5f < 24) by = r.yMax + 24 + bubbleH * 0.5f;    // 아래 공간 없으면 위
+            }
+            else
+            {
+                bx = w * 0.5f;
+                by = h * 0.30f;
+            }
+            // 항상 화면 안에 완전히 들어오도록 클램프
+            bx = Mathf.Clamp(bx, bubbleW * 0.5f + 16, w - bubbleW * 0.5f - 16);
+            by = Mathf.Clamp(by, bubbleH * 0.5f + 16, h - bubbleH * 0.5f - 16);
             bubble.anchorMin = bubble.anchorMax = new Vector2(0, 0);
             bubble.pivot = new Vector2(0.5f, 0.5f);
             bubble.anchoredPosition = new Vector2(bx, by);
