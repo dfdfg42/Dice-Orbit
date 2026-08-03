@@ -421,15 +421,10 @@ namespace DiceOrbit.Core
 
         public void StartGame()
         {
-            // 튜토리얼 미완료 시 물어본다. 예 → 튜토리얼, 아니오 → 기존 흐름.
-            if (PlayerPrefs.GetInt("tutorial_done", 0) == 0)
-            {
-                UI.Tutorial.TutorialPromptUI.Show(
-                    onYes: () => StartTutorial(),
-                    onNo:  () => StartGameInternal());
-                return;
-            }
-            StartGameInternal();
+            // 매번 물어본다. 예 → 튜토리얼, 아니오 → 기존 흐름.
+            UI.Tutorial.TutorialPromptUI.Show(
+                onYes: () => StartTutorial(),
+                onNo:  () => StartGameInternal());
         }
 
         private void StartGameInternal()

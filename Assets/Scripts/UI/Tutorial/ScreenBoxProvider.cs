@@ -15,16 +15,23 @@ namespace DiceOrbit.UI.Tutorial
 
         private static readonly Dictionary<Transform, ScreenBoxProvider> _cache = new Dictionary<Transform, ScreenBoxProvider>();
 
-        public static RectTransform ForWorld(Transform world)
+        public static RectTransform ForWorld(Transform world) => ForWorld(world, new Vector2(180, 250));
+
+        public static RectTransform ForWorld(Transform world, Vector2 boxSize)
         {
             if (world == null) return null;
-            if (_cache.TryGetValue(world, out var existing) && existing != null) return existing._rt;
+            if (_cache.TryGetValue(world, out var existing) && existing != null)
+            {
+                existing.size = boxSize;   // 크기 갱신
+                return existing._rt;
+            }
 
             var canvas = TutorialOverlayUI.EnsureInstance();
             var go = new GameObject("ScreenBox", typeof(RectTransform));
             go.transform.SetParent(canvas.transform, false);
             var self = go.AddComponent<ScreenBoxProvider>();
             self.world = world;
+            self.size = boxSize;
             self._rt = (RectTransform)go.transform;
             self.Sync();
             _cache[world] = self;

@@ -31,6 +31,19 @@ namespace DiceOrbit.UI
         private List<DiceElement> diceElements = new List<DiceElement>();
         private DiceElement selectedElement;
         private bool panelVisible = false;
+        private int? _tutorialLockValue;   // 튜토리얼: 이 눈 값 주사위만 선택 가능(null=제한없음)
+
+        /// <summary>튜토리얼: 지정 눈 값 주사위만 선택 가능하게 잠금. null이면 해제.</summary>
+        public void SetTutorialDiceLock(int? value)
+        {
+            _tutorialLockValue = value;
+            foreach (var element in diceElements)
+            {
+                if (element == null || element.Data == null) continue;
+                bool locked = value.HasValue && element.Data.Value != value.Value;
+                element.SetSkillUnusableHint(locked);   // 잠긴 주사위 시각 표시(재사용)
+            }
+        }
 
         private void Awake()
         {
@@ -180,6 +193,8 @@ namespace DiceOrbit.UI
         public void HandleDiceElementClicked(DiceElement element)
         {
             if (element == null || element.Data == null || element.Data.State != DiceState.Available) return;
+            // 튜토리얼 잠금: 지정 눈 외에는 선택 불가
+            if (_tutorialLockValue.HasValue && element.Data.Value != _tutorialLockValue.Value) return;
 
             if (selectedElement != null && selectedElement != element)
             {
