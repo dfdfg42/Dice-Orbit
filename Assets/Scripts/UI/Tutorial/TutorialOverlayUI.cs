@@ -70,7 +70,7 @@ namespace DiceOrbit.UI.Tutorial
         }
 
         /// <param name="onNext">Confirm 진행 단계에서만 non-null → "다음" 버튼 노출.</param>
-        public void ShowStep(string instruction, RectTransform screenTarget, bool gateInput, Action onNext, Action onSkipAction)
+        public void ShowStep(string instruction, RectTransform screenTarget, bool gateInput, bool noSpotlight, Action onNext, Action onSkipAction)
         {
             gameObject.SetActive(true);
             bubbleText.text = instruction;
@@ -80,7 +80,15 @@ namespace DiceOrbit.UI.Tutorial
             nextButton.onClick.RemoveAllListeners();
             if (onNext != null) nextButton.onClick.AddListener(() => onNext());
 
-            foreach (var d in dim) d.raycastTarget = gateInput; // 잠금 아니면 클릭 통과(정보용 단계)
+            if (noSpotlight)
+            {
+                // 딤 없이 화면 전체 밝게 — 클릭도 전부 통과. 말풍선만 하단-중앙에.
+                foreach (var d in dim) { d.color = new Color(0f, 0f, 0f, 0f); d.raycastTarget = false; }
+                HighlightScreenRect(new Rect(-9999, -9999, 0, 0));
+                return;
+            }
+
+            foreach (var d in dim) { d.color = Dim; d.raycastTarget = gateInput; } // 잠금 아니면 클릭 통과
 
             if (screenTarget != null) HighlightScreenRect(GetScreenRect(screenTarget));
             else HighlightScreenRect(new Rect(-9999, -9999, 0, 0)); // 대상 없음 → 전체 딤

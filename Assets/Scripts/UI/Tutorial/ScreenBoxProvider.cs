@@ -10,7 +10,7 @@ namespace DiceOrbit.UI.Tutorial
     public class ScreenBoxProvider : MonoBehaviour
     {
         public Transform world;
-        public Vector2 size = new Vector2(170, 170);
+        public Vector2 size = new Vector2(180, 250);   // 캐릭터/몬스터를 넉넉히 덮게 세로로 크게
         private RectTransform _rt;
 
         private static readonly Dictionary<Transform, ScreenBoxProvider> _cache = new Dictionary<Transform, ScreenBoxProvider>();

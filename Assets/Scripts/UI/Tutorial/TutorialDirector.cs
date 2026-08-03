@@ -63,15 +63,19 @@ namespace DiceOrbit.UI.Tutorial
                     step.Instruction,
                     SafeTarget(step),
                     step.GateInput,
+                    step.NoSpotlight,
                     onNext: isConfirm ? (Action)(() => _confirmPressed = true) : null,
                     onSkipAction: OnSkipRequested);
 
                 // 진행조건 대기: 매 프레임 대상 rect 갱신 + 조건 검사.
                 while (!_aborted)
                 {
-                    var target = SafeTarget(step);
-                    if (target != null)
-                        overlay.HighlightScreenRect(TutorialOverlayUI.GetScreenRect(target));
+                    if (!step.NoSpotlight)
+                    {
+                        var target = SafeTarget(step);
+                        if (target != null)
+                            overlay.HighlightScreenRect(TutorialOverlayUI.GetScreenRect(target));
+                    }
 
                     bool done = isConfirm ? _confirmPressed : SafeDone(step);
                     if (done) break;

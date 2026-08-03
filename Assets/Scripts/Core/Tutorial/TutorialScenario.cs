@@ -113,11 +113,11 @@ namespace DiceOrbit.Core.Tutorial
                 new TutorialStep("이동은 턴당 1번, 행동(스킬)도 턴당 1번만 가능해요.")
                     { Target = Action, GateInput = true },
                 new TutorialStep("전사 좌우에 아군이 있으면 공격 +50%! 지금 도적이 옆에 있죠. 주사위를 골라 스킬로 몬스터를 공격하세요.")
-                    { Target = Action, Advance = TutorialAdvance.Custom, Done = () => warriorSkill },
+                    { NoSpotlight = true, Advance = TutorialAdvance.Custom, Done = () => warriorSkill },
                 new TutorialStep("이제 도적! 멀리 이동할수록 다음 공격이 강해져요(1칸당 +25%). 도적을 골라 주사위로 멀리 이동해보세요.")
                     { Target = R, Advance = TutorialAdvance.Custom, Done = () => rogueMoved },
                 new TutorialStep("이동한 만큼 강해진 공격으로 몬스터를 타격하세요!")
-                    { Target = Action, Advance = TutorialAdvance.Custom, Done = () => rogueSkill },
+                    { NoSpotlight = true, Advance = TutorialAdvance.Custom, Done = () => rogueSkill },
                 new TutorialStep("방금 전사·도적 효과는 모두 '패시브' — 버튼 없이 조건이 맞으면 자동 발동해요. 스킬 버튼은 '액티브'!")
                     { GateInput = true },
                 new TutorialStep("행동을 마쳤으면 [턴 종료]로 몬스터 턴을 넘기세요.")

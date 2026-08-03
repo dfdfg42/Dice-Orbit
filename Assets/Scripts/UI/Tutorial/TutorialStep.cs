@@ -17,6 +17,7 @@ namespace DiceOrbit.UI.Tutorial
         public TutorialAdvance Advance = TutorialAdvance.Confirm;
         public Func<bool> Done;              // Advance=Custom일 때 진행조건
         public bool GateInput;               // 대상 외 입력 차단
+        public bool NoSpotlight;             // 딤/스포트라이트 없이 화면 전체를 밝게 (공격 등 전체를 봐야 하는 단계)
         public Action OnEnter;               // 단계 진입 시 1회 (통제 주사위 세팅 등)
 
         public TutorialStep(string instruction) { Instruction = instruction; }
