@@ -22,6 +22,10 @@ namespace DiceOrbit.Core
         private List<DiceData> currentDice = new List<DiceData>();
         private int diceIdCounter = 0;
 
+        // 튜토리얼 강제 굴림 — 세팅되면 다음 RollDice가 이 값 사용 후 소모
+        private int[] _scriptedRoll;
+        public void SetScriptedRoll(int[] faces) => _scriptedRoll = faces;
+
         // Forecast bias (일기예보 스킬)
         private int _forecastBiasPercent = 0;
         private int _forecastBiasTurnsLeft = 0;
@@ -76,8 +80,16 @@ namespace DiceOrbit.Core
             }
             else
             {
+                int i = 0;
                 foreach (var inst in deck)
-                    currentDice.Add(new DiceData(diceIdCounter++, inst.RollFace(), inst));
+                {
+                    int face = (_scriptedRoll != null && i < _scriptedRoll.Length)
+                        ? _scriptedRoll[i]
+                        : inst.RollFace();
+                    currentDice.Add(new DiceData(diceIdCounter++, face, inst));
+                    i++;
+                }
+                _scriptedRoll = null; // 1회 소모
             }
 
             // 일기예보 바이어스 (기존 유지)
