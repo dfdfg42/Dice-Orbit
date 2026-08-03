@@ -68,8 +68,9 @@ namespace DiceOrbit.Core.Tutorial
                 var enc = new EncounterDefinition { MonsterPresets = new List<MonsterPreset> { demoMonster } };
                 CombatManager.Instance.StartEncounter(enc, 1); // 몬스터 스폰 + 인트로 + 전투 개시
                 DemoMonster = CombatManager.Instance.ActiveMonsters.FirstOrDefault(m => m != null);
-                // 턴1 통제 주사위 (전사 스킬 조건 + 도적 원거리 이동6). 인트로 후 StartPlayerTurn의 자동 굴림이 소모.
-                DiceManager.Instance?.SetScriptedRoll(new[] { 4, 5, 6, 6 });
+                // 턴1 고정 주사위: 전사 대검(4↑)=5, 도적 원거리 이동=6, 도적 기습(1~2)=2, 여분=3.
+                // 인트로 후 StartPlayerTurn의 자동 굴림이 이 값을 소모(1회).
+                DiceManager.Instance?.SetScriptedRoll(new[] { 5, 6, 2, 3 });
             }
             else
             {
@@ -112,11 +113,11 @@ namespace DiceOrbit.Core.Tutorial
                       Done = () => CharacterActionUI.Instance != null && CharacterActionUI.Instance.IsShowingCharacter(Warrior) },
                 new TutorialStep("이동은 턴당 1번, 행동(스킬)도 턴당 1번만 가능해요.")
                     { Target = Action, GateInput = true },
-                new TutorialStep("전사 좌우에 아군이 있으면 공격 +50%! 지금 도적이 옆에 있죠. 주사위를 골라 스킬로 몬스터를 공격하세요.")
+                new TutorialStep("전사 좌우에 아군이 있으면 공격 +50%! 지금 도적이 옆에 있죠. <b>눈 5</b> 주사위로 전사의 [대검](4 이상)을 써서 몬스터를 공격하세요.")
                     { NoSpotlight = true, Advance = TutorialAdvance.Custom, Done = () => warriorSkill },
-                new TutorialStep("이제 도적! 멀리 이동할수록 다음 공격이 강해져요(1칸당 +25%). 도적을 골라 주사위로 멀리 이동해보세요.")
+                new TutorialStep("이제 도적을 클릭하고, <b>눈 6</b> 주사위로 멀리 이동시키세요. 멀리 갈수록 다음 공격이 강해져요(1칸당 +25%).")
                     { Target = R, Advance = TutorialAdvance.Custom, Done = () => rogueMoved },
-                new TutorialStep("이동한 만큼 강해진 공격으로 몬스터를 타격하세요!")
+                new TutorialStep("<b>눈 2</b> 주사위로 도적의 [기습](1~2)을 써서 몬스터를 공격하세요! 방금 이동한 만큼 큰 피해가 들어갑니다.")
                     { NoSpotlight = true, Advance = TutorialAdvance.Custom, Done = () => rogueSkill },
                 new TutorialStep("방금 전사·도적 효과는 모두 '패시브' — 버튼 없이 조건이 맞으면 자동 발동해요. 스킬 버튼은 '액티브'!")
                     { GateInput = true },
