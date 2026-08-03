@@ -422,7 +422,7 @@ namespace DiceOrbit.Core
             if (PlayerPrefs.GetInt("tutorial_done", 0) == 0)
             {
                 UI.Tutorial.TutorialPromptUI.Show(
-                    onYes: () => ChangeState(GameState.Tutorial),
+                    onYes: () => StartTutorial(),
                     onNo:  () => StartGameInternal());
                 return;
             }
@@ -528,6 +528,12 @@ namespace DiceOrbit.Core
                 StartCoroutine(ContinueGameFlowNextFrame());
             }
 
+            if (pendingTutorial && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
+            {
+                pendingTutorial = false;
+                StartCoroutine(EnterTutorialNextFrame());
+            }
+
             // 저장된 환경설정(볼륨/전체화면) 적용 — 씬의 AudioManager가 새로 뜬 뒤에
             UI.SettingsUI.ApplySavedSettings();
 
@@ -544,9 +550,34 @@ namespace DiceOrbit.Core
         // ── 튜토리얼 흐름 ──────────────────────────────────────
         private bool _tutorialActive;           // 튜토리얼 전투 중 — 전투 종료가 Reward/GameOver로 새지 않게 가드
         private bool _tutorialAwaitingRecruit;
+        private bool pendingTutorial;           // 씬 로드 대기 (BattleScene 로드 후 튜토리얼 진입)
 
         /// <summary>튜토리얼 전투 중인지 (전투 결과 라우팅 가드용).</summary>
         public bool IsTutorialActive => _tutorialActive;
+
+        /// <summary>튜토리얼 시작 — gameplay 씬(전투 시스템)을 먼저 로드한 뒤 Tutorial 상태로.</summary>
+        private void StartTutorial()
+        {
+            RunSaveService.Delete();   // 튜토리얼 → 새 게임 (기존 이어하기 폐기)
+            if (!string.IsNullOrWhiteSpace(gameplaySceneName))
+            {
+                var activeScene = SceneManager.GetActiveScene();
+                if (activeScene.name != gameplaySceneName)
+                {
+                    pendingTutorial = true;
+                    SceneManager.LoadScene(gameplaySceneName);
+                    return;
+                }
+            }
+            StartCoroutine(EnterTutorialNextFrame());
+        }
+
+        /// <summary>씬 오브젝트 Start()가 돈 뒤(궤도 타일 생성 완료) 튜토리얼 진입.</summary>
+        private System.Collections.IEnumerator EnterTutorialNextFrame()
+        {
+            yield return null;
+            ChangeState(GameState.Tutorial);
+        }
 
         /// <summary>튜토리얼 전투(1~12) 완료 → 데모 정리 → 실제 런(Recruit). step 13은 Recruit에서 이어짐(T7).</summary>
         private void OnTutorialCombatDone()
