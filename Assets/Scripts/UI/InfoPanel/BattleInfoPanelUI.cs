@@ -100,6 +100,7 @@ namespace DiceOrbit.UI
                 // 패널 숨김 시 월드 인디케이터/타일 패널도 제거
                 Visuals.PassiveRangeIndicator.Instance?.Hide();
                 Visuals.IntentTileLiftEffect.Instance?.Hide();
+                Visuals.MonsterThreatOutline.Instance?.Hide();
                 TileInfoPanelUI.Instance?.Hide();
             }
             if (visible) _lastTargetKey = new object();              // 다시 켜질 때 강제 리렌더
@@ -113,23 +114,33 @@ namespace DiceOrbit.UI
         {
             Visuals.PassiveRangeIndicator.EnsureInstance();
             Visuals.IntentTileLiftEffect.EnsureInstance();
+            Visuals.MonsterThreatOutline.EnsureInstance();
             var brackets = Visuals.PassiveRangeIndicator.Instance;
             var lift = Visuals.IntentTileLiftEffect.Instance;
+            var outline = Visuals.MonsterThreatOutline.Instance;
 
             if (unit is Core.Character ch)
             {
                 brackets?.Show(ch);
                 lift?.Hide();
+                outline?.Hide();
             }
             else if (unit is Core.Monster m)
             {
-                lift?.Show(m);
+                // 몬스터 → 공격 예정 타일 '둘레 외곽선'(정체성 색). 기존 리프트 대신 사용.
+                var tiles = Visuals.IntentTileLiftEffect.CollectIntentTiles(m);
+                Color col = Visuals.MonsterIdentityManager.Instance != null
+                    ? Visuals.MonsterIdentityManager.Instance.GetColor(m)
+                    : new Color(1f, 0.45f, 0.3f, 1f);
+                outline?.ShowTiles(tiles, col);
+                lift?.Hide();
                 brackets?.Hide();
             }
             else
             {
                 brackets?.Hide();
                 lift?.Hide();
+                outline?.Hide();
             }
         }
 
