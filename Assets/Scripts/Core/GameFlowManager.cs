@@ -161,12 +161,11 @@ namespace DiceOrbit.Core
                     if (_tutorialAwaitingRecruit)
                     {
                         _tutorialAwaitingRecruit = false;
-                        var csu = characterSelectionUI;
                         var step13 = new System.Collections.Generic.List<UI.Tutorial.TutorialStep>
                         {
                             new UI.Tutorial.TutorialStep("여기서 파티에 넣을 캐릭터 2명을 고르세요. 각 캐릭터는 액티브 스킬과 패시브를 가져요 (방금 배운 것처럼). [다음]을 눌러 시작하세요.")
                             {
-                                Target = () => csu != null ? csu.CardContainerRect : null,
+                                NoSpotlight = true, // 전체 화면
                                 GateInput = false   // Confirm(기본) — "다음" 버튼으로 안내를 닫는다
                             }
                         };

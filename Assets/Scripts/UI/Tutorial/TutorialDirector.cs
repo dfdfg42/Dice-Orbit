@@ -41,6 +41,7 @@ namespace DiceOrbit.UI.Tutorial
         {
             _aborted = true;
             DiceUI.Instance?.SetTutorialDiceLock(null);
+            CharacterActionUI.Instance?.SetTutorialActionLock(TutorialActionLock.None);
             TutorialOverlayUI.Instance?.Hide();
             StopAllCoroutines();
         }
@@ -69,6 +70,7 @@ namespace DiceOrbit.UI.Tutorial
                     onSkipAction: OnSkipRequested);
 
                 DiceUI.Instance?.SetTutorialDiceLock(step.OnlyDieValue);   // 가이드된 눈만 선택 가능
+                CharacterActionUI.Instance?.SetTutorialActionLock(step.ActionLock);   // 이동/스킬 제한
 
                 // 진행조건 대기: 매 프레임 대상 rect 갱신 + 조건 검사.
                 while (!_aborted)
@@ -89,6 +91,7 @@ namespace DiceOrbit.UI.Tutorial
             }
 
             DiceUI.Instance?.SetTutorialDiceLock(null);
+            CharacterActionUI.Instance?.SetTutorialActionLock(TutorialActionLock.None);
             overlay.Hide();
             var cb = _onComplete; _onComplete = null;
             cb?.Invoke();
@@ -108,6 +111,7 @@ namespace DiceOrbit.UI.Tutorial
             // 스킵 = 튜토리얼 포기. 호출자가 완료 플래그 세팅 + 실제 런 폴백을 처리.
             _aborted = true;
             DiceUI.Instance?.SetTutorialDiceLock(null);
+            CharacterActionUI.Instance?.SetTutorialActionLock(TutorialActionLock.None);
             TutorialOverlayUI.Instance?.Hide();
             StopAllCoroutines();
             TutorialSkipHandler?.Invoke();

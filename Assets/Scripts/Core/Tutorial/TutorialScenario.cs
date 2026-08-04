@@ -104,6 +104,7 @@ namespace DiceOrbit.Core.Tutorial
                 var om = UnityEngine.Object.FindAnyObjectByType<OrbitManager>();
                 return om != null ? ScreenBoxProvider.ForWorld(om.transform, new Vector2(1050, 720)) : null;
             };
+            Func<RectTransform> Info = () => BattleInfoPanelUI.Instance != null ? BattleInfoPanelUI.Instance.PanelRect : null;
 
             return new List<TutorialStep>
             {
@@ -112,8 +113,10 @@ namespace DiceOrbit.Core.Tutorial
                 // 몬스터 → 필드(공격범위) 순서로 각각 보게
                 new TutorialStep("먼저 몬스터를 보세요. 머리 위 아이콘 = 다음 턴에 할 행동이에요.")
                     { Target = M, GateInput = true },
+                new TutorialStep("오른쪽 정보 패널에 몬스터의 상세 정보(체력·다음 행동 등)가 나와요.")
+                    { Target = Info, GateInput = true, OnEnter = () => BattleInfoPanelUI.Instance?.ShowUnitExternal(DemoMonster) },
                 new TutorialStep("이제 필드를 보세요. 바닥의 색칠된 타일 = 그 공격이 닿는 범위예요. 그 위에 있는 캐릭터가 맞습니다.")
-                    { Target = Field, GateInput = true },
+                    { Target = Field, GateInput = true, OnEnter = () => BattleInfoPanelUI.Instance?.ClearUnitExternal(DemoMonster) },
                 new TutorialStep("매 턴 주사위가 자동으로 굴려집니다. 이번 턴에 쓸 자원이에요.")
                     { Target = Dice, GateInput = true },
                 new TutorialStep("전사를 클릭하세요.")
@@ -123,24 +126,24 @@ namespace DiceOrbit.Core.Tutorial
                     { Target = Action, GateInput = true },
                 // 공격(전체 화면) + 지정 눈만 선택 가능
                 new TutorialStep("전사 좌우에 아군이 있으면 공격 +50%! 지금 도적이 옆에 있죠. <b>눈 5</b> 주사위로 전사의 [대검]을 써서 몬스터를 공격하세요.")
-                    { NoSpotlight = true, OnlyDieValue = 5, Advance = TutorialAdvance.Custom, Done = () => warriorSkill },
+                    { NoSpotlight = true, OnlyDieValue = 5, ActionLock = TutorialActionLock.SkillOnly, Advance = TutorialAdvance.Custom, Done = () => warriorSkill },
                 // 도적 선택(스포트라이트)
                 new TutorialStep("이번엔 도적을 클릭하세요.")
                     { Target = R, Advance = TutorialAdvance.Custom,
                       Done = () => CharacterActionUI.Instance != null && CharacterActionUI.Instance.IsShowingCharacter(Rogue) },
                 // 이동(전체 화면) + 눈 6만
                 new TutorialStep("<b>눈 6</b> 주사위로 도적을 멀리 이동시키세요. 멀리 갈수록 다음 공격이 강해져요(1칸당 +25%).")
-                    { NoSpotlight = true, OnlyDieValue = 6, Advance = TutorialAdvance.Custom, Done = () => rogueMoved },
+                    { NoSpotlight = true, OnlyDieValue = 6, ActionLock = TutorialActionLock.MoveOnly, Advance = TutorialAdvance.Custom, Done = () => rogueMoved },
                 // 공격(전체 화면) + 눈 2만
                 new TutorialStep("<b>눈 2</b> 주사위로 도적의 [기습]을 써서 몬스터를 공격하세요! 방금 이동한 만큼 큰 피해가 들어갑니다.")
-                    { NoSpotlight = true, OnlyDieValue = 2, Advance = TutorialAdvance.Custom, Done = () => rogueSkill },
+                    { NoSpotlight = true, OnlyDieValue = 2, ActionLock = TutorialActionLock.SkillOnly, Advance = TutorialAdvance.Custom, Done = () => rogueSkill },
                 new TutorialStep("방금 전사·도적 효과는 모두 '패시브' — 버튼 없이 조건이 맞으면 자동 발동해요. 스킬 버튼은 '액티브'!")
                     { GateInput = true },
                 new TutorialStep("행동을 마쳤으면 [턴 종료]로 몬스터 턴을 넘기세요.")
                     { Target = EndTurn, Advance = TutorialAdvance.Custom,
                       Done = () => cm == null || !cm.InCombat || !cm.PlayerTurnActive },
                 new TutorialStep("예고한 색 타일 범위로 몬스터가 공격합니다! (그 위 캐릭터가 피격)")
-                    { Target = M, Advance = TutorialAdvance.Custom,
+                    { NoSpotlight = true, Advance = TutorialAdvance.Custom,
                       Done = () => cm == null || !cm.InCombat || cm.PlayerTurnActive },
                 new TutorialStep("이제 마무리! 남은 몬스터를 처치하세요.")
                     { NoSpotlight = true, Advance = TutorialAdvance.Custom, Done = () => cm == null || !cm.InCombat },
@@ -160,6 +163,7 @@ namespace DiceOrbit.Core.Tutorial
             ScreenBoxProvider.ClearAll();
             DiceManager.Instance?.SetScriptedRoll(null);   // 잔여 통제 주사위가 실제 런으로 새지 않게
             DiceUI.Instance?.SetTutorialDiceLock(null);    // 주사위 잠금 해제(실제 런 무영향)
+            CharacterActionUI.Instance?.SetTutorialActionLock(TutorialActionLock.None);
 
             PartyManager.Instance?.ClearAll();   // 데모 파티 제거 + 오브젝트 파괴
             foreach (var m in UnityEngine.Object.FindObjectsByType<Monster>(FindObjectsSortMode.None))

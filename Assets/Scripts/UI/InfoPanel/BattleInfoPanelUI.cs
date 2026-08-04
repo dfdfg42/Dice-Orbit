@@ -21,6 +21,9 @@ namespace DiceOrbit.UI
     {
         public static BattleInfoPanelUI Instance { get; private set; }
 
+        /// <summary>튜토리얼 하이라이트용 — 정보 패널 rect.</summary>
+        public RectTransform PanelRect => transform as RectTransform;
+
         [Header("헤더 슬롯 (씬에서 배치)")]
         [SerializeField] private TextMeshProUGUI nameText;
         [SerializeField] private TextMeshProUGUI hpText;
