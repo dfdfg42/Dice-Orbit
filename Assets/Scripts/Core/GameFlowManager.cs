@@ -132,17 +132,51 @@ namespace DiceOrbit.Core
                     UI.EventUI.Instance?.Show();
                     break;
 
+                case GameState.Tutorial:
+                {
+                    Debug.Log("[GameFlow] Enter Tutorial");
+                    _tutorialActive = true;
+                    // 씬의 모집 UI는 기본 활성 — 튜토리얼도 Recruit를 건너뛰는 흐름이라 명시적으로 숨긴다.
+                    // (참고: fix/continue-recruit-ui 커밋 3387cd8 — 같은 원인의 파티 +2 버그)
+                    if (characterSelectionUI != null) characterSelectionUI.Hide();
+                    if (combatUI != null) combatUI.SetActive(true);
+                    var scenario = Core.Tutorial.TutorialScenario.EnsureInstance();
+                    var director = UI.Tutorial.TutorialDirector.EnsureInstance();
+                    director.TutorialSkipHandler = FinishTutorialToRun;   // 스킵 → 실제 런
+                    scenario.SpawnDemo();
+                    director.Play(scenario.BuildCombatSteps(), OnTutorialCombatDone);
+                    break;
+                }
+
                 case GameState.Combat:
                     StartCombat();
                     break;
 
                 case GameState.Recruit:
+                {
                     Debug.Log("Enter Recruit State");
-                    if (characterSelectionUI != null)
+                    if (characterSelectionUI != null) characterSelectionUI.Show();
+
+                    // 튜토리얼 2부: 전투 튜토리얼 직후 첫 Recruit에서 "2명 고르기" 안내(step 13).
+                    if (_tutorialAwaitingRecruit)
                     {
-                        characterSelectionUI.Show();
+                        _tutorialAwaitingRecruit = false;
+                        var step13 = new System.Collections.Generic.List<UI.Tutorial.TutorialStep>
+                        {
+                            new UI.Tutorial.TutorialStep("여기서 파티에 넣을 캐릭터 2명을 고르세요. 각 캐릭터는 액티브 스킬과 패시브를 가져요 (방금 배운 것처럼). [다음]을 눌러 시작하세요.")
+                            {
+                                NoSpotlight = true, // 전체 화면(딤 없음, 카드 다 보임)
+                                GateInput = true    // "다음" 누르기 전까지 카드 클릭 차단 → 다음 눌러야 선택 시작
+                            }
+                        };
+                        UI.Tutorial.TutorialDirector.EnsureInstance().Play(step13, () =>
+                        {
+                            PlayerPrefs.SetInt("tutorial_done", 1); PlayerPrefs.Save();
+                            Debug.Log("[Tutorial] 완료 — 이후 정상 진행");
+                        });
                     }
                     break;
+                }
 
                 case GameState.Reward:
                     if (characterSelectionUI != null) characterSelectionUI.Hide();
@@ -284,6 +318,7 @@ namespace DiceOrbit.Core
 
         public void OnEncounterCleared()
         {
+            if (_tutorialActive) return;   // 튜토리얼 전투 승리는 Director가 흐름을 잡는다 (Reward로 새지 않게)
             Debug.Log("[GameFlow] Encounter Cleared.");
 
             // 승리 확정 → 리타이어한 파티원 점감 부활 (스펙 §4: 전투 종료 후 부활)
@@ -355,6 +390,7 @@ namespace DiceOrbit.Core
 
         public void OnCombatDefeat()
         {
+            if (_tutorialActive) return;   // 튜토리얼 중 패배도 Director가 처리 (GameOver로 새지 않게)
             ChangeState(GameState.GameOver);
         }
 
@@ -381,6 +417,14 @@ namespace DiceOrbit.Core
         // === 게임 시작/재시작 ===
 
         public void StartGame()
+        {
+            // 매번 물어본다. 예 → 튜토리얼, 아니오 → 기존 흐름.
+            UI.Tutorial.TutorialPromptUI.Show(
+                onYes: () => StartTutorial(),
+                onNo:  () => StartGameInternal());
+        }
+
+        private void StartGameInternal()
         {
             Debug.Log("[GameFlow] StartGame called");
             RunSaveService.Delete();   // 새 게임 = 기존 이어하기 폐기
@@ -479,6 +523,12 @@ namespace DiceOrbit.Core
                 StartCoroutine(ContinueGameFlowNextFrame());
             }
 
+            if (pendingTutorial && (string.IsNullOrWhiteSpace(gameplaySceneName) || scene.name == gameplaySceneName))
+            {
+                pendingTutorial = false;
+                StartCoroutine(EnterTutorialNextFrame());
+            }
+
             // 저장된 환경설정(볼륨/전체화면) 적용 — 씬의 AudioManager가 새로 뜬 뒤에
             UI.SettingsUI.ApplySavedSettings();
 
@@ -490,6 +540,56 @@ namespace DiceOrbit.Core
                 pendingRestart = false;
                 StartGameFlow();
             }
+        }
+
+        // ── 튜토리얼 흐름 ──────────────────────────────────────
+        private bool _tutorialActive;           // 튜토리얼 전투 중 — 전투 종료가 Reward/GameOver로 새지 않게 가드
+        private bool _tutorialAwaitingRecruit;
+        private bool pendingTutorial;           // 씬 로드 대기 (BattleScene 로드 후 튜토리얼 진입)
+
+        /// <summary>튜토리얼 전투 중인지 (전투 결과 라우팅 가드용).</summary>
+        public bool IsTutorialActive => _tutorialActive;
+
+        /// <summary>튜토리얼 시작 — gameplay 씬(전투 시스템)을 먼저 로드한 뒤 Tutorial 상태로.</summary>
+        private void StartTutorial()
+        {
+            RunSaveService.Delete();   // 튜토리얼 → 새 게임 (기존 이어하기 폐기)
+            if (!string.IsNullOrWhiteSpace(gameplaySceneName))
+            {
+                var activeScene = SceneManager.GetActiveScene();
+                if (activeScene.name != gameplaySceneName)
+                {
+                    pendingTutorial = true;
+                    SceneManager.LoadScene(gameplaySceneName);
+                    return;
+                }
+            }
+            StartCoroutine(EnterTutorialNextFrame());
+        }
+
+        /// <summary>씬 오브젝트 Start()가 돈 뒤(궤도 타일 생성 완료) 튜토리얼 진입.</summary>
+        private System.Collections.IEnumerator EnterTutorialNextFrame()
+        {
+            yield return null;
+            ChangeState(GameState.Tutorial);
+        }
+
+        /// <summary>튜토리얼 전투(1~12) 완료 → 데모 정리 → 실제 런(Recruit). step 13은 Recruit에서 이어짐(T7).</summary>
+        private void OnTutorialCombatDone()
+        {
+            _tutorialActive = false;
+            Core.Tutorial.TutorialScenario.Instance?.Cleanup();
+            _tutorialAwaitingRecruit = true;
+            StartGameInternal();
+        }
+
+        /// <summary>튜토리얼 스킵 → 완료 플래그 + 데모 정리 + 실제 런.</summary>
+        private void FinishTutorialToRun()
+        {
+            _tutorialActive = false;
+            PlayerPrefs.SetInt("tutorial_done", 1); PlayerPrefs.Save();
+            Core.Tutorial.TutorialScenario.Instance?.Cleanup();
+            StartGameInternal();
         }
 
         private void StartGameFlow()

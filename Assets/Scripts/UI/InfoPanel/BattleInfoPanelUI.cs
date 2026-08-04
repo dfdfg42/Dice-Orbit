@@ -21,6 +21,11 @@ namespace DiceOrbit.UI
     {
         public static BattleInfoPanelUI Instance { get; private set; }
 
+        [SerializeField] private RectTransform highlightRect;   // 튜토리얼 스포트라이트 대상(오른쪽 패널 배경). 미배선 시 transform 폴백.
+
+        /// <summary>튜토리얼 하이라이트용 — 정보 패널 rect(오른쪽 패널). transform이 RectTransform이 아닐 수 있어 배선 필수.</summary>
+        public RectTransform PanelRect => highlightRect != null ? highlightRect : transform as RectTransform;
+
         [Header("헤더 슬롯 (씬에서 배치)")]
         [SerializeField] private TextMeshProUGUI nameText;
         [SerializeField] private TextMeshProUGUI hpText;

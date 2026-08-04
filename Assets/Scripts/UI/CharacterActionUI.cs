@@ -22,6 +22,16 @@ namespace DiceOrbit.UI
 
         [Header("패널 루트 (슬라이드 대상)")]
         [SerializeField] private RectTransform panelRoot;
+        /// <summary>튜토리얼 하이라이트용 — 액션 패널 루트.</summary>
+        public RectTransform PanelRoot => panelRoot;
+
+        private Tutorial.TutorialActionLock _tutorialActionLock = Tutorial.TutorialActionLock.None;
+        /// <summary>튜토리얼: 이동/스킬 중 하나만 허용(버튼 활성 제한).</summary>
+        public void SetTutorialActionLock(Tutorial.TutorialActionLock l)
+        {
+            _tutorialActionLock = l;
+            RefreshActionButtonsState();
+        }
         [SerializeField] private Vector2 hiddenPosition = new Vector2(600f, -200f);  // 화면 오른쪽 바깥
         [SerializeField] private Vector2 shownPosition  = new Vector2(-20f,  -20f);  // 오른쪽 하단
         [SerializeField] private float slideInDuration  = 0.25f;
@@ -583,6 +593,14 @@ namespace DiceOrbit.UI
 
         private void RefreshActionButtonsState()
         {
+            // 캐릭터 미선택(튜토리얼 정보 단계 등)에서는 버튼을 모두 끄고 종료 — 아래 currentCharacter 역참조 NRE 방지.
+            if (currentCharacter == null)
+            {
+                if (moveButton != null) moveButton.interactable = false;
+                if (skillButton != null) skillButton.interactable = false;
+                return;
+            }
+
             // 버튼 상태는 "주사위 선택 + 플레이어 턴 + 캐릭터별 잔여 예산"을 동시에 만족해야 활성화됩니다.
             bool hasDice = !waitingForDice && currentDice != null && currentCharacter != null;
             var combatManager = CombatManager.Instance;
@@ -599,6 +617,10 @@ namespace DiceOrbit.UI
             bool canAct = currentCharacter.Stats.canAct();
             bool canMove = hasDice && playerTurn && canAct && currentCharacter.Stats.canMove() && combatManager.CanSpendMove(currentCharacter);
             bool canSkill = hasDice && playerTurn && canAct && canUseSelectedDiceForSkill && combatManager.CanSpendAction(currentCharacter);
+
+            // 튜토리얼: 지정된 행위만 허용
+            if (_tutorialActionLock == Tutorial.TutorialActionLock.MoveOnly) canSkill = false;
+            else if (_tutorialActionLock == Tutorial.TutorialActionLock.SkillOnly) canMove = false;
 
             if (moveButton != null) moveButton.interactable = canMove;
             if (skillButton != null) skillButton.interactable = canSkill;

@@ -18,6 +18,7 @@ namespace DiceOrbit.Data
         public int Defense = 0;
         public int TempArmor = 0; // 임시 방어도 (턴마다 초기화)
         public float DodgeChance = 0f; // 회피율 (0~100, %)
+        public bool Invulnerable = false; // 튜토리얼 등: HP가 1 미만으로 안 내려가고 사망하지 않음
 
         // ICombatReactor implementation
         public virtual int Priority => 20;
@@ -59,6 +60,10 @@ namespace DiceOrbit.Data
                 remainingDamage -= absorbed;
                 Debug.Log($"TempArmor absorbed {absorbed} dmg");
             }
+
+            // 무적: 남은 데미지를 HP가 1 미만으로 내려가지 않게 제한(사망 방지)
+            if (Invulnerable && remainingDamage > 0)
+                remainingDamage = Mathf.Min(remainingDamage, Mathf.Max(0, CurrentHP - 1));
 
             int actualDamage = remainingDamage;
             CurrentHP = Mathf.Max(0, CurrentHP - actualDamage);

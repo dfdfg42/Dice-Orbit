@@ -9002,6 +9002,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dacd4b631002f97438e0eb2265c239b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.BattleInfoPanelUI
+  highlightRect: {fileID: 1961252765}
   nameText: {fileID: 1319847235}
   hpText: {fileID: 474369367}
   flavorText: {fileID: 476117518}

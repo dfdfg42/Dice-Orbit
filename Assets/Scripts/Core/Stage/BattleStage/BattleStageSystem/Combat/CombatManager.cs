@@ -43,11 +43,16 @@ namespace DiceOrbit.Core
         [SerializeField] private Button endTurnButton;
         [SerializeField] private TextMeshProUGUI turnCountText;
 
+        /// <summary>튜토리얼 하이라이트용 — 턴 종료 버튼 Rect.</summary>
+        public RectTransform EndTurnRect => endTurnButton != null ? endTurnButton.transform as RectTransform : null;
+
         // Events
         public System.Action OnCombatStart;
         public System.Action OnCombatEnd;
         public System.Action<Monster> OnMonsterDeath;
         public event System.Action OnMonsterTurnStart; // Legacy event support or internal use
+        public System.Action<Character> OnPlayerMoved;      // TrySpendMove 성공 시 (튜토리얼 진행조건)
+        public System.Action<Character> OnPlayerSkillUsed;  // TrySpendAction 성공 시 (튜토리얼 진행조건)
 
         // Properties
         public bool InCombat => inCombat;
@@ -431,6 +436,7 @@ namespace DiceOrbit.Core
         {
             if (!CanSpendMove(character)) return false;
             playerTurnBudgets[character].RemainingMove--;
+            OnPlayerMoved?.Invoke(character);
             return true;
         }
 
@@ -441,6 +447,7 @@ namespace DiceOrbit.Core
         {
             if (!CanSpendAction(character)) return false;
             playerTurnBudgets[character].RemainingAction--;
+            OnPlayerSkillUsed?.Invoke(character);
             return true;
         }
 

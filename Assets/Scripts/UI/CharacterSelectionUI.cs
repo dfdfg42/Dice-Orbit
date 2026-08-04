@@ -18,6 +18,11 @@ namespace DiceOrbit.UI
         /// <summary>전체 캐릭터 풀 (상점 교체 후보 등 외부 조회용 — ShopUI).</summary>
         public IReadOnlyList<Core.CharacterPreset> AllCharacters => allCharacters;
 
+        /// <summary>튜토리얼 step 13 — 아직 골라야 할 캐릭터 수 (0이면 선택 완료).</summary>
+        public int RemainingToSelect => Mathf.Max(0, sessionTargetCount - selectedCount);
+        /// <summary>튜토리얼 step 13 하이라이트 대상 — 카드 컨테이너.</summary>
+        public RectTransform CardContainerRect => cardContainer as RectTransform;
+
         [Header("Card UI References")]
         [SerializeField] private Transform cardContainer;
         [SerializeField] private GameObject characterCardPrefab;
