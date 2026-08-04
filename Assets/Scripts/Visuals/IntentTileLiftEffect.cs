@@ -79,8 +79,9 @@ namespace DiceOrbit.Visuals
             _current = null;
         }
 
-        /// <summary>인텐트의 대상 타일 + 대상 캐릭터가 밟고 있는 타일 수집.</summary>
-        private static HashSet<TileData> CollectIntentTiles(Monster m)
+        /// <summary>인텐트의 대상 타일 + 대상 캐릭터가 밟고 있는 타일 수집.
+        /// (몬스터 위협 외곽선 MonsterThreatOutline도 동일 소스를 공유)</summary>
+        public static HashSet<TileData> CollectIntentTiles(Monster m)
         {
             var set = new HashSet<TileData>();
             var intent = m != null ? m.CurrentIntent : null;
