@@ -28,6 +28,10 @@ namespace DiceOrbit.UI.Tutorial
         public int? OnlyDieValue;            // 지정 시 이 눈 값 주사위만 선택 가능(나머지 잠금)
         public TutorialActionLock ActionLock;// 이동/스킬 중 하나만 허용
         public Action OnEnter;               // 단계 진입 시 1회 (통제 주사위 세팅 등)
+        public Vector2 HighlightOffset;      // 하이라이트 구멍 이동 (스크린px, +y=위)
+        public Vector4 HighlightPad;         // 구멍 각 변 확장 (스크린px): x=좌, y=우, z=상, w=하
+        public bool AllowDismiss;            // Custom 단계에서 "확인"으로 안내 닫기 (진행조건은 계속 대기)
+        public bool CenterBubble;            // 대상이 있어도 안내문구를 화면 중앙(하단)에
 
         public TutorialStep(string instruction) { Instruction = instruction; }
     }

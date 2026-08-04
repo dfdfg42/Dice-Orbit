@@ -61,16 +61,32 @@ namespace DiceOrbit.UI.Tutorial
                 _confirmPressed = false;
                 bool isConfirm = step.Advance == TutorialAdvance.Confirm;
 
+                // 버튼: Confirm이면 진행("다음"), Custom+AllowDismiss면 안내만 닫기("확인"), 그 외 없음.
+                // 닫기는 진행조건(Done)과 무관 — 오버레이만 숨기고 Director는 계속 폴링(전투 종료 시 완료).
+                Action onNext = isConfirm ? (Action)(() => _confirmPressed = true)
+                              : step.AllowDismiss ? (Action)(() => overlay.Hide())
+                              : null;
+                string nextLabel = isConfirm ? "다음" : "확인";
+
                 overlay.ShowStep(
                     step.Instruction,
                     SafeTarget(step),
                     step.GateInput,
                     step.NoSpotlight,
-                    onNext: isConfirm ? (Action)(() => _confirmPressed = true) : null,
-                    onSkipAction: OnSkipRequested);
+                    onNext: onNext,
+                    onSkipAction: OnSkipRequested,
+                    hlOffset: step.HighlightOffset,
+                    hlPad: step.HighlightPad,
+                    nextLabel: nextLabel,
+                    centerBubble: step.CenterBubble);
 
-                DiceUI.Instance?.SetTutorialDiceLock(step.OnlyDieValue);   // 가이드된 눈만 선택 가능
-                CharacterActionUI.Instance?.SetTutorialActionLock(step.ActionLock);   // 이동/스킬 제한
+                // 락 적용은 부수효과일 뿐 — 예외가 나도 단계 진행(코루틴)이 멈추지 않게 격리.
+                try
+                {
+                    DiceUI.Instance?.SetTutorialDiceLock(step.OnlyDieValue);   // 가이드된 눈만 선택 가능
+                    CharacterActionUI.Instance?.SetTutorialActionLock(step.ActionLock);   // 이동/스킬 제한
+                }
+                catch (Exception e) { Debug.LogWarning($"[Tutorial] 락 적용 예외: {e}"); }
 
                 // 진행조건 대기: 매 프레임 대상 rect 갱신 + 조건 검사.
                 while (!_aborted)
@@ -79,7 +95,7 @@ namespace DiceOrbit.UI.Tutorial
                     {
                         var target = SafeTarget(step);
                         if (target != null)
-                            overlay.HighlightScreenRect(TutorialOverlayUI.GetScreenRect(target));
+                            overlay.HighlightTarget(target);
                     }
 
                     bool done = isConfirm ? _confirmPressed : SafeDone(step);

@@ -47,3 +47,4 @@ MonoBehaviour:
   warriorPreset: {fileID: 11400000, guid: 0c4ea5c184b0e864caf1ffe2c2d3f076, type: 2}
   roguePreset: {fileID: 11400000, guid: 9a8a43165e85d97468e035f7ab9505e3, type: 2}
   demoMonster: {fileID: 11400000, guid: 71581ab4883e5e34fa4b2f99e07a3d28, type: 2}
+  tutorialBackground: {fileID: 21300000, guid: 2453574bd7b449445915cc70ac136e53, type: 3}

@@ -18,13 +18,23 @@ namespace DiceOrbit.UI.Tutorial
         private RectTransform bubble;
         private TextMeshProUGUI bubbleText;
         private Button nextButton;
+        private TextMeshProUGUI nextButtonLabel;
         private Button skipButton;
         private Action onSkip;
+        private Vector2 _hlOffset;   // 현재 단계 하이라이트 이동
+        private Vector4 _hlPad;      // 현재 단계 하이라이트 변별 확장 (x=좌,y=우,z=상,w=하)
+        private bool _centerBubble;  // 대상이 있어도 말풍선을 화면 중앙(하단)에
 
         private static readonly Color Dim = new Color(0f, 0f, 0f, 0.72f);
         private static readonly Color Card = new Color(0.118f, 0.133f, 0.200f, 0.98f);
         private static readonly Color Ink = new Color(0.910f, 0.894f, 0.847f);
+        private static readonly Color InkDark = new Color(0.16f, 0.12f, 0.08f);   // 크림 배경용 어두운 글자
         private static readonly Color Gold = new Color(0.878f, 0.702f, 0.341f);
+        private static readonly Color SkipTan = new Color(0.72f, 0.66f, 0.56f, 0.95f);
+
+        // 스킨 스프라이트는 TutorialSkin(Resources)에서 Build 시 주입. 없으면 단색 폴백.
+        private Sprite panelSprite;    // 버블 배경: 오른쪽 정보 패널 스프라이트(9-slice)
+        private Sprite buttonSprite;   // 버튼 배경: 환경설정 버튼(UISprite, 9-slice)
 
         public static TutorialOverlayUI EnsureInstance()
         {
@@ -40,6 +50,9 @@ namespace DiceOrbit.UI.Tutorial
 
         private void Build()
         {
+            var skin = TutorialSkin.Get();
+            if (skin != null) { panelSprite = skin.panelSprite; buttonSprite = skin.buttonSprite; }
+
             canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 4000;
@@ -52,18 +65,26 @@ namespace DiceOrbit.UI.Tutorial
                 dim[i] = img;
             }
 
-            bubble = NewImage(transform, Card, "Bubble").rectTransform;
+            var bubbleImg = NewImage(transform, Card, "Bubble");
+            if (panelSprite != null)
+            {
+                bubbleImg.sprite = panelSprite;
+                bubbleImg.type = UnityEngine.UI.Image.Type.Sliced;
+                bubbleImg.color = Color.white;   // 스프라이트 원색(크림) 유지
+            }
+            bubble = bubbleImg.rectTransform;
             bubble.anchorMin = bubble.anchorMax = bubble.pivot = new Vector2(0.5f, 0.5f);
             bubble.sizeDelta = new Vector2(560, 150);
 
             bubbleText = NewText(bubble, "", 26);
+            if (panelSprite != null) bubbleText.color = InkDark;   // 크림 배경 → 어두운 글자
             var brt = bubbleText.rectTransform;
             brt.anchorMin = new Vector2(0, 0); brt.anchorMax = new Vector2(1, 1);
             brt.offsetMin = new Vector2(24, 54); brt.offsetMax = new Vector2(-24, -18);
 
             nextButton = MakeButton(bubble, "다음", new Vector2(-24, 16), new Vector2(1, 0), new Vector2(140, 40), Gold);
-            skipButton = MakeButton(transform, "튜토리얼 스킵", new Vector2(-16, -16), new Vector2(1, 1), new Vector2(160, 40),
-                new Color(0.35f, 0.30f, 0.32f, 0.9f));
+            nextButtonLabel = nextButton.GetComponentInChildren<TextMeshProUGUI>();
+            skipButton = MakeButton(transform, "튜토리얼 스킵", new Vector2(-16, -16), new Vector2(1, 1), new Vector2(160, 40), SkipTan);
             skipButton.onClick.AddListener(() => onSkip?.Invoke());
 
             gameObject.SetActive(false);
@@ -71,27 +92,52 @@ namespace DiceOrbit.UI.Tutorial
 
         /// <param name="onNext">Confirm 진행 단계에서만 non-null → "다음" 버튼 노출.</param>
         public void ShowStep(string instruction, RectTransform screenTarget, bool gateInput, bool noSpotlight, Action onNext, Action onSkipAction)
+            => ShowStep(instruction, screenTarget, gateInput, noSpotlight, onNext, onSkipAction, Vector2.zero, Vector4.zero);
+
+        public void ShowStep(string instruction, RectTransform screenTarget, bool gateInput, bool noSpotlight, Action onNext, Action onSkipAction, Vector2 hlOffset, Vector4 hlPad, string nextLabel = "다음", bool centerBubble = false)
         {
             gameObject.SetActive(true);
             bubbleText.text = instruction;
             onSkip = onSkipAction;
+            _hlOffset = hlOffset;
+            _hlPad = hlPad;
+            _centerBubble = centerBubble;
 
             nextButton.gameObject.SetActive(onNext != null);
+            if (nextButtonLabel != null) nextButtonLabel.text = nextLabel;
             nextButton.onClick.RemoveAllListeners();
             if (onNext != null) nextButton.onClick.AddListener(() => onNext());
 
             if (noSpotlight)
             {
-                // 딤 없이 화면 전체 밝게 — 클릭도 전부 통과. 말풍선만 하단-중앙에.
-                foreach (var d in dim) { d.color = new Color(0f, 0f, 0f, 0f); d.raycastTarget = false; }
+                // 딤 없이 화면 전체 밝게. gateInput=true면 dim[0]을 전체화면 투명막으로 만들어
+                // 클릭만 차단(화면은 그대로 보임). 말풍선의 "다음"/"스킵"은 상위 형제라 통과된다.
+                foreach (var d in dim) d.color = new Color(0f, 0f, 0f, 0f);
+                dim[0].raycastTarget = gateInput;   // 전체 덮개(아래 HighlightScreenRect가 전체화면으로 배치)
+                dim[1].raycastTarget = false;
+                dim[2].raycastTarget = false;
+                dim[3].raycastTarget = false;
                 HighlightScreenRect(new Rect(-9999, -9999, 0, 0));
                 return;
             }
 
             foreach (var d in dim) { d.color = Dim; d.raycastTarget = gateInput; } // 잠금 아니면 클릭 통과
 
-            if (screenTarget != null) HighlightScreenRect(GetScreenRect(screenTarget));
+            if (screenTarget != null) HighlightScreenRect(AdjustRect(GetScreenRect(screenTarget)));
             else HighlightScreenRect(new Rect(-9999, -9999, 0, 0)); // 대상 없음 → 전체 딤
+        }
+
+        /// <summary>대상 RectTransform → 스크린 rect + 현재 단계 오프셋/패딩 적용해 하이라이트.</summary>
+        public void HighlightTarget(RectTransform target) => HighlightScreenRect(AdjustRect(GetScreenRect(target)));
+
+        /// <summary>현재 단계의 오프셋/패딩을 rect에 적용 (x=좌,y=우,z=상,w=하 확장 + 오프셋 이동).</summary>
+        private Rect AdjustRect(Rect r)
+        {
+            return Rect.MinMaxRect(
+                r.xMin - _hlPad.x + _hlOffset.x,
+                r.yMin - _hlPad.w + _hlOffset.y,
+                r.xMax + _hlPad.y + _hlOffset.x,
+                r.yMax + _hlPad.z + _hlOffset.y);
         }
 
         /// <summary>대상 rect(스크린 좌표)만 남기고 4방향 딤 배치 + 말풍선 위치 조정.</summary>
@@ -110,7 +156,7 @@ namespace DiceOrbit.UI.Tutorial
             float bubbleH = bubble.sizeDelta.y, bubbleW = bubble.sizeDelta.x;
             bool hasTarget = r.xMax > 0f && r.yMax > 0f && r.width > 0f && r.height > 0f;
             float bx, by;
-            if (hasTarget)
+            if (hasTarget && !_centerBubble)
             {
                 bx = r.center.x;
                 by = r.yMin - 24 - bubbleH * 0.5f;                                  // 대상 아래
@@ -158,6 +204,7 @@ namespace DiceOrbit.UI.Tutorial
         private Button MakeButton(Transform parent, string text, Vector2 pos, Vector2 anchor, Vector2 size, Color color)
         {
             var img = NewImage(parent, color, "Btn");
+            if (buttonSprite != null) { img.sprite = buttonSprite; img.type = UnityEngine.UI.Image.Type.Sliced; }
             var rt = img.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = anchor;
             rt.sizeDelta = size; rt.anchoredPosition = pos;

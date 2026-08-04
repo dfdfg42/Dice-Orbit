@@ -165,8 +165,8 @@ namespace DiceOrbit.Core
                         {
                             new UI.Tutorial.TutorialStep("여기서 파티에 넣을 캐릭터 2명을 고르세요. 각 캐릭터는 액티브 스킬과 패시브를 가져요 (방금 배운 것처럼). [다음]을 눌러 시작하세요.")
                             {
-                                NoSpotlight = true, // 전체 화면
-                                GateInput = false   // Confirm(기본) — "다음" 버튼으로 안내를 닫는다
+                                NoSpotlight = true, // 전체 화면(딤 없음, 카드 다 보임)
+                                GateInput = true    // "다음" 누르기 전까지 카드 클릭 차단 → 다음 눌러야 선택 시작
                             }
                         };
                         UI.Tutorial.TutorialDirector.EnsureInstance().Play(step13, () =>

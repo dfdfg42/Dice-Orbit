@@ -21,6 +21,7 @@ namespace DiceOrbit.Core.Tutorial
         [SerializeField] private CharacterPreset warriorPreset;
         [SerializeField] private CharacterPreset roguePreset;
         [SerializeField] private MonsterPreset demoMonster; // 약체 타일공격 몬스터(GreenSlime)
+        [SerializeField] private Sprite tutorialBackground; // 튜토리얼 전투 배경(배경 수정 1차)
 
         public Character Warrior { get; private set; }
         public Character Rogue { get; private set; }
@@ -63,9 +64,14 @@ namespace DiceOrbit.Core.Tutorial
             while ((Warrior == null || Warrior.CurrentTile == null) && t < 1f) { t += Time.deltaTime; yield return null; }
             yield return null; // 여유 한 프레임
 
+            // 튜토리얼: 데모 캐릭터는 죽지 않게(HP 1 미만 방지) — 몬스터 공격에 튜토리얼이 실패하지 않도록
+            if (Warrior != null && Warrior.Stats != null) Warrior.Stats.Invulnerable = true;
+            if (Rogue != null && Rogue.Stats != null) Rogue.Stats.Invulnerable = true;
+
             if (demoMonster != null && CombatManager.Instance != null)
             {
                 var enc = new EncounterDefinition { MonsterPresets = new List<MonsterPreset> { demoMonster } };
+                if (tutorialBackground != null) enc.BackgroundSprite = tutorialBackground; // 튜토리얼 전용 배경
                 CombatManager.Instance.StartEncounter(enc, 1); // 몬스터 스폰 + 인트로 + 전투 개시
                 DemoMonster = CombatManager.Instance.ActiveMonsters.FirstOrDefault(m => m != null);
                 // 턴1 고정 주사위: 전사 대검(4↑)=5, 도적 원거리 이동=6, 도적 기습(1~2)=2, 여분=3.
@@ -102,7 +108,7 @@ namespace DiceOrbit.Core.Tutorial
             Func<RectTransform> Field = () =>
             {
                 var om = UnityEngine.Object.FindAnyObjectByType<OrbitManager>();
-                return om != null ? ScreenBoxProvider.ForWorld(om.transform, new Vector2(1050, 720)) : null;
+                return om != null ? ScreenBoxProvider.ForWorld(om.transform, new Vector2(1050, 900)) : null;   // 위아래로 더 넓게
             };
             Func<RectTransform> Info = () => BattleInfoPanelUI.Instance != null ? BattleInfoPanelUI.Instance.PanelRect : null;
 
@@ -112,9 +118,9 @@ namespace DiceOrbit.Core.Tutorial
                     { GateInput = true },
                 // 몬스터 → 필드(공격범위) 순서로 각각 보게
                 new TutorialStep("먼저 몬스터를 보세요. 머리 위 아이콘 = 다음 턴에 할 행동이에요.")
-                    { Target = M, GateInput = true },
+                    { Target = M, GateInput = true, HighlightOffset = new Vector2(0, 60) },   // 머리 위 아이콘까지 보이게 조금 위로
                 new TutorialStep("오른쪽 정보 패널에 몬스터의 상세 정보(체력·다음 행동 등)가 나와요.")
-                    { Target = Info, GateInput = true, OnEnter = () => BattleInfoPanelUI.Instance?.ShowUnitExternal(DemoMonster) },
+                    { Target = Info, GateInput = true, CenterBubble = true, OnEnter = () => BattleInfoPanelUI.Instance?.ShowUnitExternal(DemoMonster) },
                 new TutorialStep("이제 필드를 보세요. 바닥의 색칠된 타일 = 그 공격이 닿는 범위예요. 그 위에 있는 캐릭터가 맞습니다.")
                     { Target = Field, GateInput = true, OnEnter = () => BattleInfoPanelUI.Instance?.ClearUnitExternal(DemoMonster) },
                 new TutorialStep("매 턴 주사위가 자동으로 굴려집니다. 이번 턴에 쓸 자원이에요.")
@@ -123,7 +129,7 @@ namespace DiceOrbit.Core.Tutorial
                     { Target = W, Advance = TutorialAdvance.Custom,
                       Done = () => CharacterActionUI.Instance != null && CharacterActionUI.Instance.IsShowingCharacter(Warrior) },
                 new TutorialStep("이동은 턴당 1번, 행동(스킬)도 턴당 1번만 가능해요.")
-                    { Target = Action, GateInput = true },
+                    { Target = Action, GateInput = true, HighlightPad = new Vector4(0, 0, 0, 120) },   // 아래로 더 길게
                 // 공격(전체 화면) + 지정 눈만 선택 가능
                 new TutorialStep("전사 좌우에 아군이 있으면 공격 +50%! 지금 도적이 옆에 있죠. <b>눈 5</b> 주사위로 전사의 [대검]을 써서 몬스터를 공격하세요.")
                     { NoSpotlight = true, OnlyDieValue = 5, ActionLock = TutorialActionLock.SkillOnly, Advance = TutorialAdvance.Custom, Done = () => warriorSkill },
@@ -146,7 +152,7 @@ namespace DiceOrbit.Core.Tutorial
                     { NoSpotlight = true, Advance = TutorialAdvance.Custom,
                       Done = () => cm == null || !cm.InCombat || cm.PlayerTurnActive },
                 new TutorialStep("이제 마무리! 남은 몬스터를 처치하세요.")
-                    { NoSpotlight = true, Advance = TutorialAdvance.Custom, Done = () => cm == null || !cm.InCombat },
+                    { NoSpotlight = true, Advance = TutorialAdvance.Custom, AllowDismiss = true, Done = () => cm == null || !cm.InCombat },
             };
         }
 
@@ -161,10 +167,13 @@ namespace DiceOrbit.Core.Tutorial
             }
             _onMoved = null; _onSkill = null;
             ScreenBoxProvider.ClearAll();
+            HoverTooltipUI.Instance?.HidePinned();   // 데모 몬스터 위에 떠 있던 커서 툴팁이 얼어붙어 남지 않게
             DiceManager.Instance?.SetScriptedRoll(null);   // 잔여 통제 주사위가 실제 런으로 새지 않게
             DiceUI.Instance?.SetTutorialDiceLock(null);    // 주사위 잠금 해제(실제 런 무영향)
             CharacterActionUI.Instance?.SetTutorialActionLock(TutorialActionLock.None);
 
+            if (Warrior?.Stats != null) Warrior.Stats.Invulnerable = false;   // 방어적 해제(스탯이 공유일 경우 대비)
+            if (Rogue?.Stats != null) Rogue.Stats.Invulnerable = false;
             PartyManager.Instance?.ClearAll();   // 데모 파티 제거 + 오브젝트 파괴
             foreach (var m in UnityEngine.Object.FindObjectsByType<Monster>(FindObjectsSortMode.None))
                 if (m != null) Destroy(m.gameObject);

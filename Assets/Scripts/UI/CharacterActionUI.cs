@@ -593,6 +593,14 @@ namespace DiceOrbit.UI
 
         private void RefreshActionButtonsState()
         {
+            // 캐릭터 미선택(튜토리얼 정보 단계 등)에서는 버튼을 모두 끄고 종료 — 아래 currentCharacter 역참조 NRE 방지.
+            if (currentCharacter == null)
+            {
+                if (moveButton != null) moveButton.interactable = false;
+                if (skillButton != null) skillButton.interactable = false;
+                return;
+            }
+
             // 버튼 상태는 "주사위 선택 + 플레이어 턴 + 캐릭터별 잔여 예산"을 동시에 만족해야 활성화됩니다.
             bool hasDice = !waitingForDice && currentDice != null && currentCharacter != null;
             var combatManager = CombatManager.Instance;
