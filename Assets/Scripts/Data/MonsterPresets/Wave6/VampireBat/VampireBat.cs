@@ -109,13 +109,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave6.VampireBat
         [Header("Skill Settings")]
         [SerializeField] private int damage = 20;
         [Tooltip("첫 번째 타일 구간(포함)")]
-        [SerializeField] private int aStart = 5;
-        [SerializeField] private int aEnd = 8;
+        [SerializeField] private int aStart = 1;
+        [SerializeField] private int aEnd = 4;
         [Tooltip("두 번째 타일 구간(포함)")]
-        [SerializeField] private int bStart = 14;
-        [SerializeField] private int bEnd = 17;
+        [SerializeField] private int bStart = 10;
+        [SerializeField] private int bEnd = 13;
 
-        public BloodRaidSkill() { skillName = "선혈 강습"; description = "5~8 & 14~17 타일의 적에게 20 피해"; }
+        public BloodRaidSkill() { skillName = "선혈 강습"; description = "1~4 & 10~13 타일의 적에게 20 피해"; }
 
         public override int GetPreviewDamage() => damage;
 
