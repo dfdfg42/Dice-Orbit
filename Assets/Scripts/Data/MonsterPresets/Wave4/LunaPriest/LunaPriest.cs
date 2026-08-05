@@ -8,7 +8,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.LunaPriest
     /// <summary>
     /// 월식 — 무작위 대상 1명이 속한 타일 + 좌우 2칸에 피해.
     /// 타깃/범위는 MonsterSkill 설정(RandomCharacter + Tiles + count 1 + range 2)이 담당.
-    /// (만월 = 공용 FactionSupportSkill{Heal}, 달의 가호 = 공용 FactionBlessingPassive — 프리셋에서 배선.)
+    /// (만월 = 공용 FactionDebuffSkill{Weak}, 음력 = 공용 TurnParityWeaknessPassive — 프리셋에서 배선.)
     /// </summary>
     [System.Serializable]
     public class LunaPriestSkill1 : SkillData
