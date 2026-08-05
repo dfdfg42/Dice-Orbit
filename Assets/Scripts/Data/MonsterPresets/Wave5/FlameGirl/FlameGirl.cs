@@ -10,54 +10,14 @@ using DiceOrbit.Data.MonsterPresets.Wave5.Shared;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave5.FlameGirl
 {
-    /// <summary>[화염구] 무작위 대상 1명 타일 ±(2 + (불꽃≥7 ? 1 : 0))에 damage 피해.</summary>
-    [System.Serializable]
-    public class FireballSkill : SkillData
-    {
-        [Header("Skill Settings")]
-        [SerializeField] private int damage = 35;
-        [Tooltip("기본 좌우 범위")]
-        [SerializeField] private int baseRange = 2;
-
-        public FireballSkill() { skillName = "화염구"; description = "무작위 대상 1명 타일 좌우에 35 피해(불꽃 7개↑ 시 범위 +1)"; }
-
-        public override int GetPreviewDamage() => damage;
-
-        public override List<TileData> GetCustomTiles(MonsterSkill skill, Monster owner)
-        {
-            var orbit = GameManager.Instance?.GetOrbitManager();
-            if (orbit == null) return new List<TileData>();
-            int flames = orbit.Tiles.Count(t => t != null && t.HasAttribute(TileAttributeType.Flame));
-            int range = baseRange + (flames >= 7 ? 1 : 0);
-
-            var alive = PartyManager.Instance?.GetAliveCharacters();
-            if (alive == null || alive.Count == 0) return new List<TileData>();
-            var center = alive[Random.Range(0, alive.Count)].CurrentTile;
-            if (center == null) return new List<TileData>();
-
-            int total = orbit.Tiles.Count;
-            var result = new List<TileData>();
-            for (int i = -range; i <= range; i++)
-            {
-                int idx = (center.TileIndex + i) % total;
-                if (idx < 0) idx += total;
-                result.Add(orbit.GetTile(idx));
-            }
-            return result.Distinct().ToList();
-        }
-
-        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
-            => AttackTiles(source, targetTiles, damage);
-    }
-
     /// <summary>[대화재] 모든 불꽃 타일 삭제 + 모든 타일에 damage 피해.</summary>
     [System.Serializable]
     public class ConflagrationSkill : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 35;
+        [SerializeField] private int damage = 25;
 
-        public ConflagrationSkill() { skillName = "대화재"; description = "모든 불꽃 타일 삭제 + 모든 타일에 35 피해"; }
+        public ConflagrationSkill() { skillName = "대화재"; description = "모든 불꽃 타일 삭제 + 모든 타일에 25 피해"; }
 
         public override int GetPreviewDamage() => damage;
 
@@ -71,17 +31,18 @@ namespace DiceOrbit.Data.MonsterPresets.Wave5.FlameGirl
         }
     }
 
-    /// <summary>[타오르는 무대] 턴시작: 불꽃 n개. n≥4 → 방어도 +n*3. (범위 +1은 n≥7일 때 화염구가 직접 계산.)</summary>
+    /// <summary>[타오르는 무대] 턴 시작 시 불꽃 타일 개수만큼 일시 방어도 획득.</summary>
     [System.Serializable]
     public class FlameStagePassive : PassiveAbility
     {
         [Header("Passive Settings")]
-        [SerializeField] private int armorPerTile = 3;
+        [Tooltip("불꽃 타일 1개당 방어도")]
+        [SerializeField] private int armorPerTile = 1;
 
         public FlameStagePassive()
         {
             passiveName = "타오르는 무대";
-            description = "턴 시작 시 불꽃 4개↑면 개수×3 방어도, 7개↑면 화염구 범위 +1";
+            description = "턴 시작 시 불꽃 타일 개수만큼 일시 방어도 획득";
             priority = 10; isStackable = false;
         }
 
@@ -93,11 +54,9 @@ namespace DiceOrbit.Data.MonsterPresets.Wave5.FlameGirl
             var orbit = GameManager.Instance?.GetOrbitManager();
             if (orbit == null) return;
             int n = orbit.Tiles.Count(t => t != null && t.HasAttribute(TileAttributeType.Flame));
-            if (n >= 4)
-            {
-                owner.Stats.TempArmor += n * armorPerTile;
-                Debug.Log($"[타오르는 무대] 불꽃 {n}개 → 방어도 +{n * armorPerTile}");
-            }
+            if (n <= 0) return;
+            owner.Stats.TempArmor += n * armorPerTile;
+            Debug.Log($"[타오르는 무대] 불꽃 {n}개 → 방어도 +{n * armorPerTile}");
         }
 
         public override bool AllowSamePassive(IPassive incoming) => false;
@@ -109,7 +68,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave5.FlameGirl
     {
         [Header("Passive Settings")]
         [SerializeField] private int tileCount = 8;
-        [SerializeField] private int fireDamage = 35;
+        [SerializeField] private int fireDamage = 20;
 
         [System.NonSerialized] private bool fired = false;
 
