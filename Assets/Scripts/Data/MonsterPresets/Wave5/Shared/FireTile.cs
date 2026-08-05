@@ -14,7 +14,7 @@ namespace DiceOrbit.Data.Tile
     /// </summary>
     public class FireTile : TileAttribute
     {
-        public FireTile(int damage = 35) : base(TileAttributeType.Flame, damage, -1) { }
+        public FireTile(int damage = 20) : base(TileAttributeType.Flame, damage, -1) { }
 
         public override void OnEndTurn(Core.Character character)
         {
