@@ -88,13 +88,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalCore
     {
         [Header("Skill Settings")]
         [SerializeField] private int damage = 20;
-        [Tooltip("수정 핵 자기 기절 지속 턴 (1 = 다음 턴 1회 스킵)")]
-        [SerializeField] private int stunTurns = 1;
+        [Tooltip("적 기절 지속 턴 (2 = 다음 플레이어 턴 스킵)")]
+        [SerializeField] private int stunTurns = 2;
 
         public CrystalStormSkill()
         {
             skillName = "수정 폭풍";
-            description = "자수정 제외 모든 타일 적에게 피해 + 수정 중첩 초기화 + 수정 핵 다음 턴 기절";
+            description = "자수정 제외 모든 타일 적에게 피해 + 다음 턴 기절 + 수정 중첩 초기화";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -109,16 +109,16 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalCore
                     .Cast<Unit>()
                     .ToList();
                 AttackUnits(source, victims, damage);
+
+                // 적에게 다음 턴 기절
+                foreach (var u in victims)
+                    if (u is Character c && c.IsAlive && c.StatusEffects != null)
+                        c.StatusEffects.AddEffect(new StunDebuff(stunTurns));
             }
 
-            // 발동 시: 수정 중첩 0으로 초기화 + 시전자(수정 핵) 자신이 다음 몬스터 턴에 기절(stunTurns만큼 스킵).
+            // 발동 시 수정 중첩 0으로 초기화
             var core = source as Monster;
-            if (core != null)
-            {
-                CrystalSet.ResetStacks(core);
-                if (core.StatusEffects != null)
-                    core.StatusEffects.AddEffect(new StunDebuff(stunTurns)); // StunDebuff.OnTurnEvent가 몬스터 턴 스킵 처리
-            }
+            if (core != null) CrystalSet.ResetStacks(core);
         }
     }
 

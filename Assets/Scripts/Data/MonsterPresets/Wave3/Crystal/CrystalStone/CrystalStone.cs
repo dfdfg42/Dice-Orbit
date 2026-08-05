@@ -2,34 +2,33 @@ using UnityEngine;
 using System.Collections.Generic;
 using DiceOrbit.Core;
 using DiceOrbit.Data.Tile;
+using DiceOrbit.Data.Monsters;
 using DiceOrbit.Data.MonsterPresets.Wave3.Crystal.Shared;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalStone
 {
-    /// <summary>[결정 방패] 살아있는 수정 핵에게 일시 방어도 armor 부여. (targetType=Self로 배선, Execute는 대상 무시)</summary>
+    /// <summary>[결정화] 살아있는 수정 핵의 수정 중첩 +stackAmount. (대상 없음, Execute가 직접 처리)</summary>
     [System.Serializable]
-    public class CrystalShieldSkill : SkillData
+    public class CrystallizeSkill : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int armor = 10;
+        [SerializeField] private int stackAmount = 1;
 
-        public CrystalShieldSkill()
+        public CrystallizeSkill()
         {
-            skillName = "결정 방패";
-            description = "수정 핵에게 일시 방어도 부여";
+            skillName = "결정화";
+            description = "수정 핵의 수정 중첩 증가";
         }
 
         public override int GetPreviewDamage() => 0;
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            var core = CrystalSet.GetCore();
-            if (core != null && core.Stats != null) core.Stats.TempArmor += armor;
+            CrystalSet.AddStack(CrystalSet.GetCore(), stackAmount);
         }
     }
 
-    /// <summary>[수정 창] 무작위 대상 1명이 속한 타일 + 좌우 각각 ±2칸에 damage 피해.
-    /// (RandomCharacter + Tiles + range 2로 배선; CorrosiveSlimeSkill과 동형)</summary>
+    /// <summary>[수정 창] 무작위 대상 1명이 속한 타일 + 좌우 각각 ±2칸에 damage 피해. (RandomCharacter + Tiles + range 2)</summary>
     [System.Serializable]
     public class CrystalSpearSkill : SkillData
     {
@@ -47,6 +46,19 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalStone
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
             AttackTiles(source, targetTiles, damage);
+        }
+    }
+
+    /// <summary>수정석 조건부 AI: 수정 핵 생존 → [0]결정화 ONLY, 사망 → [1]수정 창 ONLY.</summary>
+    [System.Serializable]
+    public class CrystalStonePattern : DiceOrbit.Data.MonsterAI.MonsterAI
+    {
+        public override MonsterSkill GetNextSkill()
+        {
+            if (availableSkills == null || availableSkills.Count == 0) return null;
+            int idx = CrystalSet.GetCore() != null ? 0 : 1;
+            if (idx >= availableSkills.Count) idx = 0;
+            return availableSkills[idx];
         }
     }
 }

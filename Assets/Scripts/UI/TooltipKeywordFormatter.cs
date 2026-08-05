@@ -122,6 +122,7 @@ namespace DiceOrbit.UI
                 { "FrostStack",    "빙결"    },
                 { "Slowed",        "둔화"    },
                 { "BloodSugarSpike", "혈당 스파이크" },
+                { "CrystalDamageTaken", "받은 피해" },
                 { "BuffAttack",    "공격력 증가" },
                 { "BuffDefense",   "방어력 증가" },
                 { "DebuffAttack",  "공격력 감소" },
