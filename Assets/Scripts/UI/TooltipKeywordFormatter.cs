@@ -120,6 +120,7 @@ namespace DiceOrbit.UI
                 { "CrystalStack",  "수정 중첩" },
                 { "SnowDamageTaken", "받은 피해" },
                 { "FrostStack",    "빙결"    },
+                { "Slowed",        "둔화"    },
                 { "BuffAttack",    "공격력 증가" },
                 { "BuffDefense",   "방어력 증가" },
                 { "DebuffAttack",  "공격력 감소" },

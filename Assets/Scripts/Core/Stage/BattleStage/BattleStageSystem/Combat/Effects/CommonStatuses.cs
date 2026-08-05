@@ -96,4 +96,24 @@ namespace DiceOrbit.Systems.Effects
             base.OnTurnEvent(trigger, context); // 공통 지속시간 감소(→0이면 매니저가 정리)
         }
     }
+
+    /// <summary>둔화 — 이동 감소(Value만큼). 적용 시 CharacterStats.MoveDebuff += Value, 만료 시 -=.
+    /// OrbitManager가 이동칸에 (MoveBuff - MoveDebuff)를 반영한다. Frozen/BindDebuff 패턴 미러.</summary>
+    public class SlowStatus : StatusEffect
+    {
+        public SlowStatus(int value, int duration) : base(EffectType.Slowed, value, duration)
+        {
+            IsStackable = false;
+        }
+
+        public override void EffectApplied()
+        {
+            if (Owner != null && Owner.Stats is CharacterStats c) c.MoveDebuff += Value;
+        }
+
+        public override void EffectExpired()
+        {
+            if (Owner != null && Owner.Stats is CharacterStats c) c.MoveDebuff -= Value;
+        }
+    }
 }
