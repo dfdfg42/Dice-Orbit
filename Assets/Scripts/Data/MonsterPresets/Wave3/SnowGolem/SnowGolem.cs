@@ -42,7 +42,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
             // 1순위: 이동 불가(빙결) 상태인 적
             var frozen = alive.Where(c =>
                 c != null && c.CurrentTile != null &&
-                c.StatusEffects != null && c.StatusEffects.HasEffect(DiceOrbit.Data.EffectType.Frozen)).ToList();
+                c.StatusEffects != null && c.StatusEffects.HasEffect(DiceOrbit.Data.EffectType.Bound)).ToList();
 
             Character center = frozen.Count > 0
                 ? frozen[Random.Range(0, frozen.Count)]
@@ -100,7 +100,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
             if (alive != null)
                 foreach (var c in alive)
                     if (c != null && c.StatusEffects != null &&
-                        c.StatusEffects.HasEffect(DiceOrbit.Data.EffectType.Frozen)) { anyFrozen = true; break; }
+                        c.StatusEffects.HasEffect(DiceOrbit.Data.EffectType.Bound)) { anyFrozen = true; break; }
 
             if (anyFrozen) return availableSkills[0];                              // 눈강타
             return availableSkills.Count >= 2 ? availableSkills[1] : availableSkills[0]; // 눈주먹
@@ -124,7 +124,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
             var orbitManager = GameManager.Instance?.GetOrbitManager();
             if (orbitManager?.Tiles == null) return;
             foreach (var tile in orbitManager.Tiles)
-                if (tile != null) tile.RemoveAttributeType(TileAttributeType.SnowPrison);
+                if (tile != null) tile.RemoveAttributeType(TileAttributeType.Bind);
         }
     }
 
@@ -180,10 +180,10 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
             foreach (var index in new[] { leftIndex, centerIndex, rightIndex })
             {
                 var tile = orbitManager.GetTile(index);
-                if (tile == null || tile.HasAttribute(TileAttributeType.SnowPrison)) continue;
+                if (tile == null || tile.HasAttribute(TileAttributeType.Bind)) continue;
 
-                tile.AddAttribute(new SnowPrisonTileAttribute(
-                    TileAttributeType.SnowPrison,
+                tile.AddAttribute(new BindTileAttribute(
+                    TileAttributeType.Bind,
                     frozenDuration + 1,
                     tileDuration + 1));
             }

@@ -14,7 +14,7 @@ namespace DiceOrbit.Data.Potions
         {
             TileAttributeType.RandMine,
             TileAttributeType.Honey,
-            TileAttributeType.SnowPrison,
+            TileAttributeType.Bind,
             TileAttributeType.Bone,
             TileAttributeType.Dull,
             TileAttributeType.Disharmony,

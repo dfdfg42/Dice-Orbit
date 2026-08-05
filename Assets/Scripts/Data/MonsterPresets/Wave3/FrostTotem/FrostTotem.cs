@@ -14,9 +14,9 @@ namespace DiceOrbit.Systems.Effects
     /// 동상 디버프. 부착된 유닛이 받는 피해량을 일정 비율 증가시킨다. 중첩 불가.
     /// Value = 증가 퍼센트(예: 20 → +20%).
     /// </summary>
-    public class FrostbiteDebuff : StatusEffect
+    public class VulnerableStatus : StatusEffect
     {
-        public FrostbiteDebuff(int percent, int duration) : base(EffectType.Frostbite, percent, duration)
+        public VulnerableStatus(int percent, int duration) : base(EffectType.Vulnerable, percent, duration)
         {
             IsStackable = false;
         }

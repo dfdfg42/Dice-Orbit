@@ -157,7 +157,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
 
             // 눈사람 공격이 적중한 적 → 다음 턴 이동 불가
             if (context.SourceUnit == owner && context.Target is Character victim && victim.IsAlive)
-                victim.StatusEffects?.AddEffect(new FrozenDebuff(0, immobilizeDuration));
+                victim.StatusEffects?.AddEffect(new BindStatus(0, immobilizeDuration));
         }
 
         public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
