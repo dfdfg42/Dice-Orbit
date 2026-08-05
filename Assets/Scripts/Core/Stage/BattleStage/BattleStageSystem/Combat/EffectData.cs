@@ -33,6 +33,7 @@ namespace DiceOrbit.Data
         SnowDamageTaken,    // 받은 피해: 눈사람 진창눈 취소 판정용 누적 피해(가시화) (Wave3 눈사람)
         FrostStack,         // 빙결 중첩: 턴 종료 시 중첩만큼 피해 + 중첩 -1 (Wave3 눈)
         Slowed,             // 둔화: 이동 감소(MoveDebuff) (Wave0 슬라임)
+        BloodSugarSpike,    // 혈당 스파이크: 다음 턴 이동 불가(BindDebuff) (Wave2 곰)
     }
 
     /// <summary>

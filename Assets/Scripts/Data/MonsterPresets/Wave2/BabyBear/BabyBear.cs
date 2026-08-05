@@ -7,55 +7,43 @@ using DiceOrbit.Data.Tile;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
 {
-    // ==========================================
-    // 패턴 1 [꿀 묻은 발]
-    // ==========================================
-    /// <summary>
-    /// 무작위 타일(MonsterSkill 설정: RandomTiles + count 4)에 꿀 타일을 설치한다.
-    /// 통과 시 소량 회복하고, 한 턴에 3개 이상 밟으면 이동 불가가 된다.
-    /// </summary>
+    /// <summary>[꿀 묻히기] 무작위 타일(preset RandomTiles + count)에 꿀 타일 설치. 통과 시 회복 + 아기곰 회복, 한 턴 2개 이상 밟으면 혈당 스파이크(이동 불가).</summary>
     [System.Serializable]
     public class HoneyPawSkill : SkillData
     {
         [Header("Skill Settings")]
         [Tooltip("꿀 타일 통과 시 회복량")]
         [SerializeField] private int healOnStep = 2;
-        [Tooltip("이 개수 이상 밟으면 이동 불가")]
-        [SerializeField] private int bindThreshold = 3;
-        [Tooltip("이동 불가 지속 턴 (해당 턴 + 다음 턴)")]
+        [Tooltip("이 개수 이상 밟으면 혈당 스파이크(이동 불가)")]
+        [SerializeField] private int bindThreshold = 2;
+        [Tooltip("혈당 스파이크(이동 불가) 지속 턴")]
         [SerializeField] private int bindDuration = 2;
+        [Tooltip("꿀 타일 발동 시 아기곰 회복량")]
+        [SerializeField] private int babyHeal = 1;
 
         public HoneyPawSkill()
         {
-            skillName = "꿀 묻은 발";
-            description = "무작위 타일 4개에 꿀 타일 설치. 통과 시 회복, 한 턴에 3개 이상 밟으면 이동 불가(발동 후 삭제)";
+            skillName = "꿀 묻히기";
+            description = "무작위 타일에 꿀 설치. 통과 시 회복, 한 턴에 2개 이상 밟으면 혈당 스파이크(이동 불가)";
         }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
             if (targetTiles == null) return;
-
             foreach (var tile in targetTiles)
             {
-                if (tile == null) continue;
-                if (tile.HasAttribute(TileAttributeType.Honey)) continue;
-                tile.AddAttribute(new HoneyPawTile(healOnStep, bindThreshold, bindDuration));
+                if (tile == null || tile.HasAttribute(TileAttributeType.Honey)) continue;
+                tile.AddAttribute(new HoneyPawTile(healOnStep, bindThreshold, bindDuration, babyHeal));
             }
         }
     }
 
-    // ==========================================
-    // 패턴 2 [돌진]
-    // ==========================================
-    /// <summary>
-    /// 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해.
-    /// (대상/범위 선정은 MonsterSkill 설정: RandomCharacter + Tiles + range 2)
-    /// </summary>
+    /// <summary>[돌진] 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해. (RandomCharacter + Tiles + range 2)</summary>
     [System.Serializable]
     public class BabyBearCharge : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 20;
+        [SerializeField] private int damage = 15;
 
         public BabyBearCharge()
         {
@@ -71,26 +59,17 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
         }
     }
 
-    // ==========================================
-    // 패시브 [아기 곰은 꿀을 좋아해]
-    // ==========================================
     /// <summary>
-    /// [아기 곰은 꿀을 좋아해] 공격 시 피격 대상 주변 ±honeyRadius칸 꿀 타일 개수 × damagePerHoney 만큼 피해 증가.
-    /// + 아기곰이 피격되면 그 공격자를 BearPackTracker.LastBabyAttacker로 기록(엄마곰 보호 본능용).
+    /// [아기 곰은 꿀을 좋아해] 꿀 타일 발동 시마다 아기곰 회복(HoneyPawTile이 BearPackTracker.HealBaby로 처리).
+    /// 이 패시브는 아기곰 피격 시 공격자를 기록(엄마곰 보호 본능용) + 웨이브 훅 보장.
     /// </summary>
     [System.Serializable]
     public class HoneyLoverPassive : PassiveAbility
     {
-        [Header("Passive Settings")]
-        [Tooltip("피격 대상 주변 ±칸")]
-        [SerializeField] private int honeyRadius = 2;
-        [Tooltip("주변 꿀 1개당 추가 피해")]
-        [SerializeField] private int damagePerHoney = 3;
-
         public HoneyLoverPassive()
         {
             passiveName = "아기 곰은 꿀을 좋아해";
-            description = "공격 대상 주변 꿀 타일 개수 × 3 만큼 피해 증가";
+            description = "꿀 타일 효과 발동 시마다 아기곰 체력 회복";
             priority = 10;
             isStackable = false;
         }
@@ -101,27 +80,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
             BearPackTracker.EnsureWaveHook();
         }
 
-        public override string GetDynamicDescription()
-            => $"공격 대상 주변 ±{honeyRadius}칸 꿀 1개당 피해 +{damagePerHoney}";
-
         public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
-
-            // 아기곰 공격 → 피격 대상 주변 꿀 × N 추가 피해
-            if (trigger == CombatTrigger.OnCalculateOutput && context.SourceUnit == owner
-                && context.Target is Character victim && victim.CurrentTile != null)
-            {
-                int honey = BearPackTracker.HoneyTilesNear(victim.CurrentTile.TileIndex, honeyRadius);
-                context.OutputValue += honey * damagePerHoney;
-            }
-
-            // 아기곰 피격 → 최근 공격자 기록 (실제 명중, 시뮬 제외)
+            // 아기곰 피격 → 최근 공격자 기록 (엄마곰 보호 본능/조건부 AI용)
             if (trigger == CombatTrigger.OnHit && context.Target == owner
                 && !context.IsSimulation && context.SourceUnit is Character attacker)
-            {
                 BearPackTracker.SetLastBabyAttacker(attacker);
-            }
         }
 
         public override bool AllowSamePassive(IPassive incoming) => false;

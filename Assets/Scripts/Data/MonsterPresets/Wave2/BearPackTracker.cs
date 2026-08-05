@@ -77,6 +77,20 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2
             return 0;
         }
 
+        /// <summary>아기 곰을 찾아 amount만큼 회복 ([아기 곰은 꿀을 좋아해] — 꿀 타일 발동 시).</summary>
+        public static void HealBaby(int amount)
+        {
+            if (amount <= 0) return;
+            var monsters = CombatManager.Instance?.ActiveMonsters;
+            if (monsters == null) return;
+            foreach (var m in monsters)
+                if (m != null && m.IsAlive && m.Stats != null && m.Stats.MonsterName == "아기 곰")
+                {
+                    m.Stats.Heal(amount);
+                    break;
+                }
+        }
+
         /// <summary>현재 필드에 깔린 꿀 타일 수.</summary>
         public static int HoneyTileCount()
         {
