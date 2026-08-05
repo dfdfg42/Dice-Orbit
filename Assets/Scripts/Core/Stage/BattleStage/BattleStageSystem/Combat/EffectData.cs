@@ -18,9 +18,9 @@ namespace DiceOrbit.Data
         Focus,           // 마법사 집중 스택
         Honey,           // 꿀 타일 효과
         SlushSnow,      // 눈사람 진창눈 이동 디버프 (몬스터 전용 타일/상태 로직)
-        Frozen,          // 빙결 상태이상
+        Bound,           // 속박: 이동 불가(BindDebuff) (구 Frozen)
         Dodge,           // 회피율 (%)
-        Frostbite,       // 동상: 입는 피해량 증가 (서리토템)
+        Vulnerable,      // 취약: 받는 피해량 증가 (구 Frostbite)
         Weak,            // 쇠약: 가하는 피해 -V% (포션)
         Poison,          // 독: 매턴 최대체력 V% 피해 (포션)
         Power,           // 파워: 가하는 피해 +V% (포션)
@@ -31,6 +31,8 @@ namespace DiceOrbit.Data
         Stunned,            // 기절: 다음 턴 행동 불가(이동+스킬) (Wave3 수정)
         CrystalStack,       // 수정 중첩: 수정 핵 스택 카운터(가시화용 상태) (Wave3 수정)
         SnowDamageTaken,    // 받은 피해: 눈사람 진창눈 취소 판정용 누적 피해(가시화) (Wave3 눈사람)
+        FrostStack,         // 빙결 중첩: 턴 종료 시 중첩만큼 피해 + 중첩 -1 (Wave3 눈)
+        Slowed,             // 둔화: 이동 감소(MoveDebuff) (Wave0 슬라임)
     }
 
     /// <summary>

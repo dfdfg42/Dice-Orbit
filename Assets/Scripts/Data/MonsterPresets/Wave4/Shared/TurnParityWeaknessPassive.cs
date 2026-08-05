@@ -10,7 +10,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.Shared
     /// 리듬 약화 패시브 (양력/음력 공용).
     /// 매 턴 시작, 현재 턴의 홀짝이 지정과 맞으면 "받는 피해 +percent%"를 자신에게 durationTurns턴 부여한다.
     /// 태양 유닛 = triggerOnOddTurn(홀수턴에 약화), 달 유닛 = triggerOnOddTurn 해제(짝수턴에 약화).
-    /// 받는 피해 증가는 기존 FrostbiteDebuff(받는 피해 +Value%, 중첩 불가)를 재사용한다.
+    /// 받는 피해 증가는 기존 VulnerableStatus(받는 피해 +Value%, 중첩 불가)를 재사용한다.
     /// </summary>
     [System.Serializable]
     public class TurnParityWeaknessPassive : PassiveAbility
@@ -48,7 +48,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave4.Shared
             if (isOddTurn != triggerOnOddTurn) return;
 
             if (owner.StatusEffects == null) return;
-            owner.StatusEffects.AddEffect(new FrostbiteDebuff(percent, durationTurns));
+            owner.StatusEffects.AddEffect(new VulnerableStatus(percent, durationTurns));
             Debug.Log($"[{PassiveName}] {owner.name} 받는 피해 +{percent}% ({durationTurns}턴) — turn {cm.TurnCount}");
         }
 

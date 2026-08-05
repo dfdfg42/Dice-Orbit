@@ -6,13 +6,17 @@ using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Tile;
 using DiceOrbit.Systems.Effects;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
 {
-    /// <summary>눈사람 세트 공유 헬퍼.</summary>
+    /// <summary>눈 세트 공유 헬퍼.</summary>
     public static class SnowSet
     {
+        private static CombatManager hookedManager;
+        private static int peakCount;
+
         public static IEnumerable<Monster> OtherAliveMonsters(Monster owner)
         {
             var monsters = CombatManager.Instance?.ActiveMonsters;
@@ -34,8 +38,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
             return result;
         }
 
-        // 눈사람이 이번 라운드(직전 플레이어 턴) 동안 받은 피해 누적 → 상태이상으로 저장(가시화).
-        // 진창눈(ThrowSnow)이 예약됐을 때만 붙는다(HappySnowmanPassive가 게이트).
+        // ── 진창눈 취소용 받은-피해 추적 (가시화, SnowDamageStatus) ──
         public static void AddDamageTaken(Monster snowman, int amount)
         {
             if (snowman == null || snowman.StatusEffects == null || amount <= 0) return;
@@ -53,10 +56,37 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
             if (snowman == null || snowman.StatusEffects == null) return;
             snowman.StatusEffects.RemoveEffect(EffectType.SnowDamageTaken);
         }
+
+        /// <summary>다른 아군이 하나라도 죽었는가 (조건부 AI용). 최대 생존 수(=초기) 대비 감소로 판정.</summary>
+        public static bool HasAnyAllyDied()
+        {
+            var cm = CombatManager.Instance;
+            if (cm == null) return false;
+            int alive = cm.GetAliveMonsters().Count;
+            if (alive > peakCount) peakCount = alive;
+            return alive < peakCount;
+        }
+
+        public static void EnsureWaveHook()
+        {
+            var cm = CombatManager.Instance;
+            if (cm == null || hookedManager == cm) return;
+            if (hookedManager != null) hookedManager.OnCombatStart -= OnCombatStart;
+            cm.OnCombatStart += OnCombatStart;
+            hookedManager = cm;
+        }
+
+        private static void OnCombatStart()
+        {
+            peakCount = 0;
+            var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
+            if (orbit?.Tiles == null) return;
+            foreach (var tile in orbit.Tiles)
+                if (tile != null) tile.RemoveAttributeType(TileAttributeType.Frost);
+        }
     }
 
-    /// <summary>[받은 피해] 눈사람이 이번 라운드 받은 누적 피해(가시화). 진창눈 취소 판정용.
-    /// 순수 카운터, 영구(-1), 누적(IsStackable). 눈사람 턴 종료 시 제거.</summary>
+    /// <summary>[받은 피해] 눈사람이 이번 라운드 받은 누적 피해(가시화). 진창눈 취소 판정용. 순수 카운터, 영구, 누적.</summary>
     public class SnowDamageStatus : StatusEffect
     {
         public SnowDamageStatus(int amount) : base(EffectType.SnowDamageTaken, amount, -1, isStackable: true) { }
@@ -67,9 +97,9 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
     public class ThrowSnow : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 25;
+        [SerializeField] private int damage = 20;
         [Tooltip("이 피해 이상 받으면 공격 취소")]
-        [SerializeField] private int cancelDamageThreshold = 20;
+        [SerializeField] private int cancelDamageThreshold = 10;
 
         public ThrowSnow()
         {
@@ -79,7 +109,6 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
 
         public override int GetPreviewDamage() => damage;
 
-        /// <summary>이번 라운드 받은 피해가 임계값 이상이면 진창눈을 취소해야 한다.</summary>
         public bool ShouldCancel(Monster snowman)
             => snowman != null && SnowSet.GetDamageTaken(snowman) >= cancelDamageThreshold;
 
@@ -100,7 +129,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
     public class SnowStorm : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 25;
+        [SerializeField] private int damage = 20;
 
         public SnowStorm()
         {
@@ -117,33 +146,39 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
     }
 
     /// <summary>
-    /// [행복한 눈사람] 눈사람의 공격이 적중한 적은 다음 턴 이동 불가(빙결)가 된다.
+    /// [행복한 눈사람] 눈사람의 공격이 적중한 적에게 빙결 중첩 +frostStacks. 빙결: 매 턴 종료 시 중첩만큼 피해(중첩 −1).
     /// 또한 눈사람이 받은 피해를 누적해 [진창눈]의 취소 판정에 쓰고, 턴 종료 시 초기화한다.
     /// </summary>
     [System.Serializable]
     public class HappySnowmanPassive : PassiveAbility
     {
         [Header("Passive Settings")]
-        [Tooltip("피격된 적 이동불가(빙결) 지속 턴")]
-        [SerializeField] private int immobilizeDuration = 2;
+        [Tooltip("피격 적에게 부여할 빙결 중첩")]
+        [SerializeField] private int frostStacks = 1;
 
         public HappySnowmanPassive()
         {
             passiveName = "행복한 눈사람";
-            description = "눈사람에게 피격된 적은 다음 턴 이동 불가";
+            description = "눈사람에게 피격된 적은 빙결 중첩 +1 (매 턴 종료 시 중첩만큼 피해)";
             priority = 10;
             isStackable = false;
         }
 
         public override string GetDynamicDescription()
-            => $"눈사람에게 피격된 적 다음 턴 이동 불가 ({immobilizeDuration}턴)";
+            => $"피격된 적 빙결 중첩 +{frostStacks} (턴 종료 시 중첩만큼 피해)";
+
+        public override void Initialize(Unit Owner)
+        {
+            base.Initialize(Owner);
+            SnowSet.EnsureWaveHook();
+        }
 
         public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (owner == null) return;
             if (trigger != CombatTrigger.OnHit || context.IsSimulation || !context.IsEffected) return;
 
-            // 눈사람이 받은 피해 누적 — 단, 진창눈(취소 가능 패턴)이 예약됐을 때만 붙이고 표시한다.
+            // 눈사람이 받은 피해 누적 — 진창눈(취소 가능 패턴)이 예약됐을 때만.
             if (context.Target == owner)
             {
                 var m = owner as Monster;
@@ -151,13 +186,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
                 if (throwSnow != null)
                 {
                     SnowSet.AddDamageTaken(m, Mathf.RoundToInt(context.OutputValue));
-                    if (throwSnow.ShouldCancel(m)) m.CancelIntent(); // 임계값 도달 → 의도선 즉시 제거 + 공격 취소
+                    if (throwSnow.ShouldCancel(m)) m.CancelIntent();
                 }
             }
 
-            // 눈사람 공격이 적중한 적 → 다음 턴 이동 불가
-            if (context.SourceUnit == owner && context.Target is Character victim && victim.IsAlive)
-                victim.StatusEffects?.AddEffect(new FrozenDebuff(0, immobilizeDuration));
+            // 눈사람 공격이 적중한 적 → 빙결 중첩 부여
+            if (context.SourceUnit == owner && context.Target is Character victim && victim.IsAlive && victim.StatusEffects != null)
+                victim.StatusEffects.AddEffect(new FrostStackStatus(frostStacks));
         }
 
         public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)

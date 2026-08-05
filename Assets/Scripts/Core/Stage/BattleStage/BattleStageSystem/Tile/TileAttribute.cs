@@ -11,7 +11,8 @@ namespace DiceOrbit.Data.Tile
         RandMine,
         Bone,
         Honey,
-        SnowPrison,
+        Bind,           // 속박: 그 위 턴 종료 시 이동 불가 (구 SnowPrison)
+        Frost,          // 빙결 타일: 그 위 턴 종료 시 빙결 중첩 부여 후 삭제 (Wave3 눈)
         Cloud,          // 구름 타일 (기상학자 패시브)
         ScoutHeal,      // 정찰병 치유 타일
         Reagent,        // 시약 타일 (연금술사 패시브)
@@ -116,6 +117,8 @@ namespace DiceOrbit.Data.Tile
                 TileAttributeType.Flame => "불꽃",
                 TileAttributeType.Slime => "점액",
                 TileAttributeType.Amethyst => "자수정",
+                TileAttributeType.Bind => "속박",
+                TileAttributeType.Frost => "빙결",
                 _ => Type.ToString()
             };
         }

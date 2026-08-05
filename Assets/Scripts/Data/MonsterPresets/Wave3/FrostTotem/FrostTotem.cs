@@ -1,22 +1,19 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
-using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Tile;
-using DiceOrbit.Systems.Effects;
 using DiceOrbit.Data.Monsters;
+using DiceOrbit.Data.MonsterPresets.Wave3.SnowMan;
 
 namespace DiceOrbit.Systems.Effects
 {
-    /// <summary>
-    /// 동상 디버프. 부착된 유닛이 받는 피해량을 일정 비율 증가시킨다. 중첩 불가.
-    /// Value = 증가 퍼센트(예: 20 → +20%).
-    /// </summary>
-    public class FrostbiteDebuff : StatusEffect
+    /// <summary>취약 — 부착된 유닛이 받는 피해량을 Value% 증가시킨다. 중첩 불가. (구 FrostbiteDebuff, Wave4 공유)</summary>
+    public class VulnerableStatus : StatusEffect
     {
-        public FrostbiteDebuff(int percent, int duration) : base(EffectType.Frostbite, percent, duration)
+        public VulnerableStatus(int percent, int duration) : base(EffectType.Vulnerable, percent, duration)
         {
             IsStackable = false;
         }
@@ -24,25 +21,15 @@ namespace DiceOrbit.Systems.Effects
         public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (Owner == null) return;
-
-            // 내가 피해를 받는 쪽일 때 받는 피해량 증가
             if (trigger == CombatTrigger.OnCalculateOutput && context.Target == Owner)
-            {
                 context.OutputValue *= 1f + (Value / 100f);
-            }
         }
     }
 }
 
 namespace DiceOrbit.Data.MonsterPresets.Wave3.FrostTotem
 {
-    // ==========================================
-    // 패턴 1 [서리꽃]
-    // ==========================================
-    /// <summary>
-    /// 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해.
-    /// 대상은 MonsterSkill: RandomCharacter + Tiles + count 1 + range 2.
-    /// </summary>
+    /// <summary>[서리 꽃] 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해. (RandomCharacter + Tiles + range 2)</summary>
     [System.Serializable]
     public class FrostFlower : SkillData
     {
@@ -51,7 +38,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.FrostTotem
 
         public FrostFlower()
         {
-            skillName = "서리꽃";
+            skillName = "서리 꽃";
             description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
         }
 
@@ -63,84 +50,48 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.FrostTotem
         }
     }
 
-    // ==========================================
-    // 패턴 2 [이슬점]
-    // ==========================================
-    /// <summary>
-    /// 모든 아군 몬스터(자신 포함)의 피해량을 영구히 증가시킨다(중첩).
-    /// 타겟 없는 팀 버프이므로 MonsterSkill: TargetType=Self, IntentType=Buff.
-    /// </summary>
+    /// <summary>[빙결] 무작위 tileCount 타일에 빙결 타일 설치. 대상 없음 — Execute가 직접 배치.</summary>
     [System.Serializable]
-    public class DewPoint : SkillData
+    public class FrostPlantSkill : SkillData
     {
         [Header("Skill Settings")]
-        [Tooltip("아군 전체에 영구 부여할 공격력 증가량")]
-        [SerializeField] private int damageBuff = 3;
+        [SerializeField] private int tileCount = 4;
+        [SerializeField] private int frostStacks = 5;
 
-        public DewPoint()
+        public FrostPlantSkill()
         {
-            skillName = "이슬점";
-            description = "아군 전체의 피해량 +3 영구 증가";
+            skillName = "빙결";
+            description = "무작위 4타일에 빙결 타일 설치 (그 위에서 턴 종료 시 빙결 중첩)";
         }
+
+        public override int GetPreviewDamage() => 0;
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            var monsters = CombatManager.Instance?.ActiveMonsters;
-            if (monsters == null) return;
-
-            foreach (var m in monsters)
+            SnowSet.EnsureWaveHook();
+            var orbit = GameManager.Instance?.GetOrbitManager();
+            if (orbit?.Tiles == null) return;
+            var candidates = orbit.Tiles.Where(t => t != null && !t.HasAttribute(TileAttributeType.Frost)).ToList();
+            int place = Mathf.Min(tileCount, candidates.Count);
+            for (int i = 0; i < place; i++)
             {
-                if (m == null || !m.IsAlive || m.StatusEffects == null) continue;
-
-                // 영구(-1) 공격력 버프를 중첩 가능하게 부여
-                var buff = new BuffAttackStatus(damageBuff, -1) { IsStackable = true };
-                m.StatusEffects.AddEffect(buff);
+                int r = Random.Range(0, candidates.Count);
+                candidates[r].AddAttribute(new FrostTile(frostStacks));
+                candidates.RemoveAt(r);
             }
-            Debug.Log($"[이슬점] 모든 아군 피해량 +{damageBuff} (영구)");
         }
     }
 
-    // ==========================================
-    // 패시브 [서리 갑옷]
-    // ==========================================
-    /// <summary>
-    /// [서리 갑옷] 다른 아군 몬스터의 공격이 적중하면, 모든 아군 몬스터에게 일시 방어도를 부여한다.
-    /// (파이프라인이 방관 몬스터 패시브도 디스패치하므로 owner가 당사자가 아니어도 발화)
-    /// </summary>
+    /// <summary>서리토템 조건부 AI: 빙결[0] ONLY, 최초 아군 사망 시 50/50[빙결, 서리꽃].</summary>
     [System.Serializable]
-    public class FrostArmorPassive : PassiveAbility
+    public class FrostTotemPattern : DiceOrbit.Data.MonsterAI.MonsterAI
     {
-        [Header("Passive Settings")]
-        [Tooltip("다른 아군 공격 적중 시 전 아군에 부여할 방어도")]
-        [SerializeField] private int armorAmount = 10;
-
-        public FrostArmorPassive()
+        public override MonsterSkill GetNextSkill()
         {
-            passiveName = "서리 갑옷";
-            description = "다른 아군의 공격이 적중하면 모든 아군에게 일시 방어도 부여";
-            priority = 10;
-            isStackable = false;
+            if (availableSkills == null || availableSkills.Count == 0) return null;
+            if (!SnowSet.HasAnyAllyDied()) return availableSkills[0];
+            int idx = availableSkills.Count >= 2 ? Random.Range(0, 2) : 0;
+            return availableSkills[idx];
         }
-
-        public override string GetDynamicDescription()
-            => $"다른 아군 공격 적중 시 모든 아군 방어도 +{armorAmount}";
-
-        public override void OnAttack(CombatTrigger trigger, AttackContext context)
-        {
-            if (owner == null) return;
-            if (trigger != CombatTrigger.OnHit || context.IsSimulation || !context.IsEffected) return;
-            if (!(context.SourceUnit is Monster attacker) || attacker == owner) return;  // 다른 아군 몬스터만
-
-            var monsters = CombatManager.Instance?.ActiveMonsters;
-            if (monsters == null) return;
-            foreach (var m in monsters)
-            {
-                if (m == null || !m.IsAlive || m.Stats == null) continue;
-                m.Stats.TempArmor += armorAmount;
-            }
-            Debug.Log($"[서리 갑옷] {attacker.name} 명중 → 전 아군 방어도 +{armorAmount}");
-        }
-
-        public override bool AllowSamePassive(IPassive incoming) => false;
     }
 }

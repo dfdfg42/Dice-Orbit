@@ -49,7 +49,7 @@ namespace DiceOrbit.Data.Tile
             int stepped = BearPackTracker.RegisterHoneyStep(target, turn);
             if (stepped >= bindThreshold)
             {
-                target.StatusEffects?.AddEffect(new FrozenDebuff(0, bindDuration));
+                target.StatusEffects?.AddEffect(new BindStatus(0, bindDuration));
             }
 
             // 4) 발동 후 삭제

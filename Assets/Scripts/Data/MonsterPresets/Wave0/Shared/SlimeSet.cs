@@ -1,37 +1,24 @@
-using System.Collections.Generic;
+using System.Linq;
 using DiceOrbit.Core;
 using DiceOrbit.Data.Tile;
-using UnityEngine;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave0.Shared
 {
     /// <summary>
-    /// 슬라임 세트 공유 상태.
-    /// - 파란 슬라임이 이번 라운드 받은 누적 피해 ([박치기] 취소 판정).
+    /// 슬라임 세트 공유 로직.
     /// - 점액 타일은 몬스터 사망 후에도 유지되고 웨이브 종료(=다음 전투 시작) 시 정리.
+    /// - 초록 슬라임 조건부 AI용 파란 슬라임 생존 판정.
     /// </summary>
     public static class SlimeSet
     {
-        private static readonly Dictionary<Monster, int> DamageTakenThisRound = new();
         private static CombatManager hookedManager;
 
-        public static void AddDamageTaken(Monster slime, int amount)
+        /// <summary>파란 슬라임이 살아있는가 (초록 슬라임 조건부 AI용). 이름으로 식별.</summary>
+        public static bool IsBlueSlimeAlive()
         {
-            if (slime == null) return;
-            DamageTakenThisRound.TryGetValue(slime, out int cur);
-            DamageTakenThisRound[slime] = cur + Mathf.Max(0, amount);
-        }
-
-        public static int GetDamageTaken(Monster slime)
-        {
-            if (slime == null) return 0;
-            DamageTakenThisRound.TryGetValue(slime, out int cur);
-            return cur;
-        }
-
-        public static void ResetDamageTaken(Monster slime)
-        {
-            if (slime != null) DamageTakenThisRound[slime] = 0;
+            var cm = CombatManager.Instance;
+            if (cm == null) return false;
+            return cm.GetAliveMonsters().Any(m => m != null && m.Stats != null && m.Stats.MonsterName == "파란 슬라임");
         }
 
         public static void EnsureWaveHook()
@@ -45,7 +32,6 @@ namespace DiceOrbit.Data.MonsterPresets.Wave0.Shared
 
         private static void OnCombatStart()
         {
-            DamageTakenThisRound.Clear();
             var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
             if (orbit?.Tiles == null) return;
             foreach (var tile in orbit.Tiles)
