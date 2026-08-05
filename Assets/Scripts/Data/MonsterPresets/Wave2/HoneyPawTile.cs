@@ -1,31 +1,53 @@
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Data;
 using DiceOrbit.Data.MonsterPresets.Wave2;
 using DiceOrbit.Systems.Effects;
+
+namespace DiceOrbit.Systems.Effects
+{
+    /// <summary>혈당 스파이크 — 다음 턴 이동 불가. 적용 시 CharacterStats.BindDebuff++, 만료 시 --. (Wave2 곰, BindStatus 패턴)</summary>
+    public class BloodSugarSpikeStatus : StatusEffect
+    {
+        public BloodSugarSpikeStatus(int duration) : base(EffectType.BloodSugarSpike, 0, duration)
+        {
+            IsStackable = false;
+        }
+
+        public override void EffectApplied()
+        {
+            if (Owner != null && Owner.Stats is CharacterStats c) c.BindDebuff++;
+        }
+
+        public override void EffectExpired()
+        {
+            if (Owner != null && Owner.Stats is CharacterStats c) c.BindDebuff--;
+        }
+    }
+}
 
 namespace DiceOrbit.Data.Tile
 {
     /// <summary>
-    /// 아기곰 [꿀 묻은 발]로 설치되는 꿀 타일.
-    /// 캐릭터가 통과하면:
-    ///  1) 그 캐릭터를 일정량 회복(미끼),
-    ///  2) '먹은 꿀' 카운트 +1 (아기곰 피해 증가),
-    ///  3) 한 턴에 꿀 타일을 bindThreshold개 이상 밟으면 이동 불가(빙결) 부여,
-    ///  4) 자기 자신 제거.
-    /// 몬스터가 죽어도 유지되며, 웨이브 종료 시 BearPackTracker가 정리한다.
+    /// 아기곰 [꿀 묻히기]로 설치되는 꿀 타일. 통과 시:
+    ///  1) 그 캐릭터 회복(미끼), 2) 아기곰 +babyHeal 회복([아기 곰은 꿀을 좋아해]),
+    ///  3) '먹은 꿀' 카운트, 4) 한 턴에 bindThreshold개 이상 밟으면 혈당 스파이크(다음 턴 이동 불가),
+    ///  5) 자기 삭제. 몬스터 사망 후 유지, 웨이브 종료 시 BearPackTracker가 정리.
     /// </summary>
     public class HoneyPawTile : TileAttribute
     {
         private readonly int healAmount;
         private readonly int bindThreshold;
         private readonly int bindDuration;
+        private readonly int babyHeal;
 
-        public HoneyPawTile(int healAmount, int bindThreshold, int bindDuration)
+        public HoneyPawTile(int healAmount, int bindThreshold, int bindDuration, int babyHeal)
             : base(TileAttributeType.Honey, healAmount, -1, false)
         {
             this.healAmount = healAmount;
             this.bindThreshold = bindThreshold;
             this.bindDuration = bindDuration;
+            this.babyHeal = babyHeal;
         }
 
         public override void OnTraverse(Character character) => Activate(character);
@@ -34,29 +56,30 @@ namespace DiceOrbit.Data.Tile
         {
             if (target == null || !target.IsAlive) return;
 
-            // 1) 통과한 캐릭터 회복 (미끼)
+            // 1) 통과 캐릭터 회복 (미끼)
             if (healAmount > 0)
             {
                 var heal = new HealContext(null, target, "꿀", healAmount);
                 CombatPipeline.Instance?.Process(heal);
             }
 
-            // 2) '먹은 꿀' 카운트 → 아기곰 피해 증가
+            // 2) [아기 곰은 꿀을 좋아해] 아기곰 회복
+            BearPackTracker.HealBaby(babyHeal);
+
+            // 3) '먹은 꿀' 카운트
             BearPackTracker.RegisterHoneyEaten();
 
-            // 3) 한 턴에 꿀 타일을 bindThreshold개 이상 밟으면 이동 불가
+            // 4) 한 턴에 bindThreshold개 이상 밟으면 혈당 스파이크(다음 턴 이동 불가)
             int turn = CombatManager.Instance != null ? CombatManager.Instance.TurnCount : 0;
             int stepped = BearPackTracker.RegisterHoneyStep(target, turn);
             if (stepped >= bindThreshold)
-            {
-                target.StatusEffects?.AddEffect(new BindStatus(0, bindDuration));
-            }
+                target.StatusEffects?.AddEffect(new BloodSugarSpikeStatus(bindDuration));
 
-            // 4) 발동 후 삭제
+            // 5) 발동 후 삭제
             Owner?.RemoveAttribute(this);
         }
 
         public override string GetDescription()
-            => $"통과 시 {healAmount} 회복. 한 턴에 {bindThreshold}개 이상 밟으면 이동 불가 (발동 후 삭제)";
+            => $"통과 시 {healAmount} 회복. 한 턴에 {bindThreshold}개 이상 밟으면 혈당 스파이크(이동 불가) (발동 후 삭제)";
     }
 }
