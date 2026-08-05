@@ -36,6 +36,7 @@ namespace DiceOrbit.Data
         BloodSugarSpike,    // 혈당 스파이크: 다음 턴 이동 불가(BindDebuff) (Wave2 곰)
         CrystalDamageTaken, // 받은 피해: 수정 파편 이번 라운드 누적 피해(수정 화살 취소 판정, 가시화) (Wave3 수정)
         BiteDamageTaken,    // 받은 피해: 흡혈박쥐 이번 턴 누적 피해(깨물기 취소 판정, 가시화) (Wave6 흡혈박쥐)
+        VitalityStack,      // 활력 스택: 식물 몬스터 활력(≤7이면 받는 피해 +20%, 가시화) (Wave7 농장)
     }
 
     /// <summary>

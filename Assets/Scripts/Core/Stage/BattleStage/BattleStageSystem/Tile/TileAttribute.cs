@@ -24,6 +24,7 @@ namespace DiceOrbit.Data.Tile
         Flame,          // 불꽃: 턴 종료 시 V 피해 / 통과 시 소화 (Wave5)
         Slime,          // 점액: 통과/턴 종료 시 쇠약 부여 (Wave0)
         Amethyst,       // 자수정: 통과/턴 종료 시 수정 핵에 수정 중첩 +1, 영구 (Wave3 수정)
+        Vitality,       // 활력: 통과/턴 종료 시 모든 식물 몬스터 활력 -1, 영구 (Wave7 농장)
     }
 
     /// <summary>
@@ -117,6 +118,7 @@ namespace DiceOrbit.Data.Tile
                 TileAttributeType.Flame => "불꽃",
                 TileAttributeType.Slime => "점액",
                 TileAttributeType.Amethyst => "자수정",
+                TileAttributeType.Vitality => "활력",
                 TileAttributeType.Bind => "속박",
                 TileAttributeType.Frost => "빙결",
                 _ => Type.ToString()
