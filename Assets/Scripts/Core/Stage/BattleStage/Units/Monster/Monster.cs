@@ -265,12 +265,12 @@ namespace DiceOrbit.Core
         private bool actingHighlighted;
         private Vector3 actingBaseScale;
 
-        /// <summary>머리 위(월드 좌표) — 행동 말풍선 앵커. 스프라이트 상단 + 약간 위.</summary>
+        /// <summary>머리 위(월드 좌표) — 행동 말풍선 앵커. 스프라이트 상단 + 여백.</summary>
         public Vector3 GetHeadTopWorld()
         {
             if (spriteRenderer != null && spriteRenderer.sprite != null)
-                return new Vector3(transform.position.x, spriteRenderer.bounds.max.y + 0.15f, transform.position.z);
-            return transform.position + Vector3.up * 1.2f;
+                return new Vector3(transform.position.x, spriteRenderer.bounds.max.y + 0.6f, transform.position.z);
+            return transform.position + Vector3.up * 1.8f;
         }
 
         /// <summary>행동 중 강조(살짝 확대). on=false면 원래 스케일로 복원.</summary>
