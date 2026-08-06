@@ -410,7 +410,11 @@ namespace DiceOrbit.UI
 
         // ── UI 조립 헬퍼 ───────────────────────────────────────
 
-        /// <summary>7px 갈색 테두리 + 크림 바탕 + 드롭 섀도의 액자형 패널. 내부(콘텐츠) RectTransform 반환.</summary>
+        /// <summary>
+        /// 7px 갈색 테두리 + 크림 바탕 + 드롭 섀도의 액자형 패널.
+        /// 프레임(바깥) RectTransform을 반환한다 — 이걸 토글해야 테두리까지 함께 켜지고 꺼진다.
+        /// 콘텐츠는 프레임에 직접 붙이면 크림 바탕(먼저 생성) 위에 올라간다.
+        /// </summary>
         private RectTransform MakeFramedPanel(RectTransform parent, string name, Vector2 size)
         {
             var frame = MakeChild(parent, name);
@@ -435,7 +439,7 @@ namespace DiceOrbit.UI
             innerImg.color = Paper;
             innerImg.raycastTarget = false;
 
-            return inner;
+            return frame;   // 안쪽(inner)이 아니라 프레임을 반환 — SetActive 토글이 테두리까지 포함
         }
 
         /// <summary>버튼-호버 겸용 카드 루트 (투명 레이캐스트 캐처 + 세로 스택).</summary>
