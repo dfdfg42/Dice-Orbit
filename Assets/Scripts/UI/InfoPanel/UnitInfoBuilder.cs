@@ -242,14 +242,15 @@ namespace DiceOrbit.UI
                 foreach (var p in passives)
                 {
                     string body = !string.IsNullOrWhiteSpace(p.DynamicEffect) ? p.DynamicEffect : p.FlavorText;
-                    sb.Append("\n<b>").Append(p.Name).Append("</b>");
+                    sb.Append("\n<b>").Append(p.Name);
                     if (!string.IsNullOrWhiteSpace(body))
-                        sb.Append("  <color=#B3B3B3>").Append(body.Replace("\n", " ")).Append("</color>");
+                        sb.Append("  ").Append(body.Replace("\n", " "));
+                    sb.Append("</b>");
                 }
             }
             else
             {
-                sb.Append("\n<color=#8A8A8A>패시브 없음</color>");
+                sb.Append("\n<b>패시브 없음</b>");
             }
 
             if (statuses != null && statuses.Count > 0)
@@ -262,7 +263,7 @@ namespace DiceOrbit.UI
                     if (!string.IsNullOrEmpty(st.DurationText)) part += $" {st.DurationText}";
                     parts.Add(part);
                 }
-                sb.Append("\n<color=#C9A15A>").Append(string.Join(" · ", parts)).Append("</color>");
+                sb.Append("\n<b>").Append(string.Join(" · ", parts)).Append("</b>");
             }
 
             return sb.ToString();
@@ -304,7 +305,7 @@ namespace DiceOrbit.UI
             }
 
             string desc = (data.Description ?? string.Empty).Trim();
-            return string.IsNullOrEmpty(desc) ? line : $"{line}\n<color=#B3B3B3>{desc}</color>";
+            return string.IsNullOrEmpty(desc) ? $"<b>{line}</b>" : $"<b>{line}\n{desc}</b>";
         }
 
         private static IReadOnlyList<SkillInfoData> BuildActives(CharacterStats stats)

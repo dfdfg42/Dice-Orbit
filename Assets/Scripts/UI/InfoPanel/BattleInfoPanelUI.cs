@@ -56,6 +56,8 @@ namespace DiceOrbit.UI
         [Header("정렬")]
         [Tooltip("사이드바는 배경 레이어 — 일반 UI(0)와 팝업(캐릭터 액션 패널 등)이 항상 위에 그려지도록 음수 유지")]
         [SerializeField] private int panelSortingOrder = -5;
+        [Tooltip("모디파이어 섹션을 이 픽셀만큼 아래로 내림 (다른 섹션과 간격 확보)")]
+        [SerializeField] private float modifiersDropY = 24f;
 
         private InfoPanelSelectionController _selection;
         private float _nextRefresh;
@@ -174,6 +176,18 @@ namespace DiceOrbit.UI
 
             // 씬에 저장된 캔버스에도 최신 정렬값 강제 (기존 생성 레이아웃의 100 등 옛 값 교정)
             ApplyPanelSortingOrder();
+
+            // 모디파이어 섹션을 살짝 아래로 (텍스트 확대로 위 섹션과 겹치지 않게)
+            ApplyModifiersDrop();
+        }
+
+        /// <summary>모디파이어 섹션(컨테이너의 부모 슬롯)을 modifiersDropY 픽셀만큼 아래로 이동.</summary>
+        private void ApplyModifiersDrop()
+        {
+            if (modifiersContainer == null || Mathf.Approximately(modifiersDropY, 0f)) return;
+            var section = modifiersContainer.parent as RectTransform;
+            if (section != null)
+                section.anchoredPosition -= new Vector2(0f, modifiersDropY);
         }
 
         private void Update()
@@ -408,7 +422,7 @@ namespace DiceOrbit.UI
             string line = string.IsNullOrWhiteSpace(meta) ? title : $"{title}  {meta}";
             InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 24f, titleColor, FontStyles.Bold);
             if (!string.IsNullOrWhiteSpace(desc))
-                InfoPanelRows.AddText(container, desc, 20f, InfoPanelRows.MutedColor, FontStyles.Normal, linkKeywords: true);
+                InfoPanelRows.AddText(container, desc, 24f, InfoPanelRows.InkDark, FontStyles.Bold, linkKeywords: true);
         }
 
         /// <summary>
