@@ -16,7 +16,7 @@ namespace DiceOrbit.Core
         [SerializeField] private Color validTargetColor   = Color.green;
         [SerializeField] private Color invalidTargetColor = Color.red;
         [SerializeField] private Color confirmedLineColor = new Color(0.3f, 0.8f, 1f, 1f);
-        [SerializeField] private float lineWidth = 0.1f;
+        // 조준선 폭·화살촉 등 형태는 DashedArcLine이 단일 소스로 소유(DefaultWidth).
 
         // 조준선: 포물선 + 흐르는 점선 + 화살촉 (몬스터 인텐트 라인과 같은 형태 언어 — DashedArcLine)
         private LineRenderer _cursorArc;
@@ -55,8 +55,8 @@ namespace DiceOrbit.Core
             mainCamera    = Camera.main;
             _orbitManager = FindFirstObjectByType<OrbitManager>();
 
-            _cursorArc   = DashedArcLine.CreateArc(transform, lineWidth);
-            _cursorArrow = DashedArcLine.CreateArrow(transform, lineWidth);
+            _cursorArc   = DashedArcLine.CreateArc(transform);
+            _cursorArrow = DashedArcLine.CreateArrow(transform);
         }
 
         // ── 매 프레임 ─────────────────────────────────────────────────────
@@ -408,8 +408,8 @@ namespace DiceOrbit.Core
             var root = new GameObject("_ConfirmedLine");
             root.transform.SetParent(transform, false);
 
-            var arc   = DashedArcLine.CreateArc(root.transform, lineWidth);
-            var arrow = DashedArcLine.CreateArrow(root.transform, lineWidth);
+            var arc   = DashedArcLine.CreateArc(root.transform);
+            var arrow = DashedArcLine.CreateArrow(root.transform);
             DashedArcLine.SetArcWithArrow(arc, arrow,
                 from + Vector3.up * 0.3f, to + Vector3.up * 0.3f, confirmedLineColor);
             DashedArcLine.SetVisible(arc, arrow, true);

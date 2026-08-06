@@ -15,7 +15,7 @@ namespace DiceOrbit.UI
         [Header("Settings")]
         [SerializeField] private Color tileAttackColor = new Color(1f, 0f, 0f, 0.5f); // 반투명 빨강
         [SerializeField] private Color targetLineColor = Color.red;                  // 정체성 색 폴백
-        [SerializeField] private float lineWidth = 0.1f;
+        // 조준선 폭·화살촉 등 형태는 DashedArcLine이 단일 소스로 소유(DefaultWidth).
         [SerializeField] private int parabolaSegments = 24;
         [SerializeField] private float parabolaHeightMultiplier = 0.2f;
         [SerializeField] private float minParabolaHeight = 0.4f;
@@ -336,8 +336,8 @@ namespace DiceOrbit.UI
 
                 var root = new GameObject("_AttackArc");
                 root.transform.SetParent(transform, false);
-                var arc   = Visuals.DashedArcLine.CreateArc(root.transform, lineWidth);
-                var arrow = Visuals.DashedArcLine.CreateArrow(root.transform, lineWidth);
+                var arc   = Visuals.DashedArcLine.CreateArc(root.transform);
+                var arrow = Visuals.DashedArcLine.CreateArrow(root.transform);
 
                 Vector3 endPos = target.transform.position + Vector3.up * 0.5f;
                 Visuals.DashedArcLine.SetArcWithArrow(arc, arrow, startPos, endPos, color,
