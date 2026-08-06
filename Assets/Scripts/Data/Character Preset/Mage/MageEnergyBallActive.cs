@@ -27,7 +27,7 @@ namespace DiceOrbit.Data.CharacterActives
         }
 
         public override string GetDynamicDescription()
-            => $"{FormatDiceCondition()} X {Mathf.Max(1, multiplier)} + 집중 스택 피해";
+            => $"주사위 눈금 × {Mathf.Max(1, multiplier)} + 집중 스택 피해";
 
         // 집중 스택은 공격으로 소비되지 않는다. (웨이브 시작 시에만 초기화 — FocusPassive가 처리)
     }
