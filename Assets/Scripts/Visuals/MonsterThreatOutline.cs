@@ -45,8 +45,37 @@ namespace DiceOrbit.Visuals
 
         // ── 공개 API ──────────────────────────────────────────────
 
-        /// <summary>타일 집합의 각 타일 '둘레 전체'에 지정 색 외곽선 표시.</summary>
+        // 몬스터 공격 실행 중 강제 표시 플래그 — true인 동안 호버/패널 채널(ShowTiles/Hide)이 덮어쓰지 못한다.
+        private bool _forced;
+
+        /// <summary>타일 집합의 각 타일 '둘레 전체'에 지정 색 외곽선 표시 (호버/패널 채널).</summary>
         public void ShowTiles(IEnumerable<TileData> tiles, Color color)
+        {
+            if (_forced) return;   // 실행 강제 표시가 우선
+            RenderTiles(tiles, color);
+        }
+
+        public void Hide()
+        {
+            if (_forced) return;   // 실행 강제 표시가 우선
+            Clear();
+        }
+
+        /// <summary>몬스터 공격 실행 중 강제 표시. 호버/패널 갱신보다 우선하며 ClearForced까지 유지된다.</summary>
+        public void ShowForced(IEnumerable<TileData> tiles, Color color)
+        {
+            RenderTiles(tiles, color);
+            _forced = true;
+        }
+
+        /// <summary>강제 표시 해제 (이후 호버/패널 채널이 다시 외곽선을 소유).</summary>
+        public void ClearForced()
+        {
+            _forced = false;
+            Clear();
+        }
+
+        private void RenderTiles(IEnumerable<TileData> tiles, Color color)
         {
             _color = color;
             Clear();
@@ -61,8 +90,6 @@ namespace DiceOrbit.Visuals
             foreach (var tile in set)
                 BuildOutlineForTile(tile);
         }
-
-        public void Hide() => Clear();
 
         // ── 타게팅 중 자동 숨김 (조준 > 정보 우선) ─────────────────
 

@@ -150,11 +150,25 @@ namespace DiceOrbit.UI
             if (cam == null || Mouse.current == null) return;
 
             var ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
-            if (!Physics.Raycast(ray, out RaycastHit hit, 1000f)) return;
+            if (Physics.Raycast(ray, out RaycastHit hit, 1000f))
+            {
+                HoveredUnit = hit.collider.GetComponentInParent<IBattleInfoProvider>();
+                if (HoveredUnit == null)
+                    HoveredTile = hit.collider.GetComponentInParent<TileData>();
+            }
 
-            HoveredUnit = hit.collider.GetComponentInParent<IBattleInfoProvider>();
+            // 몸체를 못 맞혔으면 몬스터 의도 버블(공격 아이콘) 위인지 확인 → 그 몬스터를 호버 대상으로.
+            // 이러면 아이콘 호버 시에도 CurrentUnit=몬스터가 되어, SyncWorldIndicators가
+            // 그 몬스터의 공격 예정 타일 '둘레 외곽선'(MonsterThreatOutline)을 띄운다(몸체 호버와 동일).
             if (HoveredUnit == null)
-                HoveredTile = hit.collider.GetComponentInParent<TileData>();
+            {
+                var intentMonster = FindIntentBubbleMonsterUnderCursor();
+                if (intentMonster != null)
+                {
+                    HoveredUnit = intentMonster;
+                    HoveredTile = null;
+                }
+            }
         }
 
         private void UpdatePin(bool overUI)

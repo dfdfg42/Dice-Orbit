@@ -591,6 +591,16 @@ namespace DiceOrbit.Core
                 if (!string.IsNullOrEmpty(actionName))
                 {
                     monster.SetActingHighlight(true);
+
+                    // 이번 공격의 대상 타일 둘레 외곽선(정체성 색)을 실행 동안 강제 표시.
+                    // ExecuteIntent가 '다음' 의도를 뽑으므로 타일은 실행 전에 캡처한다(actionName과 동일 타이밍).
+                    var threatTiles = Visuals.IntentTileLiftEffect.CollectIntentTiles(monster);
+                    Color threatColor = Visuals.MonsterIdentityManager.Instance != null
+                        ? Visuals.MonsterIdentityManager.Instance.GetColor(monster)
+                        : new Color(1f, 0.45f, 0.3f, 1f);
+                    Visuals.MonsterThreatOutline.EnsureInstance();
+                    Visuals.MonsterThreatOutline.Instance?.ShowForced(threatTiles, threatColor);
+
                     var lbl = UI.MonsterActionLabel.Instance;
                     if (lbl != null) yield return lbl.Show(monster, actionName, actionIcon);
                     if (monsterActionLeadIn > 0f) yield return new WaitForSeconds(monsterActionLeadIn);
@@ -600,6 +610,8 @@ namespace DiceOrbit.Core
                     if (monsterActionDelay > 0f) yield return new WaitForSeconds(monsterActionDelay);
                     if (lbl != null) yield return lbl.Hide();
                     if (monster != null) monster.SetActingHighlight(false);
+
+                    Visuals.MonsterThreatOutline.Instance?.ClearForced();   // 강제 표시 해제 → 호버/패널 채널로 복귀
 
                     if (IsCombatFinished()) yield break;
                 }
