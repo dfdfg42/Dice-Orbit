@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 7173844916151027190}
   - component: {fileID: 7310821223762627741}
   - component: {fileID: 7253072701798279166}
+  - component: {fileID: 8447758833572103196}
   m_Layer: 0
   m_Name: TestHero
   m_TagString: Untagged
@@ -129,24 +130,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eb71867168fc3584e917965036238c7a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.Character
-  highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   passives: {fileID: 0}
   statusEffects: {fileID: 0}
   stat:
+    Owner: {fileID: 0}
     MaxHP: 50
     CurrentHP: 50
     Attack: 8
     Defense: 2
     TempArmor: 0
+    DodgeChance: 0
+    Invulnerable: 0
     CharacterName: Hero
-    Level: 1
-    RuntimeActiveSkills: []
-    RuntimePassiveSkills: []
+    RevivalStock: 3
+    ActiveAbilities: []
     SourcePreset: {fileID: 0}
-    CharacterSprite: {fileID: 0}
-    SpriteColor: {r: 1, g: 1, b: 1, a: 1}
+    MoveBuff: 0
+    MoveDebuff: 0
+    MoveOnThisTurn: 0
+    BindDebuff: 0
+    StunDebuff: 0
   currentTile: {fileID: 0}
   startTileIndex: 0
+  stepHopHeight: 0.6
+  stepIdlePause: 0.15
+  stepDuration: 0.4
+  hoverSortingBoost: 100
+  deathDespawnDelay: 0.7
+  references:
+    version: 2
+    RefIds: []
 --- !u!65 &7310821223762627741
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -186,10 +199,36 @@ MonoBehaviour:
   moveSprite: {fileID: 0}
   damageSprite: {fileID: 0}
   skillSprite: {fileID: 0}
-  damageDisplayTime: 0.4
-  skillDisplayTime: 0.5
-  normalColor: {r: 1, g: 1, b: 1, a: 1}
-  highlightColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  animator: {fileID: 8447758833572103196}
+  moveStateName: 
+  movingBool: IsMoving
+  aimingBool: IsAiming
+  attackTrigger: Attack
+  hitTrigger: Hit
+  deathTrigger: Death
+  deadBool: IsDead
+--- !u!95 &8447758833572103196
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8058604080863002569}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1001 &5715495533670935785
 PrefabInstance:
   m_ObjectHideFlags: 0

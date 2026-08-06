@@ -67,8 +67,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 6
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: ab682e8a845911f43a9bdbb5943b392b, type: 2}
-  m_sharedMaterial: {fileID: 3688429707017869774, guid: ab682e8a845911f43a9bdbb5943b392b, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: cf28f73ff3468314a93a84c3bfe4b8d9, type: 2}
+  m_sharedMaterial: {fileID: 4931467027632299308, guid: cf28f73ff3468314a93a84c3bfe4b8d9, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -232,6 +232,7 @@ MonoBehaviour:
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   selectedColor: {r: 0.65, g: 0.65, b: 0.65, a: 1}
   usedColor: {r: 0.5, g: 0.5, b: 0.5, a: 0.5}
+  reservedColor: {r: 0.8, g: 0.3, b: 0.3, a: 0.8}
 --- !u!225 &5747934280460948417
 CanvasGroup:
   m_ObjectHideFlags: 0
