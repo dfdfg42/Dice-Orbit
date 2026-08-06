@@ -63,7 +63,7 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: b023ba35787ffca4a880e025a6251aee, type: 3}
   - characterName: "\uC5F0\uAE08\uC220\uC0AC"
     sprite: {fileID: 21300000, guid: 5178d35b128adb24ba2dc20c6877104f, type: 3}
-  - characterName: Mage
+  - characterName: "\uB9C8\uBC95\uC0AC"
     sprite: {fileID: 21300000, guid: 06f1483317e9c8d429cdb1534ad7a231, type: 3}
   normalAlpha: 0.5
   hoverAlpha: 1
@@ -72,7 +72,7 @@ MonoBehaviour:
   hoverPortraitSprites:
   - characterName: "\uC804\uC0AC"
     sprite: {fileID: 21300000, guid: 0dfa006f0ce270c498567e237bfd0b24, type: 3}
-  - characterName: Mage
+  - characterName: "\uB9C8\uBC95\uC0AC"
     sprite: {fileID: 21300000, guid: 60a464a41516d0a46a1a7f09924c9bcb, type: 3}
   - characterName: "\uB3C4\uC801"
     sprite: {fileID: 21300000, guid: 674c178c84a56f84cb494023a2fbe690, type: 3}
