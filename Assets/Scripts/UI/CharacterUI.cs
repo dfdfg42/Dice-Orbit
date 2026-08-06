@@ -33,7 +33,19 @@ namespace DiceOrbit.UI
         [Tooltip("같은 타일에 여러 명이면 체력바를 인덱스별로 Y를 올려 서로 겹치지 않게 세로로 쌓는다")]
         [SerializeField] private bool stackSameTile = true;
         [SerializeField] private float perIndexYStep = 0.35f; // 같은 타일 캐릭터 1명당 올릴 Y(월드)
-        
+
+        [Header("Turn Budget Icons (이동/액티브)")]
+        [SerializeField] private Sprite moveIconSprite;
+        [SerializeField] private Sprite activeIconSprite;
+        [SerializeField] private Color iconAvailableColor = Color.white;
+        [SerializeField] private Color iconUsedColor = new Color(0.42f, 0.42f, 0.42f, 0.5f);
+        [Tooltip("HP바 위 왼쪽 기준 위치 (첫 아이콘)")]
+        [SerializeField] private Vector2 iconsAnchor = new Vector2(-43f, 3f);
+        [SerializeField] private float iconSpacing = 13f;
+        [SerializeField] private float iconSize = 12f;
+        private Image _moveIcon;
+        private Image _activeIcon;
+
         private Camera mainCamera;
         
         private void Awake()
@@ -138,6 +150,8 @@ namespace DiceOrbit.UI
             // HPBar(중심 x=1.35, 폭 101) 좌측 끝 x=-49, HP텍스트(-24까지) 바로 아래 y=-25
             StatusIconRow.Attach(worldCanvas, character, mainCamera, new Vector2(-49f, -25f));
             Visuals.StatusOverlayStack.Attach(character);
+
+            CreateBudgetIcons();
         }
 
         private void ConfigureNonBlockingRaycasts()
@@ -199,6 +213,43 @@ namespace DiceOrbit.UI
             {
                 levelText.text = string.Empty;
             }
+
+            UpdateBudgetIcons();
+        }
+
+        // ── 턴 예산 아이콘 (이동/액티브) ──────────────────────
+        private void CreateBudgetIcons()
+        {
+            if (worldCanvas == null || _moveIcon != null) return;
+            _moveIcon   = MakeBudgetIcon("MoveIcon",   moveIconSprite,   iconsAnchor);
+            _activeIcon = MakeBudgetIcon("ActiveIcon", activeIconSprite, iconsAnchor + new Vector2(iconSpacing, 0f));
+        }
+
+        private Image MakeBudgetIcon(string iconName, Sprite sprite, Vector2 pos)
+        {
+            var go = new GameObject(iconName, typeof(RectTransform));
+            var rt = go.GetComponent<RectTransform>();
+            rt.SetParent(worldCanvas.transform, false);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = new Vector2(iconSize, iconSize);
+            var img = go.AddComponent<Image>();
+            img.sprite = sprite;
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            return img;
+        }
+
+        /// <summary>이동/액티브 예산에 따라 아이콘 밝기 갱신 (가능=밝게, 사용됨=회색·반투명).</summary>
+        private void UpdateBudgetIcons()
+        {
+            if (_moveIcon == null && _activeIcon == null) return;
+            var cm = Core.CombatManager.Instance;
+            bool canMove = cm != null && character != null && cm.CanSpendMove(character);
+            bool canAct  = cm != null && character != null && cm.CanSpendAction(character);
+            if (_moveIcon != null)   _moveIcon.color   = canMove ? iconAvailableColor : iconUsedColor;
+            if (_activeIcon != null) _activeIcon.color = canAct  ? iconAvailableColor : iconUsedColor;
         }
         
         /// <summary>
