@@ -43,6 +43,14 @@ namespace DiceOrbit.Data.Skills
         [SerializeField] protected string castCue = "";
         [SerializeField] protected string impactCue = "";
 
+        [Header("Projectile (선택 — 지정 시 공격이 포물선 발사체로 날아가 도착 시 피해)")]
+        [Tooltip("비행 발사체 프리팹. 비우면 즉시 피해(기존 동작)")]
+        [SerializeField] protected GameObject projectilePrefab;
+        [Tooltip("발사체 비행 시간(초)")]
+        [SerializeField] protected float projectileDuration = 0.35f;
+        [Tooltip("포물선 최고 높이")]
+        [SerializeField] protected float projectileArcHeight = 1.2f;
+
         public string SkillName   => skillName;
         public string Description => description;
 
@@ -117,7 +125,21 @@ namespace DiceOrbit.Data.Skills
 
                 var context = new AttackContext(source, target, skillName, rawDamage);
                 context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
-                CombatPipeline.Instance?.Process(context);
+
+                // 발사체가 지정돼 있으면 포물선으로 날린 뒤 '도착 시' 데미지+피격 VFX 적용.
+                // 없으면 기존처럼 즉시 처리.
+                if (projectilePrefab != null && source != null && target != null)
+                {
+                    Vector3 from = source.transform.position + Vector3.up * 0.5f;
+                    Vector3 to   = target.transform.position + Vector3.up * 0.5f;
+                    var ctx = context;   // 클로저 캡처(루프 변수 방지)
+                    ProjectileService.Launch(projectilePrefab, from, to, projectileDuration, projectileArcHeight,
+                        () => CombatPipeline.Instance?.Process(ctx));
+                }
+                else
+                {
+                    CombatPipeline.Instance?.Process(context);
+                }
             }
 
             OnAfterResolved(source, ability);
