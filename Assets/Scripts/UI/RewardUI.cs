@@ -468,7 +468,8 @@ namespace DiceOrbit.UI
             btn.targetGraphic = root.GetComponent<Image>();
             btn.transition = Selectable.Transition.ColorTint;
             btn.colors = HoverTint();
-            btn.onClick.AddListener(() => onClick());
+            // 호버 중인 타일을 클릭해 수령하면 타일이 파괴돼 OnPointerExit가 안 뜬다 → 툴팁을 직접 닫는다.
+            btn.onClick.AddListener(() => { HoverTooltipUI.Instance?.HidePinned(); onClick(); });
 
             if (!string.IsNullOrEmpty(desc))
             {
@@ -481,8 +482,10 @@ namespace DiceOrbit.UI
         {
             var pill = MakeRoundImage(parent, label + "Button", Bar, PillRadius);
             AnchorCenter(pill, size, pos);
+            var pillImg = pill.GetComponent<Image>();
+            pillImg.raycastTarget = true;   // MakeRoundImage 기본값 false → 버튼이 클릭을 받도록 켠다
             var btn = pill.gameObject.AddComponent<Button>();
-            btn.targetGraphic = pill.GetComponent<Image>();
+            btn.targetGraphic = pillImg;
             btn.colors = HoverTint();
             btn.onClick.AddListener(() => onClick());
             var txt = MakeText(pill, label, 34f, FontStyles.Bold, Ink, TextAlignmentOptions.Center);
