@@ -526,17 +526,29 @@ namespace DiceOrbit.Core
         /// <summary>
         /// 몬스터 턴 실행
         /// </summary>
+        [Header("Monster Turn Pacing")]
+        [Tooltip("몬스터 한 마리 행동 후 다음 마리까지의 지연(초)")]
+        [SerializeField] private float monsterActionDelay = 0.8f;
+        [Tooltip("스킬명 말풍선을 띄운 뒤 실제 실행까지의 짧은 대기(초)")]
+        [SerializeField] private float monsterActionLeadIn = 0.25f;
+
         public void ProgressMonsterTurn()
         {
             if (IsCombatFinished()) return;
+            StartCoroutine(ProgressMonsterTurnRoutine());
+        }
 
+        private System.Collections.IEnumerator ProgressMonsterTurnRoutine()
+        {
             OnMonsterTurnStart?.Invoke();
             StartMonsterTurn();
+            if (IsCombatFinished()) yield break;
 
-            ExecuteMonsterTurn();
+            // 몬스터 한 마리씩 순차 실행(표시 → 실행 → 지연)
+            yield return ExecuteMonsterTurnRoutine();
+            if (IsCombatFinished()) yield break;
 
-            // End Monster Turn after delay
-            StartCoroutine(EndMonsterTurnRoutine());
+            yield return EndMonsterTurnRoutine();
         }
 
         private void StartMonsterTurn()
@@ -557,21 +569,44 @@ namespace DiceOrbit.Core
             }
         }
 
-        private void ExecuteMonsterTurn()
+        private System.Collections.IEnumerator ExecuteMonsterTurnRoutine()
         {
             Debug.Log("=== Monster Turn Execute ===");
-            if (IsCombatFinished()) return;
+            if (IsCombatFinished()) yield break;
 
             combatStatus = CombatStatus.ExecuteMonsterTurn;
+            UI.MonsterActionLabel.EnsureInstance();
             var sortedMonster = activeMonsters.OrderByDescending(m => m.Stats.Speed).ToList();
-            // 실제 행동
+
+            // 속도 순으로 한 마리씩: 무엇을 하는지 말풍선 표시 → 실행 → 지연
             foreach (var monster in sortedMonster)
             {
+                if (monster == null || !monster.IsAlive) continue;
 
-                if (monster != null && monster.IsAlive)
+                // ExecuteIntent가 '다음' 의도를 새로 뽑으므로, 이번 행동 이름은 실행 전에 읽는다.
+                string actionName = monster.NextSkill != null && monster.NextSkill.skillData != null
+                    ? monster.NextSkill.skillData.SkillName : null;
+
+                if (!string.IsNullOrEmpty(actionName))
                 {
+                    monster.SetActingHighlight(true);
+                    var lbl = UI.MonsterActionLabel.Instance;
+                    if (lbl != null) yield return lbl.Show(monster, actionName);
+                    if (monsterActionLeadIn > 0f) yield return new WaitForSeconds(monsterActionLeadIn);
+
                     monster.ExecuteIntent();
-                    if (IsCombatFinished()) return;
+
+                    if (monsterActionDelay > 0f) yield return new WaitForSeconds(monsterActionDelay);
+                    if (lbl != null) yield return lbl.Hide();
+                    if (monster != null) monster.SetActingHighlight(false);
+
+                    if (IsCombatFinished()) yield break;
+                }
+                else
+                {
+                    // 기절/유휴 — 말풍선 없이 조용히 처리.
+                    monster.ExecuteIntent();
+                    if (IsCombatFinished()) yield break;
                 }
             }
         }

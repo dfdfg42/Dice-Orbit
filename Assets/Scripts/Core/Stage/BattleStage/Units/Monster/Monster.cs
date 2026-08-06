@@ -260,6 +260,40 @@ namespace DiceOrbit.Core
             UI.MonsterAttackIntentManager.Instance?.RemoveAttackIntent(this);
         }
 
+        // === 행동 연출(순차 실행 연동) ===
+
+        private bool actingHighlighted;
+        private Vector3 actingBaseScale;
+
+        /// <summary>머리 위(월드 좌표) — 행동 말풍선 앵커. 스프라이트 상단 + 약간 위.</summary>
+        public Vector3 GetHeadTopWorld()
+        {
+            if (spriteRenderer != null && spriteRenderer.sprite != null)
+                return new Vector3(transform.position.x, spriteRenderer.bounds.max.y + 0.15f, transform.position.z);
+            return transform.position + Vector3.up * 1.2f;
+        }
+
+        /// <summary>행동 중 강조(살짝 확대). on=false면 원래 스케일로 복원.</summary>
+        public void SetActingHighlight(bool on)
+        {
+            if (spriteRenderer == null) return;
+            var t = spriteRenderer.transform;
+            if (on)
+            {
+                if (!actingHighlighted)
+                {
+                    actingBaseScale = t.localScale;
+                    actingHighlighted = true;
+                }
+                t.localScale = actingBaseScale * 1.12f;
+            }
+            else if (actingHighlighted)
+            {
+                t.localScale = actingBaseScale;
+                actingHighlighted = false;
+            }
+        }
+
         /// <summary>
         /// 턴 시작 (Pipeline TurnStart)
         /// </summary>
