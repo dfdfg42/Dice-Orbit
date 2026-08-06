@@ -6,9 +6,9 @@ using UnityEngine.UI;
 namespace DiceOrbit.UI
 {
     /// <summary>
-    /// 행동하는 몬스터의 머리 위에 스킬명 말풍선을 띄우는 오버레이 UI.
+    /// 행동하는 몬스터의 머리 위에 [아이콘 + 스킬명] 말풍선을 띄우는 오버레이 UI.
+    /// 정보 패널(BattleInfoPanelUI)과 같은 톤 — 크림 종이 배경 + 잉크 텍스트(InfoPanelRows 팔레트 재사용).
     /// 화면 좌표로 대상 몬스터를 매 프레임 따라다니며, 씬에 없으면 자동 생성한다.
-    /// (TurnAnnouncementUI의 자동 생성/페이드 패턴을 미러. 한글 폰트는 씬의 기존 TMP에서 빌려온다.)
     /// </summary>
     public class MonsterActionLabel : MonoBehaviour
     {
@@ -16,6 +16,8 @@ namespace DiceOrbit.UI
 
         [SerializeField] private CanvasGroup group;
         [SerializeField] private RectTransform bubbleRT;
+        [SerializeField] private Image iconImage;
+        [SerializeField] private GameObject iconGO;
         [SerializeField] private TextMeshProUGUI label;
         [SerializeField] private float fadeIn  = 0.12f;
         [SerializeField] private float fadeOut = 0.12f;
@@ -43,12 +45,21 @@ namespace DiceOrbit.UI
             Build();
         }
 
-        /// <summary>대상 몬스터 머리 위에 text 말풍선을 페이드 인. Hide() 전까지 대상을 따라다닌다.</summary>
-        public IEnumerator Show(Core.Monster monster, string text)
+        /// <summary>대상 몬스터 머리 위에 [아이콘 + text] 말풍선을 페이드 인. icon이 null이면 텍스트만. Hide() 전까지 추적.</summary>
+        public IEnumerator Show(Core.Monster monster, string text, Sprite icon = null)
         {
             if (monster == null) yield break;
             target = monster;
             if (label != null) label.text = text;
+
+            if (iconGO != null)
+            {
+                bool has = icon != null;
+                if (iconImage != null && has) iconImage.sprite = icon;
+                if (iconGO.activeSelf != has) iconGO.SetActive(has);
+            }
+
+            RebuildLayout();
             Reposition();
             yield return Fade(0f, 1f, fadeIn);
         }
@@ -65,10 +76,15 @@ namespace DiceOrbit.UI
             if (target != null) Reposition();
         }
 
+        private void RebuildLayout()
+        {
+            if (bubbleRT != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(bubbleRT);
+        }
+
         private void Reposition()
         {
-            if (bubbleRT == null) return;
-            if (target == null) return;
+            if (bubbleRT == null || target == null) return;
             if (cam == null) cam = Camera.main;
             if (cam == null) return;
 
@@ -98,6 +114,10 @@ namespace DiceOrbit.UI
             var anyText = FindAnyObjectByType<TextMeshProUGUI>(FindObjectsInactive.Include);
             if (anyText != null) borrowed = anyText.font;
 
+            // 둥근 모서리용 유니티 내장 UI 스프라이트(9-slice).
+            Sprite rounded = null;
+            try { rounded = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd"); } catch { }
+
             var root = new GameObject("_MonsterActionLabelCanvas");
             var canvas = root.AddComponent<Canvas>();
             canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
@@ -110,33 +130,58 @@ namespace DiceOrbit.UI
             var group = root.AddComponent<CanvasGroup>();
             group.alpha = 0f; group.blocksRaycasts = false; group.interactable = false;
 
-            // 말풍선 배경 — pivot을 하단 중앙으로 두어 머리 지점 '위'에 뜨게 한다.
+            // ── 말풍선 배경 (크림 종이 패널, 하단 중앙 pivot → 머리 지점 '위'에 뜸) ──
             var bubbleGO = new GameObject("Bubble", typeof(RectTransform));
             bubbleGO.transform.SetParent(root.transform, false);
             var brt = (RectTransform)bubbleGO.transform;
-            brt.sizeDelta = new Vector2(260f, 60f);
             brt.pivot = new Vector2(0.5f, 0f);
-            var bg = bubbleGO.AddComponent<Image>();
-            bg.color = new Color(0.09f, 0.09f, 0.12f, 0.86f);
-            bg.raycastTarget = false;
 
+            var bg = bubbleGO.AddComponent<Image>();
+            bg.color = InfoPanelRows.PaperColor;
+            bg.raycastTarget = false;
+            if (rounded != null) { bg.sprite = rounded; bg.type = Image.Type.Sliced; }
+
+            // 카드 느낌의 옅은 그림자
+            var shadow = bubbleGO.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.25f);
+            shadow.effectDistance = new Vector2(2f, -2f);
+
+            var hlg = bubbleGO.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(12, 14, 6, 6);
+            hlg.spacing = 8f;
+            hlg.childAlignment = TextAnchor.MiddleLeft;
+            hlg.childControlWidth = true;  hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
+
+            var fitter = bubbleGO.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fitter.verticalFit   = ContentSizeFitter.FitMode.PreferredSize;
+
+            // ── 아이콘 (스킬 IntentIcon) ──
+            var iconGO = new GameObject("Icon", typeof(RectTransform));
+            iconGO.transform.SetParent(bubbleGO.transform, false);
+            var img = iconGO.AddComponent<Image>();
+            img.preserveAspect = true;
+            img.raycastTarget = false;
+            var iconLE = iconGO.AddComponent<LayoutElement>();
+            iconLE.preferredWidth = 30f; iconLE.preferredHeight = 30f;
+
+            // ── 스킬명 라벨 (잉크색 볼드) ──
             var labelGO = new GameObject("Label", typeof(RectTransform));
             labelGO.transform.SetParent(bubbleGO.transform, false);
-            var lrt = (RectTransform)labelGO.transform;
-            lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
-            lrt.offsetMin = new Vector2(12f, 6f); lrt.offsetMax = new Vector2(-12f, -6f);
             var tmp = labelGO.AddComponent<TextMeshProUGUI>();
-            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.alignment = TextAlignmentOptions.MidlineLeft;
+            tmp.fontSize = 28f;
             tmp.fontStyle = FontStyles.Bold;
-            tmp.color = Color.white;
+            tmp.color = InfoPanelRows.InkDark;
             tmp.raycastTarget = false;
-            tmp.enableAutoSizing = true;
-            tmp.fontSizeMin = 16f;
-            tmp.fontSizeMax = 32f;
+            tmp.enableWordWrapping = false;
             if (borrowed != null) tmp.font = borrowed;
 
             ui.group = group;
             ui.bubbleRT = brt;
+            ui.iconImage = img;
+            ui.iconGO = iconGO;
             ui.label = tmp;
             Instance = ui;
         }
