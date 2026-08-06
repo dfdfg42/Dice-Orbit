@@ -106,6 +106,10 @@ namespace DiceOrbit.Data
                 attributes.Add(attribue.Type, attribue);
                 UI.TileAttributeBubbleManager.EnsureInstance();
                 UI.TileAttributeBubbleManager.Instance?.RefreshTile(this);
+
+                // 타일 설치 연출: 속성 타입별 큐(없으면 상위 "tile" 폴백). 플레이 중에만.
+                if (Application.isPlaying)
+                    VfxService.Play("tile." + attribue.Type, Position);
             }
         }
 
