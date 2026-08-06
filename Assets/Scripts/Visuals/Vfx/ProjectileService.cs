@@ -46,6 +46,19 @@ namespace DiceOrbit.Visuals
         {
             GameObject go = prefab != null ? Instantiate(prefab, from, Quaternion.identity) : null;
 
+            // 에셋 프리팹의 자체 전진 이동 스크립트(예: GA의 ProjectileMoveScript)를 끈다 —
+            // 우리 ProjectileService가 포물선으로 위치를 직접 제어하므로, 두 이동이 겹쳐 날아가버리는 것을 방지.
+            if (go != null)
+            {
+                foreach (var mb in go.GetComponentsInChildren<MonoBehaviour>(true))
+                {
+                    if (mb == null) continue;
+                    string tn = mb.GetType().Name;
+                    if (tn == "ProjectileMoveScript" || tn.Contains("Move") || tn.Contains("Mover"))
+                        mb.enabled = false;
+                }
+            }
+
             Vector3 prev = from;
             float t = 0f;
             while (t < duration)
