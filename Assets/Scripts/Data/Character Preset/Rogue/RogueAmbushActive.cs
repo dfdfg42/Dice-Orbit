@@ -24,6 +24,6 @@ namespace DiceOrbit.Data.CharacterActives
         }
 
         public override string GetDynamicDescription()
-            => $"{FormatDiceCondition()} X {Mathf.Max(1, multiplier)} 피해";
+            => $"주사위 눈금 × {Mathf.Max(1, multiplier)} 피해";
     }
 }
