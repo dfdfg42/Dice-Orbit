@@ -179,7 +179,7 @@ namespace DiceOrbit.Core.Pipeline
                     if (atk.Target.TakeDamage(Mathf.RoundToInt(atk.OutputValue)) != 0) atk.IsEffected = true;
                     // VFX 재생 판단은 여기 한 곳 — 컨텍스트의 프로필에 hit이 있으면 그걸, 없으면 전역 기본
                     if (atk.IsEffected)
-                        VfxService.PlayOn(string.IsNullOrEmpty(atk.VfxCue) ? VfxTags.Impact : atk.VfxCue, atk.Target);
+                        VfxService.PlayOn(string.IsNullOrEmpty(atk.VfxCue) ? VfxTags.Impact : atk.VfxCue, atk.Target, atk.OutputValue);
                     break;
                 case HealContext heal:
                     // Unit.Heal을 사용하는 것이 일관성에 좋음 (오버라이드 가능성 고려)

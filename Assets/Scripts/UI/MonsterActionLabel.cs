@@ -139,6 +139,13 @@ namespace DiceOrbit.UI
             bg.color = InfoPanelRows.PaperColor;
             bg.raycastTarget = false;
 
+            // UI 테두리 (잉크색 아웃라인) — 정보 패널과 같은 잉크 톤
+            var outline = bubbleGO.AddComponent<Outline>();
+            var ink = InfoPanelRows.InkDark;
+            outline.effectColor = new Color(ink.r, ink.g, ink.b, 1f);
+            outline.effectDistance = new Vector2(3f, 3f);
+            outline.useGraphicAlpha = false;
+
             // 카드 느낌의 옅은 그림자
             var shadow = bubbleGO.AddComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0f, 0f, 0.25f);
