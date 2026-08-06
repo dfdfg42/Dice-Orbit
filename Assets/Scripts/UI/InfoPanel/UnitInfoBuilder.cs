@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Data;
@@ -205,6 +206,105 @@ namespace DiceOrbit.UI
                 return $"{line1}\n{line2}\n<color=#B3B3B3>{desc}</color>";
 
             return $"{line1}\n{line2}";
+        }
+
+        // ── 호버 툴팁: 패시브(몸체 호버) / 다음 행동(의도 버블 호버) ──────────────
+
+        /// <summary>몸체 호버용: 이름+HP(+방어도), 패시브 목록, 상태이상 한 줄.</summary>
+        public static string BuildPassiveTooltip(Character ch)
+        {
+            var s = ch.Stats;
+            string name = s != null && !string.IsNullOrWhiteSpace(s.CharacterName) ? s.CharacterName : ch.name;
+            string head = ComposeHead(name, s?.CurrentHP ?? 0, s?.MaxHP ?? 0, s?.TempArmor ?? 0);
+            return ComposePassiveTooltip(head, BuildPassives(ch.Passives), BuildStatuses(ch.StatusEffects));
+        }
+
+        /// <summary>몸체 호버용: 이름+HP(+방어도), 패시브 목록, 상태이상 한 줄.</summary>
+        public static string BuildPassiveTooltip(Monster m)
+        {
+            var s = m.Stats;
+            string name = s != null && !string.IsNullOrWhiteSpace(s.MonsterName) ? s.MonsterName : m.name;
+            string head = ComposeHead(name, s?.CurrentHP ?? 0, s?.MaxHP ?? 0, s?.TempArmor ?? 0);
+            return ComposePassiveTooltip(head, BuildPassives(m.Passives), BuildStatuses(m.StatusEffects));
+        }
+
+        private static string ComposeHead(string name, int hp, int maxHp, int armor)
+            => $"{name}  HP {hp}/{maxHp}" + (armor > 0 ? $"  방어도 {armor}" : "");
+
+        private static string ComposePassiveTooltip(string head,
+            IReadOnlyList<PassiveInfoData> passives,
+            IReadOnlyList<TooltipKeywordFormatter.StatusDisplayData> statuses)
+        {
+            var sb = new StringBuilder(head);
+
+            if (passives != null && passives.Count > 0)
+            {
+                foreach (var p in passives)
+                {
+                    string body = !string.IsNullOrWhiteSpace(p.DynamicEffect) ? p.DynamicEffect : p.FlavorText;
+                    sb.Append("\n<b>").Append(p.Name).Append("</b>");
+                    if (!string.IsNullOrWhiteSpace(body))
+                        sb.Append("  <color=#B3B3B3>").Append(body.Replace("\n", " ")).Append("</color>");
+                }
+            }
+            else
+            {
+                sb.Append("\n<color=#8A8A8A>패시브 없음</color>");
+            }
+
+            if (statuses != null && statuses.Count > 0)
+            {
+                var parts = new List<string>(statuses.Count);
+                foreach (var st in statuses)
+                {
+                    string part = st.Name;
+                    if (!string.IsNullOrEmpty(st.StackText)) part += $" {st.StackText}";
+                    if (!string.IsNullOrEmpty(st.DurationText)) part += $" {st.DurationText}";
+                    parts.Add(part);
+                }
+                sb.Append("\n<color=#C9A15A>").Append(string.Join(" · ", parts)).Append("</color>");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>의도 버블 호버용: 다음 행동(스킬 → 대상, 예상 피해) + 설명.</summary>
+        public static string BuildNextActionTooltip(Monster m)
+        {
+            var data = m.NextSkill?.skillData;
+            if (data == null) return "다음 행동: 없음";
+
+            string line = $"다음 행동: {data.SkillName}";
+
+            var targets = m.CurrentIntent?.Targets;
+            if (targets != null && targets.Count > 0)
+            {
+                var names = new List<string>();
+                foreach (var t in targets)
+                {
+                    if (t == null) continue;
+                    names.Add(t.Stats is CharacterStats cs ? cs.CharacterName
+                            : t.Stats is MonsterStats ms ? ms.MonsterName
+                            : t.name);
+                }
+                if (names.Count > 0) line += $" → {string.Join(", ", names)}";
+            }
+
+            int previewBase = data.GetPreviewDamage();
+            if (previewBase > 0)
+            {
+                int shown = previewBase;
+                var repTarget = ResolvePreviewTarget(m);
+                if (repTarget != null && CombatPipeline.Instance != null)
+                {
+                    var simCtx = new AttackContext(m, repTarget, data.SkillName, previewBase);
+                    shown = CombatPipeline.Instance.SimulateCalculation(simCtx);
+                }
+                line += $" (예상 {shown})";
+            }
+
+            string desc = (data.Description ?? string.Empty).Trim();
+            return string.IsNullOrEmpty(desc) ? line : $"{line}\n<color=#B3B3B3>{desc}</color>";
         }
 
         private static IReadOnlyList<SkillInfoData> BuildActives(CharacterStats stats)

@@ -62,41 +62,52 @@ namespace DiceOrbit.UI
             bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
             UpdateHover(overUI);
             UpdatePin(overUI);
-            UpdateHoverTooltip();
+            UpdateHoverTooltip(overUI);
         }
 
-        // ── 커서 요약 툴팁 ────────────────────────────────────────
-        // 호버한 유닛의 한 줄 요약을 커서 옆 경량 툴팁에 표시.
+        // ── 커서 옆 호버 툴팁 ────────────────────────────────────────
+        // 몸체 호버 → 패시브(+HP/상태이상), 의도 버블 호버 → 다음 행동.
         // 타게팅 중엔 끔 (SkillTargetSelector의 예상 피해/선택 카운터가 툴팁 소유).
 
         private object _lastTooltipTarget;
+        private bool _lastTooltipIntent;
         private float _nextTooltipRefresh;
         private const float TooltipRefreshInterval = 0.5f;
 
-        private void UpdateHoverTooltip()
+        private void UpdateHoverTooltip(bool overUI)
         {
             bool targeting = SkillTargetSelector.Instance != null && SkillTargetSelector.Instance.IsSelectingTarget;
-            object target = targeting ? null : HoveredUnit;
 
-            bool changed = !ReferenceEquals(target, _lastTooltipTarget);
+            // 우선순위 1: 몬스터 위 의도 버블에 커서가 있으면 → 다음 행동
+            Monster intentMonster = (targeting || overUI) ? null : FindIntentBubbleMonsterUnderCursor();
+
+            object target;
+            bool intentMode;
+            if (intentMonster != null) { target = intentMonster; intentMode = true; }
+            else if (targeting)        { target = null;          intentMode = false; }  // 타게팅 중엔 몸체 툴팁 끔
+            else                       { target = HoveredUnit;   intentMode = false; }
+
+            bool changed = !ReferenceEquals(target, _lastTooltipTarget) || intentMode != _lastTooltipIntent;
             if (!changed && (target == null || Time.unscaledTime < _nextTooltipRefresh)) return;
 
             _lastTooltipTarget = target;
+            _lastTooltipIntent = intentMode;
             _nextTooltipRefresh = Time.unscaledTime + TooltipRefreshInterval;
 
             if (target == null)
             {
-                // 우리가 띄운 툴팁만 정리 (전환 시 1회 — 이후엔 위 조건에서 조용히 지나감)
                 if (changed) HoverTooltipUI.Instance?.HidePinned();
                 return;
             }
 
-            string text = target switch
-            {
-                Character ch => UnitInfoBuilder.BuildHoverSummary(ch),
-                Monster m    => UnitInfoBuilder.BuildHoverSummary(m),
-                _            => null,
-            };
+            string text = intentMode
+                ? UnitInfoBuilder.BuildNextActionTooltip((Monster)target)
+                : target switch
+                {
+                    Character ch => UnitInfoBuilder.BuildPassiveTooltip(ch),
+                    Monster m    => UnitInfoBuilder.BuildPassiveTooltip(m),
+                    _            => null,
+                };
 
             if (string.IsNullOrEmpty(text))
             {
@@ -106,6 +117,27 @@ namespace DiceOrbit.UI
 
             HoverTooltipUI.EnsureInstance();
             HoverTooltipUI.Instance?.ShowPinned(text);
+        }
+
+        /// <summary>커서가 어느 몬스터의 의도 버블(월드 UI) 위에 있으면 그 몬스터 반환. 없으면 null.</summary>
+        private Monster FindIntentBubbleMonsterUnderCursor()
+        {
+            if (Mouse.current == null) return null;
+            var cm = CombatManager.Instance;
+            if (cm == null || cm.ActiveMonsters == null) return null;
+
+            Vector2 sp = Mouse.current.position.ReadValue();
+            foreach (var m in cm.ActiveMonsters)
+            {
+                if (m == null || !m.IsAlive) continue;
+                var ui = m.GetComponentInChildren<MonsterUI>();
+                if (ui == null || !ui.IsIntentBubbleActive) continue;
+                var rect = ui.IntentBubbleRect;
+                if (rect == null) continue;
+                if (RectTransformUtility.RectangleContainsScreenPoint(rect, sp, ui.IntentWorldCamera))
+                    return m;
+            }
+            return null;
         }
 
         private void UpdateHover(bool overUI)

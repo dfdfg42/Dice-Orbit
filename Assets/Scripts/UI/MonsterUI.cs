@@ -469,5 +469,19 @@ namespace DiceOrbit.UI
             monster = newMonster;
             UpdateUI();
         }
+
+        // ── 호버 툴팁 연동: 의도 버블 히트테스트용 노출 ──
+
+        /// <summary>의도 버블 RectTransform (호버 히트테스트용). 없으면 null.</summary>
+        public RectTransform IntentBubbleRect => intentBubbleRoot;
+
+        /// <summary>의도 버블이 현재 표시 중이고 유효한 의도가 있는지.</summary>
+        public bool IsIntentBubbleActive =>
+            intentBubbleRoot != null && intentBubbleRoot.gameObject.activeInHierarchy
+            && monster != null && monster.CurrentIntent != null;
+
+        /// <summary>의도 버블(월드 캔버스)을 렌더하는 카메라 (RectangleContainsScreenPoint용).</summary>
+        public Camera IntentWorldCamera =>
+            worldCanvas != null && worldCanvas.worldCamera != null ? worldCanvas.worldCamera : mainCamera;
     }
 }
