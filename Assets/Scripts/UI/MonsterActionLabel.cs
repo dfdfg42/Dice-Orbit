@@ -21,6 +21,8 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI label;
         [SerializeField] private float fadeIn  = 0.12f;
         [SerializeField] private float fadeOut = 0.12f;
+        [Tooltip("머리 위 앵커에서 추가로 위로 올리는 화면 픽셀(해상도 일관, 클수록 더 위)")]
+        [SerializeField] private float screenYOffset = 48f;
 
         private Core.Monster target;
         private Camera cam;
@@ -90,6 +92,7 @@ namespace DiceOrbit.UI
 
             Vector3 sp = cam.WorldToScreenPoint(target.GetHeadTopWorld());
             if (sp.z < 0f) { if (group != null) group.alpha = 0f; return; }
+            sp.y += screenYOffset;
             bubbleRT.position = sp;
         }
 
