@@ -583,15 +583,16 @@ namespace DiceOrbit.Core
             {
                 if (monster == null || !monster.IsAlive) continue;
 
-                // ExecuteIntent가 '다음' 의도를 새로 뽑으므로, 이번 행동 이름은 실행 전에 읽는다.
+                // ExecuteIntent가 '다음' 의도를 새로 뽑으므로, 이번 행동 이름/아이콘은 실행 전에 읽는다.
                 string actionName = monster.NextSkill != null && monster.NextSkill.skillData != null
                     ? monster.NextSkill.skillData.SkillName : null;
+                Sprite actionIcon = monster.NextSkill != null ? monster.NextSkill.IntentIcon : null;
 
                 if (!string.IsNullOrEmpty(actionName))
                 {
                     monster.SetActingHighlight(true);
                     var lbl = UI.MonsterActionLabel.Instance;
-                    if (lbl != null) yield return lbl.Show(monster, actionName);
+                    if (lbl != null) yield return lbl.Show(monster, actionName, actionIcon);
                     if (monsterActionLeadIn > 0f) yield return new WaitForSeconds(monsterActionLeadIn);
 
                     monster.ExecuteIntent();
