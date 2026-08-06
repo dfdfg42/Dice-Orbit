@@ -117,10 +117,6 @@ namespace DiceOrbit.UI
             var anyText = FindAnyObjectByType<TextMeshProUGUI>(FindObjectsInactive.Include);
             if (anyText != null) borrowed = anyText.font;
 
-            // 둥근 모서리용 유니티 내장 UI 스프라이트(9-slice).
-            Sprite rounded = null;
-            try { rounded = Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd"); } catch { }
-
             var root = new GameObject("_MonsterActionLabelCanvas");
             var canvas = root.AddComponent<Canvas>();
             canvas.renderMode  = RenderMode.ScreenSpaceOverlay;
@@ -142,7 +138,6 @@ namespace DiceOrbit.UI
             var bg = bubbleGO.AddComponent<Image>();
             bg.color = InfoPanelRows.PaperColor;
             bg.raycastTarget = false;
-            if (rounded != null) { bg.sprite = rounded; bg.type = Image.Type.Sliced; }
 
             // 카드 느낌의 옅은 그림자
             var shadow = bubbleGO.AddComponent<Shadow>();
