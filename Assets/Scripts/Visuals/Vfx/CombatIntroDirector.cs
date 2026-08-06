@@ -58,7 +58,9 @@ namespace DiceOrbit.Visuals
         public IEnumerator Play(IReadOnlyList<Monster> spawnedMonsters)
         {
             HideCharacters();   // 연출 시작 즉시 캐릭터를 숨겨 타일 낙하 동안 안 보이게
+            DiceOrbit.UI.TileAttributeBubbleManager.Instance?.SetIconsHidden(true);   // 타일 낙하 전 속성 아이콘 숨김
             yield return RunSafe(TileDropPhase(), "타일 낙하");
+            DiceOrbit.UI.TileAttributeBubbleManager.Instance?.SetIconsHidden(false);  // 타일 착지 후 아이콘 표시
             if (afterTilesDelay > 0f) yield return new WaitForSeconds(afterTilesDelay);
             yield return RunSafe(CharacterPopPhase(), "캐릭터 팝인");
             if (afterCharsDelay > 0f) yield return new WaitForSeconds(afterCharsDelay);
@@ -90,6 +92,8 @@ namespace DiceOrbit.Visuals
         /// <summary>캐릭터·몬스터를 최종 스케일로 강제 복원 (페이즈가 중단됐어도 숨긴 채 남지 않게).</summary>
         private void RevealAll(IReadOnlyList<Monster> monsters)
         {
+            DiceOrbit.UI.TileAttributeBubbleManager.Instance?.SetIconsHidden(false);   // 안전망: 아이콘 표시 확정
+
             foreach (var pair in _hiddenChars)
                 if (pair.Key != null) pair.Key.localScale = pair.Value;
             _hiddenChars.Clear();

@@ -214,6 +214,8 @@ namespace DiceOrbit.Visuals
     public class MonsterFloorMarker : MonoBehaviour
     {
         private Transform _monster;
+        private Monster _monsterComp;      // IntroBaseScale 조회용
+        private MeshRenderer _renderer;    // 표시 토글 (몬스터 팝인 전엔 숨김)
         private SpriteRenderer _sprite;
         private float _fallbackY;
         private float _yOffset;
@@ -221,6 +223,8 @@ namespace DiceOrbit.Visuals
         public void Init(Transform monster, SpriteRenderer sprite, float fallbackY, float yOffset)
         {
             _monster = monster;
+            _monsterComp = monster != null ? monster.GetComponent<Monster>() : null;
+            _renderer = GetComponent<MeshRenderer>();
             _sprite = sprite;
             _fallbackY = fallbackY;
             _yOffset = yOffset;
@@ -241,6 +245,10 @@ namespace DiceOrbit.Visuals
         {
             if (_monster == null) return;
 
+            // 몬스터가 아직 스케일 0(인트로 소환 전/숨김)이면 마커도 숨김 → 몬스터 팝인에 맞춰 함께 등장.
+            if (_renderer != null)
+                _renderer.enabled = IsMonsterVisible();
+
             // 스프라이트가 교체/비활성화됐으면 다시 찾는다(스프라이트 분리 타이밍 대비).
             if (_sprite == null || !_sprite.enabled)
                 _sprite = MonsterIdentityManager.FindVisibleSprite(_monster);
@@ -250,6 +258,15 @@ namespace DiceOrbit.Visuals
             float y = (_sprite != null) ? _sprite.bounds.min.y + _yOffset : _fallbackY;
             transform.position = new Vector3(p.x, y, p.z);
             transform.rotation = Quaternion.identity;
+        }
+
+        /// <summary>몬스터 root 스케일이 (인트로 팝인으로) 충분히 커졌는지 = 마커를 표시해도 되는지.</summary>
+        private bool IsMonsterVisible()
+        {
+            if (_monster == null) return false;
+            float baseX = _monsterComp != null ? _monsterComp.IntroBaseScale.x : 0f;
+            float threshold = Mathf.Max(0.02f, baseX * 0.15f);
+            return _monster.localScale.x > threshold;
         }
     }
 }

@@ -23,6 +23,15 @@ namespace DiceOrbit.UI
         private readonly Dictionary<TileData, TileAttributeBubbleUI> activeBubbles = new Dictionary<TileData, TileAttributeBubbleUI>();
         private readonly HashSet<TileAttributeType> missingMappingLogged = new HashSet<TileAttributeType>();
         private readonly Dictionary<TileData, float> _liftOffsets = new Dictionary<TileData, float>();   // 타일 리프트 연출 연동
+        private bool _iconsHidden = false;   // 인트로 타일 낙하 동안 아이콘 일괄 숨김
+
+        /// <summary>인트로 등에서 타일 속성 아이콘을 일괄 숨김/표시 (타일 낙하 전엔 숨기고 낙하 후 표시).</summary>
+        public void SetIconsHidden(bool hidden)
+        {
+            _iconsHidden = hidden;
+            foreach (var kv in activeBubbles)
+                if (kv.Value != null) kv.Value.gameObject.SetActive(!hidden);
+        }
 
         /// <summary>
         /// 타일 버블(속성 아이콘)을 위로 띄우는 오프셋 지정 (타일 리프트 연출과 함께 움직이도록).
@@ -181,6 +190,7 @@ namespace DiceOrbit.UI
 
             var go = new GameObject($"TileBubble_{tile.TileIndex}");
             var bubble = go.AddComponent<TileAttributeBubbleUI>();
+            if (_iconsHidden) go.SetActive(false);   // 숨김 중 생성되는 버블도 숨긴 채 시작
             activeBubbles[tile] = bubble;
             return bubble;
         }
