@@ -50,6 +50,11 @@ namespace DiceOrbit.UI
         [SerializeField] private int numberOfChoices = 3;
         [Tooltip("시작 시 고를 캐릭터 수 (이 횟수만큼 선택을 반복)")]
         [SerializeField] private int charactersToSelect = 2;
+        [Tooltip("LeftDescriptionPanel이 일자에서 위아래로 펼쳐지는 시간(초)")]
+        [SerializeField] private float panelUnfoldDuration = 0.3f;
+        [Header("Shade (패널 전체 어둡게)")]
+        [Tooltip("반투명 검정 알파 (0~1). 190/255 ≈ 0.745")]
+        [SerializeField, Range(0f, 1f)] private float topShadeStrength = 0.745f;
 
         private List<Core.CharacterPreset> currentChoices = new List<Core.CharacterPreset>();
         private List<CharacterCard> currentCards = new List<CharacterCard>();
@@ -57,6 +62,10 @@ namespace DiceOrbit.UI
         private Core.CharacterPreset activeDetailPreset;
         private bool isTransitioning;
         private Coroutine activeTransitionRoutine;
+        private Coroutine _unfoldCo;
+        private RectTransform _leftPanel;
+        private Vector3 _leftPanelFullScale = Vector3.one;
+        private Image _topShade;
 
         private int selectedCount;
         private int sessionTargetCount = 1;
@@ -67,6 +76,12 @@ namespace DiceOrbit.UI
             if (selectionCanvas == null)
             {
                 selectionCanvas = GetComponentInParent<Canvas>();
+            }
+
+            if (detailRoot != null)
+            {
+                _leftPanel = detailRoot.transform.Find("LeftDescriptionPanel") as RectTransform;
+                if (_leftPanel != null) { _leftPanelFullScale = _leftPanel.localScale; EnsureTopShade(); }
             }
 
             HideDetail();
@@ -268,6 +283,55 @@ namespace DiceOrbit.UI
 
             if (cancelButton != null) cancelButton.interactable = true;
             if (ldConfirmButton != null) ldConfirmButton.interactable = true;
+
+            // LeftDescriptionPanel을 가로선(일자)에서 위아래로 펼치는 연출 (center pivot → 위아래 양방향).
+            if (_leftPanel != null)
+            {
+                _leftPanel.localScale = new Vector3(_leftPanelFullScale.x, 0f, _leftPanelFullScale.z);
+                if (_unfoldCo != null) StopCoroutine(_unfoldCo);
+                _unfoldCo = StartCoroutine(UnfoldPanel(_leftPanel, _leftPanelFullScale, panelUnfoldDuration));
+            }
+        }
+
+        /// <summary>패널을 세로 스케일 0 → full 로 펼침 (EaseOutBack 살짝 튕김).</summary>
+        private IEnumerator UnfoldPanel(RectTransform panel, Vector3 full, float duration)
+        {
+            if (panel == null) yield break;
+            if (duration <= 0f) { panel.localScale = full; _unfoldCo = null; yield break; }
+            float e = 0f;
+            while (e < duration)
+            {
+                e += Time.unscaledDeltaTime;
+                float k = EaseOutBack(Mathf.Clamp01(e / duration));
+                panel.localScale = new Vector3(full.x, k * full.y, full.z);
+                yield return null;
+            }
+            panel.localScale = full;
+            _unfoldCo = null;
+        }
+
+        private static float EaseOutBack(float x)
+        {
+            const float c1 = 1.70158f, c3 = 1.70158f + 1f;
+            return 1f + c3 * Mathf.Pow(x - 1f, 3f) + c1 * Mathf.Pow(x - 1f, 2f);
+        }
+
+        /// <summary>LeftDescriptionPanel 전체를 균일하게 어둡게 하는 반투명 검정 오버레이를 배경 위·내용 아래에 1회 생성.
+        /// 패널 자식이라 언폴드 때 함께 나타난다.</summary>
+        private void EnsureTopShade()
+        {
+            if (_leftPanel == null || _topShade != null) return;
+
+            var go = new GameObject("Shade", typeof(RectTransform));
+            var rt = go.GetComponent<RectTransform>();
+            rt.SetParent(_leftPanel, false);
+            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+            rt.SetAsFirstSibling();   // 배경 위 · 내용(텍스트/일러스트) 아래
+
+            _topShade = go.AddComponent<Image>();
+            _topShade.color = new Color(0f, 0f, 0f, topShadeStrength);   // 그라데이션 없이 균일 반투명
+            _topShade.raycastTarget = false;
         }
 
         private string BuildPassiveSummary(Core.CharacterPreset character)
