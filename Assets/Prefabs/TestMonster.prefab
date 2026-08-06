@@ -1121,6 +1121,7 @@ MonoBehaviour:
     Defense: 2
     TempArmor: 0
     DodgeChance: 0
+    Invulnerable: 0
     MonsterName: Slime
     Level: 1
     Speed: 1
@@ -1323,8 +1324,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1.07, y: 3.22}
-  m_SizeDelta: {x: 22.19, y: 16.5}
+  m_AnchoredPosition: {x: 1.16, y: 4.88}
+  m_SizeDelta: {x: 34.98, y: 26}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6855310679896710750
 CanvasRenderer:
