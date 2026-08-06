@@ -16,12 +16,35 @@ namespace DiceOrbit.UI
 
         private const float MoveSpeed      = 1.6f;
         private const float Lifetime       = 1.2f;
-        private const float LabelFontSize  = 10.0f;
-        private const float DamageFontSize = 10.0f;
-        private const float CritFontSize   = 11.5f;
+        private const float LabelFontSize  = 13.0f;   // 패시브/상태 버블
+        private const float DamageFontSize = 15.0f;   // 데미지 숫자
+        private const float CritFontSize   = 19.0f;   // 치명타
 
         private static readonly Color DamageColor   = Color.red;
         private static readonly Color CriticalColor = Color.yellow;
+
+        // KOTRA HOPE 폰트 + 검은 외곽선(두껍게). 런타임 생성 팝업이라 Resources에서 로드해 정적 캐시.
+        private static TMP_FontAsset _font;
+        private static Material _outlineMat;
+
+        private static TMP_FontAsset PopupFont
+            => _font != null ? _font : (_font = Resources.Load<TMP_FontAsset>("Fonts/KOTRA HOPE SDF"));
+
+        /// <summary>KOTRA HOPE 머티리얼을 복제해 외곽선을 켠 공용 머티리얼 (모든 팝업이 공유, 색은 정점색으로).</summary>
+        private static Material PopupMaterial
+        {
+            get
+            {
+                if (_outlineMat != null) return _outlineMat;
+                var f = PopupFont;
+                if (f == null || f.material == null) return null;
+                _outlineMat = new Material(f.material);
+                _outlineMat.EnableKeyword(ShaderUtilities.Keyword_Outline);
+                _outlineMat.SetColor(ShaderUtilities.ID_OutlineColor, Color.black);
+                _outlineMat.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.18f);
+                return _outlineMat;
+            }
+        }
 
         private void Awake()
         {
@@ -31,9 +54,19 @@ namespace DiceOrbit.UI
         public void Setup(string text, Color color, float fontSize = LabelFontSize)
         {
             _text              = gameObject.AddComponent<TextMeshPro>();
+
+            var font = PopupFont;
+            if (font != null)
+            {
+                _text.font = font;
+                var mat = PopupMaterial;
+                if (mat != null) _text.fontSharedMaterial = mat;   // KOTRA HOPE + 검은 외곽선(두껍게)
+            }
+
             _text.text         = text;
             _text.color        = color;
             _text.fontSize     = fontSize;
+            _text.fontStyle    = FontStyles.Bold;                  // 볼드
             _text.alignment    = TextAlignmentOptions.Center;
             _text.sortingOrder = 200;
             _baseColor         = color;
