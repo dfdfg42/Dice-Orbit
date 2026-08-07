@@ -100,6 +100,8 @@ namespace DiceOrbit.Data.Tile
 
         public AttackTile(int percent = 30) : base(TileAttributeType.Attack, percent, -1) { }
 
+        public override bool PlaysInstallVfx => false;   // 기본 탑재(모든 홀수 타일) — 설치 VFX 생략
+
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {
             if (trigger != CombatTrigger.OnCalculateOutput) return;
@@ -132,6 +134,8 @@ namespace DiceOrbit.Data.Tile
         private static readonly Color Tint = new Color(0.42f, 0.66f, 1f);   // 푸른 계열
 
         public DefenseTile(int percent = 30) : base(TileAttributeType.Defense, percent, -1) { }
+
+        public override bool PlaysInstallVfx => false;   // 기본 탑재(모든 짝수 타일) — 설치 VFX 생략
 
         public override void OnReact(CombatTrigger trigger, CombatContext context)
         {

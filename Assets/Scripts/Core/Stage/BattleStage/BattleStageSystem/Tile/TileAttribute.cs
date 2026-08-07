@@ -42,6 +42,9 @@ namespace DiceOrbit.Data.Tile
 
         public int Priority => 5;
 
+        /// <summary>타일 설치 시 연출 VFX 재생 여부. 기본 탑재(공격/방어)처럼 매 타일마다 깔려 시끄러운 속성은 override로 false.</summary>
+        public virtual bool PlaysInstallVfx => true;
+
         public TileAttribute(TileAttributeType type, int value, int duration, bool isStackable = false)
         {
             Type = type;
