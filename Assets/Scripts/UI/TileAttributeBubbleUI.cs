@@ -15,11 +15,13 @@ namespace DiceOrbit.UI
         {
             public readonly Sprite Icon;
             public readonly Color Tint;
+            public readonly bool Centered;   // true면 가장자리 대신 타일 정중앙에 배치 (공격/방어 타일)
 
-            public BubbleIconData(Sprite icon, Color tint)
+            public BubbleIconData(Sprite icon, Color tint, bool centered = false)
             {
                 Icon = icon;
                 Tint = tint;
+                Centered = centered;
             }
         }
 
@@ -33,6 +35,7 @@ namespace DiceOrbit.UI
 
         private Transform target;
         private readonly List<SpriteRenderer> iconRenderers = new List<SpriteRenderer>();
+        private bool[] _centered = System.Array.Empty<bool>();   // 아이콘별 중앙배치 여부 (iconRenderers와 인덱스 정렬)
         private int _lastIconCount;
         private float _liftOffset;   // 타일 리프트 연출 연동 (IntentTileLiftEffect)
 
@@ -51,6 +54,7 @@ namespace DiceOrbit.UI
             int iconCount = icons != null ? icons.Count : 0;
             _lastIconCount = iconCount;
             EnsureIconRenderers(iconCount);
+            if (_centered.Length < iconCount) _centered = new bool[iconCount];
 
             for (int i = 0; i < iconRenderers.Count; i++)
             {
@@ -62,6 +66,7 @@ namespace DiceOrbit.UI
                 r.sprite = icons[i].Icon;
                 r.color = icons[i].Tint;
                 r.sortingOrder = sortingOrder;
+                _centered[i] = icons[i].Centered;
             }
 
             PlaceIcons(iconCount);
@@ -77,22 +82,34 @@ namespace DiceOrbit.UI
         {
             if (target == null || iconCount <= 0) return;
 
-            ResolveEdge(out Vector3 edgeCenter, out Vector3 edgeDir, out Vector3 tangent);
+            ResolveEdge(out Vector3 edgeCenter, out Vector3 edgeDir, out Vector3 tangent, out Vector3 topCenter);
 
             // 평평하게 눕힘: 법선(+Z)=월드 위, 아이콘 윗방향(+Y)=가장자리에서 타일 안쪽을 바라보게(=-edgeDir).
             Quaternion rot = Quaternion.LookRotation(Vector3.up, -edgeDir);
 
-            int placed = 0;
+            // 중앙 배치(공격/방어)와 가장자리 배치를 분리해 각자 나란히 정렬.
+            int centeredTotal = 0, edgeTotal = 0;
+            for (int i = 0; i < iconCount && i < iconRenderers.Count; i++)
+            {
+                if (iconRenderers[i] == null || !iconRenderers[i].gameObject.activeSelf) continue;
+                if (i < _centered.Length && _centered[i]) centeredTotal++; else edgeTotal++;
+            }
+
+            int centeredPlaced = 0, edgePlaced = 0;
             for (int i = 0; i < iconRenderers.Count; i++)
             {
                 var r = iconRenderers[i];
                 if (r == null || !r.gameObject.activeSelf) continue;
 
-                float centered = placed - ((iconCount - 1) * 0.5f);
-                Vector3 pos = edgeCenter + tangent * (centered * iconSpacing) + Vector3.up * (lift + _liftOffset);
+                bool centered = i < _centered.Length && _centered[i];
+                Vector3 basePos = centered ? topCenter : edgeCenter;
+                int idx   = centered ? centeredPlaced++ : edgePlaced++;
+                int total = centered ? centeredTotal   : edgeTotal;
+
+                float offset = idx - ((total - 1) * 0.5f);
+                Vector3 pos = basePos + tangent * (offset * iconSpacing) + Vector3.up * (lift + _liftOffset);
                 r.transform.SetPositionAndRotation(pos, rot);
                 r.transform.localScale = Vector3.one * iconScale;
-                placed++;
             }
         }
 
@@ -100,7 +117,7 @@ namespace DiceOrbit.UI
         /// 아이콘을 놓을 타일 윗면 가장자리 중점(월드), 가장자리 방향(중심쪽 또는 바깥쪽), 접선 벡터를 구한다.
         /// 타일 인덱스가 outerEdgeFromIndex 이상이면 안쪽 대신 바깥쪽 가장자리를 사용(뒤쪽 타일 체력바 가림 회피).
         /// </summary>
-        private void ResolveEdge(out Vector3 edgeCenter, out Vector3 edgeDir, out Vector3 tangent)
+        private void ResolveEdge(out Vector3 edgeCenter, out Vector3 edgeDir, out Vector3 tangent, out Vector3 topCenter)
         {
             Vector3 tilePos = target.position;
 
@@ -129,7 +146,8 @@ namespace DiceOrbit.UI
                 dist = b.extents.z * Mathf.Abs(t.lossyScale.z) * edgeInset;             // 가장자리까지 거리(월드)
             }
 
-            edgeCenter = new Vector3(tilePos.x, topY, tilePos.z) + edgeDir * dist;
+            topCenter  = new Vector3(tilePos.x, topY, tilePos.z);            // 타일 윗면 정중앙(공격/방어 아이콘)
+            edgeCenter = topCenter + edgeDir * dist;                          // 가장자리(기존 속성 아이콘)
         }
 
         private void EnsureIconRenderers(int required)

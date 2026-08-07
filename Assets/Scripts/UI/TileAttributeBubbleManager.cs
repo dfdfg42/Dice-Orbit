@@ -155,7 +155,7 @@ namespace DiceOrbit.UI
                     continue;
                 }
 
-                iconData.Add(new TileAttributeBubbleUI.BubbleIconData(visual.icon, visual.iconTint));
+                iconData.Add(new TileAttributeBubbleUI.BubbleIconData(visual.icon, visual.iconTint, IsCentered(attr.Type)));
                 if (string.IsNullOrWhiteSpace(primaryLabel))
                 {
                     primaryLabel = visual.shortLabel;
@@ -180,6 +180,10 @@ namespace DiceOrbit.UI
             if (_liftOffsets.TryGetValue(tile, out float liftOffset))
                 bubble.SetLiftOffset(liftOffset);
         }
+
+        /// <summary>공격/방어 타일 아이콘은 가장자리 대신 타일 정중앙에 놓는다.</summary>
+        private static bool IsCentered(TileAttributeType type)
+            => type == TileAttributeType.Attack || type == TileAttributeType.Defense;
 
         private TileAttributeBubbleUI GetOrCreateBubble(TileData tile)
         {
