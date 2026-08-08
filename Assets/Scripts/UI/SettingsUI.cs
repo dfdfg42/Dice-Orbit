@@ -195,8 +195,11 @@ namespace DiceOrbit.UI
             {
                 idx = Mathf.Clamp(idx, 0, Resolutions.Length - 1);
                 PlayerPrefs.SetInt(KeyResolution, idx);
+#if !UNITY_WEBGL
                 var r = Resolutions[idx];
                 Screen.SetResolution(r.x, r.y, Screen.fullScreen);
+#endif
+                // 웹: SetResolution이 렌더 버퍼를 캔버스와 분리시켜 화면이 좌하단으로 쏠림 → 적용 생략(캔버스가 크기 관리)
             });
 
             saveButton?.onClick.AddListener(() =>

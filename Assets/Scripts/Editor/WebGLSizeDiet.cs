@@ -65,11 +65,14 @@ namespace DiceOrbit.EditorTools
                     var imp = AssetImporter.GetAtPath(path) as TextureImporter;
                     if (imp == null) continue;
 
-                    // VFX 플립북(격자 시트)은 프레임 해상도 확보를 위해 2048, 나머지는 1024
-                    int max = path.Contains("GabrielAguiarProductions") ? 2048 : 1024;
+                    // VFX 플립북(격자 시트)은 프레임 해상도 확보 — 10×10 8K 시트는 4096(프레임 409px),
+                    // 나머지 GabrielAguiar 2048, 그 외 1024
+                    int max = path.Contains("10X10_8K") ? 4096
+                            : path.Contains("GabrielAguiarProductions") ? 2048
+                            : 1024;
 
                     var s = imp.GetPlatformTextureSettings("WebGL");
-                    if (s.overridden && s.maxTextureSize <= max) continue;   // 이미 적용됨
+                    if (s.overridden && s.maxTextureSize == max) continue;   // 이미 목표값
 
                     s.overridden = true;
                     s.maxTextureSize = max;
