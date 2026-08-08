@@ -60,6 +60,18 @@ namespace DiceOrbit.Data
             return new List<TileData>();
         }
 
+        /// <summary>
+        /// true면 이 타일 스킬은 대상 1명을 무작위로 고정해 두고, 그 대상의 현재 위치를 따라
+        /// 매 RefreshTargets마다 타일을 재계산한다(AttackIntent가 GetFollowTiles 호출). 기본 false.
+        /// </summary>
+        public virtual bool FollowsTarget => false;
+
+        /// <summary>FollowsTarget=true일 때, 고정된 대상(target)의 현재 위치를 기준으로 공격 타일을 계산해 반환.</summary>
+        public virtual List<TileData> GetFollowTiles(Core.Character target)
+        {
+            return new List<TileData>();
+        }
+
         public void ExecuteSkillWithIntent(Core.Unit source, AttackIntent intent)
         {
             if (source == null || intent == null)

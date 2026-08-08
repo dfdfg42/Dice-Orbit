@@ -39,15 +39,15 @@ namespace DiceOrbit.Data.Tile
         private readonly int healAmount;
         private readonly int bindThreshold;
         private readonly int bindDuration;
-        private readonly int babyHeal;
+        private readonly int bearArmor;
 
-        public HoneyPawTile(int healAmount, int bindThreshold, int bindDuration, int babyHeal)
+        public HoneyPawTile(int healAmount, int bindThreshold, int bindDuration, int bearArmor)
             : base(TileAttributeType.Honey, healAmount, -1, false)
         {
             this.healAmount = healAmount;
             this.bindThreshold = bindThreshold;
             this.bindDuration = bindDuration;
-            this.babyHeal = babyHeal;
+            this.bearArmor = bearArmor;
         }
 
         public override void OnTraverse(Character character) => Activate(character);
@@ -63,8 +63,8 @@ namespace DiceOrbit.Data.Tile
                 CombatPipeline.Instance?.Process(heal);
             }
 
-            // 2) [아기 곰은 꿀을 좋아해] 아기곰 회복
-            BearPackTracker.HealBaby(babyHeal);
+            // 2) [아기 곰은 꿀을 좋아해] 아기 곰·엄마 곰에게 일시 방어도 부여
+            BearPackTracker.GrantTempArmorToBears(bearArmor);
 
             // 3) '먹은 꿀' 카운트
             BearPackTracker.RegisterHoneyEaten();

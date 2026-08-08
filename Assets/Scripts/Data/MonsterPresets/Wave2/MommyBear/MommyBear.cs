@@ -7,7 +7,7 @@ using DiceOrbit.Data.Monsters;
 namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
 {
     /// <summary>
-    /// [보호 본능] 아기곰을 가장 최근에 공격한 적에게 피해. 단 그 적이 이번 턴 꿀 cancelHoneySteps개 이상 밟았으면 취소.
+    /// [보호 본능] 가장 최근에 아기 곰을 공격한 적의 타일 + 좌우 각각 range칸에 광역 피해.
     /// 반응형: 사용 시 LastBabyAttacker를 소비(다음엔 [찢어]).
     /// </summary>
     [System.Serializable]
@@ -15,59 +15,64 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
     {
         [Header("Skill Settings")]
         [SerializeField] private int damage = 15;
-        [Tooltip("대상이 이번 턴 이 개수 이상 꿀을 밟으면 취소")]
-        [SerializeField] private int cancelHoneySteps = 2;
+        [Tooltip("공격자 타일 기준 좌우 각각 칸 수")]
+        [SerializeField] private int range = 3;
 
         public ProtectiveInstinctSkill()
         {
             skillName = "보호 본능";
-            description = "아기곰을 가장 최근에 공격한 적에게 피해 (그 적이 이번 턴 꿀 2개 이상 밟으면 취소)";
+            description = "가장 최근에 아기 곰을 공격한 적의 타일 + 좌우 각각 3칸에 피해";
         }
 
         public override int GetPreviewDamage() => damage;
 
-        public override List<Unit> GetCustomTargets(MonsterSkill skill, Monster owner)
+        public override List<TileData> GetCustomTiles(MonsterSkill skill, Monster owner)
         {
             var attacker = BearPackTracker.LastBabyAttacker;
-            return (attacker != null && attacker.IsAlive) ? new List<Unit> { attacker } : new List<Unit>();
+            if (attacker == null || !attacker.IsAlive || attacker.CurrentTile == null)
+                return new List<TileData>();
+            return BearHelper.ExpandAround(attacker.CurrentTile, range);
         }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
-            var attacker = BearPackTracker.LastBabyAttacker;
-            BearPackTracker.SetLastBabyAttacker(null);   // 반응형: 사용 시 소비
-
-            if (attacker == null || !attacker.IsAlive)
-            {
-                Debug.Log("[보호 본능] 최근 아기곰 공격자 없음 — no-op");
-                return;
-            }
-
-            int turn = CombatManager.Instance != null ? CombatManager.Instance.TurnCount : 0;
-            if (BearPackTracker.GetHoneySteps(attacker, turn) >= cancelHoneySteps)
-            {
-                Debug.Log($"[보호 본능] 취소 — 대상이 이번 턴 꿀 {cancelHoneySteps}개 이상 밟음");
-                return;
-            }
-
-            AttackUnits(source, new List<Unit> { attacker }, damage);
+            BearPackTracker.SetLastBabyAttacker(null);   // 반응형: 사용 시 소비 (다음엔 [찢어])
+            AttackTiles(source, targetTiles, damage);
         }
     }
 
-    /// <summary>[곰은 사람을 찢어] 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해. (RandomCharacter + Tiles + range 2)</summary>
+    /// <summary>[곰은 사람을 찢어] 무작위 대상 1명 기준 진행방향(Next) forwardTiles칸에 피해 (대상 타일 제외).
+    /// FollowsTarget=true: 대상이 움직이면 공격 범위도 따라 이동, 실행 시점의 대상 위치로 착탄.</summary>
     [System.Serializable]
     public class MommyBearTear : SkillData
     {
         [Header("Skill Settings")]
         [SerializeField] private int damage = 15;
+        [Tooltip("대상 타일 기준 진행방향으로 공격할 타일 수 (대상 타일 제외)")]
+        [SerializeField] private int forwardTiles = 4;
 
         public MommyBearTear()
         {
             skillName = "곰은 사람을 찢어";
-            description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
+            description = "무작위 대상 1명 기준 진행방향 4칸에 피해 (대상이 움직이면 따라감, 대상 타일 제외)";
         }
 
         public override int GetPreviewDamage() => damage;
+
+        public override bool FollowsTarget => true;
+
+        public override List<TileData> GetFollowTiles(Character target)
+        {
+            var tiles = new List<TileData>();
+            if (target == null || target.CurrentTile == null) return tiles;
+            var t = target.CurrentTile;
+            for (int i = 0; i < forwardTiles && t?.NextTile != null; i++)
+            {
+                t = t.NextTile;
+                tiles.Add(t);
+            }
+            return tiles;
+        }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
@@ -100,6 +105,18 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
                 if (m != null && m.IsAlive && m.Stats != null && m.Stats.MonsterName == name)
                     return m;
             return null;
+        }
+
+        /// <summary>center 타일 + 진행방향(Next)·역방향(Prev) 각각 range칸을 포함한 타일 목록 (center 포함, 궤도 연결 따라 감).</summary>
+        public static List<TileData> ExpandAround(TileData center, int range)
+        {
+            if (center == null) return new List<TileData>();
+            var set = new HashSet<TileData> { center };
+            var t = center;
+            for (int i = 0; i < range && t?.NextTile != null; i++) { t = t.NextTile; set.Add(t); }
+            t = center;
+            for (int i = 0; i < range && t?.PreviousTile != null; i++) { t = t.PreviousTile; set.Add(t); }
+            return new List<TileData>(set);
         }
     }
 }
