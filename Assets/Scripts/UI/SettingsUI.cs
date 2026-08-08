@@ -79,9 +79,9 @@ namespace DiceOrbit.UI
 
         // ── 저장값 조회/적용 (씬 로드 시 GameFlowManager가 호출) ──────
 
-        public static float SavedBgmVolume => PlayerPrefs.GetFloat(KeyBgm, 1f);
+        public static float SavedBgmVolume => PlayerPrefs.GetFloat(KeyBgm, 0.5f);   // 디폴트 BGM 50%
         public static float SavedSfxVolume => PlayerPrefs.GetFloat(KeySfx, 1f);
-        public static bool SavedFullscreen => PlayerPrefs.GetInt(KeyFullscreen, 1) == 1;
+        public static bool SavedFullscreen => PlayerPrefs.GetInt(KeyFullscreen, 0) == 1;   // 디폴트 창 모드
         public static int SavedLanguageIndex => Mathf.Clamp(PlayerPrefs.GetInt(KeyLanguage, 0), 0, Languages.Length - 1);
         public static int SavedResolutionIndex => Mathf.Clamp(PlayerPrefs.GetInt(KeyResolution, 0), 0, Resolutions.Length - 1);
 
@@ -96,6 +96,10 @@ namespace DiceOrbit.UI
             // 해상도는 빌드에서만 실제 적용 (에디터 게임뷰를 건드리지 않게).
 #if UNITY_EDITOR
             Screen.fullScreen = SavedFullscreen;
+#elif UNITY_WEBGL
+            // 웹: 캔버스 크기는 페이지 템플릿(반응형 16:9)이 관리하고,
+            // 사용자 제스처 없는 자동 전체화면은 브라우저가 차단(권한 에러) → 시작 시 적용 생략.
+            // 전체화면은 설정 토글(사용자 클릭)에서만 적용된다.
 #else
             var r = Resolutions[SavedResolutionIndex];
             Screen.SetResolution(r.x, r.y, SavedFullscreen);
