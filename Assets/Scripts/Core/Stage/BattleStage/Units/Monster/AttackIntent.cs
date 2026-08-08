@@ -29,7 +29,7 @@ namespace DiceOrbit.Data
         [System.NonSerialized]
         private Monster owner; // 의도를 생성한 몬스터 참조 (커스텀 타겟 선정에 필요)
         [System.NonSerialized]
-        private Character followTarget; // FollowsTarget 스킬용: 고정된 추종 대상 (RefreshTargets마다 이 대상 기준 타일 재계산)
+        private readonly List<Character> followTargets = new List<Character>(); // FollowsTarget 스킬용: 고정된 추종 대상들 (RefreshTargets마다 이 대상들 기준 타일 재계산)
         /// <summary>
         /// 선정된 타겟 캐릭터들
         /// </summary>
@@ -86,9 +86,10 @@ namespace DiceOrbit.Data
                 case TargetType.Tiles:
                     if (skill.skillData != null && skill.skillData.FollowsTarget)
                     {
-                        // 대상 1명을 무작위로 고정하고, 그 대상 위치를 따라 타일을 계산 (이후 RefreshTargets가 추종)
-                        var picked = SelectUnitsByTargetStrategy(TargetSelectionStrategy.RandomCharacter, 1);
-                        followTarget = picked.Count > 0 ? picked[0] as Character : null;
+                        // 대상 TargetCount명을 무작위로 고정하고, 그 대상들 위치를 따라 타일을 계산 (이후 RefreshTargets가 추종)
+                        followTargets.Clear();
+                        foreach (var u in SelectUnitsByTargetStrategy(TargetSelectionStrategy.RandomCharacter, Mathf.Max(1, skill.TargetCount)))
+                            if (u is Character fc) followTargets.Add(fc);
                         targetedTiles = ResolveFollowTiles();
                     }
                     else
@@ -165,9 +166,16 @@ namespace DiceOrbit.Data
         /// <summary>FollowsTarget 스킬용: 고정된 추종 대상의 현재 위치 기준 타일을 계산한다. 대상이 없거나 죽었으면 빈 목록.</summary>
         private List<TileData> ResolveFollowTiles()
         {
-            if (followTarget == null || !followTarget.IsAlive || skill?.skillData == null)
-                return new List<TileData>();
-            return skill.skillData.GetFollowTiles(followTarget) ?? new List<TileData>();
+            var result = new HashSet<TileData>();
+            if (skill?.skillData == null) return new List<TileData>();
+            foreach (var c in followTargets)
+            {
+                if (c == null || !c.IsAlive) continue;
+                var tiles = skill.skillData.GetFollowTiles(c);
+                if (tiles == null) continue;
+                foreach (var t in tiles) if (t != null) result.Add(t);
+            }
+            return result.ToList();
         }
 
         private List<TileData> SelectTiles(MonsterSkill skill)
@@ -278,6 +286,7 @@ namespace DiceOrbit.Data
             // FollowsTarget 스킬: 고정 대상의 현재 위치를 따라 타일 재계산 (대상이 움직이면 공격범위도 이동)
             if (TargetType == TargetType.Tiles && skill?.skillData != null && skill.skillData.FollowsTarget)
             {
+                followTargets.RemoveAll(c => c == null || !c.IsAlive);
                 TargetTiles = ResolveFollowTiles();
                 return;
             }

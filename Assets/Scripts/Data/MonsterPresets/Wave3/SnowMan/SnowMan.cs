@@ -124,20 +124,36 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
         }
     }
 
-    /// <summary>[눈보라] 무작위 대상 2명이 속한 타일 + 좌우 각각 1칸에 피해. (RandomCharacter + Tiles + count 2 + range 1)</summary>
+    /// <summary>[눈보라] 무작위 대상 2명 기준 좌우 각각 sideRange칸(대상 타일 제외)에 피해.
+    /// FollowsTarget=true: 대상이 움직이면 공격 범위도 따라 이동 (대상 수는 asset targetCount=2).</summary>
     [System.Serializable]
     public class SnowStorm : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 20;
+        [SerializeField] private int damage = 15;
+        [Tooltip("대상 타일 기준 좌우 각각 칸 수 (대상 타일 제외)")]
+        [SerializeField] private int sideRange = 1;
 
         public SnowStorm()
         {
             skillName = "눈보라";
-            description = "무작위 대상 2명이 속한 타일 + 좌우 각각 1칸에 피해";
+            description = "무작위 대상 2명 기준 좌우 각각 1칸에 피해 (대상이 움직이면 따라감, 대상 타일 제외)";
         }
 
         public override int GetPreviewDamage() => damage;
+
+        public override bool FollowsTarget => true;
+
+        public override List<TileData> GetFollowTiles(Character target)
+        {
+            var tiles = new List<TileData>();
+            if (target == null || target.CurrentTile == null) return tiles;
+            var t = target.CurrentTile;
+            for (int i = 0; i < sideRange && t?.NextTile != null; i++) { t = t.NextTile; tiles.Add(t); }
+            t = target.CurrentTile;
+            for (int i = 0; i < sideRange && t?.PreviousTile != null; i++) { t = t.PreviousTile; tiles.Add(t); }
+            return tiles;
+        }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {
@@ -154,12 +170,12 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
     {
         [Header("Passive Settings")]
         [Tooltip("피격 적에게 부여할 빙결 중첩")]
-        [SerializeField] private int frostStacks = 1;
+        [SerializeField] private int frostStacks = 3;
 
         public HappySnowmanPassive()
         {
             passiveName = "행복한 눈사람";
-            description = "눈사람에게 피격된 적은 빙결 중첩 +1 (매 턴 종료 시 중첩만큼 피해)";
+            description = "눈사람에게 피격된 적은 빙결 중첩 +3 (매 턴 종료 시 중첩만큼 피해)";
             priority = 10;
             isStackable = false;
         }
