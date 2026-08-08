@@ -15,13 +15,10 @@ namespace DiceOrbit.Data.MonsterPresets.Wave7.Shared
     [System.Serializable]
     public class GrowthVitalityPassive : PassiveAbility
     {
-        [Header("Passive Settings")]
-        [SerializeField] private int initialVitality = 15;
-
         public GrowthVitalityPassive()
         {
             passiveName = "성장의 활력";
-            description = "최초 활력 15, 활력 7 이하면 받는 피해 +20%";
+            description = "턴 시작 시 활력 타일 개수만큼 체력 회복";
             priority = 10; isStackable = false;
         }
 
@@ -29,14 +26,48 @@ namespace DiceOrbit.Data.MonsterPresets.Wave7.Shared
         {
             base.Initialize(Owner);
             FarmSet.EnsureWaveHook();
-            FarmSet.EnsureVitality(Owner, initialVitality);
+        }
+
+        public override void OnTurnEvent(CombatTrigger trigger, TurnEventContext context)
+        {
+            if (owner == null) return;
+            if (trigger != CombatTrigger.OnPreAction || context.Phase != EventPhase.TurnStart || context.SourceUnit != owner) return;
+            int n = FarmSet.CountVitalityTiles();
+            if (n > 0) owner.Heal(n);
         }
 
         public override bool AllowSamePassive(IPassive incoming) => false;
     }
 
-    /// <summary>[농장의 활력] 난쟁이 농부 패시브. 매 턴 시작 무작위 타일 tilesPerTurn개에 활력 타일 설치.
-    /// 쇠스랑 취소 판정용 받은-피해 상태(BiteDamageTakenStatus)도 최초 1회 시드.</summary>
+    /// <summary>[농장의 활력] 무작위 타일 tileCount개에 활력 타일 설치 (효과 없음, 그 위 턴 종료 시 삭제).
+    /// 대상 없음 — Execute가 직접 배치. 난쟁이 농부/허수아비 P1.</summary>
+    [System.Serializable]
+    public class FarmVitalitySkill : SkillData
+    {
+        [Header("Skill Settings")]
+        [SerializeField] private int tileCount = 2;
+
+        public FarmVitalitySkill() { skillName = "농장의 활력"; description = "무작위 타일 2개에 활력 타일 설치 (성장의 활력 회복 자원)"; }
+
+        public override int GetPreviewDamage() => 0;
+
+        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
+        {
+            FarmSet.EnsureWaveHook();
+            var orbit = GameManager.Instance?.GetOrbitManager();
+            if (orbit == null || orbit.Tiles == null) return;
+            var candidates = orbit.Tiles.Where(t => t != null && !t.HasAttribute(TileAttributeType.Vitality)).ToList();
+            int place = Mathf.Min(tileCount, candidates.Count);
+            for (int i = 0; i < place; i++)
+            {
+                int r = Random.Range(0, candidates.Count);
+                candidates[r].AddAttribute(new VitalityTile());
+                candidates.RemoveAt(r);
+            }
+        }
+    }
+
+    /// <summary>(레거시·미사용) 옛 [농장의 활력] 패시브. 현재는 FarmVitalitySkill(스킬) + AllyDeathGuardPattern의 받은-피해 시드로 대체.</summary>
     [System.Serializable]
     public class FarmVitalityPassive : PassiveAbility
     {
@@ -94,6 +125,34 @@ namespace DiceOrbit.Data.MonsterPresets.Wave7.Shared
             => AttackTiles(source, targetTiles, damage);
     }
 
+    /// <summary>[허수아비 때리기] 무작위 대상 1명 기준 진행방향(Next) forwardTiles칸(대상 타일 제외)에 damage.
+    /// FollowsTarget=true: 대상이 움직이면 공격 범위도 따라 이동.</summary>
+    [System.Serializable]
+    public class FarmStrikeSkill : SkillData
+    {
+        [Header("Skill Settings")]
+        [SerializeField] private string skillLabel = "허수아비 때리기";
+        [SerializeField] private int damage = 20;
+        [Tooltip("대상 타일 기준 진행방향으로 공격할 타일 수 (대상 타일 제외)")]
+        [SerializeField] private int forwardTiles = 5;
+
+        public override string SkillName => string.IsNullOrEmpty(skillLabel) ? "공격" : skillLabel;
+        public override int GetPreviewDamage() => damage;
+        public override bool FollowsTarget => true;
+
+        public override List<TileData> GetFollowTiles(Character target)
+        {
+            var tiles = new List<TileData>();
+            if (target == null || target.CurrentTile == null) return tiles;
+            var t = target.CurrentTile;
+            for (int i = 0; i < forwardTiles && t?.NextTile != null; i++) { t = t.NextTile; tiles.Add(t); }
+            return tiles;
+        }
+
+        public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
+            => AttackTiles(source, targetTiles, damage);
+    }
+
     /// <summary>[비료] 모든 아군(활력 보유 몬스터)의 활력 스택 +amount.</summary>
     [System.Serializable]
     public class FertilizerSkill : SkillData
@@ -131,45 +190,39 @@ namespace DiceOrbit.Data.MonsterPresets.Wave7.Shared
         }
     }
 
-    /// <summary>[덩굴 묶기] 활력 타일 및 좌우 range칸의 적에게 다음 턴 이동 불가(Bind). Custom 타깃팅.</summary>
+    /// <summary>[덩굴 묶기] 무작위 활력 타일 1개 기준 좌우 range칸(활력 타일 제외)의 적에게 damage. Custom 타깃팅.</summary>
     [System.Serializable]
     public class VineBindSkill : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int bindDuration = 2;
-        [SerializeField] private int range = 2;
+        [SerializeField] private int damage = 20;
+        [SerializeField] private int range = 3;
 
-        public VineBindSkill() { skillName = "덩굴 묶기"; description = "활력 타일 및 좌우 2칸의 적에게 다음 턴 이동 불가"; }
+        public VineBindSkill() { skillName = "덩굴 묶기"; description = "무작위 활력 타일 좌우 3칸의 적에게 20 피해 (활력 타일 제외)"; }
 
-        public override int GetPreviewDamage() => 0;
+        public override int GetPreviewDamage() => damage;
 
         public override List<TileData> GetCustomTiles(MonsterSkill skill, Monster owner)
         {
             var orbit = GameManager.Instance?.GetOrbitManager();
             if (orbit == null || orbit.Tiles == null) return new List<TileData>();
+            var vitality = orbit.Tiles.Where(t => t != null && t.HasAttribute(TileAttributeType.Vitality)).ToList();
+            if (vitality.Count == 0) return new List<TileData>();
+            var center = vitality[Random.Range(0, vitality.Count)];
             int total = orbit.Tiles.Count;
             var result = new HashSet<TileData>();
-            foreach (var vt in orbit.Tiles.Where(t => t != null && t.HasAttribute(TileAttributeType.Vitality)))
-                for (int i = -range; i <= range; i++)
-                {
-                    int idx = (vt.TileIndex + i) % total;
-                    if (idx < 0) idx += total;
-                    var tile = orbit.GetTile(idx);
-                    if (tile != null) result.Add(tile);
-                }
+            for (int i = -range; i <= range; i++)
+            {
+                if (i == 0) continue; // 활력 타일(중심) 제외
+                int idx = ((center.TileIndex + i) % total + total) % total;
+                var tile = orbit.GetTile(idx);
+                if (tile != null) result.Add(tile);
+            }
             return result.ToList();
         }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
-        {
-            if (targetTiles == null) return;
-            var tileSet = new HashSet<TileData>(targetTiles);
-            var chars = PartyManager.Instance?.GetAliveCharacters();
-            if (chars == null) return;
-            foreach (var c in chars)
-                if (c != null && c.IsAlive && c.CurrentTile != null && tileSet.Contains(c.CurrentTile) && c.StatusEffects != null)
-                    c.StatusEffects.AddEffect(new BindStatus(0, bindDuration));
-        }
+            => AttackTiles(source, targetTiles, damage);
     }
 
     /// <summary>[쇠스랑] 무작위 대상 1명에게 damage. 단, 이번 턴 받은 누적 피해 ≥ cancelThreshold면 취소. (깨물기와 동일 메커니즘)</summary>
@@ -205,6 +258,9 @@ namespace DiceOrbit.Data.MonsterPresets.Wave7.Shared
         public override MonsterSkill GetNextSkill()
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;
+            // [쇠스랑] 취소 판정용 이번-턴 받은-피해 추적 시드 (난쟁이 농부; 허수아비엔 무해)
+            if (owner != null && owner.StatusEffects != null && !owner.StatusEffects.HasEffect(EffectType.BiteDamageTaken))
+                owner.StatusEffects.AddEffect(new BiteDamageTakenStatus());
             if (!FarmSet.HasAnyAllyDied()) return availableSkills[0];
             int idx = availableSkills.Count >= 2 ? Random.Range(0, 2) : 0;
             return availableSkills[idx];
