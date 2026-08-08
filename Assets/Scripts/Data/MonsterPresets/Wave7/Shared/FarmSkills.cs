@@ -10,8 +10,7 @@ using DiceOrbit.Systems.Effects;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave7.Shared
 {
-    /// <summary>[성장의 활력] 식물 몬스터 패시브. 최초 활력 스택 initialVitality 부여.
-    /// 활력 ≤7이면 받는 피해 +20%는 VitalityStatus가 직접 처리한다.</summary>
+    /// <summary>[성장의 활력] 식물 몬스터 패시브. 턴 시작 시 활력 타일 개수만큼 체력 회복.</summary>
     [System.Serializable]
     public class GrowthVitalityPassive : PassiveAbility
     {
