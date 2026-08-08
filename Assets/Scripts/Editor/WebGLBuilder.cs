@@ -23,6 +23,7 @@ namespace DiceOrbit.EditorTools
             // ── GitHub Pages 필수 설정 ─────────────────────────────
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
             PlayerSettings.WebGL.decompressionFallback = true;   // Pages가 Content-Encoding 미지원 → JS 해제
+            PlayerSettings.WebGL.template = "PROJECT:DiceOrbit"; // 반응형 16:9 커스텀 템플릿 (Assets/WebGLTemplates/DiceOrbit)
             PlayerSettings.runInBackground = true;
 
             var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
