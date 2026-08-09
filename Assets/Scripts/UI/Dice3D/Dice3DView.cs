@@ -15,9 +15,11 @@ namespace DiceOrbit.UI
     public class Dice3DView : MonoBehaviour
     {
         private const int RtSize = 256;
-        // 흰 카드 없이 주사위 단독 표시라 화면을 넉넉히 채우는 거리 (텀블 최악 대각에서 모서리가 살짝 스치는 정도)
-        private const float CamDistance = 3.4f;
+        // 흰 카드 없이 주사위 단독 표시라 화면을 넉넉히 채우는 거리.
+        // 텀블 중에는 TumbleScale로 줄여 굴러도 모서리가 프레임에 안 잘리고, 착지하며 1.0으로 커진다.
+        private const float CamDistance = 3.0f;
         private const float CamFov = 28f;
+        private const float TumbleScale = 0.85f;
 
         // 면 순서: +Z, -Z, +Y, -Y, +X, -X
         private static readonly Vector3[] FaceNormals =
@@ -195,6 +197,7 @@ namespace DiceOrbit.UI
             StopSettle();
             tumbling = false;
             die.localRotation = TargetRotation(FaceIndexOf(value));
+            die.localScale = Vector3.one;
         }
 
         // ── 연출 ─────────────────────────────────────────────
@@ -206,13 +209,14 @@ namespace DiceOrbit.UI
             {
                 StopSettle();
                 angularVelocity = new Vector3(RandomSpin(), RandomSpin(), RandomSpin());
+                die.localScale = Vector3.one * TumbleScale;   // 구르는 동안 축소 — 모서리 잘림 방지
             }
             tumbling = on;
         }
 
         private static float RandomSpin()
         {
-            float mag = Random.Range(420f, 760f);
+            float mag = Random.Range(300f, 540f);
             return Random.value < 0.5f ? -mag : mag;
         }
 
@@ -238,15 +242,19 @@ namespace DiceOrbit.UI
         private IEnumerator CoSettle(Quaternion target, float duration)
         {
             var from = die.localRotation;
+            float fromScale = die.localScale.x;
             float elapsed = 0f;
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                die.localRotation = Quaternion.SlerpUnclamped(from, target, EaseOutBack(t));
+                float eased = EaseOutBack(t);
+                die.localRotation = Quaternion.SlerpUnclamped(from, target, eased);
+                die.localScale = Vector3.one * Mathf.LerpUnclamped(fromScale, 1f, eased);   // 착지하며 원래 크기로 '탁'
                 yield return null;
             }
             die.localRotation = target;
+            die.localScale = Vector3.one;
             settleRoutine = null;
         }
 
