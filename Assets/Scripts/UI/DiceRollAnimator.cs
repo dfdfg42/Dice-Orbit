@@ -22,9 +22,9 @@ namespace DiceOrbit.UI
 
         [Header("Center Confirm (Step 1)")]
         [Tooltip("주사위 확정 간격 (하나씩 차례로)")]
-        [SerializeField] private float confirmInterval = 0.28f;
-        [Tooltip("3D 착지(확정 면으로 회전) 시간")]
-        [SerializeField] private float confirmSettleDuration = 0.3f;
+        [SerializeField] private float confirmInterval = 0.35f;
+        [Tooltip("3D 착지 전체 시간 (감속 60% + '탁' 스냅 40%)")]
+        [SerializeField] private float confirmSettleDuration = 0.65f;
         [Tooltip("확정 순간 스케일 펀치 배율")]
         [SerializeField] private float confirmPunchScale = 1.16f;
         [Tooltip("스케일 펀치 시간")]
@@ -194,10 +194,10 @@ namespace DiceOrbit.UI
             OnAnimationComplete?.Invoke();
         }
 
-        // ─── 확정 순간 스케일 펀치 (착지 마무리 타이밍에 '탁') ───
+        // ─── 확정 순간 스케일 펀치 (감속이 끝나고 스냅이 꽂히는 타이밍에 '탁') ───
         private IEnumerator ConfirmPunch(RectTransform rect)
         {
-            yield return new WaitForSeconds(confirmSettleDuration * 0.55f);
+            yield return new WaitForSeconds(confirmSettleDuration * 0.8f);
             if (rect == null) yield break;
 
             float half = confirmPunchDuration * 0.5f;
