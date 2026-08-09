@@ -208,7 +208,8 @@ namespace DiceOrbit.UI
 
             if (rect == null) yield break;
 
-            // 1. 공중 점프 & 회전
+            // 1. 공중 점프 & 회전 (3D 모드는 큐브가 이미 구르는 중이라 2D 스핀 생략 — 겹치면 어지러움)
+            bool spin2d = element == null || element.View3D == null;
             Vector2 spawnPos = rect.anchoredPosition;
             Vector2 midAirPos = spawnPos + Vector2.up * jumpHeight;
 
@@ -220,12 +221,12 @@ namespace DiceOrbit.UI
                 float smoothT = EaseOutQuad(t);
 
                 rect.anchoredPosition = Vector2.Lerp(spawnPos, midAirPos, smoothT);
-                rect.localRotation = Quaternion.Euler(0, 0, t * 360f * rotationCycles);
+                if (spin2d) rect.localRotation = Quaternion.Euler(0, 0, t * 360f * rotationCycles);
                 yield return null;
             }
 
             rect.anchoredPosition = midAirPos;
-            rect.localRotation = Quaternion.Euler(0, 0, 360f * rotationCycles);
+            if (spin2d) rect.localRotation = Quaternion.Euler(0, 0, 360f * rotationCycles);
 
             // 2. 공중 일시정지
             if (pauseDuration > 0)
@@ -247,9 +248,9 @@ namespace DiceOrbit.UI
                 float smoothT = EaseInQuad(t);
 
                 rect.anchoredPosition = Vector2.Lerp(midAirPos, targetCanvasPos, smoothT);
-                
+
                 // 슬롯에 도착할 때 회전도 정위치로 (0도)
-                rect.localRotation = Quaternion.Lerp(Quaternion.Euler(0, 0, 360f * rotationCycles), Quaternion.identity, smoothT);
+                if (spin2d) rect.localRotation = Quaternion.Lerp(Quaternion.Euler(0, 0, 360f * rotationCycles), Quaternion.identity, smoothT);
 
                 yield return null;
             }
@@ -281,7 +282,17 @@ namespace DiceOrbit.UI
 
         private void StartContinuousShuffle(DiceElement element)
         {
-            if (!useTravelShuffle || element == null)
+            if (element == null)
+                return;
+
+            // 3D 모드: 숫자 셔플 대신 큐브가 실제로 구른다
+            if (element.View3D != null)
+            {
+                element.View3D.SetTumbling(true);
+                return;
+            }
+
+            if (!useTravelShuffle)
                 return;
 
             StopContinuousShuffle(element, false);
@@ -292,6 +303,16 @@ namespace DiceOrbit.UI
         {
             if (element == null)
                 return;
+
+            // 3D 모드: 텀블을 멈추고 확정 면으로 착지
+            if (element.View3D != null)
+            {
+                element.View3D.SetTumbling(false);
+                if (restoreRealValue && element.Data != null)
+                    element.View3D.SettleToValue(element.Data.Value, 0.3f);
+                activeShuffleRoutines.Remove(element);
+                return;
+            }
 
             if (activeShuffleRoutines.TryGetValue(element, out Coroutine routine) && routine != null)
             {

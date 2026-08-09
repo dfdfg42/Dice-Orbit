@@ -1,0 +1,273 @@
+using System.Collections;
+using TMPro;
+using UnityEngine;
+
+namespace DiceOrbit.UI
+{
+    /// <summary>
+    /// 주사위 1개짜리 3D 미니 스테이지 — 큐브 + 6면 숫자(TMP) + 전용 카메라 + RenderTexture.
+    /// DiceElement가 RawImage로 Texture를 그린다.
+    ///
+    /// 값은 게임 로직(DiceManager)이 이미 확정한 상태 — 여기는 무작위 텀블 후
+    /// "확정 면이 카메라를 보고 숫자가 바로 서는" 회전으로 착지하는 연출만 담당한다.
+    /// 면 텍스트가 동적(TMP)이라 특수 주사위의 커스텀 눈(Faces)도 그대로 지원.
+    /// </summary>
+    public class Dice3DView : MonoBehaviour
+    {
+        private const int RtSize = 256;
+        private const float CamDistance = 3.8f;
+        private const float CamFov = 28f;
+
+        // 면 순서: +Z, -Z, +Y, -Y, +X, -X
+        private static readonly Vector3[] FaceNormals =
+        {
+            Vector3.forward, Vector3.back, Vector3.up, Vector3.down, Vector3.right, Vector3.left,
+        };
+
+        private static Material _dieMaterial;
+
+        private Transform die;
+        private Camera cam;
+        private RenderTexture rt;
+        private readonly TextMeshPro[] faceTexts = new TextMeshPro[6];
+        private readonly Vector3[] faceUps = new Vector3[6];   // 각 면 텍스트의 '위' 방향 (die 로컬)
+        private readonly int[] faceValues = { 1, 2, 3, 4, 5, 6 };
+
+        private Vector3 angularVelocity;   // deg/sec
+        private bool tumbling;
+        private Coroutine settleRoutine;
+
+        public Texture Texture => rt;
+
+        public static Dice3DView Create(Transform parent, Vector3 localPos)
+        {
+            var go = new GameObject("Dice3DView");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            var view = go.AddComponent<Dice3DView>();
+            view.Build();
+            return view;
+        }
+
+        // ── 구성 ──────────────────────────────────────────────
+
+        private void Build()
+        {
+            // 주사위 본체 (흰 큐브)
+            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.name = "Die";
+            var col = cube.GetComponent<Collider>();
+            if (col != null)
+            {
+                if (Application.isPlaying) Destroy(col);
+                else DestroyImmediate(col);
+            }
+            die = cube.transform;
+            die.SetParent(transform, false);
+            die.localPosition = Vector3.zero;
+
+            if (_dieMaterial == null)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Lit");
+                _dieMaterial = new Material(shader) { color = Color.white };
+                if (_dieMaterial.HasProperty("_Smoothness")) _dieMaterial.SetFloat("_Smoothness", 0.35f);
+            }
+            cube.GetComponent<MeshRenderer>().sharedMaterial = _dieMaterial;
+
+            // 6면 숫자 — TMP(SDF)는 셰이더가 언릿이라 조명이 어두워도 숫자는 읽힌다
+            for (int i = 0; i < 6; i++)
+            {
+                var n = FaceNormals[i];
+                Vector3 up = n == Vector3.up ? Vector3.back
+                           : n == Vector3.down ? Vector3.forward
+                           : Vector3.up;
+
+                var tgo = new GameObject("Face" + i, typeof(RectTransform));
+                tgo.transform.SetParent(die, false);
+                tgo.transform.localPosition = n * 0.502f;
+                // TMP 3D 텍스트는 Quad처럼 -Z 쪽에서 읽힌다 → 읽히는 면이 바깥(n)을 보게 -n을 forward로
+                tgo.transform.localRotation = Quaternion.LookRotation(-n, up);
+                faceUps[i] = tgo.transform.localRotation * Vector3.up;
+
+                var txt = tgo.AddComponent<TextMeshPro>();
+                txt.text = faceValues[i].ToString();
+                txt.fontSize = 6f;
+                txt.fontStyle = FontStyles.Bold;
+                txt.color = new Color(0.15f, 0.14f, 0.19f);
+                txt.alignment = TextAlignmentOptions.Center;
+                txt.rectTransform.sizeDelta = new Vector2(1f, 1f);
+                faceTexts[i] = txt;
+            }
+
+            // 전용 카메라 → RT (배경 투명, 이 셀만 비춤)
+            var camGo = new GameObject("DieCam");
+            camGo.transform.SetParent(transform, false);
+            camGo.transform.localPosition = new Vector3(0f, 0f, -CamDistance);
+            camGo.transform.localRotation = Quaternion.identity;
+            cam = camGo.AddComponent<Camera>();
+            cam.fieldOfView = CamFov;
+            cam.nearClipPlane = 0.5f;
+            cam.farClipPlane = 10f;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.clear;
+            cam.allowHDR = false;
+            cam.useOcclusionCulling = false;
+
+            rt = new RenderTexture(RtSize, RtSize, 16, RenderTextureFormat.ARGB32) { name = "DiceRT" };
+            rt.Create();
+            cam.targetTexture = rt;
+
+            // 필 라이트 — 씬 직사광 반대쪽 면이 새까매져 텀블 중 숫자가 안 읽히는 것 방지.
+            // 범위가 좁은 포인트 라이트라 본 씬(3000 유닛 밖)에는 영향 없음.
+            var lightGo = new GameObject("FillLight");
+            lightGo.transform.SetParent(transform, false);
+            lightGo.transform.localPosition = new Vector3(0.9f, 1.3f, -2.2f);
+            var fill = lightGo.AddComponent<Light>();
+            fill.type = LightType.Point;
+            fill.range = 8f;
+            fill.intensity = 1.2f;
+            fill.shadows = LightShadows.None;
+        }
+
+        // ── 풀 수명 ───────────────────────────────────────────
+
+        public void OnAcquire(int[] faces, int value)
+        {
+            SetFaces(faces);
+            SnapToValue(value);
+            gameObject.SetActive(true);
+        }
+
+        public void OnRelease()
+        {
+            StopSettle();
+            tumbling = false;
+            gameObject.SetActive(false);
+        }
+
+        private void OnDestroy()
+        {
+            if (rt != null)
+            {
+                if (cam != null) cam.targetTexture = null;
+                rt.Release();
+                if (Application.isPlaying) Destroy(rt);
+                else DestroyImmediate(rt);   // 에디터 검증 경로
+            }
+        }
+
+        // ── 면/값 ─────────────────────────────────────────────
+
+        /// <summary>6면 값 설정 (특수 주사위 커스텀 눈). null이면 1~6 유지.</summary>
+        public void SetFaces(int[] faces)
+        {
+            if (faces == null || faces.Length == 0) return;
+            for (int i = 0; i < 6; i++)
+            {
+                faceValues[i] = faces[Mathf.Min(i, faces.Length - 1)];
+                if (faceTexts[i] != null) faceTexts[i].text = faceValues[i].ToString();
+            }
+        }
+
+        private int FaceIndexOf(int value)
+        {
+            for (int i = 0; i < 6; i++)
+                if (faceValues[i] == value) return i;
+
+            // 어떤 면에도 없는 값(효과로 보정된 값 등) — 0번 면을 그 값으로 다시 라벨링
+            faceValues[0] = value;
+            if (faceTexts[0] != null) faceTexts[0].text = value.ToString();
+            return 0;
+        }
+
+        /// <summary>face 면이 카메라(-Z)를 보고 숫자가 바로 서는 die 로컬 회전.</summary>
+        private Quaternion TargetRotation(int face)
+        {
+            var q0 = Quaternion.LookRotation(FaceNormals[face], faceUps[face]);
+            var qt = Quaternion.LookRotation(Vector3.back, Vector3.up);
+            return qt * Quaternion.Inverse(q0);
+        }
+
+        /// <summary>연출 없이 즉시 해당 값의 면을 정면으로.</summary>
+        public void SnapToValue(int value)
+        {
+            StopSettle();
+            tumbling = false;
+            die.localRotation = TargetRotation(FaceIndexOf(value));
+        }
+
+        // ── 연출 ─────────────────────────────────────────────
+
+        /// <summary>무작위 텀블 시작/정지 (정지만으로는 회전을 되돌리지 않음 — Settle/Snap으로 마무리).</summary>
+        public void SetTumbling(bool on)
+        {
+            if (on)
+            {
+                StopSettle();
+                angularVelocity = new Vector3(RandomSpin(), RandomSpin(), RandomSpin());
+            }
+            tumbling = on;
+        }
+
+        private static float RandomSpin()
+        {
+            float mag = Random.Range(420f, 760f);
+            return Random.value < 0.5f ? -mag : mag;
+        }
+
+        private void Update()
+        {
+            if (!tumbling) return;
+            die.localRotation = Quaternion.Euler(angularVelocity * Time.deltaTime) * die.localRotation;
+        }
+
+        /// <summary>텀블을 멈추고 확정 값 면으로 착지 (살짝 오버슈트하는 '탁' 감).</summary>
+        public void SettleToValue(int value, float duration)
+        {
+            tumbling = false;
+            StopSettle();
+            if (!gameObject.activeInHierarchy || duration <= 0f)
+            {
+                SnapToValue(value);
+                return;
+            }
+            settleRoutine = StartCoroutine(CoSettle(TargetRotation(FaceIndexOf(value)), duration));
+        }
+
+        private IEnumerator CoSettle(Quaternion target, float duration)
+        {
+            var from = die.localRotation;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                die.localRotation = Quaternion.SlerpUnclamped(from, target, EaseOutBack(t));
+                yield return null;
+            }
+            die.localRotation = target;
+            settleRoutine = null;
+        }
+
+        private void StopSettle()
+        {
+            if (settleRoutine != null)
+            {
+                StopCoroutine(settleRoutine);
+                settleRoutine = null;
+            }
+        }
+
+        private static float EaseOutBack(float t)
+        {
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1f;
+            return 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
+        }
+
+#if UNITY_EDITOR
+        /// <summary>에디터 검증용 — 즉시 1프레임 렌더.</summary>
+        public void RenderNow() { if (cam != null) cam.Render(); }
+#endif
+    }
+}
