@@ -51,14 +51,24 @@ namespace DiceOrbit.UI
         public void Show(DiceElement element)
         {
             var src = element != null ? element.Data?.Source : null;
-            if (src == null || panel == null) return;
+            bool skillHint = element != null && element.SkillUnusableHint;
+            if ((src == null && !skillHint) || panel == null) return;
 
-            BuildFaces(src.Faces);
-            BuildEffects(src.Effect);
+            BuildFaces(src?.Faces);
+            if (faceGrid != null) faceGrid.gameObject.SetActive(src != null);
+            BuildEffects(src?.Effect, skillHint ? BuildSkillHintText(element) : null);
 
             panel.gameObject.SetActive(true);
             panel.position = (Vector2)element.transform.position + aboveOffset;
             panel.SetAsLastSibling();
+        }
+
+        private static string BuildSkillHintText(DiceElement element)
+        {
+            string cond = element.SkillHintCondition;
+            return string.IsNullOrEmpty(cond)
+                ? "스킬 사용 불가 — 이동은 가능"
+                : $"스킬 사용 불가 (필요: {cond}) — 이동은 가능";
         }
 
         public void Hide()
@@ -100,8 +110,8 @@ namespace DiceOrbit.UI
             }
         }
 
-        /// <summary>효과별로 카드 셀을 동적 생성 (타일 정보 카드 감각). 효과 없으면 컨테이너 숨김.</summary>
-        private void BuildEffects(DieEffect effect)
+        /// <summary>효과별로 카드 셀을 동적 생성 (타일 정보 카드 감각). 효과도 힌트도 없으면 컨테이너 숨김.</summary>
+        private void BuildEffects(DieEffect effect, string skillHintText = null)
         {
             foreach (var c in _effectCells) Destroy(c);
             _effectCells.Clear();
@@ -110,11 +120,17 @@ namespace DiceOrbit.UI
             var effects = new List<DieEffect>();
             if (effect != null) effects.Add(effect);
 
-            if (effectRow != null) effectRow.gameObject.SetActive(effects.Count > 0);
+            bool hasHint = !string.IsNullOrEmpty(skillHintText);
+            if (effectRow != null) effectRow.gameObject.SetActive(effects.Count > 0 || hasHint);
             foreach (var e in effects) CreateEffectCell(e);
+            if (hasHint) CreateCell(skillHintText, null, HintRed);
         }
 
-        private void CreateEffectCell(DieEffect effect)
+        private static readonly Color HintRed = new Color(0.78f, 0.22f, 0.25f);
+
+        private void CreateEffectCell(DieEffect effect) => CreateCell(effect.Preview(), effect.Icon, Ink);
+
+        private void CreateCell(string label, Sprite cellIcon, Color textColor)
         {
             var cell = new GameObject("EffectCell", typeof(RectTransform), typeof(Image),
                 typeof(HorizontalLayoutGroup), typeof(LayoutElement));
@@ -134,21 +150,21 @@ namespace DiceOrbit.UI
             hl.childAlignment = TextAnchor.MiddleLeft;
             cell.GetComponent<LayoutElement>().preferredHeight = 28f;
 
-            if (effect.Icon != null)
+            if (cellIcon != null)
             {
                 var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
                 iconGo.transform.SetParent(cell.transform, false);
                 var im = iconGo.GetComponent<Image>();
-                im.sprite = effect.Icon; im.preserveAspect = true; im.raycastTarget = false;
+                im.sprite = cellIcon; im.preserveAspect = true; im.raycastTarget = false;
                 var le = iconGo.GetComponent<LayoutElement>();
                 le.preferredWidth = 20; le.preferredHeight = 20;
             }
 
             var lbl = new GameObject("Label", typeof(RectTransform)).AddComponent<TextMeshProUGUI>();
             lbl.transform.SetParent(cell.transform, false);
-            lbl.text = effect.Preview();
+            lbl.text = label;
             lbl.fontSize = 17;
-            lbl.color = Ink;
+            lbl.color = textColor;
             lbl.raycastTarget = false;
             if (font != null) lbl.font = font;
 

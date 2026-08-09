@@ -41,7 +41,7 @@ namespace DiceOrbit.UI
             {
                 if (element == null || element.Data == null) continue;
                 bool locked = value.HasValue && element.Data.Value != value.Value;
-                element.SetSkillUnusableHint(locked);   // 잠긴 주사위 시각 표시(재사용)
+                element.SetLockedTint(locked);   // 완전 잠금 = 붉은 몸통 (스킬 배지와 구분)
             }
         }
 
@@ -225,15 +225,17 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
-        /// 캐릭터 선택 중: 해당 캐릭터의 어떤 스킬 조건도 못 맞추는 주사위를 살짝 붉게 표시.
+        /// 캐릭터 선택 중: 해당 캐릭터의 어떤 스킬 조건도 못 맞추는 주사위에 "스킬 불가" 배지 표시.
+        /// 몸통 색은 그대로 둔다 — 이동에는 쓸 수 있기 때문 (붉은 몸통 = 완전 잠금 전용).
         /// (CharacterActionUI.Show에서 호출, Hide에서 ClearSkillUsabilityHint로 해제)
         /// </summary>
         public void ShowSkillUsabilityHint(Core.Character character)
         {
+            GetPrimarySkillBadgeInfo(character, out var skillIcon, out var condition);
             foreach (var element in diceElements)
             {
                 if (element == null || element.Data == null) continue;
-                element.SetSkillUnusableHint(!CanUseAnySkill(character, element.Data.Value));
+                element.SetSkillUnusableHint(!CanUseAnySkill(character, element.Data.Value), skillIcon, condition);
             }
         }
 
@@ -252,6 +254,25 @@ namespace DiceOrbit.UI
             foreach (var slot in slots)
                 if (slot != null && slot.CanUse(diceValue)) return true;
             return false;
+        }
+
+        /// <summary>배지에 넣을 스킬 아이콘과 툴팁용 조건 문구 (첫 번째 액티브 스킬 기준 — 현재 캐릭터당 1개 구조).</summary>
+        private static void GetPrimarySkillBadgeInfo(Core.Character character, out Sprite icon, out string condition)
+        {
+            icon = null;
+            condition = null;
+
+            var slots = character?.Stats?.ActiveAbilities;
+            if (slots == null) return;
+
+            foreach (var slot in slots)
+            {
+                var skill = slot?.BaseSkill;
+                if (skill == null) continue;
+                icon = skill.icon;
+                condition = skill.FormatDiceCondition();
+                return;
+            }
         }
 
         /// <summary>

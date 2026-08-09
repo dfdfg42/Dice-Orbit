@@ -144,7 +144,7 @@ namespace DiceOrbit.UI
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
 
-            // 이 캐릭터의 스킬 조건을 못 맞추는 주사위를 손패에서 살짝 붉게 표시
+            // 이 캐릭터의 스킬 조건을 못 맞추는 주사위에 "스킬 불가" 배지 표시 (이동은 가능하므로 몸통 색은 유지)
             DiceUI.Instance?.ShowSkillUsabilityHint(character);
 
             // 슬라이드 인
