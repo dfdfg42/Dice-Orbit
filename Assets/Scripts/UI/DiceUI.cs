@@ -256,9 +256,12 @@ namespace DiceOrbit.UI
             return false;
         }
 
-        /// <summary>배지에 넣을 스킬 아이콘 (첫 번째 액티브 스킬 기준 — 현재 캐릭터당 1개 구조).</summary>
+        /// <summary>배지에 넣을 아이콘 — 체력바 위 "공격 가능" 아이콘(칼)과 같은 스프라이트.
+        /// (스킬 icon 필드는 실제로 비어 있는 경우가 많아 폴백으로만 사용)</summary>
         private static Sprite GetPrimarySkillIcon(Core.Character character)
         {
+            if (CharacterUI.SharedActiveIconSprite != null) return CharacterUI.SharedActiveIconSprite;
+
             var slots = character?.Stats?.ActiveAbilities;
             if (slots == null) return null;
 

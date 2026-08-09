@@ -46,6 +46,9 @@ namespace DiceOrbit.UI
         private Image _moveIcon;
         private Image _activeIcon;
 
+        /// <summary>체력바 위 "공격 가능" 아이콘과 같은 스프라이트를 다른 UI(주사위 스킬불가 배지 등)가 쓰도록 공유.</summary>
+        public static Sprite SharedActiveIconSprite { get; private set; }
+
         private Camera mainCamera;
         
         private void Awake()
@@ -220,6 +223,7 @@ namespace DiceOrbit.UI
         // ── 턴 예산 아이콘 (이동/액티브) ──────────────────────
         private void CreateBudgetIcons()
         {
+            if (activeIconSprite != null) SharedActiveIconSprite = activeIconSprite;
             if (worldCanvas == null || _moveIcon != null) return;
             _moveIcon   = MakeBudgetIcon("MoveIcon",   moveIconSprite,   iconsAnchor);
             _activeIcon = MakeBudgetIcon("ActiveIcon", activeIconSprite, iconsAnchor + new Vector2(iconSpacing, 0f));
