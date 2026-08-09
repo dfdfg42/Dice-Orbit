@@ -36,7 +36,9 @@ namespace DiceOrbit.UI
         private readonly Vector3[] faceUps = new Vector3[6];   // 각 면 텍스트의 '위' 방향 (die 로컬)
         private readonly int[] faceValues = { 1, 2, 3, 4, 5, 6 };
 
-        private Vector3 angularVelocity;   // deg/sec
+        private Vector3 angularVelocity;         // deg/sec
+        private Vector3 targetAngularVelocity;   // 굴러가며 갈아탈 다음 축
+        private float axisChangeTimer;
         private bool tumbling;
         private Coroutine settleRoutine;
 
@@ -208,21 +210,38 @@ namespace DiceOrbit.UI
             if (on)
             {
                 StopSettle();
-                angularVelocity = new Vector3(RandomSpin(), RandomSpin(), RandomSpin());
+                angularVelocity = RandomAngularVelocity();
+                targetAngularVelocity = RandomAngularVelocity();
+                axisChangeTimer = NextAxisChangeDelay();
                 die.localScale = Vector3.one * TumbleScale;   // 구르는 동안 축소 — 모서리 잘림 방지
             }
             tumbling = on;
         }
 
-        private static float RandomSpin()
-        {
-            float mag = Random.Range(300f, 540f);
-            return Random.value < 0.5f ? -mag : mag;
-        }
+        private static Vector3 RandomAngularVelocity()
+            => Random.onUnitSphere * Random.Range(300f, 540f);
+
+        private static float NextAxisChangeDelay()
+            => Random.Range(0.12f, 0.3f);
 
         private void Update()
         {
             if (!tumbling) return;
+
+            // 고정 각속도는 "한 축으로만 도는" 느낌이라, 목표 축을 주기적으로 갈아타며
+            // 방향은 slerp·크기는 lerp로 흘려보낸다 (속도 유지 + 축이 계속 뒤척이는 텀블).
+            axisChangeTimer -= Time.deltaTime;
+            if (axisChangeTimer <= 0f)
+            {
+                targetAngularVelocity = RandomAngularVelocity();
+                axisChangeTimer = NextAxisChangeDelay();
+            }
+
+            float k = 1f - Mathf.Exp(-6f * Time.deltaTime);
+            Vector3 dir = Vector3.Slerp(angularVelocity.normalized, targetAngularVelocity.normalized, k);
+            float mag = Mathf.Lerp(angularVelocity.magnitude, targetAngularVelocity.magnitude, k);
+            angularVelocity = dir * mag;
+
             die.localRotation = Quaternion.Euler(angularVelocity * Time.deltaTime) * die.localRotation;
         }
 
