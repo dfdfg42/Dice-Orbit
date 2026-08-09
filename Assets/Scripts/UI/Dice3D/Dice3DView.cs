@@ -15,7 +15,8 @@ namespace DiceOrbit.UI
     public class Dice3DView : MonoBehaviour
     {
         private const int RtSize = 256;
-        private const float CamDistance = 3.8f;
+        // 흰 카드 없이 주사위 단독 표시라 화면을 넉넉히 채우는 거리 (텀블 최악 대각에서 모서리가 살짝 스치는 정도)
+        private const float CamDistance = 3.4f;
         private const float CamFov = 28f;
 
         // 면 순서: +Z, -Z, +Y, -Y, +X, -X

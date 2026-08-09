@@ -78,12 +78,14 @@ namespace DiceOrbit.UI
                 rt.offsetMin = Vector2.zero;
                 rt.offsetMax = Vector2.zero;
                 visual3d = go.GetComponent<RawImage>();
-                visual3d.raycastTarget = false;
+                visual3d.raycastTarget = true;   // 배경을 숨기므로 클릭/호버 레이캐스트는 RawImage가 담당
             }
             visual3d.texture = view3d.Texture;
             visual3d.gameObject.SetActive(true);
 
+            // 3D 주사위만 보이게 — 기존 2D(흰 카드+숫자)는 숨김. 상태색은 RawImage 틴트로 전달.
             if (valueText != null) valueText.gameObject.SetActive(false);
+            if (backgroundImage != null) backgroundImage.enabled = false;
         }
 
         private void OnDestroy()
