@@ -57,14 +57,17 @@ namespace DiceOrbit.Data.MonsterPresets.Wave0.Shared
         }
     }
 
-    /// <summary>초록 슬라임 조건부 AI: 파란 슬라임 생존 시 availableSkills[0]([점액]), 사망 시 [1]([박치기]).</summary>
+    /// <summary>초록 슬라임 조건부 AI: 파란 슬라임 생존 시 availableSkills[0]([점액])만,
+    /// 파란 슬라임 사망 시 [0]([점액])·[1]([점액 분사]) 중 50%씩 무작위.</summary>
     [System.Serializable]
     public class SlimeGreenPattern : DiceOrbit.Data.MonsterAI.MonsterAI
     {
         public override MonsterSkill GetNextSkill()
         {
             if (availableSkills == null || availableSkills.Count == 0) return null;
-            int idx = SlimeSet.IsBlueSlimeAlive() ? 0 : 1;
+            int idx = SlimeSet.IsBlueSlimeAlive()
+                ? 0
+                : (Random.value < 0.5f ? 0 : 1);
             if (idx >= availableSkills.Count) idx = 0;
             return availableSkills[idx];
         }

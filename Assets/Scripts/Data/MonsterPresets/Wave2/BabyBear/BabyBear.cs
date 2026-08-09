@@ -18,8 +18,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
         [SerializeField] private int bindThreshold = 2;
         [Tooltip("혈당 스파이크(이동 불가) 지속 턴")]
         [SerializeField] private int bindDuration = 2;
-        [Tooltip("꿀 타일 발동 시 아기곰 회복량")]
-        [SerializeField] private int babyHeal = 1;
+        [Tooltip("꿀 타일 발동 시 아기 곰·엄마 곰에게 줄 일시 방어도")]
+        [SerializeField] private int bearArmor = 2;
 
         public HoneyPawSkill()
         {
@@ -33,7 +33,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
             foreach (var tile in targetTiles)
             {
                 if (tile == null || tile.HasAttribute(TileAttributeType.Honey)) continue;
-                tile.AddAttribute(new HoneyPawTile(healOnStep, bindThreshold, bindDuration, babyHeal));
+                tile.AddAttribute(new HoneyPawTile(healOnStep, bindThreshold, bindDuration, bearArmor));
             }
         }
     }
@@ -60,7 +60,8 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
     }
 
     /// <summary>
-    /// [아기 곰은 꿀을 좋아해] 꿀 타일 발동 시마다 아기곰 회복(HoneyPawTile이 BearPackTracker.HealBaby로 처리).
+    /// [아기 곰은 꿀을 좋아해] 꿀 타일 발동 시마다 아기 곰·엄마 곰에게 일시 방어도 부여
+    /// (HoneyPawTile이 BearPackTracker.GrantTempArmorToBears로 처리).
     /// 이 패시브는 아기곰 피격 시 공격자를 기록(엄마곰 보호 본능용) + 웨이브 훅 보장.
     /// </summary>
     [System.Serializable]
@@ -69,7 +70,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
         public HoneyLoverPassive()
         {
             passiveName = "아기 곰은 꿀을 좋아해";
-            description = "꿀 타일 효과 발동 시마다 아기곰 체력 회복";
+            description = "꿀 타일 효과 발동 시마다 아기 곰·엄마 곰에게 일시 방어도 부여";
             priority = 10;
             isStackable = false;
         }

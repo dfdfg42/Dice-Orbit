@@ -126,8 +126,40 @@ namespace DiceOrbit.UI
 
         private void RefreshGold()
         {
-            if (goldText != null)
-                goldText.text = $"<color=#{ColorUtility.ToHtmlStringRGB(Gold)}>●</color> {GoldManager.Instance?.Gold ?? 0}";
+            if (goldText == null) return;
+            EnsureCoinIcon();
+            goldText.text = _coinIcon != null
+                ? $"{GoldManager.Instance?.Gold ?? 0}"
+                : $"<color=#{ColorUtility.ToHtmlStringRGB(Gold)}>●</color> {GoldManager.Instance?.Gold ?? 0}";   // 스프라이트 폴백
+        }
+
+        private Image _coinIcon;
+
+        /// <summary>골드 텍스트 왼쪽에 코인 스프라이트 아이콘 부착 (구 노란 ● 대체). 텍스트는 마진으로 밀어낸다.</summary>
+        private void EnsureCoinIcon()
+        {
+            if (_coinIcon != null) return;
+
+            var coin = Resources.Load<Sprite>("UI/코인");
+            if (coin == null) return;   // 스프라이트 없으면 ● 폴백 유지
+
+            float size = goldText.fontSize + 6f;   // 글자보다 살짝 크게
+
+            var go = new GameObject("CoinIcon", typeof(RectTransform));
+            go.transform.SetParent(goldText.transform, false);
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = new Vector2(0f, 0.5f);
+            rect.anchorMax = new Vector2(0f, 0.5f);
+            rect.pivot = new Vector2(0f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(size, size);
+
+            _coinIcon = go.AddComponent<Image>();
+            _coinIcon.sprite = coin;
+            _coinIcon.preserveAspect = true;
+            _coinIcon.raycastTarget = false;
+
+            goldText.margin = new Vector4(size + 4f, 0f, 0f, 0f);   // 아이콘 폭 + 간격만큼 텍스트 들여쓰기
         }
 
         private void RebuildRelics()

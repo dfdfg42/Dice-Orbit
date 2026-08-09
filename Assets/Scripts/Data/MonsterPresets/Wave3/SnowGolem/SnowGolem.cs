@@ -8,17 +8,18 @@ using DiceOrbit.Data.MonsterPresets.Wave3.SnowMan;
 
 namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
 {
-    /// <summary>[눈 방패] 자신을 제외한 무작위 아군 몬스터에게 일시 방어도 armor 부여.</summary>
+    /// <summary>[눈 방패] 이전 턴에 피격 받은(=가장 많이 다친) 아군 몬스터에게 일시 방어도 armor 부여.
+    /// 다친 아군이 없으면 무작위 아군. (자신 제외)</summary>
     [System.Serializable]
     public class SnowShieldSkill : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int armor = 5;
+        [SerializeField] private int armor = 10;
 
         public SnowShieldSkill()
         {
             skillName = "눈 방패";
-            description = "자신을 제외한 무작위 아군에게 일시 방어도 부여";
+            description = "이전 턴에 피격 받은 아군에게 일시 방어도 부여";
         }
 
         public override int GetPreviewDamage() => 0;
@@ -27,25 +28,44 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowGolem
         {
             var others = SnowSet.OtherAliveMonsters(source as Monster).ToList();
             if (others.Count == 0) return;
-            var target = others[Random.Range(0, others.Count)];
+
+            // 이전 턴에 피격 받은 아군 ≈ 현재 HP가 최대치보다 낮은(피해 입은) 아군 중 가장 많이 다친 쪽. 없으면 무작위.
+            var hurt = others.Where(m => m.Stats != null && m.Stats.CurrentHP < m.Stats.MaxHP)
+                             .OrderByDescending(m => m.Stats.MaxHP - m.Stats.CurrentHP)
+                             .ToList();
+            var target = hurt.Count > 0 ? hurt[0] : others[Random.Range(0, others.Count)];
             if (target != null && target.Stats != null) target.Stats.TempArmor += armor;
         }
     }
 
-    /// <summary>[눈 주먹] 무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해. (RandomCharacter + Tiles + range 2)</summary>
+    /// <summary>[눈 주먹] 무작위 대상 1명 기준 진행방향(Next) forwardTiles칸(대상 타일 제외)에 피해.
+    /// FollowsTarget=true: 대상이 움직이면 공격 범위도 따라 이동.</summary>
     [System.Serializable]
     public class SnowFistSkill : SkillData
     {
         [Header("Skill Settings")]
-        [SerializeField] private int damage = 20;
+        [SerializeField] private int damage = 15;
+        [Tooltip("대상 타일 기준 진행방향으로 공격할 타일 수 (대상 타일 제외)")]
+        [SerializeField] private int forwardTiles = 5;
 
         public SnowFistSkill()
         {
             skillName = "눈 주먹";
-            description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
+            description = "무작위 대상 1명 기준 진행방향 5칸에 피해 (대상이 움직이면 따라감, 대상 타일 제외)";
         }
 
         public override int GetPreviewDamage() => damage;
+
+        public override bool FollowsTarget => true;
+
+        public override List<TileData> GetFollowTiles(Character target)
+        {
+            var tiles = new List<TileData>();
+            if (target == null || target.CurrentTile == null) return tiles;
+            var t = target.CurrentTile;
+            for (int i = 0; i < forwardTiles && t?.NextTile != null; i++) { t = t.NextTile; tiles.Add(t); }
+            return tiles;
+        }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
         {

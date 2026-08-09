@@ -127,7 +127,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalCore
     public class CrystalCorePattern : DiceOrbit.Data.MonsterAI.MonsterAI
     {
         [Tooltip("이 값 이상이면 수정 폭풍(index 1) 발동")]
-        [SerializeField] private int stormThreshold = 15;
+        [SerializeField] private int stormThreshold = 8;
 
         public override MonsterSkill GetNextSkill()
         {

@@ -23,6 +23,14 @@ namespace DiceOrbit.Data.MonsterPresets.Wave7.Shared
         public static int GetVitality(Unit u)
             => u != null && u.StatusEffects != null ? u.StatusEffects.GetEffectValue(EffectType.VitalityStack) : 0;
 
+        /// <summary>현재 필드에 깔린 활력 타일 수 ([성장의 활력] 턴 시작 회복량).</summary>
+        public static int CountVitalityTiles()
+        {
+            var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
+            if (orbit == null || orbit.Tiles == null) return 0;
+            return orbit.Tiles.Count(t => t != null && t.HasAttribute(TileAttributeType.Vitality));
+        }
+
         /// <summary>대상에 활력 스택이 없으면 initial로 최초 부여.</summary>
         public static void EnsureVitality(Unit u, int initial)
         {
@@ -115,18 +123,16 @@ namespace DiceOrbit.Systems.Effects
 
 namespace DiceOrbit.Data.Tile
 {
-    /// <summary>[활력] 타일. 캐릭터가 통과하거나 그 위에서 턴을 종료하면 모든 식물 몬스터의 활력 스택 -1.
-    /// 영구 유지(몬스터 사망해도 잔존), 웨이브 종료 시 FarmSet이 일괄 정리. AmethystTile 미러(반대 방향).</summary>
+    /// <summary>[활력] 타일. 캐릭터에겐 효과 없음(식물의 회복 자원). 그 위에서 턴을 종료하면 이 타일만 삭제된다
+    /// (플레이어가 밟아 없앨 수 있음). 영구 유지(몬스터 사망해도 잔존), 웨이브 종료 시 FarmSet이 일괄 정리.</summary>
     public class VitalityTile : TileAttribute
     {
         public VitalityTile() : base(TileAttributeType.Vitality, 0, -1, false) { }
 
-        public override void OnTraverse(Core.Character character) => Drain();
-        public override void OnEndTurn(Core.Character character) => Drain();
-
-        private void Drain() => DiceOrbit.Data.MonsterPresets.Wave7.Shared.FarmSet.ChangeVitalityAll(-1);
+        // 효과 없음. 그 위에서 턴 종료 시 이 타일만 삭제.
+        public override void OnEndTurn(Core.Character character) => Owner?.RemoveAttribute(this);
 
         public override string GetDescription()
-            => "통과·턴 종료 시 모든 식물 몬스터의 활력 -1 (영구, 웨이브 종료 시 제거)";
+            => "효과 없음. 그 위에서 턴 종료 시 이 타일 삭제 (영구, 웨이브 종료 시 제거)";
     }
 }
