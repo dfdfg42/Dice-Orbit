@@ -245,7 +245,8 @@ namespace DiceOrbit.UI
             die.localRotation = Quaternion.Euler(angularVelocity * Time.deltaTime) * die.localRotation;
         }
 
-        /// <summary>텀블을 멈추고 확정 값 면으로 착지 — 빠른 스핀이 감속하며 죽어가다 '탁' 스냅. duration = 전체 시간.</summary>
+        /// <summary>텀블을 멈추고 확정 값 면으로 착지 — 감속 자체가 확정 면을 향해 굴러가
+        /// 느려지다 정확히 그 면에서 멈춘다. duration = 전체 시간.</summary>
         public void SettleToValue(int value, float duration)
         {
             tumbling = false;
@@ -258,39 +259,33 @@ namespace DiceOrbit.UI
             settleRoutine = StartCoroutine(CoSettle(FaceIndexOf(value), duration));
         }
 
-        // 감속(전반 60%) → 스냅(후반 40%) 2단 착지
+        // "목표 면까지의 델타 + 여분 N바퀴"를 easeOutSine으로 소진 — 회전이 점점 느려지며
+        // 마지막 바퀴에서 확정 숫자가 자연스럽게 정면으로 올라오고, 속도 0으로 멈춘다.
         private IEnumerator CoSettle(int face, float duration)
         {
-            float decelDur = duration * 0.6f;
-            float snapDur  = Mathf.Max(0.05f, duration - decelDur);
-
-            // A) 감속 — 축을 고정한 채 스핀이 초반에 확 줄고 끝에서 긴다 ("천천히 확정되는" 구간)
-            Vector3 axis = angularVelocity.sqrMagnitude > 1f ? angularVelocity.normalized : Random.onUnitSphere;
-            float startMag = Mathf.Max(angularVelocity.magnitude, 300f);
-            const float endMag = 70f;
-            float elapsed = 0f;
-            while (elapsed < decelDur)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / decelDur);
-                float easeOut = 1f - (1f - t) * (1f - t) * (1f - t);
-                float mag = Mathf.Lerp(startMag, endMag, easeOut);
-                die.localRotation = Quaternion.Euler(axis * (mag * Time.deltaTime)) * die.localRotation;
-                yield return null;
-            }
-
-            // B) 스냅 — 확정 면으로 오버슈트하며 '탁' (+ 텀블 축소분 원래 크기로 복귀)
             var target = TargetRotation(face);
             var from = die.localRotation;
             float fromScale = die.localScale.x;
-            elapsed = 0f;
-            while (elapsed < snapDur)
+
+            var delta = target * Quaternion.Inverse(from);
+            delta.ToAngleAxis(out float deltaAngle, out Vector3 axis);
+            if (deltaAngle > 180f) { deltaAngle = 360f - deltaAngle; axis = -axis; }   // 최단 방향
+            if (float.IsNaN(axis.x) || axis.sqrMagnitude < 0.5f) axis = Vector3.up;    // delta ≈ identity 보호
+
+            // easeOutSine의 초기 속도(π/2·Θ/D)가 현재 텀블 속도와 비슷해지도록 여분 바퀴 수 선택 → 속도 점프 없음
+            float speedNow = Mathf.Max(300f, angularVelocity.magnitude);
+            float idealTotal = speedNow * duration / (Mathf.PI * 0.5f);
+            int extraTurns = Mathf.Clamp(Mathf.RoundToInt((idealTotal - deltaAngle) / 360f), deltaAngle < 100f ? 1 : 0, 3);
+            float totalAngle = deltaAngle + 360f * extraTurns;
+
+            float elapsed = 0f;
+            while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / snapDur);
-                float eased = EaseOutBack(t);
-                die.localRotation = Quaternion.SlerpUnclamped(from, target, eased);
-                die.localScale = Vector3.one * Mathf.LerpUnclamped(fromScale, 1f, eased);
+                float t = Mathf.Clamp01(elapsed / duration);
+                float eased = Mathf.Sin(t * Mathf.PI * 0.5f);   // 빠르게 → 점점 느리게 → 정지
+                die.localRotation = Quaternion.AngleAxis(totalAngle * eased, axis) * from;
+                die.localScale = Vector3.one * Mathf.Lerp(fromScale, 1f, eased);
                 yield return null;
             }
             die.localRotation = target;
@@ -305,13 +300,6 @@ namespace DiceOrbit.UI
                 StopCoroutine(settleRoutine);
                 settleRoutine = null;
             }
-        }
-
-        private static float EaseOutBack(float t)
-        {
-            const float c1 = 1.70158f;
-            const float c3 = c1 + 1f;
-            return 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
         }
 
 #if UNITY_EDITOR

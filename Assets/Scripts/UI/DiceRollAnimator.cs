@@ -194,10 +194,10 @@ namespace DiceOrbit.UI
             OnAnimationComplete?.Invoke();
         }
 
-        // ─── 확정 순간 스케일 펀치 (감속이 끝나고 스냅이 꽂히는 타이밍에 '탁') ───
+        // ─── 확정 순간 스케일 펀치 (회전이 멈추는 타이밍에 '탁') ───
         private IEnumerator ConfirmPunch(RectTransform rect)
         {
-            yield return new WaitForSeconds(confirmSettleDuration * 0.8f);
+            yield return new WaitForSeconds(confirmSettleDuration * 0.85f);
             if (rect == null) yield break;
 
             float half = confirmPunchDuration * 0.5f;
