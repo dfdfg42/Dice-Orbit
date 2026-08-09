@@ -231,11 +231,11 @@ namespace DiceOrbit.UI
         /// </summary>
         public void ShowSkillUsabilityHint(Core.Character character)
         {
-            GetPrimarySkillBadgeInfo(character, out var skillIcon, out var condition);
+            var skillIcon = GetPrimarySkillIcon(character);
             foreach (var element in diceElements)
             {
                 if (element == null || element.Data == null) continue;
-                element.SetSkillUnusableHint(!CanUseAnySkill(character, element.Data.Value), skillIcon, condition);
+                element.SetSkillUnusableHint(!CanUseAnySkill(character, element.Data.Value), skillIcon);
             }
         }
 
@@ -256,23 +256,18 @@ namespace DiceOrbit.UI
             return false;
         }
 
-        /// <summary>배지에 넣을 스킬 아이콘과 툴팁용 조건 문구 (첫 번째 액티브 스킬 기준 — 현재 캐릭터당 1개 구조).</summary>
-        private static void GetPrimarySkillBadgeInfo(Core.Character character, out Sprite icon, out string condition)
+        /// <summary>배지에 넣을 스킬 아이콘 (첫 번째 액티브 스킬 기준 — 현재 캐릭터당 1개 구조).</summary>
+        private static Sprite GetPrimarySkillIcon(Core.Character character)
         {
-            icon = null;
-            condition = null;
-
             var slots = character?.Stats?.ActiveAbilities;
-            if (slots == null) return;
+            if (slots == null) return null;
 
             foreach (var slot in slots)
             {
-                var skill = slot?.BaseSkill;
-                if (skill == null) continue;
-                icon = skill.icon;
-                condition = skill.FormatDiceCondition();
-                return;
+                var icon = slot?.BaseSkill?.icon;
+                if (icon != null) return icon;
             }
+            return null;
         }
 
         /// <summary>

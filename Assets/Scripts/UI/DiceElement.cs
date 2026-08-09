@@ -87,7 +87,6 @@ namespace DiceOrbit.UI
         // 모서리에 "스킬 아이콘+빗금" 배지만 붙인다 (붉은 몸통 = 완전 잠금과 시각 언어 분리).
         private bool skillUnusableHint;
         private Sprite skillHintIcon;        // 배지에 넣을 스킬 아이콘 (선택된 캐릭터의 것)
-        private string skillHintCondition;   // 호버 툴팁용 조건 문구 (예: "주사위 4 이상")
 
         // 튜토리얼 잠금 등 "이 주사위 자체를 못 씀" — 이때만 몸통을 붉게 틴트
         private bool lockedTint;
@@ -95,19 +94,19 @@ namespace DiceOrbit.UI
         private GameObject badgeRoot;
         private Image badgeIconImage;
 
-        private static readonly Color BadgeRingColor = new Color(0.90f, 0.28f, 0.30f, 1f);
-        private static readonly Color BadgeBackColor = new Color(0.15f, 0.14f, 0.18f, 0.95f);
+        private static readonly Color BadgeRingColor  = new Color(0.90f, 0.28f, 0.30f, 1f);
+        private static readonly Color BadgeBackColor  = new Color(0.15f, 0.14f, 0.18f, 0.45f);   // 반투명 — 아이콘이 주인공
+        private static readonly Color BadgeVeilColor  = new Color(0.10f, 0.09f, 0.13f, 0.30f);   // 아이콘 위 반투명 비활성 베일
+        private static readonly Color BadgeSlashColor = new Color(0.90f, 0.28f, 0.30f, 0.90f);
 
-        public bool   SkillUnusableHint  => skillUnusableHint;
-        public string SkillHintCondition => skillHintCondition;
+        public bool SkillUnusableHint => skillUnusableHint;
 
         /// <summary>스킬 사용 불가 배지 토글 (CharacterActionUI 열림/닫힘에 맞춰 DiceUI가 호출).
         /// 이동에는 쓸 수 있으므로 몸통 색은 바꾸지 않는다.</summary>
-        public void SetSkillUnusableHint(bool unusable, Sprite skillIcon = null, string conditionText = null)
+        public void SetSkillUnusableHint(bool unusable, Sprite skillIcon = null)
         {
-            skillHintIcon      = unusable ? skillIcon : null;
-            skillHintCondition = unusable ? conditionText : null;
-            skillUnusableHint  = unusable;
+            skillHintIcon     = unusable ? skillIcon : null;
+            skillUnusableHint = unusable;
             UpdateVisual();
         }
 
@@ -190,14 +189,18 @@ namespace DiceOrbit.UI
             MakeCircle("Ring", size, BadgeRingColor);
             MakeCircle("Back", size - 3f, BadgeBackColor);
 
+            // 아이콘을 크게, 또렷하게 — 위에 얹는 것들(베일/빗금)이 반투명이라 아이콘이 잘 보인다
             var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
             var iconRt = (RectTransform)iconGo.transform;
             iconRt.SetParent(root, false);
             iconRt.anchorMin = iconRt.anchorMax = new Vector2(0.5f, 0.5f);
-            iconRt.sizeDelta = new Vector2(size * 0.62f, size * 0.62f);
+            iconRt.sizeDelta = new Vector2(size * 0.85f, size * 0.85f);
             badgeIconImage = iconGo.GetComponent<Image>();
             badgeIconImage.preserveAspect = true;
             badgeIconImage.raycastTarget = false;
+
+            // 아이콘 위 반투명 비활성 베일 (형제 순서 = 렌더 순서라 아이콘 다음에 생성)
+            MakeCircle("Veil", size - 3f, BadgeVeilColor);
 
             var slashGo = new GameObject("Slash", typeof(RectTransform), typeof(Image));
             var slashRt = (RectTransform)slashGo.transform;
@@ -206,7 +209,7 @@ namespace DiceOrbit.UI
             slashRt.sizeDelta = new Vector2(size * 0.92f, Mathf.Max(2.5f, size * 0.11f));
             slashRt.localEulerAngles = new Vector3(0f, 0f, -45f);   // ↘ 빗금
             var slashImg = slashGo.GetComponent<Image>();
-            slashImg.color = BadgeRingColor;
+            slashImg.color = BadgeSlashColor;
             slashImg.raycastTarget = false;
         }
 

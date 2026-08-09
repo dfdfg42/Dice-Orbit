@@ -56,19 +56,11 @@ namespace DiceOrbit.UI
 
             BuildFaces(src?.Faces);
             if (faceGrid != null) faceGrid.gameObject.SetActive(src != null);
-            BuildEffects(src?.Effect, skillHint ? BuildSkillHintText(element) : null);
+            BuildEffects(src?.Effect, skillHint ? "스킬 사용 불가" : null);
 
             panel.gameObject.SetActive(true);
             panel.position = (Vector2)element.transform.position + aboveOffset;
             panel.SetAsLastSibling();
-        }
-
-        private static string BuildSkillHintText(DiceElement element)
-        {
-            string cond = element.SkillHintCondition;
-            return string.IsNullOrEmpty(cond)
-                ? "스킬 사용 불가 — 이동은 가능"
-                : $"스킬 사용 불가 (필요: {cond}) — 이동은 가능";
         }
 
         public void Hide()
