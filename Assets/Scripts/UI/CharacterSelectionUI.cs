@@ -367,8 +367,13 @@ namespace DiceOrbit.UI
                 string body = active.GetDynamicDescription();
                 if (string.IsNullOrWhiteSpace(body)) body = active.Description;
 
+                // 발동 조건 표기 — 제한이 없으면 FormatDiceCondition이 "주사위"만 돌려주므로 생략
+                string cond = active.FormatDiceCondition();
+                bool hasCond = !string.IsNullOrWhiteSpace(cond) && cond != "주사위";
+
                 if (sb.Length > 0) sb.Append('\n').Append('\n');
                 sb.Append("<b>[").Append(name).Append("]</b>");
+                if (hasCond) sb.Append(" <alpha=#B4>(조건: ").Append(cond).Append(")</alpha>");
                 if (!string.IsNullOrWhiteSpace(body)) sb.Append('\n').Append(body);
             }
             return sb.ToString();
