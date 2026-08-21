@@ -350,6 +350,9 @@ namespace DiceOrbit.Core
             // 플레이어 턴 시작 시 캐릭터별 이동/행동 횟수를 1로 초기화합니다.
             InitializePlayerTurnBudgets();
 
+            // 이번 턴 자동 기본공격 발동 기록을 비웁니다 (캐릭터당 1회 보장).
+            AutoAttackSystem.EnsureInstance().ResetTurn();
+
             // 주사위 자동 굴리기
             var diceManager = DiceManager.Instance;
             if (diceManager != null)
@@ -377,6 +380,10 @@ namespace DiceOrbit.Core
                 yield break; // 큐에 들어왔지만 이미 조건이 안맞으면 즉시 종료
             }
             combatStatus = CombatStatus.EndPlayerTurn;
+
+            // 이동하지 않아 아직 때리지 않은 캐릭터도 기본공격은 반드시 한다 (피해 바닥 보장, 스펙 불변식 1).
+            yield return AutoAttackSystem.EnsureInstance().ResolveRemainingRoutine();
+            if (IsCombatFinished()) yield break;
 
             var partyManager = PartyManager.Instance;
             if (partyManager != null)

@@ -254,8 +254,9 @@ namespace DiceOrbit.UI
                         return;
                     }
 
-                    // 이동 코루틴을 액션 큐에 등록합니다.
-                    ActionQueueManager.Instance.EnqueueAction(orbitManager.MoveRoutine(currentCharacter, currentDice.Value));
+                    // 이동 후 도착 구역의 몬스터를 자동 공격하는 코루틴을 액션 큐에 등록합니다.
+                    ActionQueueManager.Instance.EnqueueAction(
+                        AutoAttackSystem.EnsureInstance().MoveThenAttackRoutine(currentCharacter, currentDice.Value));
 
                     MarkDiceUsed(currentDice);
                     ReturnDiceElement();

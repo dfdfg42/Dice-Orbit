@@ -26,6 +26,8 @@ namespace DiceOrbit.Core
 
         [Header("Base Stats")]
         public int MaxHP = 30;
+        [Tooltip("기본 공격력. 매 턴 자동 기본공격의 피해량이며, 위치 패시브·모디파이어가 여기에 더해진다.")]
+        public int Attack = 5;
         public Sprite CharacterSprite;
         public float VisualScale = 1.0f;
 
@@ -56,8 +58,12 @@ namespace DiceOrbit.Core
             {
                 CharacterName = this.CharacterName,
                 MaxHP         = this.MaxHP,
-                CurrentHP     = this.MaxHP
+                CurrentHP     = this.MaxHP,
+                Attack        = this.Attack
             };
+
+            if (Attack <= 0)
+                Debug.LogError($"[CharacterPreset] '{CharacterName}'의 Attack이 {Attack}이다 — 자동 기본공격이 피해를 주지 못한다. 프리셋에 공격력을 설정할 것.");
 
             foreach (var active in StartingActives)
             {
