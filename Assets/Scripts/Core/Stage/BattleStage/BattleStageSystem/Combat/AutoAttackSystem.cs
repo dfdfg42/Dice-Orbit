@@ -100,8 +100,8 @@ namespace DiceOrbit.Core
 
         /// <summary>
         /// 이 캐릭터가 이번 공격으로 때릴 대상들.
-        /// 지금은 자기가 선 구역의 소유 몬스터 하나뿐이다 —
-        /// 사거리를 넓히는 패시브(마법사 원거리 등)는 이 메서드 한 곳만 확장하면 된다.
+        /// 기본은 자기가 선 구역의 주인 하나이며, 사거리 패시브(IZoneReachProvider)가 있으면
+        /// 그만큼 옆 구역까지 탐색한다 — 탐색 범위만 넓어지고 표적 수는 여전히 하나다.
         /// </summary>
         private List<Unit> CollectTargets(Character character)
         {
@@ -117,10 +117,24 @@ namespace DiceOrbit.Core
             int zone = zones.GetZoneOf(character);
             if (zone < 0) return result;   // 아직 타일에 배치되지 않음
 
-            var owner = zones.GetOwner(zone);
-            if (owner != null) result.Add(owner);   // 중립지대(주인 없음)면 이번 턴 공격 없음
+            var owner = zones.FindNearestOwner(zone, ResolveZoneReach(character));
+            if (owner != null) result.Add(owner);   // 사거리 안에 주인이 없으면 이번 턴 공격 없음
 
             return result;
+        }
+
+        /// <summary>캐릭터의 패시브가 제공하는 구역 사거리 중 가장 큰 값. 없으면 0(자기 구역만).</summary>
+        private static int ResolveZoneReach(Character character)
+        {
+            var passives = character?.Stats?.PassiveInstances;
+            if (passives == null) return 0;
+
+            int reach = 0;
+            foreach (var passive in passives)
+                if (passive is Data.Passives.IZoneReachProvider provider)
+                    reach = Mathf.Max(reach, provider.ExtraZoneReach);
+
+            return reach;
         }
     }
 }

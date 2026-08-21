@@ -29,6 +29,7 @@ namespace DiceOrbit.Data.CharacterActives
         public override string GetDynamicDescription()
             => $"주사위 눈금 × {Mathf.Max(1, multiplier)} + 집중 스택 피해";
 
-        // 집중 스택은 공격으로 소비되지 않는다. (웨이브 시작 시에만 초기화 — FocusPassive가 처리)
+        // 주의: 집중 스택을 쌓아 주던 FocusPassive는 구역 개편에서 원거리 패시브로 교체됐다(2026-08-21).
+        // 지금은 스택을 쌓는 주체가 없어 이 항이 항상 0이며, 액티브 재설계(Phase 4)에서 정리한다.
     }
 }

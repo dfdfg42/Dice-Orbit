@@ -113,6 +113,44 @@ namespace DiceOrbit.Core.Zones
             return monster;
         }
 
+        /// <summary>
+        /// zone부터 시작해 maxDistance칸 이내에서 가장 가까운 생존 주인을 찾는다.
+        /// maxDistance가 0이면 자기 구역만 본다(GetOwner와 동일).
+        /// 표적을 '여러 개' 반환하지 않는 이유 — 사거리는 넓히되 표적 수는 1로 묶어야
+        /// 원거리 캐릭터가 근접 캐릭터를 압도하지 않는다.
+        /// </summary>
+        public Monster FindNearestOwner(int zone, int maxDistance)
+        {
+            if (zone < 0 || zone >= ZoneCount) return null;
+
+            int n = ZoneCount;
+            int limit = Mathf.Clamp(maxDistance, 0, n / 2);
+            for (int d = 0; d <= limit; d++)
+            {
+                var forward = GetOwner((zone + d) % n);
+                if (forward != null) return forward;
+
+                var backward = GetOwner((zone - d + n) % n);
+                if (backward != null) return backward;
+            }
+            return null;
+        }
+
+        /// <summary>이 구역에 속한 타일들 (패시브 범위 표시용).</summary>
+        public IReadOnlyList<TileData> GetTilesInZone(int zone)
+        {
+            var result = new List<TileData>();
+            if (zone < 0 || zone >= ZoneCount) return result;
+
+            var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
+            if (orbit == null || orbit.Tiles == null) return result;
+
+            foreach (var tile in orbit.Tiles)
+                if (tile != null && GetZoneOfTile(tile) == zone) result.Add(tile);
+
+            return result;
+        }
+
         // ── 구역 기하 ─────────────────────────────────────────
 
         /// <summary>구역이 차지하는 각도 범위(도). 타일 중심이 구역 안에 들어오도록 반 칸 밀어 둔다.</summary>
