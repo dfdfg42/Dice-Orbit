@@ -17,7 +17,7 @@ namespace DiceOrbit.Core.Zones
         public static CombatZoneManager Instance { get; private set; }
 
         [Header("구역 분할")]
-        [Tooltip("궤도를 몇 개 구역으로 나눌지. 타일 수가 이 값으로 나누어떨어져야 한다.")]
+        [Tooltip("궤도를 몇 개 구역으로 나눌지. 타일 수와 무관하게 각 구역은 같은 각도를 차지한다.")]
         [SerializeField] private int zoneCount = 4;
         [Tooltip("구역 경계를 타일 몇 칸만큼 돌릴지. 화면 사분면과 시각적으로 맞추는 용도.")]
         [SerializeField] private int zoneTileOffset = 0;
@@ -75,15 +75,22 @@ namespace DiceOrbit.Core.Zones
                 return 0;
             }
             int count = orbit.TileCount;
-            if (count <= 0 || count % ZoneCount != 0)
+            if (count <= 0)
             {
-                Debug.LogError($"[CombatZone] 타일 {count}개는 구역 {ZoneCount}개로 나누어떨어지지 않는다. OrbitManager.tileCount를 {ZoneCount}의 배수로 맞출 것.");
+                Debug.LogError($"[CombatZone] 궤도 타일이 {count}개다 — 구역을 계산할 수 없다.");
                 return 0;
             }
             return count;
         }
 
-        /// <summary>타일이 속한 구역 번호. 계산 불가 시 -1.</summary>
+        /// <summary>
+        /// 타일이 속한 구역 번호. 계산 불가 시 -1.
+        ///
+        /// 타일 수가 구역 수로 나누어떨어지지 않아도 동작한다 — 구역 경계는 타일 개수가 아니라
+        /// '각도'가 정하기 때문이다(구역 하나 = 360/zoneCount도). 타일이 18개면 구역 크기가
+        /// 4·5·4·5로 갈리지만 화면에 그려지는 부채꼴은 여전히 정확한 사분면이다.
+        /// 아래 식은 GetZoneAngularRangeDeg의 반 칸 밀기와 같은 경계를 쓴다 — 판정과 그림이 어긋나지 않도록.
+        /// </summary>
         public int GetZoneOfTile(TileData tile)
         {
             if (tile == null) return -1;
@@ -91,7 +98,8 @@ namespace DiceOrbit.Core.Zones
             if (tileCount == 0) return -1;
 
             int shifted = ((tile.TileIndex - zoneTileOffset) % tileCount + tileCount) % tileCount;
-            return shifted / (tileCount / ZoneCount);
+            int zone = Mathf.FloorToInt((shifted + 0.5f) * ZoneCount / tileCount);
+            return Mathf.Clamp(zone, 0, ZoneCount - 1);
         }
 
         /// <summary>캐릭터가 서 있는 구역 번호. 타일 미배치 등으로 판정 불가 시 -1.</summary>

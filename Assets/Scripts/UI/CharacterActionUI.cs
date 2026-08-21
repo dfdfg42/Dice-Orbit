@@ -72,9 +72,8 @@ namespace DiceOrbit.UI
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
 
-            // 버튼 이벤트
+            // 버튼 이벤트 — 스킬 버튼은 은퇴했다(RetireSkillButton 참조). 핸들러를 달지 않아 옛 타게팅 흐름이 아예 돌지 않는다.
             moveButton?.onClick.AddListener(OnMoveClicked);
-            skillButton?.onClick.AddListener(OnSkillClicked);
             cancelButton?.onClick.AddListener(OnCancelClicked);
 
             // 이동 버튼 hover 프리뷰
@@ -90,9 +89,8 @@ namespace DiceOrbit.UI
             if (overlay != null)
                 overlay.OnOverlayCancelled += OnCancelClicked;
 
-            // 버튼 목록 (스태거용)
+            // 버튼 목록 (스태거용) — 스킬 버튼은 은퇴해 목록에서도 뺀다.
             if (moveButton  != null) actionButtons.Add(moveButton.GetComponent<RectTransform>());
-            if (skillButton != null) actionButtons.Add(skillButton.GetComponent<RectTransform>());
 
             // 초상화 슬롯의 Rect 비율과 스프라이트 비율이 달라도 눌려 보이지 않게 비율을 고정합니다.
             if (portraitImage != null)
@@ -103,8 +101,19 @@ namespace DiceOrbit.UI
             // 초기 상태: 숨김
             if (panelRoot != null) panelRoot.anchoredPosition = hiddenPosition;
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
+            RetireSkillButton();
             SetButtonsInteractable(false);
-            RefreshSkillButtonPreview();
+        }
+
+        /// <summary>
+        /// 스킬(공격) 버튼 은퇴. 공격은 이제 이동을 마치면 AutoAttackSystem이 자동으로 처리하므로
+        /// 플레이어가 따로 누를 이유가 없다. 씬 오브젝트는 그대로 두고 감추기만 한다 —
+        /// 액티브를 새 규칙으로 재설계할 때(Phase 4) 이 자리에 다시 붙이거나 완전히 걷어낸다.
+        /// </summary>
+        private void RetireSkillButton()
+        {
+            if (skillButton != null) skillButton.gameObject.SetActive(false);
+            if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
         }
 
         private void Start()
