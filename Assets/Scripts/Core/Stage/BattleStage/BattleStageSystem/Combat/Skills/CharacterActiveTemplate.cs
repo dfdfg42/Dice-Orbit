@@ -67,6 +67,12 @@ namespace DiceOrbit.Data.Skills
 
         public bool CanUse(int diceValue) => requirement.CanUse(diceValue);
 
+        // 기본공격도 같은 무기 연출로 나가도록 발사체 설정을 공개한다 —
+        // 주사위 눈에 따라 총알이 나갔다 안 나갔다 하면 같은 캐릭터로 보이지 않는다.
+        public GameObject ProjectilePrefab   => projectilePrefab;
+        public float      ProjectileDuration => projectileDuration;
+        public float      ProjectileArcHeight => projectileArcHeight;
+
         /// <summary>
         /// 표시용 동적 설명. 현재 유효 수치(배율/조건)에서 매번 생성하므로
         /// 모디파이어 등이 값을 바꾸면 자동으로 반영된다. 기본은 정적 Description.

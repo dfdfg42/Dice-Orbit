@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using DiceOrbit.Core.Pipeline;
 using DiceOrbit.Core.Zones;
+using DiceOrbit.Visuals;
 using UnityEngine;
 
 namespace DiceOrbit.Core
@@ -127,17 +128,47 @@ namespace DiceOrbit.Core
                 if (targets.Count > 0)
                 {
                     character.OnSkillExecutionStarted();
+                    var weapon = FindProjectileSource(character);
+
                     foreach (var target in targets)
                     {
                         if (target == null || !target.IsAlive) continue;
 
                         var context = new AttackContext(character, target, attackName, character.Stats.Attack);
-                        CombatPipeline.Instance?.Process(context);
+
+                        // 강화 공격과 같은 무기 연출을 쓴다. 발사체가 있으면 날아가 도착할 때 피해가 들어간다.
+                        if (weapon != null)
+                        {
+                            Vector3 from = character.transform.position + Vector3.up * 0.5f;
+                            Vector3 to   = target.transform.position + Vector3.up * 0.5f;
+                            var ctx = context;   // 클로저 캡처(루프 변수 방지)
+                            ProjectileService.Launch(weapon.ProjectilePrefab, from, to,
+                                weapon.ProjectileDuration, weapon.ProjectileArcHeight,
+                                () => CombatPipeline.Instance?.Process(ctx));
+                        }
+                        else
+                        {
+                            CombatPipeline.Instance?.Process(context);
+                        }
                     }
                 }
             }
 
             if (attackInterval > 0f) yield return new WaitForSeconds(attackInterval);
+        }
+
+        /// <summary>이 캐릭터의 무기 연출(발사체)을 들고 있는 액티브. 없으면 null(즉시 피해).</summary>
+        private static Data.Skills.CharacterActiveSkill FindProjectileSource(Character character)
+        {
+            var abilities = character.Stats != null ? character.Stats.ActiveAbilities : null;
+            if (abilities == null) return null;
+
+            foreach (var slot in abilities)
+            {
+                var skill = slot != null ? (slot.RuntimeInstance ?? slot.BaseSkill) : null;
+                if (skill != null && skill.ProjectilePrefab != null) return skill;
+            }
+            return null;
         }
 
         /// <summary>배정한 주사위가 조건을 만족하는 액티브. 없으면 null(기본공격으로 나간다).</summary>
