@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Pipeline;
+using DiceOrbit.Core.Zones;
 using DiceOrbit.Data;
 using DiceOrbit.Visuals;
 
@@ -118,7 +119,7 @@ namespace DiceOrbit.Data.Skills
         public virtual List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
         {
             var result = new List<Unit>();
-            var zones = Zones.CombatZoneManager.Instance;
+            var zones = CombatZoneManager.Instance;
             if (zones == null || source == null) return result;
 
             var owner = zones.GetOwner(zones.GetZoneOf(source));
