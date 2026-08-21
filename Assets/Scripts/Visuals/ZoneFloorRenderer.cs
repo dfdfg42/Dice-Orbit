@@ -27,13 +27,17 @@ namespace DiceOrbit.Visuals
         [SerializeField] private int segmentsPerZone = 24;
 
         [Header("색")]
+        [Tooltip("구역 색 진하기. UI 면처럼 또렷하게 깔리려면 0.5 이상.")]
         [Range(0f, 1f)]
-        [SerializeField] private float zoneAlpha = 0.13f;
+        [SerializeField] private float zoneAlpha = 0.55f;
+        [Tooltip("몬스터 정체성 색을 흰색 쪽으로 섞어 파스텔로 만드는 정도. 0이면 원색 그대로, 1이면 흰색.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float pastelBlend = 0.45f;
         [Tooltip("몬스터가 없는 중립지대 색. 사분면은 항상 4개가 보이고 빈 구역만 이 색이 된다.")]
-        [SerializeField] private Color emptyZoneColor = new Color(0.6f, 0.6f, 0.62f, 1f);
+        [SerializeField] private Color emptyZoneColor = new Color(0.74f, 0.74f, 0.78f, 1f);
         [Range(0f, 1f)]
-        [Tooltip("중립지대 투명도. 소유 구역보다 옅게 둬서 '비어 있음'이 읽히도록.")]
-        [SerializeField] private float emptyZoneAlpha = 0.05f;
+        [Tooltip("중립지대 진하기. 소유 구역보다 옅게 둬서 '비어 있음'이 읽히도록.")]
+        [SerializeField] private float emptyZoneAlpha = 0.28f;
         [Tooltip("몬스터 스프라이트·타일보다 뒤에 그리기 위한 정렬 순서")]
         [SerializeField] private int sortingOrder = -50;
 
@@ -117,7 +121,10 @@ namespace DiceOrbit.Visuals
                 if (mr == null) continue;
 
                 // 사분면은 항상 4개가 보인다. 주인이 없으면 중립색으로 남겨 '빈 구역'임을 드러낸다.
-                Color c = owner != null ? identity.GetColor(owner) : emptyZoneColor;
+                // 정체성 원색은 채도가 높아 넓은 면으로 깔면 눈이 아프므로 흰색을 섞어 파스텔로 눕힌다.
+                Color c = owner != null
+                    ? Color.Lerp(identity.GetColor(owner), Color.white, pastelBlend)
+                    : emptyZoneColor;
                 c.a = owner != null ? zoneAlpha : emptyZoneAlpha;
                 if (mr.material.HasProperty("_Color")) mr.material.color = c;
             }
