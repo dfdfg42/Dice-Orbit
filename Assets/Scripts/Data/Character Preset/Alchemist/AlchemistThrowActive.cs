@@ -1,29 +1,58 @@
+using System.Collections.Generic;
 using DiceOrbit.Core;
+using DiceOrbit.Core.Zones;
 using DiceOrbit.Data.Skills;
 using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
+    /// <summary>
+    /// [살포] 짝수 턴에 시약을 넓게 뿌려 자기 구역과 양옆 구역의 몬스터를 한꺼번에 적신다.
+    /// 한 대상당 위력은 낮지만 닿는 범위가 가장 넓다 — 전사 돌파가 '멀리 달린 만큼'이라면
+    /// 이쪽은 '서 있는 자리 주변'이라 조건이 겹치지 않는다.
+    /// </summary>
     [System.Serializable]
     public class AlchemistThrowActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("피해 = 주사위 눈금 x 배율")]
-        [SerializeField] private int multiplier = 1;
+        [Tooltip("피해 = 공격력 x 배율 (대상마다 각각)")]
+        [SerializeField] private float multiplier = 0.75f;
+        [Tooltip("양옆으로 몇 구역까지 퍼질지")]
+        [SerializeField] private int spreadZones = 1;
 
         public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
         {
-            return diceValue * Mathf.Max(1, multiplier);
+            int attack = source != null && source.Stats != null ? source.Stats.Attack : 0;
+            return Mathf.Max(1, Mathf.RoundToInt(attack * Mathf.Max(0.1f, multiplier)));
         }
 
         public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
-        {
-            int mult = Mathf.Max(1, multiplier);
-            int damage = diceValue * mult;
-            return $"예상 피해: ({diceValue} x {mult}) = {damage}";
-        }
+            => $"예상 피해: 주변 구역마다 {CalculateRawDamage(source, ability, diceValue)}";
 
         public override string GetDynamicDescription()
-            => $"주사위 눈금 × {Mathf.Max(1, multiplier)} 피해";
+            => $"자기 구역과 양옆 {Mathf.Max(0, spreadZones)}구역의 몬스터에게 공격력 x{multiplier:0.##} 피해";
+
+        /// <summary>자기 구역 + 양옆 spreadZones구역의 주인 전원.</summary>
+        public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
+        {
+            var result = new List<Unit>();
+            var zones = CombatZoneManager.Instance;
+            if (zones == null || source == null) return result;
+
+            int myZone = zones.GetZoneOf(source);
+            if (myZone < 0) return result;
+
+            int n = zones.ZoneCount;
+            int limit = Mathf.Clamp(spreadZones, 0, n / 2);
+            for (int d = 0; d <= limit; d++)
+            {
+                var forward = zones.GetOwner((myZone + d) % n);
+                if (forward != null && !result.Contains(forward)) result.Add(forward);
+
+                var backward = zones.GetOwner((myZone - d + n) % n);
+                if (backward != null && !result.Contains(backward)) result.Add(backward);
+            }
+            return result;
+        }
     }
 }

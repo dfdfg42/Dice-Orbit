@@ -21,6 +21,12 @@ namespace DiceOrbit.Data.Skills
         MultiTile,   // N개 타일 순차 선택
     }
 
+    /// <summary>
+    /// 캐릭터의 '강화 공격'. 매 턴 나가는 공격 1회가, 배정한 주사위가 requirement를 만족하면
+    /// 기본공격 대신 이 형태로 나간다(2026-08-21 개편). 클릭도 타게팅도 없다 —
+    /// 대상은 캐릭터가 선 구역과 지나온 경로에서 유도된다(ResolveTargets).
+    /// 피해는 주사위 눈이 아니라 캐릭터 공격력을 기준으로 한다.
+    /// </summary>
     [System.Serializable]
     public abstract class CharacterActiveSkill
     {
@@ -103,6 +109,22 @@ namespace DiceOrbit.Data.Skills
 
         public abstract int    CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue);
         public abstract string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue);
+
+        /// <summary>
+        /// 이 공격이 때릴 대상을 위치에서 유도한다. 기본은 자기가 선 구역의 주인 하나.
+        /// passedZones는 이번 이동에서 지나온 구역 번호들(출발 구역 포함, 순서대로) —
+        /// 경로형 강화 공격이 이것을 읽는다.
+        /// </summary>
+        public virtual List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
+        {
+            var result = new List<Unit>();
+            var zones = Zones.CombatZoneManager.Instance;
+            if (zones == null || source == null) return result;
+
+            var owner = zones.GetOwner(zones.GetZoneOf(source));
+            if (owner != null) result.Add(owner);
+            return result;
+        }
 
         public virtual bool Execute(
             Character source, ActiveSkillSlot ability,

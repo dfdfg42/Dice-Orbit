@@ -34,9 +34,11 @@ namespace DiceOrbit.UI
         [SerializeField] private bool stackSameTile = true;
         [SerializeField] private float perIndexYStep = 0.35f; // 같은 타일 캐릭터 1명당 올릴 Y(월드)
 
-        [Header("Turn Budget Icons (이동/액티브)")]
+        [Header("Turn Budget Icon (이동)")]
         [SerializeField] private Sprite moveIconSprite;
-        [SerializeField] private Sprite activeIconSprite;
+        // 액티브 아이콘은 철거했다 — 강화 공격이 행동 예산을 쓰지 않고 주사위 눈으로만 갈리므로
+        // 상시 켜진 아이콘은 아무 정보도 주지 못했다(2026-08-21).
+        [SerializeField, HideInInspector] private Sprite activeIconSprite;
         [SerializeField] private Color iconAvailableColor = Color.white;
         [SerializeField] private Color iconUsedColor = new Color(0.42f, 0.42f, 0.42f, 0.5f);
         [Tooltip("HP바 위 왼쪽 기준 위치 (첫 아이콘)")]
@@ -44,7 +46,6 @@ namespace DiceOrbit.UI
         [SerializeField] private float iconSpacing = 13f;
         [SerializeField] private float iconSize = 12f;
         private Image _moveIcon;
-        private Image _activeIcon;
 
         private Camera mainCamera;
         
@@ -221,8 +222,7 @@ namespace DiceOrbit.UI
         private void CreateBudgetIcons()
         {
             if (worldCanvas == null || _moveIcon != null) return;
-            _moveIcon   = MakeBudgetIcon("MoveIcon",   moveIconSprite,   iconsAnchor);
-            _activeIcon = MakeBudgetIcon("ActiveIcon", activeIconSprite, iconsAnchor + new Vector2(iconSpacing, 0f));
+            _moveIcon = MakeBudgetIcon("MoveIcon", moveIconSprite, iconsAnchor);
         }
 
         private Image MakeBudgetIcon(string iconName, Sprite sprite, Vector2 pos)
@@ -241,15 +241,13 @@ namespace DiceOrbit.UI
             return img;
         }
 
-        /// <summary>이동/액티브 예산에 따라 아이콘 밝기 갱신 (가능=밝게, 사용됨=회색·반투명).</summary>
+        /// <summary>이동 예산에 따라 아이콘 밝기 갱신 (가능=밝게, 사용됨=회색·반투명).</summary>
         private void UpdateBudgetIcons()
         {
-            if (_moveIcon == null && _activeIcon == null) return;
+            if (_moveIcon == null) return;
             var cm = Core.CombatManager.Instance;
             bool canMove = cm != null && character != null && cm.CanSpendMove(character);
-            bool canAct  = cm != null && character != null && cm.CanSpendAction(character);
-            if (_moveIcon != null)   _moveIcon.color   = canMove ? iconAvailableColor : iconUsedColor;
-            if (_activeIcon != null) _activeIcon.color = canAct  ? iconAvailableColor : iconUsedColor;
+            _moveIcon.color = canMove ? iconAvailableColor : iconUsedColor;
         }
         
         /// <summary>

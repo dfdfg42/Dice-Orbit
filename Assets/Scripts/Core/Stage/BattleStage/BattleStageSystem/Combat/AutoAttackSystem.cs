@@ -7,8 +7,9 @@ using UnityEngine;
 namespace DiceOrbit.Core
 {
     /// <summary>
-    /// 자동 기본공격. 캐릭터는 매 턴 반드시 한 번 자기 구역의 몬스터를 때린다 —
-    /// 주사위 눈·액티브 사용 여부와 무관하며, 이것이 파티 피해량의 바닥을 보장한다(스펙 §3, 불변식 1).
+    /// 자동 공격. 캐릭터는 매 턴 반드시 한 번 공격한다 — 이것이 파티 피해량의 바닥을 보장한다(불변식 1).
+    /// 배정한 주사위가 액티브의 조건을 만족하면 그 한 번이 강화 공격으로 나간다(대체이지 추가가 아니다).
+    /// 조건은 공격을 막지 못하고 더 좋게 만들기만 하므로 불변식 4(게이트는 보너스만 연다)와도 맞는다.
     ///
     /// 발동 지점은 둘이지만 실제 처리는 ResolveRoutine 한 곳이다:
     ///  ① 이동 직후 (MoveThenAttackRoutine — 플레이어가 결과를 보고 다음 캐릭터를 정할 수 있도록)
@@ -50,7 +51,7 @@ namespace DiceOrbit.Core
         public void ResetTurn() => _resolvedThisTurn.Clear();
 
         /// <summary>이동을 끝까지 수행한 뒤 도착 구역의 몬스터를 자동 공격한다.</summary>
-        public IEnumerator MoveThenAttackRoutine(Character character, int steps)
+        public IEnumerator MoveThenAttackRoutine(Character character, int diceValue)
         {
             var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
             if (orbit == null)
@@ -59,8 +60,35 @@ namespace DiceOrbit.Core
                 yield break;
             }
 
-            yield return orbit.MoveRoutine(character, steps);
-            yield return ResolveRoutine(character);
+            // 지나갈 구역은 이동 전에 기록한다 — 경로형 강화 공격(전사 돌파)이 읽는다.
+            var passedZones = CollectPassedZones(character, diceValue);
+
+            yield return orbit.MoveRoutine(character, diceValue);
+            yield return ResolveRoutine(character, diceValue, passedZones);
+        }
+
+        /// <summary>이번 이동에서 지나갈 구역 번호들(출발 구역 포함, 중복 없이 순서대로).</summary>
+        private static List<int> CollectPassedZones(Character character, int diceValue)
+        {
+            var result = new List<int>();
+            var zones = Zones.CombatZoneManager.Instance;
+            if (zones == null || character == null || character.CurrentTile == null) return result;
+
+            // MoveRoutine과 같은 유효 걸음 수를 쓴다 — 버프/디버프로 실제 이동이 달라지므로.
+            int steps = Mathf.Max(diceValue + character.Stats.MoveBuff - character.Stats.MoveDebuff, 0);
+
+            var tile = character.CurrentTile;
+            int startZone = zones.GetZoneOfTile(tile);
+            if (startZone >= 0) result.Add(startZone);
+
+            for (int i = 0; i < steps; i++)
+            {
+                if (tile.NextTile == null) break;
+                tile = tile.NextTile;
+                int zone = zones.GetZoneOfTile(tile);
+                if (zone >= 0 && !result.Contains(zone)) result.Add(zone);
+            }
+            return result;
         }
 
         /// <summary>아직 공격하지 않은 생존 캐릭터 전원을 순서대로 공격시킨다.</summary>
@@ -70,32 +98,59 @@ namespace DiceOrbit.Core
             if (party == null) yield break;
 
             // 순회 중 파티 목록이 바뀔 수 있으므로 복사본으로 돈다.
+            // 주사위를 받지 못한 캐릭터라 조건을 만족할 눈이 없다 — 기본공격만 나간다.
             var snapshot = new List<Character>(party);
             foreach (var character in snapshot)
-                yield return ResolveRoutine(character);
+                yield return ResolveRoutine(character, 0, null);
         }
 
-        /// <summary>한 캐릭터의 자동 공격 1회. 이번 턴에 이미 때렸으면 아무 일도 하지 않는다.</summary>
-        public IEnumerator ResolveRoutine(Character character)
+        /// <summary>
+        /// 한 캐릭터의 공격 1회. 이번 턴에 이미 때렸으면 아무 일도 하지 않는다.
+        /// diceValue가 액티브 조건을 만족하면 기본공격 대신 그 강화 공격이 나간다.
+        /// </summary>
+        public IEnumerator ResolveRoutine(Character character, int diceValue, IReadOnlyList<int> passedZones)
         {
             if (character == null || !character.IsAlive) yield break;
             if (_resolvedThisTurn.Contains(character)) yield break;
             _resolvedThisTurn.Add(character);
 
-            var targets = CollectTargets(character);
-            if (targets.Count == 0) yield break;   // 사거리 안에 생존 몬스터 없음 — 정상 상태
-
-            character.OnSkillExecutionStarted();
-
-            foreach (var target in targets)
+            var empowered = FindEmpoweredAttack(character, diceValue);
+            if (empowered != null)
             {
-                if (target == null || !target.IsAlive) continue;
+                var targets = empowered.RuntimeInstance.ResolveTargets(character, passedZones);
+                if (targets != null && targets.Count > 0)
+                    empowered.Execute(character, targets, null, diceValue);
+            }
+            else
+            {
+                var targets = CollectTargets(character);
+                if (targets.Count > 0)
+                {
+                    character.OnSkillExecutionStarted();
+                    foreach (var target in targets)
+                    {
+                        if (target == null || !target.IsAlive) continue;
 
-                var context = new AttackContext(character, target, attackName, character.Stats.Attack);
-                CombatPipeline.Instance?.Process(context);
+                        var context = new AttackContext(character, target, attackName, character.Stats.Attack);
+                        CombatPipeline.Instance?.Process(context);
+                    }
+                }
             }
 
             if (attackInterval > 0f) yield return new WaitForSeconds(attackInterval);
+        }
+
+        /// <summary>배정한 주사위가 조건을 만족하는 액티브. 없으면 null(기본공격으로 나간다).</summary>
+        private static Data.Skills.ActiveSkillSlot FindEmpoweredAttack(Character character, int diceValue)
+        {
+            if (diceValue <= 0) return null;
+            var abilities = character.Stats != null ? character.Stats.ActiveAbilities : null;
+            if (abilities == null) return null;
+
+            foreach (var slot in abilities)
+                if (slot != null && slot.RuntimeInstance != null && slot.CanUse(diceValue)) return slot;
+
+            return null;
         }
 
         /// <summary>

@@ -1,35 +1,74 @@
+using System.Collections.Generic;
 using DiceOrbit.Core;
-using DiceOrbit.Data;
+using DiceOrbit.Core.Zones;
 using DiceOrbit.Data.Skills;
 using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
+    /// <summary>
+    /// [연쇄 마탄] 홀수 턴에 마탄이 갈라져 사거리 안의 몬스터 둘을 함께 친다.
+    /// 마법사만 중립지대에서도 표적을 찾으므로(원거리 패시브) 이 강화 공격도 그 사거리를 그대로 쓴다.
+    /// </summary>
     [System.Serializable]
     public class MageEnergyBallActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("피해 = (주사위 눈금 x 배율) + 집중 스택")]
-        [SerializeField] private int multiplier = 1;
+        [Tooltip("피해 = 공격력 x 배율 (대상마다 각각)")]
+        [SerializeField] private float multiplier = 1f;
+        [Tooltip("동시에 칠 최대 몬스터 수")]
+        [SerializeField] private int maxTargets = 2;
 
         public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
         {
-            int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
-            return diceValue * Mathf.Max(1, multiplier) + focusStacks;
+            int attack = source != null && source.Stats != null ? source.Stats.Attack : 0;
+            return Mathf.Max(1, Mathf.RoundToInt(attack * Mathf.Max(0.1f, multiplier)));
         }
 
         public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
-        {
-            int mult = Mathf.Max(1, multiplier);
-            int focusStacks = source?.StatusEffects != null ? source.StatusEffects.GetEffectValue(EffectType.Focus) : 0;
-            int damage = diceValue * mult + focusStacks;
-            return $"예상 피해: ({diceValue} x {mult}) + 집중 {focusStacks} = {damage}";
-        }
+            => $"예상 피해: 최대 {Mathf.Max(1, maxTargets)}체에게 각 {CalculateRawDamage(source, ability, diceValue)}";
 
         public override string GetDynamicDescription()
-            => $"주사위 눈금 × {Mathf.Max(1, multiplier)} + 집중 스택 피해";
+            => $"사거리 안 몬스터 최대 {Mathf.Max(1, maxTargets)}체에게 공격력 x{multiplier:0.##} 피해";
 
-        // 주의: 집중 스택을 쌓아 주던 FocusPassive는 구역 개편에서 원거리 패시브로 교체됐다(2026-08-21).
-        // 지금은 스택을 쌓는 주체가 없어 이 항이 항상 0이며, 액티브 재설계(Phase 4)에서 정리한다.
+        /// <summary>자기 구역부터 가까운 순으로 사거리 안의 주인들을 모은다.</summary>
+        public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
+        {
+            var result = new List<Unit>();
+            var zones = CombatZoneManager.Instance;
+            if (zones == null || source == null) return result;
+
+            int myZone = zones.GetZoneOf(source);
+            if (myZone < 0) return result;
+
+            int reach = ResolveReach(source);
+            int n = zones.ZoneCount;
+            int limit = Mathf.Clamp(reach, 0, n / 2);
+            int cap = Mathf.Max(1, maxTargets);
+
+            for (int d = 0; d <= limit && result.Count < cap; d++)
+            {
+                var forward = zones.GetOwner((myZone + d) % n);
+                if (forward != null && !result.Contains(forward)) result.Add(forward);
+                if (result.Count >= cap) break;
+
+                var backward = zones.GetOwner((myZone - d + n) % n);
+                if (backward != null && !result.Contains(backward)) result.Add(backward);
+            }
+            return result;
+        }
+
+        /// <summary>원거리 패시브가 주는 구역 사거리. 없으면 0(자기 구역만).</summary>
+        private static int ResolveReach(Character source)
+        {
+            var passives = source != null && source.Stats != null ? source.Stats.PassiveInstances : null;
+            if (passives == null) return 0;
+
+            int reach = 0;
+            foreach (var p in passives)
+                if (p is Passives.IZoneReachProvider provider)
+                    reach = Mathf.Max(reach, provider.ExtraZoneReach);
+            return reach;
+        }
     }
 }
