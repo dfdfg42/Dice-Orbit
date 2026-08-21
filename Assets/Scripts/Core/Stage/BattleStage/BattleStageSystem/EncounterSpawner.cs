@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using DiceOrbit.Core.Run;
-using DiceOrbit.Data.Waves;
 using UnityEngine;
 
 namespace DiceOrbit.Core
@@ -16,7 +15,8 @@ namespace DiceOrbit.Core
 
         [SerializeField] private GameObject monsterPrefab;
         [SerializeField] private Transform spawnRoot;
-        [SerializeField] private float fallbackSpawnRadius = 2.5f;
+        [Tooltip("몬스터를 구역 중심 방향 이 거리에 배치한다 (궤도 안쪽).")]
+        [SerializeField] private float monsterZoneRadius = 4f;
 
         private void Awake()
         {
@@ -55,12 +55,17 @@ namespace DiceOrbit.Core
                 return spawned;
             }
 
-            var points = Object.FindObjectsByType<WaveSpawnPoint>(FindObjectsSortMode.None)
-                .OrderBy(_ => Random.value).ToList();
+            var zones = Zones.CombatZoneManager.EnsureInstance();
+            zones.ClearRegistrations();
+
+            if (presets.Count > zones.ZoneCount)
+                Debug.LogError($"[EncounterSpawner] 몹 {presets.Count}마리는 구역 {zones.ZoneCount}개를 넘는다 — 구역당 1마리 규칙 위반. 몹 세트를 {zones.ZoneCount}마리 이하로 구성할 것.");
 
             for (int i = 0; i < presets.Count; i++)
             {
-                var go = Object.Instantiate(monsterPrefab, GetSpawnPosition(points, i), Quaternion.identity, spawnRoot);
+                int zone = i % zones.ZoneCount;
+                var spawnPos = zones.GetZoneCenterPosition(zone, monsterZoneRadius);
+                var go = Object.Instantiate(monsterPrefab, spawnPos, Quaternion.identity, spawnRoot);
                 var monster = go.GetComponent<Monster>() ?? go.GetComponentInChildren<Monster>();
                 if (monster == null)
                 {
@@ -68,6 +73,7 @@ namespace DiceOrbit.Core
                     continue;
                 }
                 monster.InitializeFromPreset(presets[i]);
+                zones.RegisterMonster(monster, zone);
                 if (startHidden)
                 {
                     monster.IntroBaseScale = monster.transform.localScale;   // 원래 스케일 보존 (프리셋별로 다름)
@@ -80,25 +86,9 @@ namespace DiceOrbit.Core
 
             Visuals.MonsterIdentityManager.EnsureInstance();
             Visuals.MonsterIdentityManager.Instance.Setup(spawned);
+            Visuals.ZoneFloorRenderer.EnsureInstance();
             return spawned;
         }
 
-        private Vector3 GetSpawnPosition(List<WaveSpawnPoint> points, int index)
-        {
-            if (points != null && points.Count > 0)
-            {
-                if (index < points.Count) return points[index].transform.position;
-
-                var basePoint = points[index % points.Count].transform.position;
-                int overlapTier = index / points.Count;
-                float angle = overlapTier * 137.5f * Mathf.Deg2Rad;
-                float distance = 0.8f + overlapTier * 0.6f;
-                return basePoint + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * distance;
-            }
-
-            float fallbackAngle = index * 137.5f * Mathf.Deg2Rad;
-            float fallbackDistance = Mathf.Min(fallbackSpawnRadius, 0.8f + index * 0.6f);
-            return new Vector3(Mathf.Cos(fallbackAngle) * fallbackDistance, 0f, Mathf.Sin(fallbackAngle) * fallbackDistance);
-        }
     }
 }
