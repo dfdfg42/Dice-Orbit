@@ -8,8 +8,8 @@ namespace DiceOrbit.Core.Zones
     /// 전투 구역(사분면) 단일 권위. 궤도를 zoneCount개 부채꼴로 나누고 구역마다 몬스터 1마리를 소유자로 둔다.
     /// "어느 구역에 서 있는가"가 곧 "누구를 때리는가"이므로 구역 질의는 전부 여기로 모은다.
     ///
-    /// 소유자가 죽은 구역은 가장 가까운 구역의 생존 소유자가 흡수한다
-    /// (판 전체가 항상 어떤 몬스터의 구역 = "매 턴 전원 공격" 불변식 보존).
+    /// 구역 분할은 몬스터 수와 무관하게 항상 고정이며, 몬스터가 없거나 죽은 구역은
+    /// 주인 없는 '중립지대'로 남는다 — 그곳에 선 캐릭터는 때릴 대상이 없다(2026-08-21 결정).
     /// 소유권은 저장하지 않고 질의 시점에 계산한다 — 사망 이벤트 배선 없이 항상 최신이다.
     /// </summary>
     public class CombatZoneManager : MonoBehaviour
@@ -101,25 +101,13 @@ namespace DiceOrbit.Core.Zones
             return GetZoneOfTile(character.CurrentTile);
         }
 
-        /// <summary>이 구역을 실제로 지배하는 몬스터. 원 소유자가 죽었으면 가장 가까운 구역의 생존 소유자가 흡수한다.</summary>
-        public Monster GetEffectiveOwner(int zone)
+        /// <summary>
+        /// 이 구역의 주인 몬스터. 배정된 몬스터가 없거나 죽었으면 null —
+        /// 옆 구역이 흡수하지 않고 중립지대로 남는다(딜이 나가지 않는 피난처).
+        /// </summary>
+        public Monster GetOwner(int zone)
         {
             if (zone < 0 || zone >= ZoneCount) return null;
-
-            int n = ZoneCount;
-            for (int d = 0; d <= n / 2; d++)
-            {
-                var forward = GetLivingAssignedOwner((zone + d) % n);
-                if (forward != null) return forward;
-
-                var backward = GetLivingAssignedOwner((zone - d + n) % n);
-                if (backward != null) return backward;
-            }
-            return null;   // 전멸 — 정상 상태
-        }
-
-        private Monster GetLivingAssignedOwner(int zone)
-        {
             if (!_assignedOwners.TryGetValue(zone, out var monster)) return null;
             if (monster == null || !monster.IsAlive) return null;
             return monster;

@@ -117,8 +117,8 @@ namespace DiceOrbit.Core
             int zone = zones.GetZoneOf(character);
             if (zone < 0) return result;   // 아직 타일에 배치되지 않음
 
-            var owner = zones.GetEffectiveOwner(zone);
-            if (owner != null) result.Add(owner);
+            var owner = zones.GetOwner(zone);
+            if (owner != null) result.Add(owner);   // 중립지대(주인 없음)면 이번 턴 공격 없음
 
             return result;
         }

@@ -57,7 +57,7 @@
   - `void RegisterMonster(Monster monster, int zone)`
   - `int GetZoneOfTile(TileData tile)` — 실패 시 `-1`
   - `int GetZoneOf(Character character)` — 실패 시 `-1`
-  - `Monster GetEffectiveOwner(int zone)` — 살아있는 소유자, 없으면 가장 가까운 구역의 생존 소유자
+  - `Monster GetOwner(int zone)` — 그 구역의 생존 주인. 없으면 `null`(중립지대 — 흡수하지 않는다)
   - `Vector3 GetZoneCenterPosition(int zone, float radius)`
   - `void GetZoneAngularRangeDeg(int zone, out float startDeg, out float endDeg)`
 
@@ -74,8 +74,8 @@ namespace DiceOrbit.Core.Zones
     /// 전투 구역(사분면) 단일 권위. 궤도를 zoneCount개 부채꼴로 나누고 구역마다 몬스터 1마리를 소유자로 둔다.
     /// "어느 구역에 서 있는가"가 곧 "누구를 때리는가"이므로 구역 질의는 전부 여기로 모은다.
     ///
-    /// 소유자가 죽은 구역은 가장 가까운 구역의 생존 소유자가 흡수한다
-    /// (판 전체가 항상 어떤 몬스터의 구역 = "매 턴 전원 공격" 불변식 보존).
+    /// 구역 분할은 몬스터 수와 무관하게 항상 고정이며, 몬스터가 없거나 죽은 구역은
+    /// 주인 없는 '중립지대'로 남는다 — 그곳에 선 캐릭터는 때릴 대상이 없다(2026-08-21 결정).
     /// 소유권은 저장하지 않고 질의 시점에 계산한다 — 사망 이벤트 배선 없이 항상 최신이다.
     /// </summary>
     public class CombatZoneManager : MonoBehaviour
@@ -88,7 +88,7 @@ namespace DiceOrbit.Core.Zones
         [Tooltip("구역 경계를 타일 몇 칸만큼 돌릴지. 화면 사분면과 시각적으로 맞추는 용도.")]
         [SerializeField] private int zoneTileOffset = 0;
 
-        // 스폰 시 배정된 원 소유자. 죽어도 유지한다 — 흡수 계산의 기준점이기 때문.
+        // 스폰 시 배정된 구역 주인. 죽어도 유지한다 — 이 구역이 '누구의 자리였는지'가 기록이기 때문.
         private readonly Dictionary<int, Monster> _assignedOwners = new Dictionary<int, Monster>();
 
         public int ZoneCount => Mathf.Max(1, zoneCount);
@@ -167,25 +167,13 @@ namespace DiceOrbit.Core.Zones
             return GetZoneOfTile(character.CurrentTile);
         }
 
-        /// <summary>이 구역을 실제로 지배하는 몬스터. 원 소유자가 죽었으면 가장 가까운 구역의 생존 소유자가 흡수한다.</summary>
-        public Monster GetEffectiveOwner(int zone)
+        /// <summary>
+        /// 이 구역의 주인 몬스터. 배정된 몬스터가 없거나 죽었으면 null —
+        /// 옆 구역이 흡수하지 않고 중립지대로 남는다(딜이 나가지 않는 피난처).
+        /// </summary>
+        public Monster GetOwner(int zone)
         {
             if (zone < 0 || zone >= ZoneCount) return null;
-
-            int n = ZoneCount;
-            for (int d = 0; d <= n / 2; d++)
-            {
-                var forward = GetLivingAssignedOwner((zone + d) % n);
-                if (forward != null) return forward;
-
-                var backward = GetLivingAssignedOwner((zone - d + n) % n);
-                if (backward != null) return backward;
-            }
-            return null;   // 전멸 — 정상 상태
-        }
-
-        private Monster GetLivingAssignedOwner(int zone)
-        {
             if (!_assignedOwners.TryGetValue(zone, out var monster)) return null;
             if (monster == null || !monster.IsAlive) return null;
             return monster;
@@ -351,7 +339,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `Assets/Scripts/Visuals/ZoneFloorRenderer.cs`
 
 **Interfaces:**
-- Consumes: Task 1의 `CombatZoneManager`(`ZoneCount`, `GetEffectiveOwner`, `GetZoneAngularRangeDeg`), `MonsterIdentityManager.Instance.GetColor(monster)`
+- Consumes: Task 1의 `CombatZoneManager`(`ZoneCount`, `GetOwner`, `GetZoneAngularRangeDeg`), `MonsterIdentityManager.Instance.GetColor(monster)`
 - Produces: `static ZoneFloorRenderer EnsureInstance()` — 씬에 없으면 자기 자신을 만든다. 다른 Task가 호출하지 않으며 스스로 갱신한다.
 
 - [ ] **Step 1: ZoneFloorRenderer 작성**
@@ -388,11 +376,17 @@ namespace DiceOrbit.Visuals
         [Header("색")]
         [Range(0f, 1f)]
         [SerializeField] private float zoneAlpha = 0.13f;
+        [Tooltip("몬스터가 없는 중립지대 색. 사분면은 항상 4개가 보이고 빈 구역만 이 색이 된다.")]
+        [SerializeField] private Color emptyZoneColor = new Color(0.6f, 0.6f, 0.62f, 1f);
+        [Range(0f, 1f)]
+        [Tooltip("중립지대 투명도. 소유 구역보다 옅게 둬서 '비어 있음'이 읽히도록.")]
+        [SerializeField] private float emptyZoneAlpha = 0.05f;
         [Tooltip("몬스터 스프라이트·타일보다 뒤에 그리기 위한 정렬 순서")]
         [SerializeField] private int sortingOrder = -50;
 
         private readonly List<MeshRenderer> _renderers = new List<MeshRenderer>();
-        private Monster[] _lastOwners;
+        // 파괴된 오브젝트는 Unity의 == 비교가 null과 같다고 보고해 변화를 놓치므로 InstanceID로 추적한다.
+        private int[] _lastOwnerIds;
 
         private void Awake()
         {
@@ -450,7 +444,8 @@ namespace DiceOrbit.Visuals
                 _renderers.Add(mr);
             }
 
-            _lastOwners = new Monster[zones.ZoneCount];
+            _lastOwnerIds = new int[zones.ZoneCount];
+            for (int i = 0; i < _lastOwnerIds.Length; i++) _lastOwnerIds[i] = int.MinValue;   // 첫 프레임에 반드시 칠하도록
         }
 
         private void RefreshColors(CombatZoneManager zones)
@@ -460,19 +455,17 @@ namespace DiceOrbit.Visuals
 
             for (int zone = 0; zone < _renderers.Count; zone++)
             {
-                var owner = zones.GetEffectiveOwner(zone);
-                if (_lastOwners[zone] == owner) continue;   // 변화 없음 — 머티리얼 건드리지 않는다
-                _lastOwners[zone] = owner;
+                var owner = zones.GetOwner(zone);
+                int ownerId = owner != null ? owner.GetInstanceID() : 0;
+                if (_lastOwnerIds[zone] == ownerId) continue;   // 변화 없음 — 머티리얼 건드리지 않는다
+                _lastOwnerIds[zone] = ownerId;
 
                 var mr = _renderers[zone];
                 if (mr == null) continue;
 
-                bool hasOwner = owner != null;
-                mr.enabled = hasOwner;
-                if (!hasOwner) continue;
-
-                Color c = identity.GetColor(owner);
-                c.a = zoneAlpha;
+                // 사분면은 항상 4개가 보인다. 주인이 없으면 중립색으로 남겨 '빈 구역'임을 드러낸다.
+                Color c = owner != null ? identity.GetColor(owner) : emptyZoneColor;
+                c.a = owner != null ? zoneAlpha : emptyZoneAlpha;
                 if (mr.material.HasProperty("_Color")) mr.material.color = c;
             }
         }
@@ -548,8 +541,9 @@ internal class CommandScript : IRunCommand {
 - [ ] **Step 4: 플레이 검증 (작업자)**
 
 전투에 진입해 확인한다:
-- 궤도가 **네 개의 색 부채꼴**로 나뉘어 보이고, 각 부채꼴 색이 그 구역 몬스터의 발밑 색과 같다.
-- 몬스터를 하나 죽이면 그 구역이 **사라지지 않고 옆 몬스터 색으로 흡수**된다 (판 전체가 항상 칠해져 있어야 한다).
+- 궤도가 **항상 네 개의 부채꼴**로 나뉘어 보이고, 몬스터가 있는 구역은 그 몬스터의 발밑 색과 같은 색이다.
+- 몬스터가 없는 구역은 **옅은 중립색**으로 비어 있다 (사분면 자체는 사라지지 않는다).
+- 몬스터를 하나 죽이면 그 구역이 **중립색(옅은 회색)으로 비고**, 사분면 네 칸은 그대로 남는다.
 
 색이 너무 진하거나 흐리면 `zoneAlpha`, 타일에 안 얹히면 `floorY`, 부채꼴이 타일을 못 덮으면 `outerRadius`를 조정한다.
 부채꼴 경계가 화면 사분면(좌상·우상·좌하·우하)과 어긋나 보이면 `CombatZoneManager`의 `zoneTileOffset`을 1씩 바꿔 맞춘다.
@@ -682,7 +676,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - Create: `Assets/Scripts/Core/Stage/BattleStage/BattleStageSystem/Combat/AutoAttackSystem.cs`
 
 **Interfaces:**
-- Consumes: Task 1의 `CombatZoneManager`(`GetZoneOf`, `GetEffectiveOwner`), Task 4의 `CharacterStats.Attack`, 기존 `CombatPipeline.Instance.Process(AttackContext)`, `OrbitManager.MoveRoutine(Character, int)`, `PartyManager.Instance.Party`
+- Consumes: Task 1의 `CombatZoneManager`(`GetZoneOf`, `GetOwner`), Task 4의 `CharacterStats.Attack`, 기존 `CombatPipeline.Instance.Process(AttackContext)`, `OrbitManager.MoveRoutine(Character, int)`, `PartyManager.Instance.Party`
 - Produces (Task 6·7이 의존):
   - `static AutoAttackSystem EnsureInstance()`
   - `void ResetTurn()`
@@ -811,8 +805,8 @@ namespace DiceOrbit.Core
             int zone = zones.GetZoneOf(character);
             if (zone < 0) return result;   // 아직 타일에 배치되지 않음
 
-            var owner = zones.GetEffectiveOwner(zone);
-            if (owner != null) result.Add(owner);
+            var owner = zones.GetOwner(zone);
+            if (owner != null) result.Add(owner);   // 중립지대(주인 없음)면 이번 턴 공격 없음
 
             return result;
         }
@@ -960,7 +954,7 @@ internal class CommandScript : IRunCommand {
 1. **바닥 보장** — 주사위를 아무에게도 배정하지 않고 턴 종료를 눌러도, 살아있는 캐릭터 전원이 각자 구역 몬스터를 한 번씩 때린다.
 2. **중복 없음** — 이동해서 때린 캐릭터가 턴 종료 때 또 때리지 않는다 (한 턴에 캐릭터당 정확히 1회).
 3. **구역 일치** — 캐릭터가 선 바닥색과 피해를 받는 몬스터가 항상 같다.
-4. **흡수 동작** — 몬스터를 죽이면 그 구역이 옆 몬스터 색으로 바뀌고, 그 구역에 선 캐릭터는 흡수한 몬스터를 때린다.
+4. **중립지대 동작** — 몬스터를 죽이면 그 구역이 중립색으로 비고, 그 구역에 선 캐릭터는 이번 턴 아무도 때리지 않는다.
 5. **템포** — 캐릭터 4명 턴을 처리하는 데 드는 클릭이 이전보다 확연히 줄었다 (목표: 캐릭터당 이동 관련 클릭만).
 6. 콘솔에 `[CombatZone]`·`[AutoAttack]`·`[CharacterPreset]` 에러가 없다.
 

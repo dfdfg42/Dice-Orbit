@@ -29,11 +29,17 @@ namespace DiceOrbit.Visuals
         [Header("색")]
         [Range(0f, 1f)]
         [SerializeField] private float zoneAlpha = 0.13f;
+        [Tooltip("몬스터가 없는 중립지대 색. 사분면은 항상 4개가 보이고 빈 구역만 이 색이 된다.")]
+        [SerializeField] private Color emptyZoneColor = new Color(0.6f, 0.6f, 0.62f, 1f);
+        [Range(0f, 1f)]
+        [Tooltip("중립지대 투명도. 소유 구역보다 옅게 둬서 '비어 있음'이 읽히도록.")]
+        [SerializeField] private float emptyZoneAlpha = 0.05f;
         [Tooltip("몬스터 스프라이트·타일보다 뒤에 그리기 위한 정렬 순서")]
         [SerializeField] private int sortingOrder = -50;
 
         private readonly List<MeshRenderer> _renderers = new List<MeshRenderer>();
-        private Monster[] _lastOwners;
+        // 파괴된 오브젝트는 Unity의 == 비교가 null과 같다고 보고해 변화를 놓치므로 InstanceID로 추적한다.
+        private int[] _lastOwnerIds;
 
         private void Awake()
         {
@@ -91,7 +97,8 @@ namespace DiceOrbit.Visuals
                 _renderers.Add(mr);
             }
 
-            _lastOwners = new Monster[zones.ZoneCount];
+            _lastOwnerIds = new int[zones.ZoneCount];
+            for (int i = 0; i < _lastOwnerIds.Length; i++) _lastOwnerIds[i] = int.MinValue;   // 첫 프레임에 반드시 칠하도록
         }
 
         private void RefreshColors(CombatZoneManager zones)
@@ -101,19 +108,17 @@ namespace DiceOrbit.Visuals
 
             for (int zone = 0; zone < _renderers.Count; zone++)
             {
-                var owner = zones.GetEffectiveOwner(zone);
-                if (_lastOwners[zone] == owner) continue;   // 변화 없음 — 머티리얼 건드리지 않는다
-                _lastOwners[zone] = owner;
+                var owner = zones.GetOwner(zone);
+                int ownerId = owner != null ? owner.GetInstanceID() : 0;
+                if (_lastOwnerIds[zone] == ownerId) continue;   // 변화 없음 — 머티리얼 건드리지 않는다
+                _lastOwnerIds[zone] = ownerId;
 
                 var mr = _renderers[zone];
                 if (mr == null) continue;
 
-                bool hasOwner = owner != null;
-                mr.enabled = hasOwner;
-                if (!hasOwner) continue;
-
-                Color c = identity.GetColor(owner);
-                c.a = zoneAlpha;
+                // 사분면은 항상 4개가 보인다. 주인이 없으면 중립색으로 남겨 '빈 구역'임을 드러낸다.
+                Color c = owner != null ? identity.GetColor(owner) : emptyZoneColor;
+                c.a = owner != null ? zoneAlpha : emptyZoneAlpha;
                 if (mr.material.HasProperty("_Color")) mr.material.color = c;
             }
         }
