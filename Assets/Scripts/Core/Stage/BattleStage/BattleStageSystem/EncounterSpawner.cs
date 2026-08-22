@@ -15,8 +15,8 @@ namespace DiceOrbit.Core
 
         [SerializeField] private GameObject monsterPrefab;
         [SerializeField] private Transform spawnRoot;
-        [Tooltip("몬스터를 구역 중심 방향 이 거리에 배치한다 (궤도 안쪽).")]
-        [SerializeField] private float monsterZoneRadius = 4f;
+        [Tooltip("몬스터를 구역 중심 방향 이 거리에 배치한다. 클수록 중앙에서 멀어져 궤도에 가까워진다(궤도 반지름 8).")]
+        [SerializeField] private float monsterZoneRadius = 5.5f;
 
         private void Awake()
         {

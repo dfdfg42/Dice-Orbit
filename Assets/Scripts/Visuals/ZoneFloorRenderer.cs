@@ -20,8 +20,8 @@ namespace DiceOrbit.Visuals
         [Header("부채꼴 크기")]
         [Tooltip("안쪽 반지름 — 몬스터가 서는 중앙부는 비워 둔다")]
         [SerializeField] private float innerRadius = 2.2f;
-        [Tooltip("바깥 반지름 — 타일 바깥까지 넉넉히 넘겨야 어느 구역인지 한눈에 읽힌다")]
-        [SerializeField] private float outerRadius = 12f;
+        [Tooltip("바깥 반지름 — 타일 바깥까지 넉넉히 넘겨야 어느 구역인지 한눈에 읽힌다. 씬 궤도 반지름 13 + 타일 폭 절반 0.75 = 13.75가 타일 바깥선.")]
+        [SerializeField] private float outerRadius = 15.5f;
         [Tooltip("바닥 높이. 타일 윗면보다 확실히 위여야 색이 타일에 얹힌다 (아래면 타일에 가려 안쪽 원만 보인다)")]
         [SerializeField] private float floorY = 0.32f;
         [SerializeField] private int segmentsPerZone = 24;
@@ -38,10 +38,11 @@ namespace DiceOrbit.Visuals
         [Range(0f, 1f)]
         [Tooltip("중립지대 진하기. 소유 구역보다 옅게 둬서 '비어 있음'이 읽히도록.")]
         [SerializeField] private float emptyZoneAlpha = 0.28f;
-        [Tooltip("몬스터 스프라이트·타일보다 뒤에 그리기 위한 정렬 순서")]
-        [SerializeField] private int sortingOrder = -50;
+        [Tooltip("유닛 스프라이트 대비 렌더 순서. 음수여야 카드 뒤로 간다 — 정렬 레이어는 유닛 것을 그대로 따라간다.")]
+        [SerializeField] private int sortingOrderOffset = -100;
 
         private readonly List<MeshRenderer> _renderers = new List<MeshRenderer>();
+        private bool _sortingSynced;
         // 파괴된 오브젝트는 Unity의 == 비교가 null과 같다고 보고해 변화를 놓치므로 InstanceID로 추적한다.
         private int[] _lastOwnerIds;
 
@@ -70,6 +71,7 @@ namespace DiceOrbit.Visuals
             if (zones == null) return;
 
             if (_renderers.Count != zones.ZoneCount) BuildMeshes(zones);
+            SyncSortingBehindUnits();
             RefreshColors(zones);
         }
 
@@ -94,15 +96,60 @@ namespace DiceOrbit.Visuals
 
                 var mr = go.AddComponent<MeshRenderer>();
                 mr.material = new Material(shader) { mainTexture = Texture2D.whiteTexture };
-                mr.sortingOrder = sortingOrder;
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 mr.receiveShadows = false;
 
                 _renderers.Add(mr);
             }
 
+            _sortingSynced = false;   // 새 메쉬들은 유닛 정렬을 다시 따라가야 한다
             _lastOwnerIds = new int[zones.ZoneCount];
             for (int i = 0; i < _lastOwnerIds.Length; i++) _lastOwnerIds[i] = int.MinValue;   // 첫 프레임에 반드시 칠하도록
+        }
+
+        /// <summary>
+        /// 유닛 스프라이트와 같은 정렬 레이어를 쓰고 그보다 뒤로 보낸다.
+        /// 레이어가 다르면 sortingOrder를 아무리 낮춰도 카드 위로 튀어나오므로 레이어부터 맞춰야 한다
+        /// (몬스터 발밑 마커가 쓰는 방식과 동일 — MonsterIdentityManager).
+        /// </summary>
+        private void SyncSortingBehindUnits()
+        {
+            if (_sortingSynced || _renderers.Count == 0) return;
+
+            var reference = FindAnyUnitSprite();
+            if (reference == null) return;   // 유닛이 아직 없다 — 다음 프레임에 다시 시도
+
+            foreach (var mr in _renderers)
+            {
+                if (mr == null) continue;
+                mr.sortingLayerID = reference.sortingLayerID;
+                mr.sortingOrder = reference.sortingOrder + sortingOrderOffset;
+            }
+            _sortingSynced = true;
+        }
+
+        /// <summary>정렬 기준으로 삼을 유닛 스프라이트 하나. 몬스터 우선, 없으면 파티에서.</summary>
+        private static SpriteRenderer FindAnyUnitSprite()
+        {
+            var combat = CombatManager.Instance;
+            if (combat != null && combat.ActiveMonsters != null)
+                foreach (var monster in combat.ActiveMonsters)
+                    if (monster != null)
+                    {
+                        var sprite = MonsterIdentityManager.FindVisibleSprite(monster.transform);
+                        if (sprite != null) return sprite;
+                    }
+
+            var party = PartyManager.Instance != null ? PartyManager.Instance.Party : null;
+            if (party != null)
+                foreach (var character in party)
+                    if (character != null)
+                    {
+                        var sprite = MonsterIdentityManager.FindVisibleSprite(character.transform);
+                        if (sprite != null) return sprite;
+                    }
+
+            return null;
         }
 
         private void RefreshColors(CombatZoneManager zones)
