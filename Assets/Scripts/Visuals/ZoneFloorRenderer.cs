@@ -16,6 +16,10 @@ namespace DiceOrbit.Visuals
     /// 브래킷 색 = 그 구역 주인 몬스터의 정체성 색 (발밑 원과 같은 체계).
     /// 주인이 없는 중립지대는 옅은 회색 — 사분면 구조는 항상 보인다.
     /// 이웃 구역과 겹치지 않도록 경계에서 각도를 살짝 들여 그린다.
+    ///
+    /// 등장 타이밍: 전투 인트로에서 몬스터가 하나씩 팝인하는 것에 맞춰 그 구역의 브래킷도
+    /// 하나씩 나타난다 — 발밑 마커(MonsterFloorMarker)와 같은 스케일 임계 판정을 쓴다.
+    /// 중립지대 브래킷은 주인 있는 몬스터가 전부 드러난 뒤(= 소환 연출이 끝난 뒤) 나타난다.
     /// </summary>
     public class ZoneFloorRenderer : MonoBehaviour
     {
@@ -53,6 +57,7 @@ namespace DiceOrbit.Visuals
         private readonly List<LineRenderer> _pieces = new List<LineRenderer>();
         // 파괴된 오브젝트는 Unity의 == 비교가 null과 같다고 보고해 변화를 놓치므로 InstanceID로 추적한다.
         private int[] _lastOwnerIds;
+        private bool[] _lastVisible;
         private bool _sortingSynced;
 
         private void Awake()
@@ -85,7 +90,7 @@ namespace DiceOrbit.Visuals
 
             if (_pieces.Count != zones.ZoneCount * PiecesPerZone) BuildPieces(zones);
             SyncSortingBehindUnits();
-            RefreshColors(zones);
+            RefreshAppearance(zones);
         }
 
         // ── 생성 ─────────────────────────────────────────────
@@ -111,6 +116,7 @@ namespace DiceOrbit.Visuals
 
             _lastOwnerIds = new int[zones.ZoneCount];
             for (int i = 0; i < _lastOwnerIds.Length; i++) _lastOwnerIds[i] = int.MinValue;   // 첫 프레임에 반드시 칠하도록
+            _lastVisible = new bool[zones.ZoneCount];
             _sortingSynced = false;   // 새 선들은 유닛 정렬을 다시 따라가야 한다
         }
 
@@ -213,18 +219,24 @@ namespace DiceOrbit.Visuals
             return new Vector3(Mathf.Cos(rad) * radius, floorY, Mathf.Sin(rad) * radius);
         }
 
-        // ── 색 갱신 ──────────────────────────────────────────
+        // ── 색·표시 갱신 ─────────────────────────────────────
 
-        private void RefreshColors(CombatZoneManager zones)
+        private void RefreshAppearance(CombatZoneManager zones)
         {
             var identity = MonsterIdentityManager.Instance;
+            bool allOwnersRevealed = AreAllOwnersRevealed(zones);
 
             for (int zone = 0; zone < zones.ZoneCount; zone++)
             {
                 var owner = zones.GetOwner(zone);
+
+                // 주인 구역 = 그 몬스터가 팝인으로 드러난 뒤 / 중립지대 = 소환 연출이 다 끝난 뒤
+                bool visible = owner != null ? IsMonsterRevealed(owner) : allOwnersRevealed;
                 int ownerId = owner != null ? owner.GetInstanceID() : 0;
-                if (_lastOwnerIds[zone] == ownerId) continue;   // 변화 없음
+
+                if (_lastOwnerIds[zone] == ownerId && _lastVisible[zone] == visible) continue;   // 변화 없음
                 _lastOwnerIds[zone] = ownerId;
+                _lastVisible[zone] = visible;
 
                 Color c;
                 if (owner != null && identity != null)
@@ -241,10 +253,30 @@ namespace DiceOrbit.Visuals
                 {
                     var lr = _pieces[zone * PiecesPerZone + p];
                     if (lr == null) continue;
+                    lr.enabled = visible;
                     lr.startColor = c;
                     lr.endColor = c;
                 }
             }
+        }
+
+        /// <summary>몬스터가 인트로 팝인으로 충분히 드러났는지 — 발밑 마커(MonsterFloorMarker)와 같은 판정.</summary>
+        private static bool IsMonsterRevealed(Monster monster)
+        {
+            float baseX = monster.IntroBaseScale.x;
+            float threshold = Mathf.Max(0.02f, baseX * 0.15f);
+            return monster.transform.localScale.x > threshold;
+        }
+
+        /// <summary>주인이 배정된 모든 구역의 몬스터가 드러났는지 (중립지대 브래킷의 등장 시점).</summary>
+        private static bool AreAllOwnersRevealed(CombatZoneManager zones)
+        {
+            for (int zone = 0; zone < zones.ZoneCount; zone++)
+            {
+                var owner = zones.GetOwner(zone);
+                if (owner != null && !IsMonsterRevealed(owner)) return false;
+            }
+            return true;
         }
 
         // ── 정렬 ─────────────────────────────────────────────
