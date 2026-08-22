@@ -66,21 +66,35 @@ namespace DiceOrbit.Core.Zones
 
         // ── 구역 판정 ─────────────────────────────────────────
 
+        /// <summary>
+        /// 구역 기하를 계산할 수 있는 상태인지. 궤도가 아직 준비되지 않았으면 false.
+        /// 시각화처럼 '준비될 때까지 기다려야 하는' 쪽이 조용히 물어보는 용도다 —
+        /// 준비 전에 그려 버리면 반 칸 밀기가 빠진 엉뚱한 각도로 굳는다.
+        /// </summary>
+        public bool IsGeometryReady => TryResolveTileCount(out _);
+
+        private bool TryResolveTileCount(out int count)
+        {
+            count = 0;
+            var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
+            if (orbit == null) return false;
+            count = orbit.TileCount;
+            return count > 0;
+        }
+
+        // 준비되기 전 호출은 매 프레임 쏟아지므로 에러는 한 번만 남긴다.
+        private bool _resolveErrorLogged;
+
         private int ResolveTileCount()
         {
-            var orbit = GameManager.Instance != null ? GameManager.Instance.GetOrbitManager() : null;
-            if (orbit == null)
+            if (TryResolveTileCount(out int count)) return count;
+
+            if (!_resolveErrorLogged)
             {
-                Debug.LogError("[CombatZone] OrbitManager를 찾을 수 없어 구역을 계산할 수 없다.");
-                return 0;
+                _resolveErrorLogged = true;
+                Debug.LogError("[CombatZone] 궤도(OrbitManager)를 찾을 수 없거나 타일이 없어 구역을 계산할 수 없다.");
             }
-            int count = orbit.TileCount;
-            if (count <= 0)
-            {
-                Debug.LogError($"[CombatZone] 궤도 타일이 {count}개다 — 구역을 계산할 수 없다.");
-                return 0;
-            }
-            return count;
+            return 0;
         }
 
         /// <summary>
