@@ -103,7 +103,9 @@ namespace DiceOrbit.Core
             int actualDamage = Stats.TakeDamage(damage);
             if (actualDamage > 0)
             {
-                FloatingLabelPopup.CreateDamage(actualDamage, transform.position + Vector3.up * 1.6f);
+                // 표시 대기열을 거쳐 패시브 버블과 뒤섞이지 않고 순서대로 뜬다.
+                int shown = actualDamage;
+                UI.FloatingPopupQueue.Enqueue(transform, 1.6f, pos => FloatingLabelPopup.CreateDamage(shown, pos));
             }
             return actualDamage;
         }

@@ -10,31 +10,23 @@ namespace DiceOrbit.UI
     /// </summary>
     public static class CombatNotifier
     {
-        private const float BaseHeight    = 2.2f;
-        private const float StaggerStep   = 0.65f;
-        private const float BatchResetSec = 0.45f;
-
-        // 유닛별 (마지막 알림 시간, 현재 배치 인덱스)
-        private static readonly Dictionary<Unit, (float lastTime, int count)> Counters = new();
+        private const float BaseHeight = 2.2f;
 
         public static readonly Color DefaultPassiveColor = new Color(1f, 0.85f, 0.35f, 1f);
         public static readonly Color DefaultStatusColor  = new Color(0.65f, 0.9f, 1f,   1f);
 
-        /// <summary>유닛 위에 텍스트 버블을 띄웁니다.</summary>
+        /// <summary>
+        /// 유닛 위에 텍스트 버블을 띄웁니다. 표시 대기열을 거치므로 같은 프레임에 여러 개가
+        /// 발생해도 피해 숫자와 뒤섞이지 않고 요청 순서대로 하나씩 뜹니다.
+        /// (쌓임 오프셋도 대기열이 담당 — FloatingPopupQueue)
+        /// </summary>
         public static void Notify(Unit unit, string text, Color color)
         {
             if (unit == null || string.IsNullOrWhiteSpace(text)) return;
 
-            float now   = Time.time;
-            int   index = 0;
-
-            if (Counters.TryGetValue(unit, out var state) && now - state.lastTime < BatchResetSec)
-                index = state.count;
-
-            Counters[unit] = (now, index + 1);
-
-            Vector3 pos = unit.transform.position + Vector3.up * (BaseHeight + index * StaggerStep);
-            FloatingLabelPopup.Create(text, color, pos);
+            string shown = text;
+            Color  tint  = color;
+            FloatingPopupQueue.Enqueue(unit.transform, BaseHeight, pos => FloatingLabelPopup.Create(shown, tint, pos));
         }
 
         public static void NotifyPassive(Unit unit, string passiveName)
