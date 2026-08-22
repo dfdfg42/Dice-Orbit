@@ -26,7 +26,8 @@ namespace DiceOrbit.UI
 
             string shown = text;
             Color  tint  = color;
-            FloatingPopupQueue.Enqueue(unit.transform, BaseHeight, pos => FloatingLabelPopup.Create(shown, tint, pos));
+            // 같은 유닛에 같은 문구가 연달아 뜨는 건 정보가 아니라 소음이므로 문구를 억제 키로 쓴다.
+            FloatingPopupQueue.Enqueue(unit.transform, BaseHeight, pos => FloatingLabelPopup.Create(shown, tint, pos), shown);
         }
 
         public static void NotifyPassive(Unit unit, string passiveName)

@@ -24,6 +24,10 @@ namespace DiceOrbit.UI
         [SerializeField] private int catchUpThreshold = 6;
         [SerializeField] private float catchUpInterval = 0.1f;
 
+        [Header("반복 억제")]
+        [Tooltip("같은 유닛에 같은 문구가 이 시간 안에 다시 요청되면 무시한다(초). 피해 숫자처럼 키가 없는 요청은 억제하지 않는다.")]
+        [SerializeField] private float duplicateWindow = 0.9f;
+
         [Header("겹침 방지")]
         [Tooltip("같은 유닛에 연달아 뜰 때 위로 밀어 올리는 간격(월드)")]
         [SerializeField] private float staggerStep = 0.55f;
@@ -39,6 +43,7 @@ namespace DiceOrbit.UI
 
         private readonly Queue<Request> _queue = new Queue<Request>();
         private readonly Dictionary<Transform, StackState> _stacks = new Dictionary<Transform, StackState>();
+        private readonly Dictionary<(Transform, string), float> _lastByKey = new Dictionary<(Transform, string), float>();
         private Coroutine _drain;
 
         private struct StackState { public float LastTime; public int Count; }
@@ -65,12 +70,17 @@ namespace DiceOrbit.UI
         /// <summary>
         /// 팝업 하나를 대기열에 넣는다. spawn은 표시 시점에 계산된 월드 좌표를 받아 실제 팝업을 만든다 —
         /// 색·크기 같은 결정은 호출부가 그대로 쥔다.
+        ///
+        /// dedupKey를 주면 같은 유닛에 같은 키가 짧은 시간 안에 반복될 때 뒤엣것을 버린다.
+        /// 패시브 이름처럼 반복이 정보가 아닌 경우에 쓴다 — 피해 숫자는 키 없이 넣어 매번 보이게 한다.
         /// </summary>
-        public static void Enqueue(Transform anchor, float height, System.Action<Vector3> spawn)
+        public static void Enqueue(Transform anchor, float height, System.Action<Vector3> spawn, string dedupKey = null)
         {
             if (anchor == null || spawn == null) return;
 
             var queue = EnsureInstance();
+            if (queue.IsSuppressedDuplicate(anchor, dedupKey)) return;
+
             queue._queue.Enqueue(new Request { Anchor = anchor, Height = height, Spawn = spawn });
 
             if (queue._drain == null && queue.isActiveAndEnabled)
@@ -93,6 +103,21 @@ namespace DiceOrbit.UI
             }
 
             _drain = null;
+        }
+
+        /// <summary>같은 유닛에 같은 문구가 방금 나갔으면 참. 반복 버블을 소음으로 보고 버린다.</summary>
+        private bool IsSuppressedDuplicate(Transform anchor, string dedupKey)
+        {
+            if (string.IsNullOrEmpty(dedupKey)) return false;
+
+            var id = (anchor, dedupKey);
+            float now = Time.time;
+
+            if (_lastByKey.TryGetValue(id, out float last) && now - last < duplicateWindow)
+                return true;
+
+            _lastByKey[id] = now;
+            return false;
         }
 
         /// <summary>같은 유닛에 연달아 뜨는 팝업을 위로 쌓아 겹치지 않게 한다.</summary>
