@@ -6,35 +6,37 @@ using UnityEngine;
 namespace DiceOrbit.Visuals
 {
     /// <summary>
-    /// 구역을 전사 패시브 브래킷(PassiveRangeIndicator)과 같은 형태 언어로 표시한다 —
-    /// 부채꼴(타일 띠를 덮는 고리 조각)의 네 모서리에 ㄱ자로 꺾인 브래킷을 찍는다.
-    /// 안쪽 모서리 2개 + 바깥 모서리 2개의 꺾임이 모두 보이므로 부채꼴 실루엣이 읽히고,
-    /// 변 전체를 긋지 않으니 판이 선으로 뒤덮이지 않는다.
+    /// 구역을 피자 조각(중앙 근처 → 타일 바깥) 실루엣으로 표시하되, 변 전체를 긋지 않고
+    /// 꺾이는 지점만 그린다 — 전사 패시브 브래킷과 같은 형태 언어.
+    ///
+    /// 구역당 세 조각:
+    ///  · 가운데 꼭짓점 = V자 (두 곧은 변이 모이는 피자 끝. 바닥은 작은 호, 꺾임은 둥글게)
+    ///  · 바깥 모서리 2개 = 둥근 ㄱ자 브래킷 (곧은 변 + 호를 따라 굽는 팔)
     ///
     /// 브래킷 색 = 그 구역 주인 몬스터의 정체성 색 (발밑 원과 같은 체계).
     /// 주인이 없는 중립지대는 옅은 회색 — 사분면 구조는 항상 보인다.
-    /// 이웃 구역과 경계 팔이 겹치지 않도록 각도를 살짝 안쪽으로 들여 그린다.
+    /// 이웃 구역과 겹치지 않도록 경계에서 각도를 살짝 들여 그린다.
     /// </summary>
     public class ZoneFloorRenderer : MonoBehaviour
     {
         public static ZoneFloorRenderer Instance { get; private set; }
 
-        [Header("부채꼴 범위 (타일 띠 12.25~13.75를 감쌈)")]
-        [Tooltip("안쪽 모서리 반지름")]
-        [SerializeField] private float innerRadius = 11.4f;
-        [Tooltip("바깥 모서리 반지름")]
-        [SerializeField] private float outerRadius = 14.6f;
+        [Header("피자 조각 범위 (구 색칠 범위와 동일)")]
+        [Tooltip("꼭짓점(V) 반지름 — 중앙 근처")]
+        [SerializeField] private float innerRadius = 2.2f;
+        [Tooltip("바깥 모서리 반지름 — 타일 바깥선(13.75) 너머")]
+        [SerializeField] private float outerRadius = 15.5f;
         [Tooltip("브래킷 높이. 타일 윗면(0.1)보다 위여야 가려지지 않는다")]
         [SerializeField] private float floorY = 0.28f;
 
-        [Header("브래킷 모양 (ㄱ자)")]
-        [Tooltip("반지름 방향 팔 길이")]
-        [SerializeField] private float radialArmLength = 0.9f;
-        [Tooltip("호 방향 팔 길이 (도)")]
-        [SerializeField] private float arcArmDeg = 7f;
+        [Header("브래킷 모양")]
+        [Tooltip("곧은 변을 따라 뻗는 팔 길이")]
+        [SerializeField] private float radialArmLength = 1.1f;
+        [Tooltip("호를 따라 뻗는 팔 길이 (월드 단위 — 반지름에 맞춰 각도로 환산)")]
+        [SerializeField] private float arcArmLength = 1.1f;
         [Tooltip("이웃 구역과 겹치지 않게 경계에서 안쪽으로 들이는 각도 (도)")]
-        [SerializeField] private float angularInsetDeg = 1.5f;
-        [Tooltip("모서리 꺾임을 둥글리는 반경. 0이면 각진 ㄱ자")]
+        [SerializeField] private float angularInsetDeg = 2.5f;
+        [Tooltip("꺾임을 둥글리는 반경. 0이면 각진 모서리")]
         [SerializeField] private float cornerRoundness = 0.4f;
         [SerializeField] private float lineWidth = 0.18f;
 
@@ -46,9 +48,9 @@ namespace DiceOrbit.Visuals
         [Tooltip("유닛 스프라이트 대비 렌더 순서. 음수여야 카드 뒤로 간다")]
         [SerializeField] private int sortingOrderOffset = -100;
 
-        // 구역당 브래킷 4개 (안쪽 시작/끝, 바깥 시작/끝 모서리)
-        private const int BracketsPerZone = 4;
-        private readonly List<LineRenderer> _brackets = new List<LineRenderer>();
+        // 구역당 조각 3개: 가운데 V 꼭짓점 1 + 바깥 모서리 ㄱ자 2
+        private const int PiecesPerZone = 3;
+        private readonly List<LineRenderer> _pieces = new List<LineRenderer>();
         // 파괴된 오브젝트는 Unity의 == 비교가 null과 같다고 보고해 변화를 놓치므로 InstanceID로 추적한다.
         private int[] _lastOwnerIds;
         private bool _sortingSynced;
@@ -81,32 +83,30 @@ namespace DiceOrbit.Visuals
             // 브래킷이 타일 정중앙 각도에 굳는다.
             if (!zones.IsGeometryReady) return;
 
-            if (_brackets.Count != zones.ZoneCount * BracketsPerZone) BuildBrackets(zones);
+            if (_pieces.Count != zones.ZoneCount * PiecesPerZone) BuildPieces(zones);
             SyncSortingBehindUnits();
             RefreshColors(zones);
         }
 
         // ── 생성 ─────────────────────────────────────────────
 
-        private void BuildBrackets(CombatZoneManager zones)
+        private void BuildPieces(CombatZoneManager zones)
         {
-            foreach (var line in _brackets)
+            foreach (var line in _pieces)
                 if (line != null) Destroy(line.gameObject);
-            _brackets.Clear();
+            _pieces.Clear();
 
             var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Transparent");
 
             for (int zone = 0; zone < zones.ZoneCount; zone++)
             {
                 zones.GetZoneAngularRangeDeg(zone, out float startDeg, out float endDeg);
-                float a0 = startDeg + angularInsetDeg;   // 이웃과 팔이 겹치지 않게 들임
+                float a0 = startDeg + angularInsetDeg;   // 이웃과 겹치지 않게 들임
                 float a1 = endDeg - angularInsetDeg;
 
-                // 모서리 4개: (반지름, 각도, 반지름팔 방향 +밖/-안, 호팔 방향 +끝쪽/-시작쪽)
-                _brackets.Add(CreateBracket(shader, $"_Z{zone}_InStart",  innerRadius, a0, +1, +1));
-                _brackets.Add(CreateBracket(shader, $"_Z{zone}_InEnd",    innerRadius, a1, +1, -1));
-                _brackets.Add(CreateBracket(shader, $"_Z{zone}_OutStart", outerRadius, a0, -1, +1));
-                _brackets.Add(CreateBracket(shader, $"_Z{zone}_OutEnd",   outerRadius, a1, -1, -1));
+                _pieces.Add(CreateLine(shader, $"_Z{zone}_Tip", BuildTip(a0, a1)));
+                _pieces.Add(CreateLine(shader, $"_Z{zone}_OutStart", BuildOuterCorner(a0, +1)));
+                _pieces.Add(CreateLine(shader, $"_Z{zone}_OutEnd",   BuildOuterCorner(a1, -1)));
             }
 
             _lastOwnerIds = new int[zones.ZoneCount];
@@ -114,13 +114,7 @@ namespace DiceOrbit.Visuals
             _sortingSynced = false;   // 새 선들은 유닛 정렬을 다시 따라가야 한다
         }
 
-        /// <summary>
-        /// 모서리 1개의 브래킷. 한 팔은 반지름 방향(부채꼴의 곧은 변), 다른 팔은 호를 따라 굽고,
-        /// 두 팔이 만나는 꺾임은 베지어 필렛으로 둥글린다 — 각진 ㄱ자가 아니라 둥근 모서리.
-        /// 안쪽 모서리는 팔이 벌어져 V 느낌, 바깥 모서리는 ㄱ 느낌이 되며 넷이 부채꼴 실루엣을 만든다.
-        /// </summary>
-        private LineRenderer CreateBracket(Shader shader, string name, float cornerRadius, float cornerDeg,
-            float radialSign, float arcSign)
+        private LineRenderer CreateLine(Shader shader, string name, List<Vector3> points)
         {
             var go = new GameObject(name);
             go.transform.SetParent(transform, false);
@@ -134,52 +128,84 @@ namespace DiceOrbit.Visuals
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
             lr.material = new Material(shader);
-
-            lr.positionCount = 0;
-            var points = BuildRoundedBracket(cornerRadius, cornerDeg, radialSign, arcSign);
             lr.positionCount = points.Count;
             lr.SetPositions(points.ToArray());
-
             return lr;
         }
 
-        /// <summary>반지름팔 끝 → (필렛 곡선) → 호팔 끝. 필렛은 모서리를 제어점으로 한 2차 베지어.</summary>
-        private List<Vector3> BuildRoundedBracket(float cornerRadius, float cornerDeg, float radialSign, float arcSign)
+        /// <summary>
+        /// 가운데 꼭짓점(V): 한쪽 곧은 변을 타고 내려와 → 둥근 꺾임 → 짧은 안쪽 호 →
+        /// 둥근 꺾임 → 반대쪽 곧은 변을 타고 올라간다. 피자 조각의 뾰족한 끝.
+        /// </summary>
+        private List<Vector3> BuildTip(float a0, float a1)
         {
             var points = new List<Vector3>();
 
-            // 필렛 크기는 팔 길이를 넘지 않게 자른다
             float fillet = Mathf.Clamp(cornerRoundness, 0f, radialArmLength * 0.9f);
-            float filletDeg = Mathf.Min(fillet / Mathf.Max(0.01f, cornerRadius) * Mathf.Rad2Deg, arcArmDeg * 0.9f);
+            float filletDeg = WorldToDeg(fillet, innerRadius);
+            float halfArcDeg = (a1 - a0) * 0.5f;
+            filletDeg = Mathf.Min(filletDeg, halfArcDeg * 0.9f);
 
-            // 반지름팔: 끝에서 필렛 시작점까지
-            points.Add(Polar(cornerRadius + radialSign * radialArmLength, cornerDeg));
-            var filletFrom = Polar(cornerRadius + radialSign * fillet, cornerDeg);
-            var corner     = Polar(cornerRadius, cornerDeg);
-            var filletTo   = Polar(cornerRadius, cornerDeg + arcSign * filletDeg);
-            points.Add(filletFrom);
+            // 내려오는 팔 (a0 변)
+            points.Add(Polar(innerRadius + radialArmLength, a0));
+            AddRoundedCorner(points,
+                Polar(innerRadius + fillet, a0),
+                Polar(innerRadius, a0),
+                Polar(innerRadius, a0 + filletDeg));
 
-            // 둥근 꺾임: 모서리를 제어점으로 한 2차 베지어 (필렛 시작 → 끝)
-            const int filletSteps = 5;
-            for (int i = 1; i < filletSteps; i++)
-            {
-                float u = i / (float)filletSteps;
-                Vector3 a = Vector3.Lerp(filletFrom, corner, u);
-                Vector3 b = Vector3.Lerp(corner, filletTo, u);
-                points.Add(Vector3.Lerp(a, b, u));
-            }
-            points.Add(filletTo);
+            // 바닥 호 (a0+fillet → a1-fillet)
+            const int arcSteps = 6;
+            for (int i = 1; i < arcSteps; i++)
+                points.Add(Polar(innerRadius, Mathf.Lerp(a0 + filletDeg, a1 - filletDeg, i / (float)arcSteps)));
 
-            // 호팔: 필렛 끝에서 호를 따라 끝까지 (곡률 유지를 위해 분할)
-            const int arcSteps = 3;
-            for (int i = 1; i <= arcSteps; i++)
-            {
-                float deg = Mathf.Lerp(filletDeg, arcArmDeg, i / (float)arcSteps);
-                points.Add(Polar(cornerRadius, cornerDeg + arcSign * deg));
-            }
+            // 올라가는 팔 (a1 변)
+            AddRoundedCorner(points,
+                Polar(innerRadius, a1 - filletDeg),
+                Polar(innerRadius, a1),
+                Polar(innerRadius + fillet, a1));
+            points.Add(Polar(innerRadius + radialArmLength, a1));
 
             return points;
         }
+
+        /// <summary>바깥 모서리(둥근 ㄱ자): 곧은 변을 따라 내려온 팔 + 둥근 꺾임 + 호를 따라 굽는 팔.</summary>
+        private List<Vector3> BuildOuterCorner(float cornerDeg, float arcSign)
+        {
+            var points = new List<Vector3>();
+
+            float fillet = Mathf.Clamp(cornerRoundness, 0f, radialArmLength * 0.9f);
+            float filletDeg = WorldToDeg(fillet, outerRadius);
+            float armDeg = Mathf.Max(WorldToDeg(arcArmLength, outerRadius), filletDeg * 1.5f);
+
+            points.Add(Polar(outerRadius - radialArmLength, cornerDeg));
+            AddRoundedCorner(points,
+                Polar(outerRadius - fillet, cornerDeg),
+                Polar(outerRadius, cornerDeg),
+                Polar(outerRadius, cornerDeg + arcSign * filletDeg));
+
+            // 호팔: 필렛 끝에서 호를 따라 (곡률 유지를 위해 분할)
+            const int arcSteps = 3;
+            for (int i = 1; i <= arcSteps; i++)
+                points.Add(Polar(outerRadius, cornerDeg + arcSign * Mathf.Lerp(filletDeg, armDeg, i / (float)arcSteps)));
+
+            return points;
+        }
+
+        /// <summary>from → to 꺾임을 corner를 제어점으로 한 2차 베지어로 둥글려 잇는다 (from은 호출부가 추가).</summary>
+        private static void AddRoundedCorner(List<Vector3> points, Vector3 from, Vector3 corner, Vector3 to)
+        {
+            points.Add(from);
+            const int steps = 5;
+            for (int i = 1; i < steps; i++)
+            {
+                float u = i / (float)steps;
+                points.Add(Vector3.Lerp(Vector3.Lerp(from, corner, u), Vector3.Lerp(corner, to, u), u));
+            }
+            points.Add(to);
+        }
+
+        private static float WorldToDeg(float worldLength, float radius)
+            => worldLength / Mathf.Max(0.01f, radius) * Mathf.Rad2Deg;
 
         private Vector3 Polar(float radius, float deg)
         {
@@ -211,9 +237,9 @@ namespace DiceOrbit.Visuals
                     c = emptyZoneColor;   // 중립지대 — 구조는 보이되 옅게
                 }
 
-                for (int b = 0; b < BracketsPerZone; b++)
+                for (int p = 0; p < PiecesPerZone; p++)
                 {
-                    var lr = _brackets[zone * BracketsPerZone + b];
+                    var lr = _pieces[zone * PiecesPerZone + p];
                     if (lr == null) continue;
                     lr.startColor = c;
                     lr.endColor = c;
@@ -229,12 +255,12 @@ namespace DiceOrbit.Visuals
         /// </summary>
         private void SyncSortingBehindUnits()
         {
-            if (_sortingSynced || _brackets.Count == 0) return;
+            if (_sortingSynced || _pieces.Count == 0) return;
 
             var reference = FindAnyUnitSprite();
             if (reference == null) return;   // 유닛이 아직 없다 — 다음 프레임에 다시 시도
 
-            foreach (var line in _brackets)
+            foreach (var line in _pieces)
             {
                 if (line == null) continue;
                 line.sortingLayerID = reference.sortingLayerID;
