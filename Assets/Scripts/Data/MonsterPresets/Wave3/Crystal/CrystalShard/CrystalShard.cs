@@ -44,7 +44,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.Crystal.CrystalShard
         public CrystalRainSkill()
         {
             skillName = "수정 비";
-            description = "무작위 타일 6개에 있는 적에게 피해";
+            description = "무작위 타일 8개에 있는 적에게 피해";
         }
 
         public override int GetPreviewDamage() => damage;
