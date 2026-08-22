@@ -31,9 +31,9 @@ namespace DiceOrbit.Visuals
 
         [Header("브래킷 모양")]
         [Tooltip("곧은 변을 따라 뻗는 팔 길이")]
-        [SerializeField] private float radialArmLength = 1.1f;
+        [SerializeField] private float radialArmLength = 2.2f;
         [Tooltip("호를 따라 뻗는 팔 길이 (월드 단위 — 반지름에 맞춰 각도로 환산)")]
-        [SerializeField] private float arcArmLength = 1.1f;
+        [SerializeField] private float arcArmLength = 2.2f;
         [Tooltip("이웃 구역과 겹치지 않게 경계에서 안쪽으로 들이는 각도 (도)")]
         [SerializeField] private float angularInsetDeg = 2.5f;
         [Tooltip("꺾임을 둥글리는 반경. 0이면 각진 모서리")]
