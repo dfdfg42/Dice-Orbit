@@ -22,8 +22,8 @@ namespace DiceOrbit.Visuals
         [SerializeField] private float innerRadius = 2.2f;
         [Tooltip("바깥 반지름 — 타일 바깥까지 넉넉히 넘겨야 어느 구역인지 한눈에 읽힌다. 씬 궤도 반지름 13 + 타일 폭 절반 0.75 = 13.75가 타일 바깥선.")]
         [SerializeField] private float outerRadius = 15.5f;
-        [Tooltip("바닥 높이. 타일 윗면보다 확실히 위여야 색이 타일에 얹힌다 (아래면 타일에 가려 안쪽 원만 보인다)")]
-        [SerializeField] private float floorY = 0.32f;
+        [Tooltip("바닥 높이. 타일 윗면(0.1)보다 낮게 둬서 타일이 색을 가리게 한다 — 색은 타일 사이 틈과 안팎 여백에만 깔린다.")]
+        [SerializeField] private float floorY = 0.02f;
         [SerializeField] private int segmentsPerZone = 24;
 
         [Header("색")]

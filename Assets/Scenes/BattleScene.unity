@@ -1802,7 +1802,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Core.EncounterSpawner
   monsterPrefab: {fileID: 6475578849036448145, guid: 7b2cacca5b83c4d4d9b5985bd4cab01d, type: 3}
   spawnRoot: {fileID: 0}
-  monsterZoneRadius: 8
+  monsterZoneRadius: 7
 --- !u!1 &224631182
 GameObject:
   m_ObjectHideFlags: 0
