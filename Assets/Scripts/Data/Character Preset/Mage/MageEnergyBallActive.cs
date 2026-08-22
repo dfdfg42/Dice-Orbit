@@ -14,22 +14,21 @@ namespace DiceOrbit.Data.CharacterActives
     public class MageEnergyBallActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("피해 = 공격력 x 배율 (대상마다 각각)")]
-        [SerializeField] private float multiplier = 1f;
+        [Tooltip("피해 = 주사위 눈 x 배율 (대상마다 각각). 게이트가 홀수(평균 3)라 중간 배율.")]
+        [SerializeField] private float multiplier = 2f;
         [Tooltip("동시에 칠 최대 몬스터 수")]
         [SerializeField] private int maxTargets = 2;
 
         public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
         {
-            int attack = source != null && source.Stats != null ? source.Stats.Attack : 0;
-            return Mathf.Max(1, Mathf.RoundToInt(attack * Mathf.Max(0.1f, multiplier)));
+            return Mathf.Max(1, Mathf.RoundToInt(diceValue * Mathf.Max(0.1f, multiplier)));
         }
 
         public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
             => $"예상 피해: 최대 {Mathf.Max(1, maxTargets)}체에게 각 {CalculateRawDamage(source, ability, diceValue)}";
 
         public override string GetDynamicDescription()
-            => $"사거리 안 몬스터 최대 {Mathf.Max(1, maxTargets)}체에게 공격력 x{multiplier:0.##} 피해";
+            => $"사거리 안 몬스터 최대 {Mathf.Max(1, maxTargets)}체에게 주사위 눈 x{multiplier:0.##} 피해";
 
         /// <summary>자기 구역부터 가까운 순으로 사거리 안의 주인들을 모은다.</summary>
         public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
