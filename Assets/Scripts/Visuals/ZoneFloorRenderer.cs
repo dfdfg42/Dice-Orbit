@@ -6,28 +6,31 @@ using UnityEngine;
 namespace DiceOrbit.Visuals
 {
     /// <summary>
-    /// 구역 경계를 검은 선으로 표시한다. 부채꼴을 통째로 두르지 않고 **경계선만** 긋는 이유 —
-    /// 구역마다 테두리를 두르면 인접 구역이 같은 변을 공유해 선이 두 번 겹치고, 안쪽·바깥 호까지
-    /// 더해져 판이 선으로 뒤덮인다. 원을 넷으로 자르는 선 네 개면 구분에 충분하다.
+    /// 구역 경계를 전사 패시브 브래킷(PassiveRangeIndicator)과 같은 형태 언어로 표시한다 —
+    /// 경계선 전체를 긋지 않고 **가장자리 짧은 눈금(틱)만** 남긴다. 궤도 안쪽 끝과 바깥쪽 끝에
+    /// 짧게 찍힌 눈금 한 쌍이면 "여기서 구역이 갈린다"가 읽히고, 판 가운데를 가로지르는
+    /// 긴 선이 없어 유닛·타일 정보를 전혀 건드리지 않는다.
     ///
     /// "누구의 구역인가"는 몬스터 발밑 정체성 색 원(MonsterIdentityManager)이 말해 준다 —
-    /// 이 클래스는 '어디까지가 한 구역인가'만 담당하고 소유자 표현에는 관여하지 않는다.
+    /// 이 클래스는 '어디서 구역이 갈리는가'만 담당하고 소유자 표현에는 관여하지 않는다.
     /// </summary>
     public class ZoneFloorRenderer : MonoBehaviour
     {
         public static ZoneFloorRenderer Instance { get; private set; }
 
-        [Header("테두리 모양")]
-        [Tooltip("안쪽 반지름 — 중앙부는 비워 둔다")]
-        [SerializeField] private float innerRadius = 2.2f;
-        [Tooltip("바깥 반지름 — 씬 궤도 반지름 13, 타일 바깥선 13.75")]
-        [SerializeField] private float outerRadius = 15.5f;
-        [Tooltip("선 높이. 타일 윗면(0.1)보다 위여야 타일에 가려 끊기지 않는다. 가는 선이라 색면과 달리 정보를 가리지 않는다.")]
+        [Header("눈금 모양 (전사 브래킷과 같은 형태 언어)")]
+        [Tooltip("안쪽 눈금이 시작하는 반지름 — 타일 안쪽선(12.25)보다 살짝 안")]
+        [SerializeField] private float innerRadius = 11.4f;
+        [Tooltip("바깥 눈금이 끝나는 반지름 — 타일 바깥선(13.75)보다 살짝 밖")]
+        [SerializeField] private float outerRadius = 14.6f;
+        [Tooltip("눈금 하나의 길이 (경계 방향으로)")]
+        [SerializeField] private float tickLength = 0.9f;
+        [Tooltip("눈금 높이. 타일 윗면(0.1)보다 위여야 가려지지 않는다")]
         [SerializeField] private float floorY = 0.28f;
 
         [Header("선")]
         [SerializeField] private Color lineColor = new Color(0.05f, 0.05f, 0.07f, 0.85f);
-        [SerializeField] private float lineWidth = 0.14f;
+        [SerializeField] private float lineWidth = 0.18f;
         [Tooltip("유닛 스프라이트 대비 렌더 순서. 음수여야 카드 뒤로 간다 — 정렬 레이어는 유닛 것을 따라간다.")]
         [SerializeField] private int sortingOrderOffset = -100;
 
@@ -62,11 +65,14 @@ namespace DiceOrbit.Visuals
             // 경계선이 타일 틈이 아니라 타일 정중앙을 관통한 채 굳는다.
             if (!zones.IsGeometryReady) return;
 
-            if (_dividers.Count != zones.ZoneCount) BuildDividers(zones);
+            if (_dividers.Count != zones.ZoneCount * 2) BuildDividers(zones);
             SyncSortingBehindUnits();
         }
 
-        /// <summary>구역 경계마다 방사형 선 하나. 경계는 구역 수만큼이므로 선도 그만큼이고 겹치지 않는다.</summary>
+        /// <summary>
+        /// 구역 경계마다 눈금 한 쌍 — 궤도 안쪽 끝과 바깥쪽 끝에 짧게. 경계선 전체를 긋지 않는다.
+        /// 경계는 구역 수만큼이므로 겹칠 일이 없다.
+        /// </summary>
         private void BuildDividers(CombatZoneManager zones)
         {
             foreach (var line in _dividers)
@@ -77,32 +83,38 @@ namespace DiceOrbit.Visuals
 
             for (int zone = 0; zone < zones.ZoneCount; zone++)
             {
-                // 각 구역의 시작 각도 = 그 구역과 이전 구역의 경계. 구역마다 하나씩이면 경계 전부를 덮는다.
+                // 각 구역의 시작 각도 = 그 구역과 이전 구역의 경계.
                 zones.GetZoneAngularRangeDeg(zone, out float startDeg, out _);
                 float rad = startDeg * Mathf.Deg2Rad;
                 var dir = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad));
 
-                var go = new GameObject($"_ZoneDivider_{zone}");
-                go.transform.SetParent(transform, false);
-
-                var lr = go.AddComponent<LineRenderer>();
-                lr.useWorldSpace = true;
-                lr.positionCount = 2;
-                lr.SetPosition(0, dir * innerRadius + Vector3.up * floorY);
-                lr.SetPosition(1, dir * outerRadius + Vector3.up * floorY);
-                lr.startWidth = lineWidth;
-                lr.endWidth = lineWidth;
-                lr.startColor = lineColor;
-                lr.endColor = lineColor;
-                lr.numCapVertices = 2;
-                lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                lr.receiveShadows = false;
-                lr.material = new Material(shader);
-
-                _dividers.Add(lr);
+                // 안쪽 눈금: innerRadius에서 바깥으로 / 바깥 눈금: outerRadius에서 안으로
+                _dividers.Add(CreateTick(shader, $"_ZoneTickIn_{zone}",  dir, innerRadius, innerRadius + tickLength));
+                _dividers.Add(CreateTick(shader, $"_ZoneTickOut_{zone}", dir, outerRadius - tickLength, outerRadius));
             }
 
             _sortingSynced = false;   // 새 선들은 유닛 정렬을 다시 따라가야 한다
+        }
+
+        private LineRenderer CreateTick(Shader shader, string name, Vector3 dir, float fromRadius, float toRadius)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+
+            var lr = go.AddComponent<LineRenderer>();
+            lr.useWorldSpace = true;
+            lr.positionCount = 2;
+            lr.SetPosition(0, dir * fromRadius + Vector3.up * floorY);
+            lr.SetPosition(1, dir * toRadius + Vector3.up * floorY);
+            lr.startWidth = lineWidth;
+            lr.endWidth = lineWidth;
+            lr.startColor = lineColor;
+            lr.endColor = lineColor;
+            lr.numCapVertices = 2;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            lr.material = new Material(shader);
+            return lr;
         }
 
         /// <summary>
