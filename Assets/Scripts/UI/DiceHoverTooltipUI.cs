@@ -51,14 +51,62 @@ namespace DiceOrbit.UI
         public void Show(DiceElement element)
         {
             var src = element != null ? element.Data?.Source : null;
-            if (src == null || panel == null) return;
+            bool skillHint = element != null && element.SkillUnusableHint;
+            if ((src == null && !skillHint) || panel == null) return;
 
-            BuildFaces(src.Faces);
-            BuildEffects(src.Effect);
+            EnsureAutoLayout();
+
+            BuildFaces(src?.Faces);
+            if (faceGrid != null) faceGrid.gameObject.SetActive(src != null);
+            BuildEffects(src?.Effect, skillHint ? "강화 공격 불가 — 기본공격만 나감" : null);
 
             panel.gameObject.SetActive(true);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(panel);   // 첫 프레임부터 내용 크기로
             panel.position = (Vector2)element.transform.position + aboveOffset;
             panel.SetAsLastSibling();
+        }
+
+        private bool _layoutReady;
+
+        /// <summary>
+        /// 패널이 내용(글자 길이·셀 개수)에 맞춰 늘어나도록 런타임에 CSF+VLG를 얹는다.
+        /// 씬의 DHT_Panel은 고정 325×145 수동 배치라, 씬 수정 없이 코드에서 1회 구성.
+        /// </summary>
+        private void EnsureAutoLayout()
+        {
+            if (_layoutReady || panel == null) return;
+            _layoutReady = true;
+
+            // 가변 높이에서도 주사위 위 간격이 일정하도록 피벗을 하단 중앙으로.
+            // 기존(중앙 피벗 +90, 고정 높이 145)의 하단 라인(+17.5)을 유지하게 오프셋 변환.
+            aboveOffset = new Vector2(aboveOffset.x, aboveOffset.y - 72.5f);
+            panel.pivot = new Vector2(0.5f, 0f);
+
+            var vlg = panel.gameObject.GetComponent<VerticalLayoutGroup>();
+            if (vlg == null) vlg = panel.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(14, 14, 12, 12);
+            vlg.spacing = 6f;
+            vlg.childAlignment = TextAnchor.MiddleCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = true;
+            vlg.childForceExpandWidth = false;
+            vlg.childForceExpandHeight = false;
+
+            var fit = panel.gameObject.GetComponent<ContentSizeFitter>();
+            if (fit == null) fit = panel.gameObject.AddComponent<ContentSizeFitter>();
+            fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fit.verticalFit   = ContentSizeFitter.FitMode.PreferredSize;
+
+            if (effectRow != null)
+            {
+                effectRow.SetSiblingIndex(0);   // 씬과 같은 순서 유지: 효과 카드 위, 6면 그리드 아래
+                var row = effectRow.GetComponent<VerticalLayoutGroup>();
+                if (row != null)
+                {
+                    row.childForceExpandWidth = false;   // 카드가 글자 폭만큼만
+                    row.childAlignment = TextAnchor.MiddleCenter;
+                }
+            }
         }
 
         public void Hide()
@@ -70,7 +118,7 @@ namespace DiceOrbit.UI
         private void BuildFaces(int[] faces)
         {
             if (faceGrid == null) return;
-            foreach (var c in _faceCells) Destroy(c);
+            foreach (var c in _faceCells) { if (c != null) c.SetActive(false); Destroy(c); }   // 비활성화 → 이번 프레임 레이아웃에서 제외
             _faceCells.Clear();
             if (faces == null) return;
 
@@ -100,21 +148,27 @@ namespace DiceOrbit.UI
             }
         }
 
-        /// <summary>효과별로 카드 셀을 동적 생성 (타일 정보 카드 감각). 효과 없으면 컨테이너 숨김.</summary>
-        private void BuildEffects(DieEffect effect)
+        /// <summary>효과별로 카드 셀을 동적 생성 (타일 정보 카드 감각). 효과도 힌트도 없으면 컨테이너 숨김.</summary>
+        private void BuildEffects(DieEffect effect, string skillHintText = null)
         {
-            foreach (var c in _effectCells) Destroy(c);
+            foreach (var c in _effectCells) { if (c != null) c.SetActive(false); Destroy(c); }
             _effectCells.Clear();
 
             // 현재는 주사위당 효과 1개. 여러 개가 되면 여기서 순회.
             var effects = new List<DieEffect>();
             if (effect != null) effects.Add(effect);
 
-            if (effectRow != null) effectRow.gameObject.SetActive(effects.Count > 0);
+            bool hasHint = !string.IsNullOrEmpty(skillHintText);
+            if (effectRow != null) effectRow.gameObject.SetActive(effects.Count > 0 || hasHint);
             foreach (var e in effects) CreateEffectCell(e);
+            if (hasHint) CreateCell(skillHintText, null, HintRed);
         }
 
-        private void CreateEffectCell(DieEffect effect)
+        private static readonly Color HintRed = new Color(0.78f, 0.22f, 0.25f);
+
+        private void CreateEffectCell(DieEffect effect) => CreateCell(effect.Preview(), effect.Icon, Ink);
+
+        private void CreateCell(string label, Sprite cellIcon, Color textColor)
         {
             var cell = new GameObject("EffectCell", typeof(RectTransform), typeof(Image),
                 typeof(HorizontalLayoutGroup), typeof(LayoutElement));
@@ -134,22 +188,23 @@ namespace DiceOrbit.UI
             hl.childAlignment = TextAnchor.MiddleLeft;
             cell.GetComponent<LayoutElement>().preferredHeight = 28f;
 
-            if (effect.Icon != null)
+            if (cellIcon != null)
             {
                 var iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
                 iconGo.transform.SetParent(cell.transform, false);
                 var im = iconGo.GetComponent<Image>();
-                im.sprite = effect.Icon; im.preserveAspect = true; im.raycastTarget = false;
+                im.sprite = cellIcon; im.preserveAspect = true; im.raycastTarget = false;
                 var le = iconGo.GetComponent<LayoutElement>();
                 le.preferredWidth = 20; le.preferredHeight = 20;
             }
 
             var lbl = new GameObject("Label", typeof(RectTransform)).AddComponent<TextMeshProUGUI>();
             lbl.transform.SetParent(cell.transform, false);
-            lbl.text = effect.Preview();
+            lbl.text = label;
             lbl.fontSize = 17;
-            lbl.color = Ink;
+            lbl.color = textColor;
             lbl.raycastTarget = false;
+            lbl.enableWordWrapping = false;   // 카드가 글자 폭에 맞춰 늘어나므로 줄바꿈 없이 한 줄
             if (font != null) lbl.font = font;
 
             _effectCells.Add(cell);

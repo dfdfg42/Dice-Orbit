@@ -41,7 +41,7 @@ namespace DiceOrbit.UI
             {
                 if (element == null || element.Data == null) continue;
                 bool locked = value.HasValue && element.Data.Value != value.Value;
-                element.SetSkillUnusableHint(locked);   // 잠긴 주사위 시각 표시(재사용)
+                element.SetLockedTint(locked);   // 완전 잠금 = 붉은 몸통 (스킬 배지와 구분)
             }
         }
 
@@ -225,15 +225,18 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>
-        /// 캐릭터 선택 중: 해당 캐릭터의 어떤 스킬 조건도 못 맞추는 주사위를 살짝 붉게 표시.
+        /// 캐릭터 선택 중: 해당 캐릭터의 강화 공격 조건을 못 맞추는 주사위에 배지 표시 —
+        /// 그 눈을 배정하면 기본공격만 나간다. 몸통 색은 그대로 둔다 (이동·기본공격은 되므로.
+        /// 붉은 몸통 = 완전 잠금 전용).
         /// (CharacterActionUI.Show에서 호출, Hide에서 ClearSkillUsabilityHint로 해제)
         /// </summary>
         public void ShowSkillUsabilityHint(Core.Character character)
         {
+            var skillIcon = GetPrimarySkillIcon(character);
             foreach (var element in diceElements)
             {
                 if (element == null || element.Data == null) continue;
-                element.SetSkillUnusableHint(!CanUseAnySkill(character, element.Data.Value));
+                element.SetSkillUnusableHint(!CanUseAnySkill(character, element.Data.Value), skillIcon);
             }
         }
 
@@ -252,6 +255,23 @@ namespace DiceOrbit.UI
             foreach (var slot in slots)
                 if (slot != null && slot.CanUse(diceValue)) return true;
             return false;
+        }
+
+        /// <summary>배지에 넣을 아이콘 — 체력바 위 "공격 가능" 아이콘(칼)과 같은 스프라이트.
+        /// (스킬 icon 필드는 실제로 비어 있는 경우가 많아 폴백으로만 사용)</summary>
+        private static Sprite GetPrimarySkillIcon(Core.Character character)
+        {
+            if (CharacterUI.SharedActiveIconSprite != null) return CharacterUI.SharedActiveIconSprite;
+
+            var slots = character?.Stats?.ActiveAbilities;
+            if (slots == null) return null;
+
+            foreach (var slot in slots)
+            {
+                var icon = slot?.BaseSkill?.icon;
+                if (icon != null) return icon;
+            }
+            return null;
         }
 
         /// <summary>

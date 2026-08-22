@@ -153,7 +153,8 @@ namespace DiceOrbit.UI
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
 
-            // 이 캐릭터의 스킬 조건을 못 맞추는 주사위를 손패에서 살짝 붉게 표시
+            // 이 캐릭터의 강화 공격 조건을 못 맞추는 주사위에 배지 표시 — 그 눈이면 기본공격만 나간다
+            // (이동과 기본공격은 되므로 몸통 색은 유지)
             DiceUI.Instance?.ShowSkillUsabilityHint(character);
 
             // 슬라이드 인
