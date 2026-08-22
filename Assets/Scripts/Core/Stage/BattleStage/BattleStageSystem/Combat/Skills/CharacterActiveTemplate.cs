@@ -118,6 +118,12 @@ namespace DiceOrbit.Data.Skills
         public abstract string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue);
 
         /// <summary>
+        /// 이 공격이 누구를 때리는지 한국어로. 타게팅이 위치에서 유도되므로 옛 대상 타입 enum이 아니라
+        /// 각 공격이 스스로 설명한다 — 정보 패널의 '유효 대상' 자리에 쓰인다.
+        /// </summary>
+        public virtual string GetTargetLabel() => "자기 구역";
+
+        /// <summary>
         /// 이 공격이 때릴 대상을 위치에서 유도한다. 기본은 자기가 선 구역의 주인 하나.
         /// passedZones는 이번 이동에서 지나온 구역 번호들(출발 구역 포함, 순서대로) —
         /// 경로형 강화 공격이 이것을 읽는다.

@@ -33,6 +33,8 @@ namespace DiceOrbit.Data.CharacterActives
         public override string GetDynamicDescription()
             => $"지나쳐 온 모든 구역의 몬스터에게 주사위 눈 x{multiplier:0.##} 피해";
 
+        public override string GetTargetLabel() => "지나친 구역 전부";
+
         /// <summary>이동으로 지나온 구역들의 주인 전원.</summary>
         public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
         {

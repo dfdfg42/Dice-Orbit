@@ -22,7 +22,7 @@ namespace DiceOrbit.UI
                 maxHp: s?.MaxHP ?? 0,
                 armor: s?.TempArmor ?? 0,
                 flavorText: s?.SourcePreset != null ? (s.SourcePreset.Description ?? string.Empty).Trim() : string.Empty,
-                activesLabel: "액티브",
+                activesLabel: "강화 공격",
                 actives: BuildActives(s),
                 passives: BuildPassives(ch.Passives),
                 modifiers: BuildModifiers(s),
@@ -322,31 +322,13 @@ namespace DiceOrbit.UI
                     skill.SkillName,
                     skill.FormatDiceCondition(),   // 한국어 문구 ("주사위 4 이상" 등) — GetDescription()은 영문 디버그용
                     skill.GetDynamicDescription() ?? string.Empty,
-                    // 유효 대상: 슬롯 게터 = 도화지(모디파이어) 적용값. 광역 참격 장착 시 "적 2명"으로 바뀜
-                    BuildTargetLabel(slot.TargetType, slot.TargetCount),
+                    // 대상은 위치에서 유도되므로 각 공격이 스스로 설명한다(옛 대상 타입 enum은 더 이상 타게팅을 정하지 않는다).
+                    skill.GetTargetLabel(),
                     BuildSkillModifierLines(stats?.Modifiers?.Modifiers, skill)));
             }
             return result;
         }
 
-        /// <summary>유효 타게팅을 한국어 라벨로 (모디파이어 반영된 값 기준).</summary>
-        private static string BuildTargetLabel(Data.Skills.CharacterSkillTargetType type, int count)
-        {
-            return type switch
-            {
-                Data.Skills.CharacterSkillTargetType.None       => "즉시 발동",
-                Data.Skills.CharacterSkillTargetType.OneEnemy   => "적 1명",
-                Data.Skills.CharacterSkillTargetType.AllEnemies => "모든 적",
-                Data.Skills.CharacterSkillTargetType.OneAlly    => "아군 1명",
-                Data.Skills.CharacterSkillTargetType.AllAllies  => "모든 아군",
-                Data.Skills.CharacterSkillTargetType.OneTile    => "타일 1칸",
-                Data.Skills.CharacterSkillTargetType.AllTiles   => "모든 타일",
-                Data.Skills.CharacterSkillTargetType.MultiEnemy => $"적 {count}명",
-                Data.Skills.CharacterSkillTargetType.MultiAlly  => $"아군 {count}명",
-                Data.Skills.CharacterSkillTargetType.MultiTile  => $"타일 {count}칸",
-                _ => string.Empty,
-            };
-        }
 
         /// <summary>이 스킬에 적용 중인 모디파이어 효과 라인 (GetSkillLine, 같은 라인은 ×N 그룹핑).</summary>
         private static IReadOnlyList<string> BuildSkillModifierLines(

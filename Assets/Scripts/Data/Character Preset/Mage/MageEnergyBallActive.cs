@@ -30,6 +30,8 @@ namespace DiceOrbit.Data.CharacterActives
         public override string GetDynamicDescription()
             => $"사거리 안 몬스터 최대 {Mathf.Max(1, maxTargets)}체에게 주사위 눈 x{multiplier:0.##} 피해";
 
+        public override string GetTargetLabel() => $"사거리 안 최대 {Mathf.Max(1, maxTargets)}체";
+
         /// <summary>자기 구역부터 가까운 순으로 사거리 안의 주인들을 모은다.</summary>
         public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
         {

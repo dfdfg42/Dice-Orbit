@@ -59,6 +59,9 @@
 | [superpowers/specs/2026-07-07-run-structure-node-map-design.md](superpowers/specs/2026-07-07-run-structure-node-map-design.md) | 런 구조·노드맵 **기획 스펙** (의도의 진실 소스) | 구현됨 (→ run_structure_system.md) |
 | [superpowers/specs/2026-07-29-dice-deck-design.md](superpowers/specs/2026-07-29-dice-deck-design.md) | 주사위 덱 **설계안** (3 Phase) | 구현됨 (→ dice_deck_system.md) |
 | [superpowers/plans/2026-07-29-dice-deck-phase1.md](superpowers/plans/2026-07-29-dice-deck-phase1.md) | 주사위 덱 Phase 1 **구현 계획** | 완료 |
+| [superpowers/specs/2026-08-21-auto-combat-redesign-design.md](superpowers/specs/2026-08-21-auto-combat-redesign-design.md) | **전투 개편 설계** — 사분면 구역 + 자동 공격 + 강화 공격 (템포 개선) | 구현됨 (Phase 1~4). 의도의 진실 소스 |
+| [superpowers/plans/2026-08-21-auto-combat-phase1-2.md](superpowers/plans/2026-08-21-auto-combat-phase1-2.md) | 구역 시스템 + 자동 공격 **구현 계획** | 완료 (피해 산식은 이후 변경) |
+| [superpowers/plans/2026-08-21-auto-combat-phase3a-passives.md](superpowers/plans/2026-08-21-auto-combat-phase3a-passives.md) | 위치 패시브 3종 **구현 계획** | 완료 (연금술사는 Phase 3b로 보류) |
 
 ---
 
