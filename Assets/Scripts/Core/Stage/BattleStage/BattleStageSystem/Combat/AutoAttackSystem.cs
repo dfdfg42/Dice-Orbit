@@ -8,9 +8,9 @@ using UnityEngine;
 namespace DiceOrbit.Core
 {
     /// <summary>
-    /// 자동 공격. 주사위를 배정해 움직인 캐릭터는 반드시 한 번 공격한다.
-    /// 피해는 그 주사위 눈이 정한다 — 조건을 만족하면 액티브 배율이 곱해진 강화 공격으로,
-    /// 아니면 눈 그대로의 기본공격으로 나간다(대체이지 추가가 아니다).
+    /// 자동 공격. 캐릭터는 매 턴 반드시 한 번 공격한다 — 이것이 파티 피해량의 바닥을 보장한다(불변식 1).
+    /// 피해는 캐릭터 공격력이 정하고, 배정한 주사위가 액티브 조건을 만족하면 거기에 배율이 곱해진
+    /// 강화 공격으로 나간다(대체이지 추가가 아니다).
     /// 조건은 공격을 막지 못하고 배율만 얹으므로 불변식 4(게이트는 보너스만 연다)와 맞는다.
     ///
     /// 발동 지점은 둘이지만 실제 처리는 ResolveRoutine 한 곳이다:
@@ -102,7 +102,7 @@ namespace DiceOrbit.Core
             if (party == null) yield break;
 
             // 순회 중 파티 목록이 바뀔 수 있으므로 복사본으로 돈다.
-            // 주사위를 받지 못한 캐릭터는 ResolveRoutine이 스스로 걸러낸다(눈이 없으면 공격도 없다).
+            // 주사위를 받지 못한 캐릭터도 기본공격은 나간다 — 조건을 만족할 눈이 없어 배율만 못 얹는다.
             var snapshot = new List<Character>(party);
             foreach (var character in snapshot)
                 yield return ResolveRoutine(character, 0, null);
@@ -117,9 +117,6 @@ namespace DiceOrbit.Core
             if (character == null || !character.IsAlive) yield break;
             if (_resolvedThisTurn.Contains(character)) yield break;
             _resolvedThisTurn.Add(character);
-
-            // 주사위가 곧 공격력이다 — 배정받지 못한 캐릭터는 이번 턴 때리지 않는다.
-            if (diceValue <= 0) yield break;
 
             var empowered = FindEmpoweredAttack(character, diceValue);
             var skill = empowered != null ? empowered.RuntimeInstance : null;
@@ -144,7 +141,7 @@ namespace DiceOrbit.Core
                 if (target == null || !target.IsAlive) continue;
 
                 if (skill != null) skill.ApplyToTarget(character, empowered, target, diceValue);
-                else               LaunchBasicHit(character, target, weapon, diceValue);
+                else               LaunchBasicHit(character, target, weapon);
 
                 if (perHit > 0f) yield return new WaitForSeconds(perHit);
             }
@@ -153,9 +150,9 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>기본공격 1타. 발사체가 있으면 날아가 도착할 때 피해가 들어간다.</summary>
-        private void LaunchBasicHit(Character character, Unit target, Data.Skills.CharacterActiveSkill weapon, int diceValue)
+        private void LaunchBasicHit(Character character, Unit target, Data.Skills.CharacterActiveSkill weapon)
         {
-            var context = new AttackContext(character, target, attackName, diceValue);
+            var context = new AttackContext(character, target, attackName, character.Stats.Attack);
 
             if (weapon != null && weapon.ProjectilePrefab != null)
             {

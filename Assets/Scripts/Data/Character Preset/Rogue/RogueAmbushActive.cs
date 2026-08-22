@@ -12,18 +12,21 @@ namespace DiceOrbit.Data.CharacterActives
     public class RogueAmbushActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("피해 = 주사위 눈 x 배율. 게이트가 낮은 눈(1~3)이라 배율을 크게 잡아 보정한다.")]
-        [SerializeField] private float multiplier = 4f;
+        [Tooltip("피해 = 공격력 x 배율")]
+        [SerializeField] private float multiplier = 2f;
 
         // 협공 보너스를 여기에 두지 않는 이유: 같은 조건을 패시브 「협공」이 이미 보상하고 있어
         // 양쪽에 넣으면 파이프라인에서 곱해져 한 조건이 두 번 계산된다(피해가 폭주한다).
         public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
-            => Mathf.Max(1, Mathf.RoundToInt(diceValue * Mathf.Max(0.1f, multiplier)));
+        {
+            int attack = source != null && source.Stats != null ? source.Stats.Attack : 0;
+            return Mathf.Max(1, Mathf.RoundToInt(attack * Mathf.Max(0.1f, multiplier)));
+        }
 
         public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
             => $"예상 피해: {CalculateRawDamage(source, ability, diceValue)}";
 
         public override string GetDynamicDescription()
-            => $"자기 구역 몬스터에게 주사위 눈 x{multiplier:0.##} 피해";
+            => $"자기 구역 몬스터에게 공격력 x{multiplier:0.##} 피해";
     }
 }

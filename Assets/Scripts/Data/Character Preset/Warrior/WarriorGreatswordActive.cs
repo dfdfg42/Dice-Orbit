@@ -14,8 +14,8 @@ namespace DiceOrbit.Data.CharacterActives
     public class WarriorGreatswordActive : CharacterActiveSkill
     {
         [Header("Designer Tuning")]
-        [Tooltip("피해 = 주사위 눈 x 배율 (지나친 구역마다 각각). 게이트가 높은 눈(4~6)이라 배율은 낮게 잡는다.")]
-        [SerializeField] private float multiplier = 1.4f;
+        [Tooltip("피해 = 공격력 x 배율 (지나친 구역마다 각각)")]
+        [SerializeField] private float multiplier = 1f;
 
         public override Core.Pipeline.CharacterModfierContext GenerateContext(Character source, ActiveSkillSlot ability)
         {
@@ -24,14 +24,15 @@ namespace DiceOrbit.Data.CharacterActives
 
         public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
         {
-            return Mathf.Max(1, Mathf.RoundToInt(diceValue * Mathf.Max(0.1f, multiplier)));
+            int attack = source != null && source.Stats != null ? source.Stats.Attack : 0;
+            return Mathf.Max(1, Mathf.RoundToInt(attack * Mathf.Max(0.1f, multiplier)));
         }
 
         public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
             => $"예상 피해: 지나친 구역마다 {CalculateRawDamage(source, ability, diceValue)}";
 
         public override string GetDynamicDescription()
-            => $"지나쳐 온 모든 구역의 몬스터에게 주사위 눈 x{multiplier:0.##} 피해";
+            => $"지나쳐 온 모든 구역의 몬스터에게 공격력 x{multiplier:0.##} 피해";
 
         public override string GetTargetLabel() => "지나친 구역 전부";
 
