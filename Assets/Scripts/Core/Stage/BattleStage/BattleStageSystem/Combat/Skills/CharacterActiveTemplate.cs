@@ -133,42 +133,54 @@ namespace DiceOrbit.Data.Skills
             return result;
         }
 
+        /// <summary>시전 연출 1회. 대상 수와 무관하게 공격 시작에 한 번만 재생한다.</summary>
+        public void PlayCast(Character source)
+        {
+            if (source == null) return;
+            VfxService.PlayOn(string.IsNullOrEmpty(castCue) ? VfxTags.Cast : castCue, source);
+        }
+
+        /// <summary>
+        /// 대상 하나에게 이 공격을 적용한다. 발사체가 지정돼 있으면 포물선으로 날아가
+        /// '도착 시' 피해와 피격 VFX가 들어간다.
+        /// 여러 대상을 순서대로 때리려면 호출자가 이 메서드를 한 번씩 부르며 사이에 간격을 둔다
+        /// (팝업이 겹치지 않게 — AutoAttackSystem이 그 역할을 한다).
+        /// </summary>
+        public virtual void ApplyToTarget(Character source, ActiveSkillSlot ability, Unit target, int diceValue)
+        {
+            if (source == null || target == null || !target.IsAlive) return;
+
+            int rawDamage = CalculateRawDamage(source, ability, diceValue);
+            if (rawDamage <= 0) return;
+
+            var context = new AttackContext(source, target, skillName, rawDamage);
+            context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
+
+            if (projectilePrefab != null)
+            {
+                Vector3 from = source.transform.position + Vector3.up * 0.5f;
+                Vector3 to   = target.transform.position + Vector3.up * 0.5f;
+                var ctx = context;   // 클로저 캡처(루프 변수 방지)
+                ProjectileService.Launch(projectilePrefab, from, to, projectileDuration, projectileArcHeight,
+                    () => CombatPipeline.Instance?.Process(ctx));
+            }
+            else
+            {
+                CombatPipeline.Instance?.Process(context);
+            }
+        }
+
         public virtual bool Execute(
             Character source, ActiveSkillSlot ability,
             List<Unit> targets, List<TileData> targetTiles, int diceValue)
         {
             if (source == null || ability == null) return false;
 
-            int rawDamage = CalculateRawDamage(source, ability, diceValue);
-            if (rawDamage <= 0 || targets == null)
+            if (targets != null && targets.Count > 0)
             {
-                OnAfterResolved(source, ability);
-                return true;
-            }
-
-            VfxService.PlayOn(string.IsNullOrEmpty(castCue) ? VfxTags.Cast : castCue, source);
-
-            foreach (var target in targets)
-            {
-                if (target == null || !target.IsAlive) continue;
-
-                var context = new AttackContext(source, target, skillName, rawDamage);
-                context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
-
-                // 발사체가 지정돼 있으면 포물선으로 날린 뒤 '도착 시' 데미지+피격 VFX 적용.
-                // 없으면 기존처럼 즉시 처리.
-                if (projectilePrefab != null && source != null && target != null)
-                {
-                    Vector3 from = source.transform.position + Vector3.up * 0.5f;
-                    Vector3 to   = target.transform.position + Vector3.up * 0.5f;
-                    var ctx = context;   // 클로저 캡처(루프 변수 방지)
-                    ProjectileService.Launch(projectilePrefab, from, to, projectileDuration, projectileArcHeight,
-                        () => CombatPipeline.Instance?.Process(ctx));
-                }
-                else
-                {
-                    CombatPipeline.Instance?.Process(context);
-                }
+                PlayCast(source);
+                foreach (var target in targets)
+                    ApplyToTarget(source, ability, target, diceValue);
             }
 
             OnAfterResolved(source, ability);

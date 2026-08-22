@@ -22,8 +22,10 @@ namespace DiceOrbit.Core
         public static AutoAttackSystem Instance { get; private set; }
 
         [Header("연출")]
-        [Tooltip("공격 사이 간격(초). 여러 캐릭터가 연달아 때릴 때 읽히도록.")]
+        [Tooltip("캐릭터의 공격이 끝난 뒤 다음 캐릭터로 넘어가기까지의 간격(초).")]
         [SerializeField] private float attackInterval = 0.25f;
+        [Tooltip("한 대상을 때린 뒤 다음 대상까지의 간격(초). 발사체 비행 시간에 이 값이 더해진다 — 피해 팝업이 겹치지 않도록.")]
+        [SerializeField] private float hitGap = 0.15f;
         [Tooltip("피해 팝업·로그에 표시할 이름")]
         [SerializeField] private string attackName = "기본 공격";
 
@@ -116,45 +118,60 @@ namespace DiceOrbit.Core
             _resolvedThisTurn.Add(character);
 
             var empowered = FindEmpoweredAttack(character, diceValue);
-            if (empowered != null)
+            var skill = empowered != null ? empowered.RuntimeInstance : null;
+
+            var targets = skill != null
+                ? skill.ResolveTargets(character, passedZones)
+                : CollectTargets(character);
+            if (targets == null || targets.Count == 0) yield break;
+
+            character.OnSkillExecutionStarted();
+
+            // 무기 연출은 강화 공격이든 기본공격이든 같은 발사체를 쓴다.
+            var weapon = skill != null ? skill : FindProjectileSource(character);
+            if (skill != null) skill.PlayCast(character);
+
+            // 대상이 여럿이어도 한 번에 몰아 때리지 않는다 — 한 대상씩 때리고 기다려
+            // 피해 팝업과 패시브 발동이 순서대로 하나씩 읽히게 한다.
+            float perHit = ResolveHitDelay(weapon);
+            for (int i = 0; i < targets.Count; i++)
             {
-                var targets = empowered.RuntimeInstance.ResolveTargets(character, passedZones);
-                if (targets != null && targets.Count > 0)
-                    empowered.Execute(character, targets, null, diceValue);
-            }
-            else
-            {
-                var targets = CollectTargets(character);
-                if (targets.Count > 0)
-                {
-                    character.OnSkillExecutionStarted();
-                    var weapon = FindProjectileSource(character);
+                var target = targets[i];
+                if (target == null || !target.IsAlive) continue;
 
-                    foreach (var target in targets)
-                    {
-                        if (target == null || !target.IsAlive) continue;
+                if (skill != null) skill.ApplyToTarget(character, empowered, target, diceValue);
+                else               LaunchBasicHit(character, target, weapon);
 
-                        var context = new AttackContext(character, target, attackName, character.Stats.Attack);
-
-                        // 강화 공격과 같은 무기 연출을 쓴다. 발사체가 있으면 날아가 도착할 때 피해가 들어간다.
-                        if (weapon != null)
-                        {
-                            Vector3 from = character.transform.position + Vector3.up * 0.5f;
-                            Vector3 to   = target.transform.position + Vector3.up * 0.5f;
-                            var ctx = context;   // 클로저 캡처(루프 변수 방지)
-                            ProjectileService.Launch(weapon.ProjectilePrefab, from, to,
-                                weapon.ProjectileDuration, weapon.ProjectileArcHeight,
-                                () => CombatPipeline.Instance?.Process(ctx));
-                        }
-                        else
-                        {
-                            CombatPipeline.Instance?.Process(context);
-                        }
-                    }
-                }
+                if (perHit > 0f) yield return new WaitForSeconds(perHit);
             }
 
             if (attackInterval > 0f) yield return new WaitForSeconds(attackInterval);
+        }
+
+        /// <summary>기본공격 1타. 발사체가 있으면 날아가 도착할 때 피해가 들어간다.</summary>
+        private void LaunchBasicHit(Character character, Unit target, Data.Skills.CharacterActiveSkill weapon)
+        {
+            var context = new AttackContext(character, target, attackName, character.Stats.Attack);
+
+            if (weapon != null && weapon.ProjectilePrefab != null)
+            {
+                Vector3 from = character.transform.position + Vector3.up * 0.5f;
+                Vector3 to   = target.transform.position + Vector3.up * 0.5f;
+                ProjectileService.Launch(weapon.ProjectilePrefab, from, to,
+                    weapon.ProjectileDuration, weapon.ProjectileArcHeight,
+                    () => CombatPipeline.Instance?.Process(context));
+            }
+            else
+            {
+                CombatPipeline.Instance?.Process(context);
+            }
+        }
+
+        /// <summary>한 타 사이의 대기 시간. 발사체가 도착한 뒤 간격이 생기도록 비행 시간을 더한다.</summary>
+        private float ResolveHitDelay(Data.Skills.CharacterActiveSkill weapon)
+        {
+            float flight = weapon != null && weapon.ProjectilePrefab != null ? weapon.ProjectileDuration : 0f;
+            return flight + Mathf.Max(0f, hitGap);
         }
 
         /// <summary>이 캐릭터의 무기 연출(발사체)을 들고 있는 액티브. 없으면 null(즉시 피해).</summary>
