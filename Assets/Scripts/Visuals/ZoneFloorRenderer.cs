@@ -6,35 +6,49 @@ using UnityEngine;
 namespace DiceOrbit.Visuals
 {
     /// <summary>
-    /// 구역 경계를 전사 패시브 브래킷(PassiveRangeIndicator)과 같은 형태 언어로 표시한다 —
-    /// 경계선 전체를 긋지 않고 **가장자리 짧은 눈금(틱)만** 남긴다. 궤도 안쪽 끝과 바깥쪽 끝에
-    /// 짧게 찍힌 눈금 한 쌍이면 "여기서 구역이 갈린다"가 읽히고, 판 가운데를 가로지르는
-    /// 긴 선이 없어 유닛·타일 정보를 전혀 건드리지 않는다.
+    /// 구역을 전사 패시브 브래킷(PassiveRangeIndicator)과 같은 형태 언어로 표시한다 —
+    /// 부채꼴(타일 띠를 덮는 고리 조각)의 네 모서리에 ㄱ자로 꺾인 브래킷을 찍는다.
+    /// 안쪽 모서리 2개 + 바깥 모서리 2개의 꺾임이 모두 보이므로 부채꼴 실루엣이 읽히고,
+    /// 변 전체를 긋지 않으니 판이 선으로 뒤덮이지 않는다.
     ///
-    /// "누구의 구역인가"는 몬스터 발밑 정체성 색 원(MonsterIdentityManager)이 말해 준다 —
-    /// 이 클래스는 '어디서 구역이 갈리는가'만 담당하고 소유자 표현에는 관여하지 않는다.
+    /// 브래킷 색 = 그 구역 주인 몬스터의 정체성 색 (발밑 원과 같은 체계).
+    /// 주인이 없는 중립지대는 옅은 회색 — 사분면 구조는 항상 보인다.
+    /// 이웃 구역과 경계 팔이 겹치지 않도록 각도를 살짝 안쪽으로 들여 그린다.
     /// </summary>
     public class ZoneFloorRenderer : MonoBehaviour
     {
         public static ZoneFloorRenderer Instance { get; private set; }
 
-        [Header("눈금 모양 (전사 브래킷과 같은 형태 언어)")]
-        [Tooltip("안쪽 눈금이 시작하는 반지름 — 타일 안쪽선(12.25)보다 살짝 안")]
+        [Header("부채꼴 범위 (타일 띠 12.25~13.75를 감쌈)")]
+        [Tooltip("안쪽 모서리 반지름")]
         [SerializeField] private float innerRadius = 11.4f;
-        [Tooltip("바깥 눈금이 끝나는 반지름 — 타일 바깥선(13.75)보다 살짝 밖")]
+        [Tooltip("바깥 모서리 반지름")]
         [SerializeField] private float outerRadius = 14.6f;
-        [Tooltip("눈금 하나의 길이 (경계 방향으로)")]
-        [SerializeField] private float tickLength = 0.9f;
-        [Tooltip("눈금 높이. 타일 윗면(0.1)보다 위여야 가려지지 않는다")]
+        [Tooltip("브래킷 높이. 타일 윗면(0.1)보다 위여야 가려지지 않는다")]
         [SerializeField] private float floorY = 0.28f;
 
-        [Header("선")]
-        [SerializeField] private Color lineColor = new Color(0.05f, 0.05f, 0.07f, 0.85f);
+        [Header("브래킷 모양 (ㄱ자)")]
+        [Tooltip("반지름 방향 팔 길이")]
+        [SerializeField] private float radialArmLength = 0.9f;
+        [Tooltip("호 방향 팔 길이 (도)")]
+        [SerializeField] private float arcArmDeg = 7f;
+        [Tooltip("이웃 구역과 겹치지 않게 경계에서 안쪽으로 들이는 각도 (도)")]
+        [SerializeField] private float angularInsetDeg = 1.5f;
         [SerializeField] private float lineWidth = 0.18f;
-        [Tooltip("유닛 스프라이트 대비 렌더 순서. 음수여야 카드 뒤로 간다 — 정렬 레이어는 유닛 것을 따라간다.")]
+
+        [Header("색")]
+        [Range(0f, 1f)]
+        [SerializeField] private float ownerAlpha = 0.9f;
+        [Tooltip("주인 없는 중립지대의 브래킷 색")]
+        [SerializeField] private Color emptyZoneColor = new Color(0.55f, 0.55f, 0.6f, 0.35f);
+        [Tooltip("유닛 스프라이트 대비 렌더 순서. 음수여야 카드 뒤로 간다")]
         [SerializeField] private int sortingOrderOffset = -100;
 
-        private readonly List<LineRenderer> _dividers = new List<LineRenderer>();
+        // 구역당 브래킷 4개 (안쪽 시작/끝, 바깥 시작/끝 모서리)
+        private const int BracketsPerZone = 4;
+        private readonly List<LineRenderer> _brackets = new List<LineRenderer>();
+        // 파괴된 오브젝트는 Unity의 == 비교가 null과 같다고 보고해 변화를 놓치므로 InstanceID로 추적한다.
+        private int[] _lastOwnerIds;
         private bool _sortingSynced;
 
         private void Awake()
@@ -62,60 +76,115 @@ namespace DiceOrbit.Visuals
             if (zones == null) return;
 
             // 궤도가 준비된 뒤에 그린다 — 준비 전 각도로 그리면 반 칸 밀기가 빠져
-            // 경계선이 타일 틈이 아니라 타일 정중앙을 관통한 채 굳는다.
+            // 브래킷이 타일 정중앙 각도에 굳는다.
             if (!zones.IsGeometryReady) return;
 
-            if (_dividers.Count != zones.ZoneCount * 2) BuildDividers(zones);
+            if (_brackets.Count != zones.ZoneCount * BracketsPerZone) BuildBrackets(zones);
             SyncSortingBehindUnits();
+            RefreshColors(zones);
         }
 
-        /// <summary>
-        /// 구역 경계마다 눈금 한 쌍 — 궤도 안쪽 끝과 바깥쪽 끝에 짧게. 경계선 전체를 긋지 않는다.
-        /// 경계는 구역 수만큼이므로 겹칠 일이 없다.
-        /// </summary>
-        private void BuildDividers(CombatZoneManager zones)
+        // ── 생성 ─────────────────────────────────────────────
+
+        private void BuildBrackets(CombatZoneManager zones)
         {
-            foreach (var line in _dividers)
+            foreach (var line in _brackets)
                 if (line != null) Destroy(line.gameObject);
-            _dividers.Clear();
+            _brackets.Clear();
 
             var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Transparent");
 
             for (int zone = 0; zone < zones.ZoneCount; zone++)
             {
-                // 각 구역의 시작 각도 = 그 구역과 이전 구역의 경계.
-                zones.GetZoneAngularRangeDeg(zone, out float startDeg, out _);
-                float rad = startDeg * Mathf.Deg2Rad;
-                var dir = new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad));
+                zones.GetZoneAngularRangeDeg(zone, out float startDeg, out float endDeg);
+                float a0 = startDeg + angularInsetDeg;   // 이웃과 팔이 겹치지 않게 들임
+                float a1 = endDeg - angularInsetDeg;
 
-                // 안쪽 눈금: innerRadius에서 바깥으로 / 바깥 눈금: outerRadius에서 안으로
-                _dividers.Add(CreateTick(shader, $"_ZoneTickIn_{zone}",  dir, innerRadius, innerRadius + tickLength));
-                _dividers.Add(CreateTick(shader, $"_ZoneTickOut_{zone}", dir, outerRadius - tickLength, outerRadius));
+                // 모서리 4개: (반지름, 각도, 반지름팔 방향 +밖/-안, 호팔 방향 +끝쪽/-시작쪽)
+                _brackets.Add(CreateBracket(shader, $"_Z{zone}_InStart",  innerRadius, a0, +1, +1));
+                _brackets.Add(CreateBracket(shader, $"_Z{zone}_InEnd",    innerRadius, a1, +1, -1));
+                _brackets.Add(CreateBracket(shader, $"_Z{zone}_OutStart", outerRadius, a0, -1, +1));
+                _brackets.Add(CreateBracket(shader, $"_Z{zone}_OutEnd",   outerRadius, a1, -1, -1));
             }
 
+            _lastOwnerIds = new int[zones.ZoneCount];
+            for (int i = 0; i < _lastOwnerIds.Length; i++) _lastOwnerIds[i] = int.MinValue;   // 첫 프레임에 반드시 칠하도록
             _sortingSynced = false;   // 새 선들은 유닛 정렬을 다시 따라가야 한다
         }
 
-        private LineRenderer CreateTick(Shader shader, string name, Vector3 dir, float fromRadius, float toRadius)
+        /// <summary>
+        /// 모서리 1개의 ㄱ자 브래킷. 한 팔은 반지름 방향(부채꼴의 곧은 변), 다른 팔은 호를 따라 굽는다 —
+        /// 모서리의 꺾임이 그대로 보여 네 개만으로 부채꼴 실루엣이 읽힌다.
+        /// </summary>
+        private LineRenderer CreateBracket(Shader shader, string name, float cornerRadius, float cornerDeg,
+            float radialSign, float arcSign)
         {
             var go = new GameObject(name);
             go.transform.SetParent(transform, false);
 
             var lr = go.AddComponent<LineRenderer>();
             lr.useWorldSpace = true;
-            lr.positionCount = 2;
-            lr.SetPosition(0, dir * fromRadius + Vector3.up * floorY);
-            lr.SetPosition(1, dir * toRadius + Vector3.up * floorY);
             lr.startWidth = lineWidth;
             lr.endWidth = lineWidth;
-            lr.startColor = lineColor;
-            lr.endColor = lineColor;
             lr.numCapVertices = 2;
+            lr.numCornerVertices = 2;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
             lr.material = new Material(shader);
+
+            // 점 배열: 반지름팔 끝 → 모서리 → 호팔(곡선 2분할) 끝
+            var points = new Vector3[4];
+            points[0] = Polar(cornerRadius + radialSign * radialArmLength, cornerDeg);
+            points[1] = Polar(cornerRadius, cornerDeg);
+            points[2] = Polar(cornerRadius, cornerDeg + arcSign * arcArmDeg * 0.5f);
+            points[3] = Polar(cornerRadius, cornerDeg + arcSign * arcArmDeg);
+            lr.positionCount = points.Length;
+            lr.SetPositions(points);
+
             return lr;
         }
+
+        private Vector3 Polar(float radius, float deg)
+        {
+            float rad = deg * Mathf.Deg2Rad;
+            return new Vector3(Mathf.Cos(rad) * radius, floorY, Mathf.Sin(rad) * radius);
+        }
+
+        // ── 색 갱신 ──────────────────────────────────────────
+
+        private void RefreshColors(CombatZoneManager zones)
+        {
+            var identity = MonsterIdentityManager.Instance;
+
+            for (int zone = 0; zone < zones.ZoneCount; zone++)
+            {
+                var owner = zones.GetOwner(zone);
+                int ownerId = owner != null ? owner.GetInstanceID() : 0;
+                if (_lastOwnerIds[zone] == ownerId) continue;   // 변화 없음
+                _lastOwnerIds[zone] = ownerId;
+
+                Color c;
+                if (owner != null && identity != null)
+                {
+                    c = identity.GetColor(owner);
+                    c.a = ownerAlpha;
+                }
+                else
+                {
+                    c = emptyZoneColor;   // 중립지대 — 구조는 보이되 옅게
+                }
+
+                for (int b = 0; b < BracketsPerZone; b++)
+                {
+                    var lr = _brackets[zone * BracketsPerZone + b];
+                    if (lr == null) continue;
+                    lr.startColor = c;
+                    lr.endColor = c;
+                }
+            }
+        }
+
+        // ── 정렬 ─────────────────────────────────────────────
 
         /// <summary>
         /// 유닛 스프라이트와 같은 정렬 레이어를 쓰고 그보다 뒤로 보낸다.
@@ -123,12 +192,12 @@ namespace DiceOrbit.Visuals
         /// </summary>
         private void SyncSortingBehindUnits()
         {
-            if (_sortingSynced || _dividers.Count == 0) return;
+            if (_sortingSynced || _brackets.Count == 0) return;
 
             var reference = FindAnyUnitSprite();
             if (reference == null) return;   // 유닛이 아직 없다 — 다음 프레임에 다시 시도
 
-            foreach (var line in _dividers)
+            foreach (var line in _brackets)
             {
                 if (line == null) continue;
                 line.sortingLayerID = reference.sortingLayerID;
