@@ -23,7 +23,7 @@ namespace DiceOrbit.Data.Potions
         private void Reset()
         {
             PotionName = "중화 포션";
-            Description = "지정한 타일의 디버프 효과를 제거합니다.";
+            Description = "선택한 타일의 해로운 효과를 모두 제거합니다.";
             TargetType = PotionTargetType.Tile;
             ShopPrice = 40;
             CombatOnly = true;

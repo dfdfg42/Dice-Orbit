@@ -21,7 +21,7 @@ namespace DiceOrbit.Data.Passives
         public int ExtraZoneReach => Mathf.Max(0, extraZoneReach + GetReachBonus());
 
         public override string GetDynamicDescription()
-            => $"자기 구역이 비어 있으면 {ExtraZoneReach}칸 이내 구역의 몬스터를 공격";
+            => $"현재 구역에 몬스터가 없으면 {ExtraZoneReach}개 구역 안에서 가장 가까운 몬스터를 공격합니다.";
 
         /// <summary>장착된 시그니처 모디파이어가 더해주는 추가 사거리 합산.</summary>
         private int GetReachBonus()

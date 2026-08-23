@@ -18,7 +18,7 @@ namespace DiceOrbit.Data.Potions
         private void Reset()
         {
             PotionName = "독 포션";
-            Description = "특정 적에게 2턴 동안 독을 부여합니다. (독: 매턴 최대체력의 5% 피해)";
+            Description = "선택한 적에게 2턴 동안 독을 부여합니다. 독은 턴마다 최대 체력의 5%만큼 피해를 줍니다.";
             TargetType = PotionTargetType.Enemy;
             ShopPrice = 50;
             CombatOnly = true;

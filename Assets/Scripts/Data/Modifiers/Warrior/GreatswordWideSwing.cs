@@ -16,7 +16,7 @@ namespace DiceOrbit.Data.Modifiers.Warrior
     {
         public override ModifierCategory Category => ModifierCategory.Signature;
         public override string ModifierName => "광역 참격";
-        public override string Description => "그레이트소드 대상 수 +1";
+        public override string Description => "그레이트소드가 공격하는 대상 수가 1명 증가합니다.";
 
         public override void OnRefreshSkill(Core.Pipeline.CharacterModfierContext context)
         {

@@ -15,7 +15,7 @@ namespace DiceOrbit.Data.Potions
         private void Reset()
         {
             PotionName = "폭발 포션";
-            Description = "특정 적에게 20의 즉시 피해를 입힙니다.";
+            Description = "선택한 적에게 즉시 피해 20을 줍니다.";
             TargetType = PotionTargetType.Enemy;
             ShopPrice = 45;
             CombatOnly = true;

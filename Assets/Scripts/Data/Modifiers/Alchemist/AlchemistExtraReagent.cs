@@ -16,7 +16,7 @@ namespace DiceOrbit.Data.Modifiers.Alchemist
 
         public override ModifierCategory Category => ModifierCategory.Signature;
         public override string ModifierName => "시약 과잉";
-        public override string Description => $"웨이브 시작 시 시약 타일 +{bonusReagentTiles}";
+        public override string Description => $"전투 시작 시 시약 타일을 {bonusReagentTiles}개 더 설치합니다.";
 
         // 시약 준비(ReagentPrepPassive)를 가진 캐릭터에게만 제시/장착 가능
         public override bool CanApplyTo(Character character)

@@ -133,6 +133,6 @@ namespace DiceOrbit.Data.Tile
         public override void OnEndTurn(Core.Character character) => Owner?.RemoveAttribute(this);
 
         public override string GetDescription()
-            => "효과 없음. 그 위에서 턴 종료 시 이 타일 삭제 (영구, 웨이브 종료 시 제거)";
+            => "캐릭터가 이 타일에서 턴을 마치면 활력 타일이 사라집니다.";
     }
 }

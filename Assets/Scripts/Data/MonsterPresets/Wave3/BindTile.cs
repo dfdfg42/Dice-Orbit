@@ -32,7 +32,7 @@ namespace DiceOrbit.Data.Tile
 
         public override string GetDescription()
         {
-            return "타일 위에서 턴 종료 시 다음 턴 이동 불가(속박)가 된다.";
+            return "이 타일에서 턴을 마치면 속박되어 다음 턴에 이동할 수 없습니다.";
         }
     }
 }

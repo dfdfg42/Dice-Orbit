@@ -27,6 +27,6 @@ namespace DiceOrbit.Data.CharacterActives
             => $"예상 피해: {CalculateRawDamage(source, ability, diceValue)}";
 
         public override string GetDynamicDescription()
-            => $"자기 구역 몬스터에게 공격력 x{multiplier:0.##} 피해";
+            => $"현재 구역의 몬스터에게 공격력의 {multiplier * 100f:0.#}%만큼 피해를 줍니다.";
     }
 }

@@ -27,12 +27,12 @@ namespace DiceOrbit.Data.CharacterActives
         }
 
         public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
-            => $"예상 피해: 주변 구역마다 {CalculateRawDamage(source, ability, diceValue)}";
+            => $"예상 피해: 범위 안의 몬스터마다 {CalculateRawDamage(source, ability, diceValue)}";
 
         public override string GetDynamicDescription()
-            => $"자기 구역과 양옆 {Mathf.Max(0, spreadZones)}구역의 몬스터에게 공격력 x{multiplier:0.##} 피해";
+            => $"현재 구역과 양옆 {Mathf.Max(0, spreadZones)}개 구역의 몬스터에게 공격력의 {multiplier * 100f:0.#}%만큼 피해를 줍니다.";
 
-        public override string GetTargetLabel() => $"자기 구역 + 양옆 {Mathf.Max(0, spreadZones)}구역";
+        public override string GetTargetLabel() => $"현재 구역과 양옆 {Mathf.Max(0, spreadZones)}개 구역";
 
         /// <summary>자기 구역 + 양옆 spreadZones구역의 주인 전원.</summary>
         public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)

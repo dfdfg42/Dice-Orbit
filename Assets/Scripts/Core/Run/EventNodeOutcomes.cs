@@ -19,7 +19,7 @@ namespace DiceOrbit.Core.Run
             DiceDeckManager.EnsureInstance()?.RandomizeFaces(ctx.SelectedDieIndex, count);
             return $"면 {count}개 무작위 변환";
         }
-        public override string Preview() => $"무작위 면 {count}개 변환";
+        public override string Preview() => $"선택한 주사위의 무작위 면 {count}개를 다시 정합니다.";
     }
 
     /// <summary>선택 주사위의 무작위 면 count개에 delta (교정기 2 — 기본 -1, 하한 0).</summary>
@@ -35,7 +35,7 @@ namespace DiceOrbit.Core.Run
             DiceDeckManager.EnsureInstance()?.AddToRandomFaces(ctx.SelectedDieIndex, count, delta);
             return $"면 {count}개 {(delta >= 0 ? "+" : "")}{delta}";
         }
-        public override string Preview() => $"무작위 면 {count}개 {(delta >= 0 ? "+" : "")}{delta}";
+        public override string Preview() => $"선택한 주사위의 무작위 면 {count}개의 값을 {Mathf.Abs(delta)} {(delta >= 0 ? "올립니다" : "내립니다")}.";
     }
 
     /// <summary>선택 주사위의 무작위 면 1개를 0으로 + 인챈트 부여(선택 — null이면 면만 0).
@@ -59,7 +59,9 @@ namespace DiceOrbit.Core.Run
             return "면 1개 → 0";
         }
         public override string Preview()
-            => enchant != null ? $"면 1개 → 0 + {enchant.Preview()}" : "면 1개 → 0";
+            => enchant != null
+                ? $"선택한 주사위의 무작위 면 1개를 0으로 바꾸고 효과를 부여합니다. {enchant.Preview()}"
+                : "선택한 주사위의 무작위 면 1개를 0으로 바꿉니다.";
     }
 
     // ── 캐릭터 대상 (회복기/ONE OR ALL) ───────────────────────
@@ -79,7 +81,7 @@ namespace DiceOrbit.Core.Run
             c.Stats.CurrentHP = Mathf.Min(c.Stats.MaxHP, c.Stats.CurrentHP + heal);
             return $"{c.Stats.CharacterName} {heal} 회복";
         }
-        public override string Preview() => $"최대체력 {percent}% 회복";
+        public override string Preview() => $"선택한 캐릭터가 최대 체력의 {percent}%만큼 회복합니다.";
     }
 
     /// <summary>ONE FOR ALL — 선택 제외 각자 MaxHP percent% 감소(최소 1, MaxHP 하한 1),
@@ -111,7 +113,7 @@ namespace DiceOrbit.Core.Run
             chosen.Stats.CurrentHP += total;
             return $"{chosen.Stats.CharacterName} 최대체력 +{total}";
         }
-        public override string Preview() => $"다른 아군 최대체력 -{percent}% → 선택 캐릭터에 합산";
+        public override string Preview() => $"다른 아군의 최대 체력을 각각 {percent}% 줄이고, 줄어든 만큼 선택한 캐릭터의 최대 체력을 늘립니다.";
     }
 
     /// <summary>ALL FOR ONE — 선택 캐릭터 MaxHP percent% 감소(MaxHP 하한 1),
@@ -146,7 +148,7 @@ namespace DiceOrbit.Core.Run
             }
             return $"{chosen.Stats.CharacterName} 최대체력 -{loss} → 아군 분배";
         }
-        public override string Preview() => $"선택 캐릭터 최대체력 -{percent}% → 아군에 분배";
+        public override string Preview() => $"선택한 캐릭터의 최대 체력을 {percent}% 줄이고, 줄어든 만큼 다른 아군에게 나눠 줍니다.";
     }
 
     // ── 무대상 (자판기/타일/고대 요정) ─────────────────────────
@@ -171,7 +173,7 @@ namespace DiceOrbit.Core.Run
             string got = string.Join(", ", names);
             return names.Count < count ? $"포션 획득 — {got} (슬롯 부족)" : $"포션 획득 — {got}";
         }
-        public override string Preview() => $"무작위 포션 {count}개";
+        public override string Preview() => $"무작위 포션을 최대 {count}개 얻습니다.";
     }
 
     /// <summary>타일 설치 예약 — 다음 전투부터 런 내내 무작위 타일에 배치 (정령/제련소).</summary>
@@ -185,7 +187,7 @@ namespace DiceOrbit.Core.Run
             EventRunState.EnsureInstance().EnqueueTileInstall(installType);
             return $"{DisplayName()} 타일 설치 예약";
         }
-        public override string Preview() => $"{DisplayName()} 타일 설치";
+        public override string Preview() => $"다음 전투부터 {DisplayName()} 타일을 설치합니다.";
 
         private string DisplayName() => new TileAttribute(installType, 0, -1).GetDisplayName();
     }
@@ -215,6 +217,6 @@ namespace DiceOrbit.Core.Run
             }
             return $"{relicName} 상실 — 파티 최대체력 +{percent}%";
         }
-        public override string Preview() => $"무작위 유물 상실, 파티 최대체력 +{percent}%";
+        public override string Preview() => $"무작위 유물 1개를 잃고, 모든 아군의 최대 체력을 {percent}% 늘립니다.";
     }
 }

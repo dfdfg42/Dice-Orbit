@@ -48,15 +48,15 @@ namespace DiceOrbit.UI.Tutorial
             prt.anchorMin = prt.anchorMax = prt.pivot = new Vector2(0.5f, 0.5f);
             prt.anchoredPosition = Vector2.zero;
 
-            var label = NewText(panel.transform, "튜토리얼을 진행하시겠어요?", 34);
+            var label = NewText(panel.transform, "튜토리얼을 시작할까요?", 34);
             label.color = cream ? InkDark : Ink;
             var lrt = label.rectTransform;
             lrt.anchorMin = new Vector2(0, 0.5f); lrt.anchorMax = new Vector2(1, 1f);
             lrt.offsetMin = new Vector2(20, 0); lrt.offsetMax = new Vector2(-20, -20);
 
-            MakeButton(panel.transform, "예", new Vector2(-130, -70), Gold, cream,
+            MakeButton(panel.transform, "시작", new Vector2(-130, -70), Gold, cream,
                 () => { Close(); onYes?.Invoke(); });
-            MakeButton(panel.transform, "아니오", new Vector2(130, -70), cream ? Tan : Navy, cream,
+            MakeButton(panel.transform, "건너뛰기", new Vector2(130, -70), cream ? Tan : Navy, cream,
                 () => { Close(); onNo?.Invoke(); });
         }
 

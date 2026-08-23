@@ -58,7 +58,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public GoblinClubSwing()
         {
             skillName = "몽둥이 질";
-            description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
+            description = "무작위 캐릭터 1명을 노려, 대상의 타일과 좌우 2칸에 피해를 줍니다.";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -86,7 +86,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public MineBombSkill()
         {
             skillName = "지뢰 폭발";
-            description = "설치된 지뢰 타일 + 좌우 각각 한 칸에 피해 (발동 후 지뢰 삭제)";
+            description = "지뢰가 설치된 타일과 좌우 1칸에 피해를 줍니다. 폭발한 지뢰는 사라집니다.";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -154,7 +154,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public PlantMinePassive()
         {
             passiveName = "지뢰 설치";
-            description = "매 턴 종료 시 무작위 타일에 지뢰를 설치합니다. 지나가거나 턴 종료 시 피해, 발동 후 삭제";
+            description = "매 턴이 끝날 때 무작위 타일에 지뢰를 설치합니다. 캐릭터가 지뢰를 지나가거나 그 위에서 턴을 마치면 피해를 받고, 지뢰는 사라집니다.";
             priority = 10;
             isStackable = false;
         }
@@ -224,7 +224,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave1.Goblin
         public GoblinDeath()
         {
             effectName = "Goblin Death";
-            description = "고블린이 죽을 때 발동하는 효과";
+            description = "고블린이 쓰러져도 설치된 지뢰는 전투가 끝날 때까지 남습니다.";
         }
 
         public override void Execute(Monster deadMonster)

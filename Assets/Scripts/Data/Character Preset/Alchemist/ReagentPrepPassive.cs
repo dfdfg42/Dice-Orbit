@@ -27,7 +27,7 @@ namespace DiceOrbit.Data.Passives
 
         public override string GetDynamicDescription()
         {
-            return $"웨이브 시작 시 시약 타일 {reagentTileCount + GetReagentTileBonus()}개 설치. 통과/턴 종료 시 피해 +{bonusPercentPerStack:0.#}% (중첩)";
+            return $"전투 시작 시 시약 타일을 {reagentTileCount + GetReagentTileBonus()}개 설치합니다. 연금술사가 시약 타일을 지나가거나 그 위에서 턴을 마치면, 이번 전투 동안 주는 피해가 {bonusPercentPerStack:0.#}%씩 증가합니다.";
         }
 
         public override void Initialize(Unit ownerUnit)

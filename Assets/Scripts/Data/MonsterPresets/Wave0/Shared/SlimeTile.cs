@@ -31,6 +31,6 @@ namespace DiceOrbit.Data.Tile
         }
 
         public override string GetDescription()
-            => $"통과·턴 종료 시 둔화(다음 턴 -{slowAmount} 이동, {slowDuration}턴) 부여 (발동 후 삭제)";
+            => $"지나가거나 이 타일에서 턴을 마치면, {slowDuration}턴 동안 이동할 수 있는 칸 수가 {slowAmount} 감소합니다. 발동 후 사라집니다.";
     }
 }

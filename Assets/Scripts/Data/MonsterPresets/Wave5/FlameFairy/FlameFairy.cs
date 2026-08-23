@@ -15,7 +15,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave5.FlameFairy
         [Tooltip("이번 턴 받은 누적 피해가 이 값 이상이면 취소")]
         [SerializeField] private int cancelThreshold = 15;
 
-        public KindlingSkill() { skillName = "불짚이기"; description = "무작위 1명 20 피해(이번 턴 15↑ 피해 시 취소)"; }
+        public KindlingSkill() { skillName = "불짚이기"; description = "무작위 캐릭터 1명에게 피해 20을 줍니다. 이번 턴에 피해를 15 이상 받으면 공격이 취소됩니다."; }
 
         public override int GetPreviewDamage() => damage;
 

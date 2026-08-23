@@ -22,7 +22,7 @@ namespace DiceOrbit.Data.Passives
         public override int Priority => 99;
 
         public override string GetDynamicDescription()
-            => $"같은 구역에 아군이 있으면 피해 +{(bonusPercent + GetFlankBonus()):0.#}%";
+            => $"같은 구역에 다른 아군이 있으면 도적이 주는 피해가 {(bonusPercent + GetFlankBonus()):0.#}% 증가합니다.";
 
         /// <summary>패시브 영향 범위 = 도적이 선 구역의 타일들.</summary>
         public IReadOnlyList<TileData> GetRangeTiles()

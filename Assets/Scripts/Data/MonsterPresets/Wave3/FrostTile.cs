@@ -59,6 +59,6 @@ namespace DiceOrbit.Data.Tile
         }
 
         public override string GetDescription()
-            => $"턴 종료 시 빙결 중첩 +{stacks} 부여 (발동 후 삭제)";
+            => $"이 타일에서 턴을 마치면 빙결을 {stacks}중첩 얻습니다. 발동 후 사라집니다.";
     }
 }

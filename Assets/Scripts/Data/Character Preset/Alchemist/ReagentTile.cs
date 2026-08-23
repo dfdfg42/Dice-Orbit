@@ -33,7 +33,7 @@ namespace DiceOrbit.Data.Tile
 
         public override string GetDescription()
         {
-            return "연금술사가 통과하거나 턴 종료 시 해당 웨이브 동안 피해량 증가 (중첩)";
+            return "연금술사가 지나가거나 이 타일에서 턴을 마치면, 이번 전투 동안 주는 피해가 증가합니다. 효과는 중첩됩니다.";
         }
     }
 }

@@ -18,7 +18,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave0.Shared
         public SlimeBodySlamSkill()
         {
             skillName = "박치기";
-            description = "무작위 대상 1명이 속한 타일 + 좌우 각각 두 칸에 피해";
+            description = "무작위 캐릭터 1명을 노려, 대상의 타일과 좌우 2칸에 피해를 줍니다.";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -41,7 +41,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave0.Shared
         public SlimePlantSkill()
         {
             skillName = "점액";
-            description = "무작위 타일 1개에 점액 설치(밟으면 다음 턴 둔화)";
+            description = "무작위 타일 1개에 점액을 설치합니다. 점액을 밟은 캐릭터는 다음 턴에 이동 거리가 감소합니다.";
         }
 
         public override int GetPreviewDamage() => 0;

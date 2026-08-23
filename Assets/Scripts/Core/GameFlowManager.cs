@@ -163,7 +163,7 @@ namespace DiceOrbit.Core
                         _tutorialAwaitingRecruit = false;
                         var step13 = new System.Collections.Generic.List<UI.Tutorial.TutorialStep>
                         {
-                            new UI.Tutorial.TutorialStep("여기서 파티에 넣을 캐릭터 2명을 고르세요. 각 캐릭터는 액티브 스킬과 패시브를 가져요 (방금 배운 것처럼). [다음]을 눌러 시작하세요.")
+                            new UI.Tutorial.TutorialStep("함께 모험할 캐릭터 두 명을 선택하세요. 캐릭터마다 고유한 강화 공격과 패시브가 있습니다. [다음]을 누르면 선택을 시작합니다.")
                             {
                                 NoSpotlight = true, // 전체 화면(딤 없음, 카드 다 보임)
                                 GateInput = true    // "다음" 누르기 전까지 카드 클릭 차단 → 다음 눌러야 선택 시작

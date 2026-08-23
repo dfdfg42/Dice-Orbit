@@ -13,7 +13,7 @@ namespace DiceOrbit.Data.Modifiers.Generic
 
         public override ModifierCategory Category => ModifierCategory.Generic;
         public override string ModifierName => "예리한 칼날";
-        public override string Description => $"모든 공격 피해 +{bonusDamage}";
+        public override string Description => $"모든 공격의 피해가 {bonusDamage} 증가합니다.";
 
         protected override void OnAttackWithActive(AttackContext context)
         {
@@ -31,7 +31,7 @@ namespace DiceOrbit.Data.Modifiers.Generic
 
         public override ModifierCategory Category => ModifierCategory.Generic;
         public override string ModifierName => "광폭화";
-        public override string Description => $"모든 공격 피해 +{bonusPercent}%";
+        public override string Description => $"모든 공격의 피해가 {bonusPercent}% 증가합니다.";
 
         protected override void OnAttackWithActive(AttackContext context)
         {
@@ -49,7 +49,7 @@ namespace DiceOrbit.Data.Modifiers.Generic
 
         public override ModifierCategory Category => ModifierCategory.Generic;
         public override string ModifierName => "거인의 힘";
-        public override string Description => $"모든 공격 피해 +{bonusDamage}";
+        public override string Description => $"모든 공격의 피해가 {bonusDamage} 증가합니다.";
 
         protected override void OnAttackWithActive(AttackContext context)
         {

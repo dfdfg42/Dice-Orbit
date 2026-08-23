@@ -21,7 +21,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
         public ProtectiveInstinctSkill()
         {
             skillName = "보호 본능";
-            description = "가장 최근에 아기 곰을 공격한 적의 타일 + 좌우 각각 3칸에 피해";
+            description = "가장 최근에 아기 곰을 공격한 캐릭터를 노려, 대상의 타일과 좌우 3칸에 피해를 줍니다.";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -54,7 +54,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.MommyBear
         public MommyBearTear()
         {
             skillName = "곰은 사람을 찢어";
-            description = "무작위 대상 1명 기준 진행방향 4칸에 피해 (대상이 움직이면 따라감, 대상 타일 제외)";
+            description = "무작위 캐릭터 1명을 노려, 대상 앞쪽 4칸에 피해를 줍니다. 공격 범위는 대상이 움직이면 함께 이동합니다.";
         }
 
         public override int GetPreviewDamage() => damage;

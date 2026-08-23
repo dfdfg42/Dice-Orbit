@@ -21,7 +21,7 @@ namespace DiceOrbit.Data.Passives
         public override int Priority => 100;
 
         public override string GetDynamicDescription()
-            => $"같은 구역 아군이 받는 피해 -{damageReductionPercent:0.#}%";
+            => $"전사와 같은 구역에 있는 아군이 받는 피해가 {damageReductionPercent:0.#}% 감소합니다.";
 
         /// <summary>패시브 영향 범위 = 전사가 선 구역의 타일들. 조회 시 범위 표시에 쓰인다.</summary>
         public IReadOnlyList<TileData> GetRangeTiles()

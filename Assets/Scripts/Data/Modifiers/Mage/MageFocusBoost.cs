@@ -17,7 +17,7 @@ namespace DiceOrbit.Data.Modifiers.Mage
 
         public override ModifierCategory Category => ModifierCategory.Signature;
         public override string ModifierName => "먼 시야";
-        public override string Description => $"원거리 공격 사거리 +{bonusZoneReach}구역";
+        public override string Description => $"원거리 공격의 사거리가 {bonusZoneReach}구역 증가합니다.";
 
         // 원거리(MageRangedPassive)를 가진 캐릭터에게만 제시/장착 가능
         public override bool CanApplyTo(Character character)

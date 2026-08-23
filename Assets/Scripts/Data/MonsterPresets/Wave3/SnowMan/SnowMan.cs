@@ -104,7 +104,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
         public ThrowSnow()
         {
             skillName = "진창눈";
-            description = "무작위 대상 1명에게 피해. 이번 라운드 일정 피해 이상 받으면 취소";
+            description = "무작위 캐릭터 1명에게 피해를 줍니다. 이번 라운드에 일정량 이상의 피해를 받으면 공격이 취소됩니다.";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -137,7 +137,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
         public SnowStorm()
         {
             skillName = "눈보라";
-            description = "무작위 대상 2명 기준 좌우 각각 1칸에 피해 (대상이 움직이면 따라감, 대상 타일 제외)";
+            description = "무작위 캐릭터 2명을 노려, 각 대상의 좌우 1칸에 피해를 줍니다. 공격 범위는 대상이 움직이면 함께 이동합니다.";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -175,13 +175,13 @@ namespace DiceOrbit.Data.MonsterPresets.Wave3.SnowMan
         public HappySnowmanPassive()
         {
             passiveName = "행복한 눈사람";
-            description = "눈사람에게 피격된 적은 빙결 중첩 +3 (매 턴 종료 시 중첩만큼 피해)";
+            description = "눈사람의 공격에 맞은 캐릭터는 빙결 중첩을 3 얻습니다. 턴이 끝날 때 빙결 중첩만큼 피해를 받습니다.";
             priority = 10;
             isStackable = false;
         }
 
         public override string GetDynamicDescription()
-            => $"피격된 적 빙결 중첩 +{frostStacks} (턴 종료 시 중첩만큼 피해)";
+            => $"공격한 캐릭터에게 빙결을 {frostStacks}중첩 부여합니다. 빙결 중첩만큼 턴 종료 시 피해를 받습니다.";
 
         public override void Initialize(Unit Owner)
         {

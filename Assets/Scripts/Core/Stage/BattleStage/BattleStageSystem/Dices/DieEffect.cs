@@ -28,7 +28,7 @@ namespace DiceOrbit.Data
     {
         public int amount = 20;
         public override string Apply(DieUseContext ctx) { GoldManager.EnsureInstance().AddGold(amount); return $"골드 +{amount}"; }
-        public override string Preview() => $"골드 +{amount}";
+        public override string Preview() => $"사용하면 골드 {amount}를 얻습니다.";
     }
 
     /// <summary>사용 시 사용한 캐릭터 HP +N.</summary>
@@ -43,7 +43,7 @@ namespace DiceOrbit.Data
                 u.Stats.CurrentHP = Mathf.Min(u.Stats.MaxHP, u.Stats.CurrentHP + amount);
             return $"HP +{amount}";
         }
-        public override string Preview() => $"HP +{amount}";
+        public override string Preview() => $"사용한 캐릭터의 체력을 {amount} 회복합니다.";
     }
 
     /// <summary>사용 시 사용자에게 일시 방어도 +N (인챈트 이벤트 — 수호).</summary>
@@ -59,7 +59,7 @@ namespace DiceOrbit.Data
             DiceOrbit.UI.CombatNotifier.Notify(u, $"방어도 +{amount}", new Color(0.6f, 0.75f, 1f));
             return $"방어도 +{amount}";
         }
-        public override string Preview() => $"사용 시 방어도 +{amount}";
+        public override string Preview() => $"사용한 캐릭터가 방어도 {amount}를 얻습니다.";
     }
 
     /// <summary>사용 시 사용자에게 파워(피해 +N%, 1턴) 부여 (인챈트 이벤트 — 공세).</summary>
@@ -77,6 +77,6 @@ namespace DiceOrbit.Data
             DiceOrbit.UI.CombatNotifier.NotifyStatus(u, data.Name, data.Color);
             return $"피해 +{percent}% (1턴)";
         }
-        public override string Preview() => $"사용 시 피해 +{percent}% (1턴)";
+        public override string Preview() => $"사용한 캐릭터가 1턴 동안 주는 피해가 {percent}% 증가합니다.";
     }
 }

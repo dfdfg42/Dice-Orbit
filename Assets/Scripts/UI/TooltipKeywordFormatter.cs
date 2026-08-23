@@ -412,7 +412,7 @@ namespace DiceOrbit.UI
             string stackText = value > 0 ? value.ToString() : string.Empty;
 
             // 지속 턴 텍스트: 남은 턴 표시 (예: "2T"). -1(무한/영구)은 표기 생략
-            string durationText = duration < 0 ? string.Empty : $"{duration}T";
+            string durationText = duration < 0 ? string.Empty : $"{duration}턴";
 
             // 설명: 표시 이름으로 먼저 검색, 없으면 원본 열거형 이름으로 재검색합니다
             if (!TryGetDescription(displayName, out string description))

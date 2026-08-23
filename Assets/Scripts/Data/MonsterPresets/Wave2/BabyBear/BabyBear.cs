@@ -24,7 +24,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
         public HoneyPawSkill()
         {
             skillName = "꿀 묻히기";
-            description = "무작위 타일에 꿀 설치. 통과 시 회복, 한 턴에 2개 이상 밟으면 혈당 스파이크(이동 불가)";
+            description = "무작위 타일에 꿀을 설치합니다. 꿀을 밟으면 체력을 회복하지만, 한 턴에 2개 이상 밟으면 다음 턴에 이동할 수 없습니다.";
         }
 
         public override void Execute(Unit source, List<Unit> targetUnits, List<TileData> targetTiles, int diceValue)
@@ -48,7 +48,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
         public BabyBearCharge()
         {
             skillName = "돌진";
-            description = "무작위 대상 1명이 속한 타일 + 좌우 각각 2칸에 피해";
+            description = "무작위 캐릭터 1명을 노려, 대상의 타일과 좌우 2칸에 피해를 줍니다.";
         }
 
         public override int GetPreviewDamage() => damage;
@@ -70,7 +70,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave2.BabyBear
         public HoneyLoverPassive()
         {
             passiveName = "아기 곰은 꿀을 좋아해";
-            description = "꿀 타일 효과 발동 시마다 아기 곰·엄마 곰에게 일시 방어도 부여";
+            description = "꿀 타일이 발동할 때마다 아기 곰과 엄마 곰이 방어도를 얻습니다.";
             priority = 10;
             isStackable = false;
         }

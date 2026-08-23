@@ -114,45 +114,45 @@ namespace DiceOrbit.Core.Tutorial
 
             return new List<TutorialStep>
             {
-                new TutorialStep("원형 궤도 위 캐릭터로 몬스터를 처치하는 게 목표예요. 시작해볼까요?")
+                new TutorialStep("캐릭터를 움직여 궤도 안의 몬스터를 모두 처치하세요. 먼저 전투 화면부터 살펴볼게요.")
                     { GateInput = true },
                 // 몬스터 → 필드(공격범위) 순서로 각각 보게
-                new TutorialStep("먼저 몬스터를 보세요. 머리 위 아이콘 = 다음 턴에 할 행동이에요.")
+                new TutorialStep("몬스터 머리 위의 아이콘은 다음 턴에 사용할 행동을 보여줍니다.")
                     { Target = M, GateInput = true, HighlightOffset = new Vector2(0, 60) },   // 머리 위 아이콘까지 보이게 조금 위로
-                new TutorialStep("오른쪽 정보 패널에 몬스터의 상세 정보(체력·다음 행동 등)가 나와요.")
+                new TutorialStep("오른쪽 정보 패널에서 몬스터의 체력과 다음 행동을 자세히 확인할 수 있습니다.")
                     { Target = Info, GateInput = true, CenterBubble = true, OnEnter = () => BattleInfoPanelUI.Instance?.ShowUnitExternal(DemoMonster) },
-                new TutorialStep("필드는 <b>4개 구역</b>으로 나뉘어요. 구역 모서리 브래킷 색 = 그 구역 주인 몬스터. <b>어느 구역에 서느냐가 곧 누구를 공격하느냐</b>입니다.")
+                new TutorialStep("전장은 <b>4개 구역</b>으로 나뉩니다. 구역 가장자리의 색은 그 구역을 맡은 몬스터를 나타냅니다. 캐릭터는 자신이 서 있는 구역의 몬스터를 공격합니다.")
                     { Target = Field, GateInput = true, OnEnter = () => BattleInfoPanelUI.Instance?.ClearUnitExternal(DemoMonster) },
-                new TutorialStep("바닥의 색칠된 타일 = 몬스터 공격이 닿는 범위예요. 그 위에 서 있으면 맞습니다.")
+                new TutorialStep("색이 칠해진 타일은 몬스터가 다음 턴에 공격할 범위입니다. 공격 전에 안전한 곳으로 이동하세요.")
                     { Target = Field, GateInput = true },
-                new TutorialStep("매 턴 주사위가 자동으로 굴려집니다. 이번 턴에 쓸 자원이에요.")
+                new TutorialStep("플레이어 턴이 시작되면 주사위가 자동으로 굴러갑니다. 나온 주사위를 캐릭터에게 하나씩 배정할 수 있습니다.")
                     { Target = Dice, GateInput = true },
-                new TutorialStep("이 게임의 핵심: <b>이동이 곧 공격!</b> 주사위로 이동을 마치면, 도착한 구역의 몬스터를 자동으로 공격해요. 공격 버튼은 없습니다.")
+                new TutorialStep("이동을 마친 캐릭터는 도착한 구역의 몬스터를 자동으로 공격합니다. 따로 공격 버튼을 누를 필요는 없습니다.")
                     { GateInput = true },
-                new TutorialStep("전사를 클릭하세요.")
+                new TutorialStep("전사를 선택하세요.")
                     { Target = W, Advance = TutorialAdvance.Custom,
                       Done = () => CharacterActionUI.Instance != null && CharacterActionUI.Instance.IsShowingCharacter(Warrior) },
-                new TutorialStep("이동은 캐릭터마다 턴에 1번. 어떤 주사위를 주느냐에 따라 <b>얼마나 가는지</b>와 <b>공격이 강화되는지</b>가 함께 정해져요.")
+                new TutorialStep("캐릭터마다 한 턴에 한 번 이동할 수 있습니다. 주사위 눈은 이동 거리와 강화 공격의 발동 여부를 함께 결정합니다.")
                     { Target = Action, GateInput = true, HighlightPad = new Vector4(0, 0, 0, 120) },   // 아래로 더 길게
                 // 이동(전체 화면) + 눈 4만 — 4 이상이라 돌파 강화 발동
-                new TutorialStep("<b>눈 4</b> 주사위로 전사를 이동시키세요. 전사는 눈 <b>4 이상</b>이면 강화 공격 [돌파]가 터져, 지나쳐 온 구역의 몬스터를 모두 벱니다!")
+                new TutorialStep("<b>눈 4</b> 주사위를 전사에게 배정하고 이동하세요. 전사는 눈이 <b>4 이상</b>이면 [돌파]를 사용해 이동 중 지나온 모든 구역의 몬스터를 공격합니다.")
                     { NoSpotlight = true, OnlyDieValue = 4, ActionLock = TutorialActionLock.MoveOnly, Advance = TutorialAdvance.Custom, Done = () => warriorMoved },
                 // 도적 선택(스포트라이트)
-                new TutorialStep("이번엔 도적을 클릭하세요. 조건에 안 맞는 주사위에는 <b>빗금 배지</b>가 떠요 — 그 눈이면 강화 없이 기본 공격만 나갑니다.")
+                new TutorialStep("이번에는 도적을 선택하세요. 강화 조건에 맞지 않는 주사위에는 <b>빗금 표시</b>가 붙으며, 그 주사위를 쓰면 기본 공격만 발동합니다.")
                     { Target = R, Advance = TutorialAdvance.Custom,
                       Done = () => CharacterActionUI.Instance != null && CharacterActionUI.Instance.IsShowingCharacter(Rogue) },
                 // 이동(전체 화면) + 눈 2만 — 3 이하라 급습 강화 발동
-                new TutorialStep("<b>눈 2</b>로 도적을 이동시키세요. 도적은 눈 <b>3 이하</b>일 때 [급습]으로 급소를 노려요. 전사와 <b>같은 구역</b>에 서면 '협공' 패시브로 피해가 또 2배!")
+                new TutorialStep("<b>눈 2</b> 주사위를 도적에게 배정하고 이동하세요. 도적은 눈이 <b>3 이하</b>이면 [급습]을 사용합니다. 전사와 <b>같은 구역</b>에 도착하면 [협공]도 발동해 피해가 두 배로 증가합니다.")
                     { NoSpotlight = true, OnlyDieValue = 2, ActionLock = TutorialActionLock.MoveOnly, Advance = TutorialAdvance.Custom, Done = () => rogueMoved },
-                new TutorialStep("정리: 공격은 항상 자동으로 나가고, <b>주사위 눈</b>이 조건과 맞으면 강화 공격, <b>서 있는 자리</b>가 맞으면 패시브가 발동해요. 배분과 위치가 전부입니다!")
+                new TutorialStep("정리해 볼까요? 공격은 이동 후 자동으로 발동합니다. <b>주사위 눈</b>은 강화 공격을, <b>캐릭터의 위치</b>는 패시브 발동을 결정합니다.")
                     { GateInput = true },
-                new TutorialStep("행동을 마쳤으면 [턴 종료]로 몬스터 턴을 넘기세요.")
+                new TutorialStep("행동을 모두 마쳤다면 [턴 종료]를 눌러 몬스터 턴으로 넘어가세요.")
                     { Target = EndTurn, Advance = TutorialAdvance.Custom,
                       Done = () => cm == null || !cm.InCombat || !cm.PlayerTurnActive },
-                new TutorialStep("예고한 색 타일 범위로 몬스터가 공격합니다! (그 위 캐릭터가 피격)")
+                new TutorialStep("몬스터가 예고했던 타일을 공격합니다. 공격 범위 안에 남아 있는 캐릭터는 피해를 받습니다.")
                     { NoSpotlight = true, Advance = TutorialAdvance.Custom,
                       Done = () => cm == null || !cm.InCombat || cm.PlayerTurnActive },
-                new TutorialStep("이제 마무리! 남은 몬스터를 처치하세요.")
+                new TutorialStep("이제 배운 내용을 활용해 남은 몬스터를 처치하세요.")
                     { NoSpotlight = true, Advance = TutorialAdvance.Custom, AllowDismiss = true, Done = () => cm == null || !cm.InCombat },
             };
         }

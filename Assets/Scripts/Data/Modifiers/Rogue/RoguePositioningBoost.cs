@@ -17,7 +17,7 @@ namespace DiceOrbit.Data.Modifiers.Rogue
 
         public override ModifierCategory Category => ModifierCategory.Signature;
         public override string ModifierName => "급소 감각";
-        public override string Description => $"협공 피해 계수 +{bonusPercent:0.#}%";
+        public override string Description => $"협공으로 주는 피해가 {bonusPercent:0.#}% 증가합니다.";
 
         // 협공(RogueFlankPassive)을 가진 캐릭터에게만 제시/장착 가능
         public override bool CanApplyTo(Character character)

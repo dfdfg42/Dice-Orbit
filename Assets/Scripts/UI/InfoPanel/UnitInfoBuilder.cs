@@ -369,7 +369,7 @@ namespace DiceOrbit.UI
             foreach (var m in mods)
             {
                 if (m == null) continue;
-                string name = m.ModifierName ?? "Unknown";
+                string name = m.ModifierName ?? "이름 없는 강화";
 
                 if (counts.TryGetValue(name, out var entry))
                     counts[name] = (entry.count + 1, entry.desc);
@@ -393,7 +393,7 @@ namespace DiceOrbit.UI
             {
                 if (p == null) continue;
                 result.Add(new PassiveInfoData(
-                    string.IsNullOrWhiteSpace(p.PassiveName) ? "Unknown Passive" : p.PassiveName,
+                    string.IsNullOrWhiteSpace(p.PassiveName) ? "이름 없는 패시브" : p.PassiveName,
                     p.GetDynamicDescription() ?? string.Empty,
                     (p.Description ?? string.Empty).Trim()));
             }

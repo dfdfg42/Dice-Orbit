@@ -85,22 +85,22 @@ namespace DiceOrbit.Data.Skills
             if (requirement == null) return string.Empty;
 
             if (requirement.ExactDiceValue.HasValue)
-                return $"주사위 {requirement.ExactDiceValue.Value}";
+                return $"주사위 눈 {requirement.ExactDiceValue.Value}";
 
             switch (requirement.Pattern)
             {
-                case DicePattern.Odd:  return "홀수 주사위";
-                case DicePattern.Even: return "짝수 주사위";
-                case DicePattern.High: return "주사위 4 이상";
-                case DicePattern.Low:  return "주사위 3 이하";
+                case DicePattern.Odd:  return "홀수 눈";
+                case DicePattern.Even: return "짝수 눈";
+                case DicePattern.High: return "주사위 눈 4 이상";
+                case DicePattern.Low:  return "주사위 눈 3 이하";
             }
 
             int min = requirement.MinDiceValue;
             var max = requirement.MaxDiceValue;
-            if (max.HasValue && min > 1) return $"주사위 {min}~{max.Value}";
-            if (max.HasValue)            return $"주사위 {max.Value} 이하";
-            if (min > 1)                 return $"주사위 {min} 이상";
-            return "주사위";
+            if (max.HasValue && min > 1) return $"주사위 눈 {min}~{max.Value}";
+            if (max.HasValue)            return $"주사위 눈 {max.Value} 이하";
+            if (min > 1)                 return $"주사위 눈 {min} 이상";
+            return "모든 주사위";
         }
 
         public virtual CharacterActiveSkill Clone() => (CharacterActiveSkill)MemberwiseClone();

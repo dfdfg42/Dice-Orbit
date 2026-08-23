@@ -19,7 +19,7 @@ namespace DiceOrbit.Data.MonsterPresets.Wave0.BlueSlime
         public SlimeSpraySkill()
         {
             skillName = "점액 분사";
-            description = "설치된 점액 타일 + 무작위 타일 6개에 피해";
+            description = "점액 타일과 무작위 타일 6개에 있는 캐릭터에게 피해를 줍니다.";
         }
 
         public override int GetPreviewDamage() => damage;

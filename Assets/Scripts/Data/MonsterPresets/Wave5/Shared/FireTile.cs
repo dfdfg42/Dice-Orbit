@@ -31,7 +31,7 @@ namespace DiceOrbit.Data.Tile
             character.StatusEffects.AddEffect(new FireExtinguishMarkStatus());
         }
 
-        public override string GetDescription() => $"턴 종료 시 {Value} 피해, 통과 시 소화(턴당 1개), 영구";
+        public override string GetDescription() => $"이 타일에서 턴을 마치면 피해 {Value}를 받습니다. 지나가면 불꽃이 꺼지며, 한 턴에 하나만 끌 수 있습니다.";
     }
 }
 

@@ -58,7 +58,7 @@ namespace DiceOrbit.UI
 
             BuildFaces(src?.Faces);
             if (faceGrid != null) faceGrid.gameObject.SetActive(src != null);
-            BuildEffects(src?.Effect, skillHint ? "강화 공격 불가 — 기본공격만 나감" : null);
+            BuildEffects(src?.Effect, skillHint ? "강화 조건 불충족 · 기본 공격 발동" : null);
 
             panel.gameObject.SetActive(true);
             LayoutRebuilder.ForceRebuildLayoutImmediate(panel);   // 첫 프레임부터 내용 크기로

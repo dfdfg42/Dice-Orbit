@@ -42,7 +42,7 @@ namespace DiceOrbit.Data.Tile
         public override string GetDescription()
         {
             string durationText = Duration < 0 ? "영구" : $"{Duration}턴";
-            return $"지나가거나 턴 종료 시 해골 병사에게 방어도 +{Value}, 지속 {durationText}";
+            return $"지나가거나 이 타일에서 턴을 마치면 해골 병사가 방어도 {Value}를 얻습니다. 지속 시간: {durationText}.";
         }
     }
 }
