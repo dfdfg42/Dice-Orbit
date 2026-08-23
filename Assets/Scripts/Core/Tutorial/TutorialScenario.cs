@@ -74,9 +74,9 @@ namespace DiceOrbit.Core.Tutorial
                 if (tutorialBackground != null) enc.BackgroundSprite = tutorialBackground; // 튜토리얼 전용 배경
                 CombatManager.Instance.StartEncounter(enc, 1); // 몬스터 스폰 + 인트로 + 전투 개시
                 DemoMonster = CombatManager.Instance.ActiveMonsters.FirstOrDefault(m => m != null);
-                // 턴1 고정 주사위: 전사 대검(4↑)=5, 도적 원거리 이동=6, 도적 기습(1~2)=2, 여분=3.
+                // 턴1 고정 주사위: 전사 돌파(4↑)=4 → 타일4(구역0 유지), 도적 급습(3↓)=2 → 타일3(전사와 같은 구역=협공), 여분 5·3.
                 // 인트로 후 StartPlayerTurn의 자동 굴림이 이 값을 소모(1회).
-                DiceManager.Instance?.SetScriptedRoll(new[] { 5, 6, 2, 3 });
+                DiceManager.Instance?.SetScriptedRoll(new[] { 4, 2, 5, 3 });
             }
             else
             {
@@ -85,7 +85,7 @@ namespace DiceOrbit.Core.Tutorial
         }
 
         // 진행조건 이벤트 핸들러 (Cleanup에서 해제)
-        private Action<Character> _onMoved, _onSkill;
+        private Action<Character> _onMoved;
 
         /// <summary>전투 12단계 시퀀스. 대상/조건은 런타임 상태를 참조하므로 델리게이트로 지연 평가.
         /// 정보 단계(Confirm)만 입력잠금, 조작 단계는 하이라이트+조건 대기(비잠금 — 다중 클릭 허용).</summary>
@@ -94,10 +94,10 @@ namespace DiceOrbit.Core.Tutorial
             var cm = CombatManager.Instance;
 
             // 진행 플래그 (이벤트 구독으로 세팅 — 클로저 공유)
-            bool warriorSkill = false, rogueMoved = false, rogueSkill = false;
-            _onMoved = c => { if (c == Rogue) rogueMoved = true; };
-            _onSkill = c => { if (c == Warrior) warriorSkill = true; if (c == Rogue) rogueSkill = true; };
-            if (cm != null) { cm.OnPlayerMoved += _onMoved; cm.OnPlayerSkillUsed += _onSkill; }
+            // 공격이 자동이 된 뒤로는 이동이 유일한 조작이므로 이동 이벤트만 본다.
+            bool warriorMoved = false, rogueMoved = false;
+            _onMoved = c => { if (c == Warrior) warriorMoved = true; if (c == Rogue) rogueMoved = true; };
+            if (cm != null) { cm.OnPlayerMoved += _onMoved; }
 
             Func<RectTransform> Action = () => CharacterActionUI.Instance != null ? CharacterActionUI.Instance.PanelRoot : null;
             Func<RectTransform> Dice   = () => DiceUI.Instance != null ? DiceUI.Instance.PanelRect : null;
@@ -121,29 +121,30 @@ namespace DiceOrbit.Core.Tutorial
                     { Target = M, GateInput = true, HighlightOffset = new Vector2(0, 60) },   // 머리 위 아이콘까지 보이게 조금 위로
                 new TutorialStep("오른쪽 정보 패널에 몬스터의 상세 정보(체력·다음 행동 등)가 나와요.")
                     { Target = Info, GateInput = true, CenterBubble = true, OnEnter = () => BattleInfoPanelUI.Instance?.ShowUnitExternal(DemoMonster) },
-                new TutorialStep("이제 필드를 보세요. 바닥의 색칠된 타일 = 그 공격이 닿는 범위예요. 그 위에 있는 캐릭터가 맞습니다.")
+                new TutorialStep("필드는 <b>4개 구역</b>으로 나뉘어요. 구역 모서리 브래킷 색 = 그 구역 주인 몬스터. <b>어느 구역에 서느냐가 곧 누구를 공격하느냐</b>입니다.")
                     { Target = Field, GateInput = true, OnEnter = () => BattleInfoPanelUI.Instance?.ClearUnitExternal(DemoMonster) },
+                new TutorialStep("바닥의 색칠된 타일 = 몬스터 공격이 닿는 범위예요. 그 위에 서 있으면 맞습니다.")
+                    { Target = Field, GateInput = true },
                 new TutorialStep("매 턴 주사위가 자동으로 굴려집니다. 이번 턴에 쓸 자원이에요.")
                     { Target = Dice, GateInput = true },
+                new TutorialStep("이 게임의 핵심: <b>이동이 곧 공격!</b> 주사위로 이동을 마치면, 도착한 구역의 몬스터를 자동으로 공격해요. 공격 버튼은 없습니다.")
+                    { GateInput = true },
                 new TutorialStep("전사를 클릭하세요.")
                     { Target = W, Advance = TutorialAdvance.Custom,
                       Done = () => CharacterActionUI.Instance != null && CharacterActionUI.Instance.IsShowingCharacter(Warrior) },
-                new TutorialStep("이동은 턴당 1번, 행동(스킬)도 턴당 1번만 가능해요.")
+                new TutorialStep("이동은 캐릭터마다 턴에 1번. 어떤 주사위를 주느냐에 따라 <b>얼마나 가는지</b>와 <b>공격이 강화되는지</b>가 함께 정해져요.")
                     { Target = Action, GateInput = true, HighlightPad = new Vector4(0, 0, 0, 120) },   // 아래로 더 길게
-                // 공격(전체 화면) + 지정 눈만 선택 가능
-                new TutorialStep("전사 좌우에 아군이 있으면 공격 +50%! 지금 도적이 옆에 있죠. <b>눈 5</b> 주사위로 전사의 [대검]을 써서 몬스터를 공격하세요.")
-                    { NoSpotlight = true, OnlyDieValue = 5, ActionLock = TutorialActionLock.SkillOnly, Advance = TutorialAdvance.Custom, Done = () => warriorSkill },
+                // 이동(전체 화면) + 눈 4만 — 4 이상이라 돌파 강화 발동
+                new TutorialStep("<b>눈 4</b> 주사위로 전사를 이동시키세요. 전사는 눈 <b>4 이상</b>이면 강화 공격 [돌파]가 터져, 지나쳐 온 구역의 몬스터를 모두 벱니다!")
+                    { NoSpotlight = true, OnlyDieValue = 4, ActionLock = TutorialActionLock.MoveOnly, Advance = TutorialAdvance.Custom, Done = () => warriorMoved },
                 // 도적 선택(스포트라이트)
-                new TutorialStep("이번엔 도적을 클릭하세요.")
+                new TutorialStep("이번엔 도적을 클릭하세요. 조건에 안 맞는 주사위에는 <b>빗금 배지</b>가 떠요 — 그 눈이면 강화 없이 기본 공격만 나갑니다.")
                     { Target = R, Advance = TutorialAdvance.Custom,
                       Done = () => CharacterActionUI.Instance != null && CharacterActionUI.Instance.IsShowingCharacter(Rogue) },
-                // 이동(전체 화면) + 눈 6만
-                new TutorialStep("<b>눈 6</b> 주사위로 도적을 멀리 이동시키세요. 멀리 갈수록 다음 공격이 강해져요(1칸당 +25%).")
-                    { NoSpotlight = true, OnlyDieValue = 6, ActionLock = TutorialActionLock.MoveOnly, Advance = TutorialAdvance.Custom, Done = () => rogueMoved },
-                // 공격(전체 화면) + 눈 2만
-                new TutorialStep("<b>눈 2</b> 주사위로 도적의 [기습]을 써서 몬스터를 공격하세요! 방금 이동한 만큼 큰 피해가 들어갑니다.")
-                    { NoSpotlight = true, OnlyDieValue = 2, ActionLock = TutorialActionLock.SkillOnly, Advance = TutorialAdvance.Custom, Done = () => rogueSkill },
-                new TutorialStep("방금 전사·도적 효과는 모두 '패시브' — 버튼 없이 조건이 맞으면 자동 발동해요. 스킬 버튼은 '액티브'!")
+                // 이동(전체 화면) + 눈 2만 — 3 이하라 급습 강화 발동
+                new TutorialStep("<b>눈 2</b>로 도적을 이동시키세요. 도적은 눈 <b>3 이하</b>일 때 [급습]으로 급소를 노려요. 전사와 <b>같은 구역</b>에 서면 '협공' 패시브로 피해가 또 2배!")
+                    { NoSpotlight = true, OnlyDieValue = 2, ActionLock = TutorialActionLock.MoveOnly, Advance = TutorialAdvance.Custom, Done = () => rogueMoved },
+                new TutorialStep("정리: 공격은 항상 자동으로 나가고, <b>주사위 눈</b>이 조건과 맞으면 강화 공격, <b>서 있는 자리</b>가 맞으면 패시브가 발동해요. 배분과 위치가 전부입니다!")
                     { GateInput = true },
                 new TutorialStep("행동을 마쳤으면 [턴 종료]로 몬스터 턴을 넘기세요.")
                     { Target = EndTurn, Advance = TutorialAdvance.Custom,
@@ -163,9 +164,8 @@ namespace DiceOrbit.Core.Tutorial
             if (cm != null)
             {
                 if (_onMoved != null) cm.OnPlayerMoved -= _onMoved;
-                if (_onSkill != null) cm.OnPlayerSkillUsed -= _onSkill;
             }
-            _onMoved = null; _onSkill = null;
+            _onMoved = null;
             ScreenBoxProvider.ClearAll();
             HoverTooltipUI.Instance?.HidePinned();   // 데모 몬스터 위에 떠 있던 커서 툴팁이 얼어붙어 남지 않게
             DiceManager.Instance?.SetScriptedRoll(null);   // 잔여 통제 주사위가 실제 런으로 새지 않게
