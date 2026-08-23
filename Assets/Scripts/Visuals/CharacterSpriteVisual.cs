@@ -68,6 +68,13 @@ namespace DiceOrbit.Visuals
         {
             SetBoolSafe(movingBool, false);
             SetBoolSafe(aimingBool, false);
+            ResetAnimatorSpeed();   // 이동에서 압축했던 재생 속도를 평상으로
+        }
+
+        /// <summary>이동 압축 재생이 끝난 뒤 재생 속도를 평상(1)으로 되돌린다.</summary>
+        private void ResetAnimatorSpeed()
+        {
+            if (animator != null) animator.speed = 1f;
         }
 
         /// <summary>Move 스프라이트로 전환 (한 칸 이동 시작 시 호출)</summary>
@@ -80,10 +87,13 @@ namespace DiceOrbit.Visuals
         /// <summary>
         /// 한 칸 이동용 Move 애니메이션을 '처음(0프레임)부터' 재생하고, 그 재생 길이(초)를 반환한다.
         /// moveStateName 이 지정돼 있고 해당 상태가 존재하면 animator.Play 로 강제 재시작한다.
-        /// 반환값(>0)을 한 칸 이동 시간과 동기화하면 애니메이션이 끝난 뒤에 다음 칸으로 넘어간다.
+        ///
+        /// desiredDuration(>0)을 주면 클립을 그 시간에 맞춰 압축 재생한다
+        /// (animator.speed = 클립 길이 / 목표 시간) — 이동을 빠르게 해도 한 칸 = 한 사이클의
+        /// 프레임 동기가 유지된다. 속도는 착지 시 PlayIdle이 평상(1)으로 되돌린다.
         /// (지정 안 됐거나 상태가 없으면 IsMoving bool 만 켜고 0 을 반환 → 호출부가 기본 이동 시간을 사용)
         /// </summary>
-        public float PlayMoveStep()
+        public float PlayMoveStep(float desiredDuration = 0f)
         {
             SetBoolSafe(aimingBool, false);
             SetBoolSafe(movingBool, true);
@@ -95,7 +105,12 @@ namespace DiceOrbit.Visuals
                 {
                     animator.Play(hash, 0, 0f);
                     animator.Update(0f); // 상태를 즉시 진입시켜 길이를 바로 읽을 수 있게 한다
-                    return animator.GetCurrentAnimatorStateInfo(0).length;
+                    float length = animator.GetCurrentAnimatorStateInfo(0).length;
+
+                    if (desiredDuration > 0f && length > 0f)
+                        animator.speed = length / desiredDuration;   // 한 칸 시간에 클립 한 사이클을 맞춘다
+
+                    return length;
                 }
             }
             return 0f;

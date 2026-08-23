@@ -22,8 +22,8 @@ namespace DiceOrbit.Core
         /// <summary>스폰 시 시작 타일 인덱스를 지정 (Start의 지연 초기화 전에 호출).</summary>
         public void SetStartTileIndex(int index) => startTileIndex = index;
         [SerializeField] private float stepHopHeight = 0.6f;       // 한 칸 점프 높이 (클수록 높이 뜀)
-        [SerializeField] private float stepIdlePause = 0.15f;      // 한 칸 착지 후 잠깐 멈추는 시간(초)
-        [SerializeField] private float stepDuration = 0.4f;        // 한 칸 건너가는 시간(초) — 길수록 천천히, 이동 애니메이션이 보일 시간 확보
+        [SerializeField] private float stepIdlePause = 0.05f;      // 한 칸 착지 후 잠깐 멈추는 시간(초)
+        [SerializeField] private float stepDuration = 0.22f;       // 한 칸 건너가는 시간(초). 애니메이션은 이 시간에 맞춰 압축 재생되므로 프레임 동기가 깨지지 않는다
         private bool stopMovementRequested = false;
 
         // 스프라이트 비주얼
@@ -221,8 +221,8 @@ namespace DiceOrbit.Core
                 float elapsed = 0f;
                 UpdateFacingByMoveDirection(endPos - startPos);
 
-                // 한 칸 이동 시작 → 이동 애니메이션을 처음부터 재생 (한 칸 건너가는 시간 = stepDuration)
-                spriteVisual?.PlayMoveStep();
+                // 한 칸 이동 시작 → 이동 애니메이션을 stepDuration에 맞춰 압축 재생 (프레임 동기 유지)
+                spriteVisual?.PlayMoveStep(stepDuration);
 
                 while (elapsed < stepDuration)
                 {

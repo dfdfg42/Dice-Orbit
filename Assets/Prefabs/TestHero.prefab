@@ -153,8 +153,8 @@ MonoBehaviour:
   currentTile: {fileID: 0}
   startTileIndex: 0
   stepHopHeight: 0.6
-  stepIdlePause: 0.15
-  stepDuration: 0.4
+  stepIdlePause: 0.05
+  stepDuration: 0.22
   hoverSortingBoost: 100
   deathDespawnDelay: 0.7
   references:
