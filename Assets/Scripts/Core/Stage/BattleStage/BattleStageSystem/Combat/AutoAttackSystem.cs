@@ -8,15 +8,13 @@ using UnityEngine;
 namespace DiceOrbit.Core
 {
     /// <summary>
-    /// 자동 공격. 캐릭터는 매 턴 반드시 한 번 공격한다 — 이것이 파티 피해량의 바닥을 보장한다(불변식 1).
-    /// 피해는 캐릭터 공격력이 정하고, 배정한 주사위가 액티브 조건을 만족하면 거기에 배율이 곱해진
-    /// 강화 공격으로 나간다(대체이지 추가가 아니다).
-    /// 조건은 공격을 막지 못하고 배율만 얹으므로 불변식 4(게이트는 보너스만 연다)와 맞는다.
+    /// 자동 공격 — 이동해야만 공격이다. 주사위를 배정해 이동을 마친 캐릭터가 도착 구역의 몬스터를
+    /// 자동으로 한 번 때린다. 제자리로 턴을 넘긴 캐릭터는 공격하지 않는다(2026-08-23 결정) —
+    /// 이동 포기 자체가 선택이고 그 대가가 이번 턴의 딜이다.
     ///
-    /// 발동 지점은 둘이지만 실제 처리는 ResolveRoutine 한 곳이다:
-    ///  ① 이동 직후 (MoveThenAttackRoutine — 플레이어가 결과를 보고 다음 캐릭터를 정할 수 있도록)
-    ///  ② 턴 종료 시 아직 안 때린 캐릭터 일괄 (ResolveRemainingRoutine — 주사위를 안 받은 캐릭터도 바닥은 보장)
-    /// 중복 발동은 턴별 기록으로 막는다.
+    /// 피해는 캐릭터 공격력이 정하고, 배정한 주사위가 액티브 조건을 만족하면 거기에 배율이 곱해진
+    /// 강화 공격으로 나간다(대체이지 추가가 아니다). 조건은 공격을 막지 못하고 배율만 얹는다.
+    /// 발동 지점은 이동 직후(MoveThenAttackRoutine) 한 곳이며, 중복 발동은 턴별 기록으로 막는다.
     /// </summary>
     public class AutoAttackSystem : MonoBehaviour
     {
@@ -93,19 +91,6 @@ namespace DiceOrbit.Core
                 if (zone >= 0 && !result.Contains(zone)) result.Add(zone);
             }
             return result;
-        }
-
-        /// <summary>아직 공격하지 않은 생존 캐릭터 전원을 순서대로 공격시킨다.</summary>
-        public IEnumerator ResolveRemainingRoutine()
-        {
-            var party = PartyManager.Instance != null ? PartyManager.Instance.Party : null;
-            if (party == null) yield break;
-
-            // 순회 중 파티 목록이 바뀔 수 있으므로 복사본으로 돈다.
-            // 주사위를 받지 못한 캐릭터도 기본공격은 나간다 — 조건을 만족할 눈이 없어 배율만 못 얹는다.
-            var snapshot = new List<Character>(party);
-            foreach (var character in snapshot)
-                yield return ResolveRoutine(character, 0, null);
         }
 
         /// <summary>

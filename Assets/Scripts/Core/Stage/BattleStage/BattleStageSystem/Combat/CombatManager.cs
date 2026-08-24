@@ -381,9 +381,8 @@ namespace DiceOrbit.Core
             }
             combatStatus = CombatStatus.EndPlayerTurn;
 
-            // 이동하지 않아 아직 때리지 않은 캐릭터도 기본공격은 반드시 한다 (피해 바닥 보장, 스펙 불변식 1).
-            yield return AutoAttackSystem.EnsureInstance().ResolveRemainingRoutine();
-            if (IsCombatFinished()) yield break;
+            // 이동해야만 공격이다 — 제자리로 턴을 넘긴 캐릭터는 공격하지 않는다 (2026-08-23 결정).
+            // 이동을 포기하는 것 자체가 선택이고, 그 대가가 이번 턴의 딜이다.
 
             var partyManager = PartyManager.Instance;
             if (partyManager != null)
