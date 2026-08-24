@@ -44,6 +44,8 @@ namespace DiceOrbit.UI
         }
 
         private readonly Queue<Request> _queue = new Queue<Request>();
+        // 버블이 전부 사라진 뒤 한꺼번에 띄울 요청(피해 숫자). 서로는 줄 서지 않는다.
+        private readonly List<Request> _afterBubbles = new List<Request>();
         private readonly Dictionary<Transform, StackState> _stacks = new Dictionary<Transform, StackState>();
         private readonly Dictionary<(Transform, string), float> _lastByKey = new Dictionary<(Transform, string), float>();
         private Coroutine _drain;
@@ -66,7 +68,7 @@ namespace DiceOrbit.UI
         /// 몬스터 턴 전환이 이걸 기다린다.
         /// </summary>
         public static bool AllPopupsFinished =>
-            (Instance == null || (Instance._queue.Count == 0 && Instance._drain == null))
+            (Instance == null || (Instance._queue.Count == 0 && Instance._drain == null && Instance._afterBubbles.Count == 0))
             && FloatingLabelPopup.ActiveCount == 0;
 
         public static FloatingPopupQueue EnsureInstance()
@@ -97,6 +99,33 @@ namespace DiceOrbit.UI
                 queue._drain = queue.StartCoroutine(queue.DrainRoutine());
         }
 
+        /// <summary>
+        /// 버블(앞서 요청된 순차 팝업)이 전부 사라진 뒤에 띄운다 — 피해 숫자용.
+        /// 버블이 없으면 즉시 뜨고, 버블이 진행 중이면 끝나는 순간 밀린 것들이 한꺼번에 뜬다.
+        /// 피해 숫자끼리는 줄 서지 않는다(동시 타격은 동시에 보여야 읽힌다).
+        /// </summary>
+        public static void EnqueueAfterBubbles(Transform anchor, float height, System.Action<Vector3> spawn)
+        {
+            if (anchor == null || spawn == null) return;
+
+            var queue = EnsureInstance();
+            if (queue._queue.Count == 0 && queue._drain == null)
+            {
+                spawn(anchor.position + Vector3.up * (height + queue.ResolveStagger(anchor)));
+                return;
+            }
+            queue._afterBubbles.Add(new Request { Anchor = anchor, Height = height, Spawn = spawn });
+        }
+
+        private void FlushAfterBubbles()
+        {
+            if (_afterBubbles.Count == 0) return;
+            foreach (var request in _afterBubbles)
+                if (request.Anchor != null)
+                    request.Spawn(request.Anchor.position + Vector3.up * (request.Height + ResolveStagger(request.Anchor)));
+            _afterBubbles.Clear();
+        }
+
         private IEnumerator DrainRoutine()
         {
             while (_queue.Count > 0)
@@ -116,6 +145,8 @@ namespace DiceOrbit.UI
                 }
             }
 
+            // 버블이 전부 사라졌다 — 기다리던 피해 숫자를 한꺼번에 방출.
+            FlushAfterBubbles();
             _drain = null;
         }
 
