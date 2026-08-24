@@ -18,11 +18,13 @@ namespace DiceOrbit.UI
         public static FloatingPopupQueue Instance { get; private set; }
 
         [Header("표시 간격")]
-        [Tooltip("팝업 하나를 띄운 뒤 다음까지의 간격(초)")]
-        [SerializeField] private float interval = 0.32f;
-        [Tooltip("대기열이 이만큼 밀리면 간격을 줄여 따라잡는다 — 연출이 전투보다 뒤처지지 않게")]
+        [Tooltip("이전 팝업이 '완전히 사라진 뒤' 다음까지 추가로 두는 간격(초). 팝업 수명은 자동으로 기다린다.")]
+        [SerializeField] private float gapAfterFade = 0.05f;
+        [Tooltip("대기열이 이만큼 밀리면 수명을 다 기다리지 않고 따라잡는다 — 연출이 전투보다 뒤처지지 않게")]
         [SerializeField] private int catchUpThreshold = 6;
-        [SerializeField] private float catchUpInterval = 0.1f;
+        [Tooltip("따라잡기 중 팝업 수명의 몇 %만 기다릴지 (0.5 = 절반쯤 사라졌을 때 다음)")]
+        [Range(0.2f, 1f)]
+        [SerializeField] private float catchUpLifetimeScale = 0.5f;
 
         [Header("반복 억제")]
         [Tooltip("같은 유닛에 같은 문구가 이 시간 안에 다시 요청되면 무시한다(초). 피해 숫자처럼 키가 없는 요청은 억제하지 않는다.")]
@@ -97,8 +99,12 @@ namespace DiceOrbit.UI
                 {
                     request.Spawn(request.Anchor.position + Vector3.up * (request.Height + ResolveStagger(request.Anchor)));
 
-                    // 표시한 것에만 간격을 준다 — 사라진 유닛의 요청은 건너뛰고 바로 다음으로.
-                    yield return new WaitForSeconds(_queue.Count >= catchUpThreshold ? catchUpInterval : interval);
+                    // 이전 팝업이 완전히 사라진 뒤에 다음을 띄운다 — 한 번에 하나만 보이도록.
+                    // 단, 많이 밀려 있으면 수명 일부만 기다려 따라잡는다 (사라진 유닛의 요청은 대기 없이 건너뜀).
+                    float wait = _queue.Count >= catchUpThreshold
+                        ? FloatingLabelPopup.Lifetime * catchUpLifetimeScale
+                        : FloatingLabelPopup.Lifetime + gapAfterFade;
+                    yield return new WaitForSeconds(wait);
                 }
             }
 

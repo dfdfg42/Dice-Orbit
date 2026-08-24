@@ -15,7 +15,8 @@ namespace DiceOrbit.UI
         private Camera _cam;
 
         private const float MoveSpeed      = 1.6f;
-        private const float Lifetime       = 1.2f;
+        /// <summary>팝업이 떠올랐다 사라지기까지의 수명(초). 표시 대기열이 이 시간을 기다린다.</summary>
+        public  const float Lifetime       = 1.2f;
         private const float LabelFontSize  = 13.0f;   // 패시브/상태 버블
         private const float DamageFontSize = 15.0f;   // 데미지 숫자
         private const float CritFontSize   = 19.0f;   // 치명타
