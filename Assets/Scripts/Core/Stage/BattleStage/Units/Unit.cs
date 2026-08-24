@@ -103,9 +103,9 @@ namespace DiceOrbit.Core
             int actualDamage = Stats.TakeDamage(damage);
             if (actualDamage > 0)
             {
-                // 표시 대기열을 거쳐 패시브 버블과 뒤섞이지 않고 순서대로 뜬다.
-                int shown = actualDamage;
-                UI.FloatingPopupQueue.Enqueue(transform, 1.6f, pos => FloatingLabelPopup.CreateDamage(shown, pos));
+                // 데미지 숫자는 즉시 띄운다 — 타격이 들어간 순간이 곧 표시 순간이어야 하고,
+                // 여러 대상이 함께 맞으면 함께 떠야 한다. 줄 세우는 건 패시브/상태 버블만(FloatingPopupQueue).
+                FloatingLabelPopup.CreateDamage(actualDamage, transform.position + Vector3.up * 1.6f);
             }
             return actualDamage;
         }

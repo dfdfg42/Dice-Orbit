@@ -14,6 +14,9 @@ namespace DiceOrbit.UI
         private Color _baseColor;
         private Camera _cam;
 
+        /// <summary>화면에 살아 있는 팝업 수. 몬스터 턴 전환이 0이 될 때까지 기다린다.</summary>
+        public static int ActiveCount { get; private set; }
+
         private const float MoveSpeed      = 1.6f;
         /// <summary>팝업이 떠올랐다 사라지기까지의 수명(초). 표시 대기열이 이 시간을 기다린다.</summary>
         public  const float Lifetime       = 1.2f;
@@ -50,6 +53,12 @@ namespace DiceOrbit.UI
         private void Awake()
         {
             _cam = Camera.main;
+            ActiveCount++;
+        }
+
+        private void OnDestroy()
+        {
+            ActiveCount = Mathf.Max(0, ActiveCount - 1);
         }
 
         public void Setup(string text, Color color, float fontSize = LabelFontSize)

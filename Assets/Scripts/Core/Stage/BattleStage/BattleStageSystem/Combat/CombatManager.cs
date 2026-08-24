@@ -412,6 +412,10 @@ namespace DiceOrbit.Core
             // 공격 의도 미리보기 숨기기 (몬스터 턴 시작 전)
             HideMonsterIntents();
 
+            // 플레이어 턴의 팝업 연출(피해 숫자·패시브 버블)이 전부 사라진 뒤에 몬스터 턴으로 —
+            // 몬스터 행동이 연출 위로 덮치지 않게 한다.
+            yield return new WaitUntil(() => UI.FloatingPopupQueue.AllPopupsFinished);
+
             // "몬스터 턴" 안내 → ProgressMonsterTurn
             yield return AnnounceAndProgressMonsterTurn();
         }

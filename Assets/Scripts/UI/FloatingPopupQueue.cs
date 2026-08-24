@@ -61,6 +61,14 @@ namespace DiceOrbit.UI
             if (Instance == this) Instance = null;
         }
 
+        /// <summary>
+        /// 모든 팝업 연출이 끝났는가 — 대기열이 비었고(마지막 버블 수명 대기 포함) 화면의 팝업도 전부 사라졌는가.
+        /// 몬스터 턴 전환이 이걸 기다린다.
+        /// </summary>
+        public static bool AllPopupsFinished =>
+            (Instance == null || (Instance._queue.Count == 0 && Instance._drain == null))
+            && FloatingLabelPopup.ActiveCount == 0;
+
         public static FloatingPopupQueue EnsureInstance()
         {
             if (Instance != null) return Instance;
