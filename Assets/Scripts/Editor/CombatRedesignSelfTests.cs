@@ -2,6 +2,7 @@ using System.Linq;
 using System.Reflection;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Combo;
+using DiceOrbit.Core.Tutorial;
 using DiceOrbit.Data.CharacterActives;
 using DiceOrbit.Data.Passives;
 using DiceOrbit.Systems.Effects;
@@ -33,8 +34,11 @@ namespace DiceOrbit.EditorTools
             TestActionScopeBookkeeping();
             TestStageTables();
             TestSelectionActiveSummaries();
+            TestTutorialCombatProgress();
+            TestTutorialScenarioSetup();
+            TestTutorialGuidedComboGates();
 
-            if (_failures == 0) Debug.Log("[SelfTest] 전체 PASS — 콤보/중독/구역 wrap/스코프/단계표");
+            if (_failures == 0) Debug.Log("[SelfTest] 전체 PASS — 콤보/중독/구역/스코프/단계표/튜토리얼");
             else Debug.LogError($"[SelfTest] 실패 {_failures}건 — 위 로그 확인");
             return _failures == 0;
         }
@@ -187,6 +191,113 @@ namespace DiceOrbit.EditorTools
             }
 
             UnityEngine.Object.DestroyImmediate(go);
+        }
+
+        private static void TestTutorialCombatProgress()
+        {
+            var warriorObject = new GameObject("TutorialProgressWarrior");
+            var rogueObject = new GameObject("TutorialProgressRogue");
+            var strangerObject = new GameObject("TutorialProgressStranger");
+            var warrior = warriorObject.AddComponent<Character>();
+            var rogue = rogueObject.AddComponent<Character>();
+            var stranger = strangerObject.AddComponent<Character>();
+            var progress = new TutorialCombatProgress(warrior, rogue);
+
+            progress.Observe(stranger, 1, ComboOutcome.Advanced);
+            progress.Observe(warrior, 0, ComboOutcome.Advanced);
+            progress.Observe(rogue, 1, ComboOutcome.BrokenByDice);
+            Check(!progress.WarriorStage1Done && !progress.RogueStage1Done,
+                "튜토리얼 진행은 잘못된 캐릭터·단계·결과를 무시");
+
+            progress.Observe(warrior, 1, ComboOutcome.Advanced);
+            Check(progress.WarriorStage1Done, "전사 1단계 실제 발동을 인식");
+
+            progress.Observe(rogue, 1, ComboOutcome.Advanced);
+            Check(progress.RogueStage1Done, "도적 1단계 실제 발동을 인식");
+
+            progress.Observe(warrior, 2, ComboOutcome.Advanced);
+            Check(progress.WarriorStage2Done, "전사 2단계 실제 발동을 인식");
+
+            progress.Observe(warrior, 0, ComboOutcome.Finished);
+            Check(progress.WarriorFinished, "전사 3단계 완료를 인식");
+
+            UnityEngine.Object.DestroyImmediate(warriorObject);
+            UnityEngine.Object.DestroyImmediate(rogueObject);
+            UnityEngine.Object.DestroyImmediate(strangerObject);
+        }
+
+        private static void TestTutorialScenarioSetup()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/TutorialScenario.prefab");
+            var scenario = prefab != null ? prefab.GetComponent<TutorialScenario>() : null;
+            Check(scenario != null, "튜토리얼 시나리오 프리팹 로드");
+            if (scenario == null) return;
+
+            Check(scenario.HasConfiguredPartyPresets, "튜토리얼 전사·도적 프리셋 연결");
+            Check(scenario.HasConfiguredMonsterPresets, "튜토리얼 파란·초록 슬라임 프리셋 연결");
+
+            var presets = scenario.BuildDemoMonsterPresets();
+            Check(presets.Count == 4, "튜토리얼은 네 구역에 몬스터 한 마리씩 배치");
+            if (presets.Count != 4) return;
+
+            Check(presets[0] != null && presets[1] != null && presets[0] != presets[1],
+                "0구역은 방진 체험용 파란 슬라임");
+            Check(presets[1] == presets[2] && presets[2] == presets[3],
+                "1~3구역은 같은 초록 슬라임 프리셋");
+        }
+
+        private static void TestTutorialGuidedComboGates()
+        {
+            var scenarioObject = new GameObject("TutorialGuidedComboScenario");
+            var warriorObject = new GameObject("TutorialGuidedComboWarrior");
+            var rogueObject = new GameObject("TutorialGuidedComboRogue");
+            var scenario = scenarioObject.AddComponent<TutorialScenario>();
+            var warrior = warriorObject.AddComponent<Character>();
+            var rogue = rogueObject.AddComponent<Character>();
+
+            typeof(TutorialScenario).GetProperty("Warrior")?.SetValue(scenario, warrior);
+            typeof(TutorialScenario).GetProperty("Rogue")?.SetValue(scenario, rogue);
+
+            bool createdCombo = ComboSystem.Instance == null;
+            var combo = ComboSystem.EnsureInstance();
+            combo.ResetAll();
+            var steps = scenario.BuildCombatSteps();
+            var guidedMoves = steps
+                .Where(step => step.Advance == UI.Tutorial.TutorialAdvance.Custom && step.OnlyDieValue.HasValue)
+                .ToList();
+
+            Check(guidedMoves.Count == 4, "튜토리얼 직접 조작은 전사 3회·도적 1회");
+            Check(guidedMoves.Count == 4
+                  && guidedMoves.Select(step => step.OnlyDieValue.Value).SequenceEqual(new[] { 4, 2, 4, 4 }),
+                "튜토리얼 고정 주사위 순서는 전사4·도적2·전사4·전사4");
+
+            if (guidedMoves.Count == 4)
+            {
+                Check(!guidedMoves[0].Done() && !guidedMoves[1].Done() && !guidedMoves[2].Done(),
+                    "실제 콤보 발동 전에는 이동 안내가 완료되지 않음");
+
+                combo.ReportExecuted(warrior);
+                Check(guidedMoves[0].Done() && !guidedMoves[1].Done(), "전사 1단계만 첫 안내를 완료");
+
+                combo.ReportExecuted(rogue);
+                Check(guidedMoves[1].Done(), "도적 1단계가 도적 안내를 완료");
+
+                combo.ReportExecuted(warrior);
+                Check(guidedMoves[2].Done(), "전사 2단계가 둘째 전사 안내를 완료");
+
+                combo.ReportExecuted(warrior);
+                Check(guidedMoves[3].Done(), "전사 3단계가 피날레 안내를 완료");
+            }
+
+            var handlerField = typeof(TutorialScenario).GetField("_onComboChanged", BindingFlags.Instance | BindingFlags.NonPublic);
+            var handler = handlerField?.GetValue(scenario) as System.Action<Character, int, ComboOutcome>;
+            if (handler != null)
+                typeof(ComboSystem).GetEvent("OnComboChanged")?.RemoveEventHandler(combo, handler);
+
+            UnityEngine.Object.DestroyImmediate(scenarioObject);
+            UnityEngine.Object.DestroyImmediate(warriorObject);
+            UnityEngine.Object.DestroyImmediate(rogueObject);
+            if (createdCombo && combo != null) UnityEngine.Object.DestroyImmediate(combo.gameObject);
         }
     }
 }
