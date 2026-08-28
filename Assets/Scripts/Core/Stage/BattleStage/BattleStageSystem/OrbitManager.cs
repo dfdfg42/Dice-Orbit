@@ -74,8 +74,8 @@ namespace DiceOrbit.Core
                 float z = Mathf.Sin(angle) * orbitRadius;
                 Vector3 position = new Vector3(x, 0, z);
                 
-                // 타일 타입 결정 (0번은 레벨업 타일)
-                TileType tileType = (i == 0) ? TileType.LevelUp : TileType.Normal;
+                // 모든 타일은 일반 타입 — 0번(시작) 타일도 겉모습은 일반이고, 치유 속성만 붙는다 (2026-08-28 결정)
+                TileType tileType = TileType.Normal;
                 
                 // 타일 생성
                 GameObject tileObj = CreateTile(position, i, tileType);
@@ -114,9 +114,9 @@ namespace DiceOrbit.Core
             if (tileData == null)
             {
                 tileData = tileObj.AddComponent<TileData>();
-                if (type == TileType.LevelUp)
+                if (index == 0)
                 {
-                    // 시작 타일 = 치유 타일 (구 레벨업 타일 대체 — 지나가면 소량 회복, 기획 REV05)
+                    // 시작(0번) 타일 = 치유 속성 (지나가면 소량 회복, 기획 REV05). 타입은 일반 — 효과만 붙는다.
                     tileData.AddAttribute(new StartHealTile(TileAttributeType.ScoutHeal, 5, -1));
                 }
             }

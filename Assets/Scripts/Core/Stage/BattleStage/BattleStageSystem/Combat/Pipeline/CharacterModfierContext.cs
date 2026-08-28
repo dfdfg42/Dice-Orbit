@@ -29,14 +29,6 @@ namespace DiceOrbit.Core.Pipeline
         }
     }
 
-    public class WarriorGreatswordModifiedContext : CharacterModfierContext
-    {
-        public int BaseDamageMultiplier { get; set; }
-
-        public WarriorGreatswordModifiedContext(Character source, CharacterActiveSkill skill)
-            : base(source, skill)
-        {
-            BaseDamageMultiplier = 1;
-        }
-    }
+    // (WarriorGreatswordModifiedContext는 2026-08-28 공용 모디파이어 전면 교체로 폐기 —
+    //  시그니처 모디파이어가 사라져 전용 도화지가 더 이상 필요 없다)
 }

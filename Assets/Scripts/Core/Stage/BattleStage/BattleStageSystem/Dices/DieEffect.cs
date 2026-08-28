@@ -28,7 +28,7 @@ namespace DiceOrbit.Data
     {
         public int amount = 20;
         public override string Apply(DieUseContext ctx) { GoldManager.EnsureInstance().AddGold(amount); return $"골드 +{amount}"; }
-        public override string Preview() => $"사용하면 골드 {amount}를 얻습니다.";
+        public override string Preview() => $"사용 시 골드를 {amount}만큼 얻습니다.";
     }
 
     /// <summary>사용 시 사용한 캐릭터 HP +N.</summary>
@@ -43,7 +43,7 @@ namespace DiceOrbit.Data
                 u.Stats.CurrentHP = Mathf.Min(u.Stats.MaxHP, u.Stats.CurrentHP + amount);
             return $"HP +{amount}";
         }
-        public override string Preview() => $"사용한 캐릭터의 체력을 {amount} 회복합니다.";
+        public override string Preview() => $"사용 시 해당 캐릭터의 체력을 {amount} 회복합니다.";
     }
 
     /// <summary>사용 시 사용자에게 일시 방어도 +N (인챈트 이벤트 — 수호).</summary>
@@ -59,7 +59,68 @@ namespace DiceOrbit.Data
             DiceOrbit.UI.CombatNotifier.Notify(u, $"방어도 +{amount}", new Color(0.6f, 0.75f, 1f));
             return $"방어도 +{amount}";
         }
-        public override string Preview() => $"사용한 캐릭터가 방어도 {amount}를 얻습니다.";
+        public override string Preview() => $"사용 시 해당 캐릭터가 방어도를 {amount}만큼 얻습니다.";
+    }
+
+    /// <summary>사용 시 사용자에게 고양(다음 공격 행동 피해 +N%, 1회 소모) 부여 (집중 주사위).</summary>
+    [System.Serializable]
+    public class InspireOnUse : DieEffect
+    {
+        public int percent = 15;
+        public override string Apply(DieUseContext ctx)
+        {
+            var u = ctx?.User;
+            if (u == null || !u.IsAlive || u.StatusEffects == null) return "";
+            u.StatusEffects.AddEffect(
+                DiceOrbit.Systems.Effects.StatusEffectManager.CreateEffect(EffectType.Inspire, percent, -1));
+            var data = DiceOrbit.UI.TooltipKeywordFormatter.BuildStatusDisplayData(EffectType.Inspire.ToString(), percent, -1);
+            DiceOrbit.UI.CombatNotifier.NotifyStatus(u, data.Name, data.Color);
+            return $"고양 +{percent}%";
+        }
+        public override string Preview() => $"사용 시 해당 캐릭터의 다음 자동공격 피해가 {percent}% 증가합니다.";
+    }
+
+    /// <summary>사용 시 사용자에게 걸린 해제 가능한 디버프 1개 제거 (정제 주사위).</summary>
+    [System.Serializable]
+    public class CleanseDebuffOnUse : DieEffect
+    {
+        // 해제 가능한 디버프 목록 — 순서 = 제거 우선순위. 새 디버프가 생기면 여기 추가.
+        private static readonly EffectType[] Removable =
+        {
+            EffectType.Poison, EffectType.Stunned, EffectType.Bound, EffectType.Slowed,
+            EffectType.Vulnerable, EffectType.Weak, EffectType.Weaken, EffectType.BloodSugarSpike,
+        };
+
+        public override string Apply(DieUseContext ctx)
+        {
+            var u = ctx?.User;
+            if (u == null || !u.IsAlive || u.StatusEffects == null) return "";
+
+            foreach (var type in Removable)
+            {
+                if (!u.StatusEffects.HasEffect(type)) continue;
+                u.StatusEffects.RemoveEffect(type);
+                var data = DiceOrbit.UI.TooltipKeywordFormatter.BuildStatusDisplayData(type.ToString(), 0, -1);
+                DiceOrbit.UI.CombatNotifier.Notify(u, $"{data.Name} 해제!", new Color(0.65f, 0.95f, 0.75f));
+                return $"{data.Name} 제거";
+            }
+            return "";
+        }
+        public override string Preview() => "사용 시 해당 캐릭터에게 걸린 해제 가능한 디버프 1개를 제거합니다.";
+    }
+
+    /// <summary>사용 시 아직 사용하지 않은 주사위를 전부 재굴림 (혼돈 주사위).</summary>
+    [System.Serializable]
+    public class RerollUnusedOnUse : DieEffect
+    {
+        public override string Apply(DieUseContext ctx)
+        {
+            var dm = DiceManager.Instance;
+            if (dm == null) return "";
+            dm.RerollAvailableDice();
+            return "미사용 주사위 재굴림";
+        }
+        public override string Preview() => "사용하지 않은 주사위를 전부 다시 굴립니다.";
     }
 
     /// <summary>사용 시 사용자에게 파워(피해 +N%, 1턴) 부여 (인챈트 이벤트 — 공세).</summary>
@@ -77,6 +138,6 @@ namespace DiceOrbit.Data
             DiceOrbit.UI.CombatNotifier.NotifyStatus(u, data.Name, data.Color);
             return $"피해 +{percent}% (1턴)";
         }
-        public override string Preview() => $"사용한 캐릭터가 1턴 동안 주는 피해가 {percent}% 증가합니다.";
+        public override string Preview() => $"사용 시 해당 캐릭터가 1턴 동안 주는 피해가 {percent}% 증가합니다.";
     }
 }

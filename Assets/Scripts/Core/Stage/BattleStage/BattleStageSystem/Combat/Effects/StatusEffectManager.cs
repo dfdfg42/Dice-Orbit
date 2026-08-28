@@ -121,7 +121,18 @@ namespace DiceOrbit.Systems.Effects
                     return new PowerStatus(value, duration);
 
                 case EffectType.Poison:
-                    return new PoisonStatus(value, duration);
+                    // 중독은 정수 중첩만 갖는다 — duration 인자는 의도적으로 무시 (2026-08-28 재설계)
+                    return new PoisonStatus(value);
+
+                // '다음 공격 행동' 1회성 상태 4종 — duration 무시(-1 고정), 행동 종료 시 제거 (2026-08-28)
+                case EffectType.Shock:
+                    return new ShockStatus(value);
+                case EffectType.Catalyst:
+                    return new CatalystStatus(value);
+                case EffectType.Inspire:
+                    return new InspireStatus(value);
+                case EffectType.Weaken:
+                    return new WeakenStatus(value);
 
                 // 추후 BuffDefense, Dot 등 추가
 

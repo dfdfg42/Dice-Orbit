@@ -39,8 +39,13 @@ namespace DiceOrbit.Data.Modifiers
         }
 
         protected virtual void OnAttackWithActive(AttackContext context) {
-        
+
         }
+
+        // ⚠️ 훅은 반드시 인터페이스를 나열한 이 베이스에 virtual로 선언해야 한다 — override 없는
+        // public void 선언은 DIM 매핑에서 빠져 절대 호출되지 않는다 (2026-07-21 죽은 훅 사고와 동일 패턴).
+        /// <summary>턴/전투 사건 훅 (전투 시작 방어도, 상태 초기화 등).</summary>
+        public virtual void OnTurnEvent(CombatTrigger trigger, TurnEventContext context) { }
 
         /// <summary>모디파이어 장착/해제 시 스킬 컨텍스트 갱신 훅.</summary>
         public virtual void OnRefreshSkill(CharacterModfierContext context) { }

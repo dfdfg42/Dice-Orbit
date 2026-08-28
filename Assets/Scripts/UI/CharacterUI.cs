@@ -34,6 +34,18 @@ namespace DiceOrbit.UI
         [SerializeField] private bool stackSameTile = true;
         [SerializeField] private float perIndexYStep = 0.35f; // 같은 타일 캐릭터 1명당 올릴 Y(월드)
 
+        [Header("Combo Pips (3단계 콤보 표시, 2026-08-28)")]
+        [Tooltip("첫 핍 위치 — 이동 아이콘(iconsAnchor) 바로 옆")]
+        [SerializeField] private Vector2 comboAnchor = new Vector2(-30f, 3f);
+        [SerializeField] private float comboSpacing = 10f;
+        [SerializeField] private float comboPipSize = 8f;
+        [SerializeField] private Color comboLitColor = new Color(1f, 0.82f, 0.25f, 1f);
+        [SerializeField] private Color comboDimColor = new Color(0.32f, 0.32f, 0.32f, 0.55f);
+        [SerializeField] private Color comboFlashColor = new Color(1f, 0.95f, 0.6f, 1f);
+        [SerializeField] private Color comboBreakColor = new Color(0.95f, 0.3f, 0.25f, 1f);
+        private Image[] _comboPips;
+        private bool _comboFxActive;
+
         [Header("Turn Budget Icon (이동)")]
         [SerializeField] private Sprite moveIconSprite;
         // 액티브 아이콘은 철거했다 — 강화 공격이 행동 예산을 쓰지 않고 주사위 눈으로만 갈리므로
@@ -156,6 +168,7 @@ namespace DiceOrbit.UI
             Visuals.StatusOverlayStack.Attach(character);
 
             CreateBudgetIcons();
+            CreateComboPips();
         }
 
         private void ConfigureNonBlockingRaycasts()
@@ -219,6 +232,7 @@ namespace DiceOrbit.UI
             }
 
             UpdateBudgetIcons();
+            UpdateComboPips();
         }
 
         // ── 턴 예산 아이콘 (이동/액티브) ──────────────────────
@@ -254,6 +268,67 @@ namespace DiceOrbit.UI
             _moveIcon.color = canMove ? iconAvailableColor : iconUsedColor;
         }
         
+        // ── 콤보 핍 (3단계 콤보 표시, 2026-08-28) ─────────────
+        // 평상시 상태는 매 프레임 ComboSystem.PeekStage를 그대로 그린다 — 내부 단계와 어긋날 수 없다.
+        // 이벤트(OnComboChanged)는 3단계 발동/끊김의 짧은 플래시 연출에만 쓴다.
+
+        private void CreateComboPips()
+        {
+            if (worldCanvas == null || _comboPips != null) return;
+
+            _comboPips = new Image[Core.Combo.ComboTracker.StageCount];
+            for (int i = 0; i < _comboPips.Length; i++)
+            {
+                var pip = MakeBudgetIcon($"ComboPip{i + 1}", null,
+                    comboAnchor + new Vector2(comboSpacing * i, 0f));
+                pip.rectTransform.sizeDelta = new Vector2(comboPipSize, comboPipSize);
+                pip.color = comboDimColor;
+                _comboPips[i] = pip;
+            }
+
+            Core.Combo.ComboSystem.EnsureInstance().OnComboChanged += HandleComboChanged;
+        }
+
+        private void OnDestroy()
+        {
+            if (Core.Combo.ComboSystem.Instance != null)
+                Core.Combo.ComboSystem.Instance.OnComboChanged -= HandleComboChanged;
+        }
+
+        private void UpdateComboPips()
+        {
+            if (_comboPips == null || _comboFxActive) return;
+
+            int stage = Core.Combo.ComboSystem.Instance != null && character != null
+                ? Core.Combo.ComboSystem.Instance.PeekStage(character) : 0;
+
+            for (int i = 0; i < _comboPips.Length; i++)
+                if (_comboPips[i] != null) _comboPips[i].color = i < stage ? comboLitColor : comboDimColor;
+        }
+
+        private void HandleComboChanged(Core.Character changed, int stage, Core.Combo.ComboOutcome outcome)
+        {
+            if (changed != character || _comboPips == null || !isActiveAndEnabled) return;
+
+            if (outcome == Core.Combo.ComboOutcome.Finished)
+                StartCoroutine(FlashComboPips(comboFlashColor));
+            else if (outcome == Core.Combo.ComboOutcome.BrokenByDice
+                  || outcome == Core.Combo.ComboOutcome.BrokenByNoTarget
+                  || outcome == Core.Combo.ComboOutcome.BrokenByNoMove)
+                StartCoroutine(FlashComboPips(comboBreakColor));
+        }
+
+        /// <summary>세 칸을 지정 색으로 잠깐 강조한 뒤 평상시 표시(0단계)로 돌아간다.</summary>
+        private System.Collections.IEnumerator FlashComboPips(Color color)
+        {
+            _comboFxActive = true;
+            for (int i = 0; i < _comboPips.Length; i++)
+                if (_comboPips[i] != null) _comboPips[i].color = color;
+
+            yield return new WaitForSeconds(0.45f);
+            _comboFxActive = false;   // 다음 UpdateComboPips가 실제 단계로 복원
+        }
+
         /// <summary>
         /// 캐릭터 참조 설정
         /// </summary>

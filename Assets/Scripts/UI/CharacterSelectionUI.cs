@@ -363,13 +363,11 @@ namespace DiceOrbit.UI
             {
                 if (active == null) continue;
 
-                string name = string.IsNullOrWhiteSpace(active.SkillName) ? "액티브" : active.SkillName;
-                string body = active.GetDynamicDescription();
+                string body = active.GetSelectionSummary();
                 if (string.IsNullOrWhiteSpace(body)) body = active.Description;
 
                 if (sb.Length > 0) sb.Append('\n').Append('\n');
-                sb.Append("<b>[").Append(name).Append("]</b>");
-                if (!string.IsNullOrWhiteSpace(body)) sb.Append('\n').Append(body);
+                if (!string.IsNullOrWhiteSpace(body)) sb.Append(body);
             }
             return sb.ToString();
         }

@@ -66,6 +66,9 @@ namespace DiceOrbit.Core.Pipeline
 
         private bool HandlePreAction(CombatContext context)
         {
+            // 직접 체력 손실(중독 등)은 회피 불가·리액터 개입 불가 — 통지 자체를 건너뛴다.
+            if (context is AttackContext { IsDirectHpLoss: true }) return true;
+
             NotifyReactors(context, CombatTrigger.OnPreAction);
             if (context.IsCancelled) return false;
 
@@ -84,6 +87,9 @@ namespace DiceOrbit.Core.Pipeline
 
         private void HandleCalculate(CombatContext context)
         {
+            // 직접 체력 손실은 어떤 공격 보정 리액터도 값을 바꾸지 못한다 (중독은 항상 중첩 수치 그대로).
+            if (context is AttackContext { IsDirectHpLoss: true }) return;
+
             NotifyReactors(context, CombatTrigger.OnCalculateOutput);
 
             // 억지로 음수가 되지 않도록 보정 (HEAL이면 그대로)
@@ -176,7 +182,10 @@ namespace DiceOrbit.Core.Pipeline
             switch (context)
             {
                 case AttackContext atk:
-                    if (atk.Target.TakeDamage(Mathf.RoundToInt(atk.OutputValue)) != 0) atk.IsEffected = true;
+                    int applied = atk.IsDirectHpLoss
+                        ? atk.Target.TakeDirectDamage(Mathf.RoundToInt(atk.OutputValue))   // 방어도 우회
+                        : atk.Target.TakeDamage(Mathf.RoundToInt(atk.OutputValue));
+                    if (applied != 0) atk.IsEffected = true;
                     // VFX 재생 판단은 여기 한 곳 — 컨텍스트의 프로필에 hit이 있으면 그걸, 없으면 전역 기본
                     if (atk.IsEffected)
                         VfxService.PlayOn(string.IsNullOrEmpty(atk.VfxCue) ? VfxTags.Impact : atk.VfxCue, atk.Target, atk.OutputValue);

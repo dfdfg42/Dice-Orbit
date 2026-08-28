@@ -72,6 +72,21 @@ namespace DiceOrbit.Data
         }
 
         /// <summary>
+        /// 직접 체력 손실 (중독 등). TempArmor를 소모하지 않고 HP만 깎는다. Invulnerable은 존중.
+        /// </summary>
+        public int TakeDirectDamage(int damage)
+        {
+            int remainingDamage = Mathf.Max(0, damage);
+
+            if (Invulnerable && remainingDamage > 0)
+                remainingDamage = Mathf.Min(remainingDamage, Mathf.Max(0, CurrentHP - 1));
+
+            CurrentHP = Mathf.Max(0, CurrentHP - remainingDamage);
+            Debug.Log($" took {remainingDamage} direct damage (armor bypassed)! (HP: {CurrentHP}/{MaxHP})");
+            return remainingDamage;
+        }
+
+        /// <summary>
         /// 생존 확인
         /// </summary>
         public bool IsAlive => CurrentHP > 0;

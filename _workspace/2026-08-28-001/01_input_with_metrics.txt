@@ -1,0 +1,91 @@
+[정량 사전 점수 v2.0 — v1.6 8지표(KatFish baseline) + v2.0 카운트형]
+risk_band: medium  (score 5)
+route_hint: light  (권고 — 사용자·오케스트레이터가 무시 가능)
+route_reason: 카운트형 어휘·피동 티 0건 · risk_band medium — 이미 잘 쓴 글, 단일 콜·최소 파이프라인 권장
+genre: report
+char_count: 3583
+warning: baseline_genre_null:report->essay
+
+[v1.6 지표]
+- comma_inclusion_rate: 0.09  (z=-1.01 vs report 인간 baseline)
+- comma_usage_rate: 0.09  (z=-1.46 vs report 인간 baseline)
+- ending_comma_rate: 0.50  (z=+5.84 vs report 인간 baseline)  ★ S1 트리거
+- comma_segment_length: 7.79  (z=+1.63 vs report 인간 baseline)  ★ S1 트리거
+- conclusion_pivot_count: 0
+- safe_balance_count: 0
+- hanja_nominalizer_density: 0.007  (z=-1.75 vs report 인간 baseline)
+- lexical_diversity: 0.45  (z=-3.96 vs report 인간 baseline)
+
+[v2.0 카운트형 지표 — 원값 / baseline calibration 전 z-score 해석 보류]
+- double_passive_count (이중 피동, 본진 A-8): 0
+- by_passive_count (~에 의해 피동, 본진 A-9): 0
+- pronoun_density (인칭 대명사 밀도, 본진 A-16): 0.000
+- have_make_literal_count (have/make 직역, 본진 A-7): 0
+- double_particle_count (이중 조사 결합, 본진 A-19): 0
+- relative_clause_nesting (관형절 3중+ 중첩 문장 수, 본진 A-18): 1
+- deul_overuse_rate ('-들' 남용률, 본진 A-17 hold): 0.000
+- 카운트 > 0 지표는 해당 본진 ID 처방(quick-rules.md·taxonomy)과 교차 확인 후 윤문할 것.
+
+[근거 사용 가이드]
+- 위 점수는 *근거 보조*다. 단독 판정 금지(보고서 명시).
+- z>1.0 지표는 quick-rules.md S1·S2 패턴과 교차 확인 후 윤문할 것.
+- ending_comma_rate가 ★ S1 트리거인 경우 C-11(연결어미 뒤 쉼표) 우선 손질.
+- conclusion_pivot 매치 토큰은 D-1·H-1 처방 적용 대상.
+
+[원문 시작]
+[active.warrior.summary] 주사위 눈 4 이상을 연속 사용해 균열 베기 → 지진파 → 대지 가르기로 이어지는 3단계 콤보입니다.
+[active.rogue.summary] 주사위 눈 3 이하를 연속 사용해 쌍비수 → 맹독비수 → 죽음의 촉매로 이어지는 3단계 콤보입니다.
+[active.mage.summary] 주사위 홀수를 연속 사용해 비전 화살 → 연쇄 번개 → 궤도 붕괴로 이어지는 3단계 콤보입니다.
+[active.alchemist.summary] 주사위 짝수를 연속 사용해 산성 플라스크 → 촉매 살포 → 대연성: 현자의 폭탄으로 이어지는 3단계 콤보입니다.
+[combo.list.rule] {주사위 조건} 연속 성공 시 콤보가 오릅니다.
+[combo.current.rule] {주사위 조건} 연속 성공 시 콤보가 오릅니다. 현재 {단계}단계 — {단계 설명}
+[combo.preview] {단계}단계 [{기술명}] 예상 피해: {피해량} x{타수}타
+[target.warrior] 콤보 단계별: 현재 구역 → 현재+양옆 → 전장 전체
+[target.rogue] 현재 구역의 몬스터 하나
+[target.mage] 마력 회로로 연결된 구역 (자기+아군 구역)
+[target.alchemist] 콤보 단계별: 현재 구역 → 현재+양옆 {구역 수}구역 → 전장 전체
+[stage.warrior.1] [균열 베기] 현재 구역 몬스터 하나에게 공격력의 {배율}%
+[stage.warrior.2] [지진파] 현재 구역과 양옆 구역의 모든 몬스터에게 각각 {배율}%
+[stage.warrior.3] [대지 가르기] 전장의 모든 몬스터에게 각각 {배율}% + 아군 전원 방어도 {방어도}
+[stage.rogue.1] [쌍비수] 공격력의 {배율}% 피해 {타수}회
+[stage.rogue.2] [맹독비수] {배율}% 피해 {타수}회, 적중마다 중독 {중독}
+[stage.rogue.3] [죽음의 촉매] {배율}% 피해 {타수}회 후 대상의 중독을 2배로
+[stage.mage.1] [비전 화살] 마력 회로 안 몬스터 하나에게 공격력의 {배율}%
+[stage.mage.2] [연쇄 번개] 회로 안 가까운 몬스터 최대 {대상 수}명에게 각각 {배율}% + 감전({감전}%)
+[stage.mage.3] [궤도 붕괴] 회로의 모든 구역 몬스터에게 각각 {배율}%
+[stage.alchemist.1] [산성 플라스크] 현재 구역 몬스터 하나에게 공격력의 {배율}% + 약화({약화}%)
+[stage.alchemist.2] [촉매 살포] 현재 구역과 양옆 구역의 몬스터에게 각각 {배율}% + 약화
+[stage.alchemist.3] [대연성: 현자의 폭탄] 전장의 모든 몬스터에게 각각 {배율}%, 이후 아군 전원 고양(+{고양}%)
+[passive.warrior] 전사와 같은 구역에 있는 다른 아군 1명당, 그 구역의 모든 아군(전사 포함)이 받는 공격 피해가 {감소율}%씩 감소합니다.
+[passive.rogue] 같은 구역에 있는 다른 아군 1명당 도적이 주는 공격 피해가 {증가율}%씩 증가합니다.
+[passive.mage] 마법사는 자기 구역과 살아 있는 아군들이 서 있는 구역을 모두 공격할 수 있습니다. 아군이 여러 구역에 퍼질수록 공격 범위가 넓어집니다.
+[passive.alchemist] 전투 시작 시 시약 타일을 {개수}개 설치합니다. 아군이 시약 타일을 지나가거나 도착하면 촉매를 얻어, 다음 자동공격의 피해가 {증가율}% 증가합니다. 타일은 소모되지 않고 전투 내내 유지됩니다.
+[tile.reagent] 아군이 지나가거나 도착하면 촉매를 얻습니다 — 다음 자동공격의 피해가 {증가율}% 증가합니다. 타일은 소모되지 않습니다.
+[modifier.joint] 공격할 때 같은 구역에 다른 아군이 있으면 공격 피해가 중첩당 {증가율}% 증가합니다. (최대 {최대 중첩}중첩)
+[modifier.lone] 공격할 때 같은 구역에 다른 아군이 없으면 공격 피해가 중첩당 {증가율}% 증가합니다. (최대 {최대 중첩}중첩)
+[modifier.cross] 다른 구역으로 이동해 공격하면 그 자동공격의 피해가 중첩당 {증가율}% 증가합니다. (최대 {최대 중첩}중첩)
+[modifier.low_guard] 3 이하 주사위를 사용하면 중첩당 임시 방어도 {방어도}을 얻습니다. (최대 {최대 중첩}중첩)
+[modifier.momentum] 4 이상 주사위로 이동해 공격하면 그 자동공격의 피해가 중첩당 {증가율}% 증가합니다. (최대 {최대 중첩}중첩)
+[modifier.extreme] 주사위 1 또는 6으로 이동해 공격하면 그 자동공격의 피해가 중첩당 {증가율}% 증가합니다. (최대 {최대 중첩}중첩)
+[modifier.safety] 조건이 맞지 않아 콤보가 끊기고 일반 자동공격이 나가면 중첩당 임시 방어도 {방어도}을 얻습니다. (최대 {최대 중첩}중첩)
+[modifier.chain] 콤보 2단계 공격의 피해가 중첩당 {증가율}% 증가합니다. (최대 {최대 중첩}중첩)
+[modifier.finale] 콤보 3단계 공격의 피해가 중첩당 {증가율}% 증가합니다. (최대 {최대 중첩}중첩)
+[modifier.barrier] 전투가 시작될 때 중첩당 임시 방어도 {방어도}을 얻습니다. (최대 {최대 중첩}중첩)
+[modifier.unyielding] 현재 체력이 50% 이하면 받는 공격 피해가 중첩당 {감소율}% 감소합니다. (최대 {최대 중첩}중첩)
+[modifier.payback] 적의 공격으로 체력 피해를 받으면, 다음 자동공격의 피해가 중첩당 {증가율}% 증가합니다. (최대 {최대 중첩}중첩)
+[die.gold] 사용하면 골드 {골드}를 얻습니다.
+[die.heal] 사용한 캐릭터의 체력을 {회복량} 회복합니다.
+[die.armor] 사용한 캐릭터가 방어도 {방어도}를 얻습니다.
+[die.inspire] 사용한 캐릭터의 다음 자동공격 피해가 {증가율}% 증가합니다.
+[die.cleanse] 사용한 캐릭터에게 걸린 해제 가능한 디버프 1개를 제거합니다.
+[die.reroll] 사용하지 않은 주사위를 전부 다시 굴립니다.
+[die.empower] 사용한 캐릭터가 1턴 동안 주는 피해가 {증가율}% 증가합니다.
+[notify.poison_double] 중독 {중독} (2배!)
+[notify.modifier_armor] {모디파이어 이름} 방어도 +{방어도}
+[status.poison] 턴이 시작될 때마다 남은 중독 수치만큼 피해를 받고, 수치가 1 줄어듭니다. 이 피해는 방어도를 무시합니다.
+[status.weaken] 다음 공격의 피해가 25% 감소합니다. 한 번의 공격 행동 전체에 적용된 뒤 사라집니다.
+[status.shock] 다음에 받는 공격의 피해가 30% 증가합니다. 한 번의 공격 행동 전체에 적용된 뒤 사라집니다.
+[status.catalyst] 다음 자동공격의 피해가 25% 증가합니다. 한 번의 공격 행동 전체에 적용된 뒤 사라집니다.
+[status.inspire] 다음 공격의 피해가 30% 증가합니다. 한 번의 공격 행동 전체에 적용된 뒤 사라집니다.
+[potion.poison] 선택한 적에게 중독 5를 부여합니다. 중독된 적은 턴 시작마다 남은 중독 수치만큼 피해를 입고, 수치가 1 줄어듭니다. 이 피해는 방어도를 무시합니다.
+[원문 끝]

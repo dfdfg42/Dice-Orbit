@@ -1,40 +1,40 @@
+using System.Collections.Generic;
 using DiceOrbit.Core;
+using DiceOrbit.Core.Zones;
+using DiceOrbit.Data;
 using UnityEngine;
 
 namespace DiceOrbit.Data.Passives
 {
     /// <summary>
-    /// [원거리] 자기 구역에 몬스터가 없으면 인접 구역의 몬스터를 대신 때린다.
-    /// 마법사만 중립지대(주인 없는 구역)에 숨어서도 계속 일할 수 있게 하는 패시브 —
-    /// 안전과 딜을 맞바꿔야 하는 다른 캐릭터와 달리 둘 다 가진다.
-    /// 표적 수는 늘지 않는다(사거리만 넓어진다) — 근접 캐릭터를 압도하지 않게.
+    /// [마력 회로] 마법사의 공격 가능 구역 = 자기 구역 + 살아 있는 다른 아군들의 구역 (2026-08-28 개편).
+    /// 아군이 퍼질수록 회로가 넓어져, 셋이 서로 다른 구역에 서면 전장 전체가 사거리가 된다.
+    /// 기본공격도 회로 안에서 가장 가까운 몬스터를 찾는다 (AutoAttackSystem이 IAttackZoneProvider를 읽음).
+    /// 저장하지 않고 질의 시점에 계산 — 아군 사망·이동이 즉시 반영된다.
+    /// 클래스명은 .asset SerializeReference 호환을 위해 유지한다 (구 [원거리]).
     /// </summary>
     [System.Serializable]
-    public class MageRangedPassive : CharacterPassiveSkill, IZoneReachProvider
+    public class MageRangedPassive : CharacterPassiveSkill, IAttackZoneProvider, IPassiveRangeProvider
     {
-        [Header("Designer Tuning")]
-        [Tooltip("표적을 찾을 때 넓힐 구역 수. 1이면 인접 구역까지.")]
-        [SerializeField] private int extraZoneReach = 1;
-
         public override int Priority => 50;
 
-        public int ExtraZoneReach => Mathf.Max(0, extraZoneReach + GetReachBonus());
-
         public override string GetDynamicDescription()
-            => $"현재 구역에 몬스터가 없으면 {ExtraZoneReach}개 구역 안에서 가장 가까운 몬스터를 공격합니다.";
+            => "마법사는 자기 구역과 살아 있는 아군이 있는 모든 구역을 공격할 수 있습니다. 아군이 여러 구역에 흩어질수록 공격 범위가 넓어집니다.";
 
-        /// <summary>장착된 시그니처 모디파이어가 더해주는 추가 사거리 합산.</summary>
-        private int GetReachBonus()
+        /// <summary>공격 가능 구역 집합 = 마력 회로.</summary>
+        public List<int> GetAttackableZones(Character source)
+            => MageCircuit.GetCircuitZones(source != null ? source : owner as Character);
+
+        /// <summary>패시브 영향 범위 표시 = 회로로 연결된 모든 구역의 타일들.</summary>
+        public IReadOnlyList<TileData> GetRangeTiles()
         {
-            if (!(owner is Character ch)) return 0;
-            var mods = ch.Stats?.Modifiers?.Modifiers;
-            if (mods == null) return 0;
+            var result = new List<TileData>();
+            var zones = CombatZoneManager.Instance;
+            if (zones == null || !(owner is Character mage)) return result;
 
-            int bonus = 0;
-            foreach (var m in mods)
-                if (m is Modifiers.Mage.MageFocusBoost f)
-                    bonus += f.BonusZoneReach;
-            return bonus;
+            foreach (var zone in MageCircuit.GetCircuitZones(mage))
+                result.AddRange(zones.GetTilesInZone(zone));
+            return result;
         }
     }
 }

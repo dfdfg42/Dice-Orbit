@@ -54,6 +54,13 @@ namespace DiceOrbit.Core.Pipeline
     public sealed class AttackContext : EffectContext
     {
         public bool IsEffected;
+
+        /// <summary>
+        /// 직접 체력 손실(중독 등). true면 회피·계산 리액터·방어도(TempArmor)를 전부 우회한다 —
+        /// 공격 보정(협공/촉매/감전 등)이 상태 피해를 증폭하지 못하게 파이프라인이 통지 자체를 건너뛴다.
+        /// </summary>
+        public bool IsDirectHpLoss;
+
         public AttackContext(Unit source, Unit target, string name, float baseValue)
             : base(source, target, name, baseValue) { }
     }

@@ -1,76 +1,62 @@
 using System.Collections.Generic;
 using DiceOrbit.Core;
-using DiceOrbit.Core.Zones;
+using DiceOrbit.Data.Passives;
 using DiceOrbit.Data.Skills;
 using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
     /// <summary>
-    /// [연쇄 마탄] 홀수 턴에 마탄이 갈라져 사거리 안의 몬스터 둘을 함께 친다.
-    /// 마법사만 중립지대에서도 표적을 찾으므로(원거리 패시브) 이 강화 공격도 그 사거리를 그대로 쓴다.
+    /// [마법사 마력 콤보] 홀수 주사위를 연속 사용해 마력 회로로 연결된 구역을 공격하는 3단계 콤보 (2026-08-28 개편).
+    /// 회로 = 자기 구역 + 살아 있는 아군들의 구역 (마력 회로 패시브와 공유).
+    /// 1단계 비전 화살(단일) → 2단계 연쇄 번개(2체+감전) → 3단계 궤도 붕괴(회로 전 구역).
+    /// 클래스명은 .asset SerializeReference 호환을 위해 유지한다.
     /// </summary>
     [System.Serializable]
-    public class MageEnergyBallActive : CharacterActiveSkill
+    public class MageEnergyBallActive : ComboActiveSkill
     {
-        [Header("Designer Tuning")]
-        [Tooltip("피해 = 공격력 x 배율 (대상마다 각각)")]
-        [SerializeField] private float multiplier = 1.2f;
-        [Tooltip("동시에 칠 최대 몬스터 수")]
-        [SerializeField] private int maxTargets = 2;
+        [Header("Designer Tuning — 단계 배율 (피해 = 공격력 × 배율)")]
+        [Tooltip("1단계 [비전 화살] 회로 안 가장 가까운 몬스터 하나")]
+        [SerializeField] private float stage1Multiplier = 1.4f;
+        [Tooltip("2단계 [연쇄 번개] 회로 안 가까운 몬스터 최대 2명 + 감전")]
+        [SerializeField] private float stage2Multiplier = 1.1f;
+        [Tooltip("2단계 최대 대상 수")]
+        [SerializeField] private int stage2MaxTargets = 2;
+        [Tooltip("3단계 [궤도 붕괴] 회로로 연결된 모든 구역의 몬스터")]
+        [SerializeField] private float stage3Multiplier = 1.8f;
+        [Tooltip("감전 수치 — 대상이 다음에 받는 공격 행동 피해 +%")]
+        [SerializeField] private int shockPercent = 30;
 
-        public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
-        {
-            int attack = source != null && source.Stats != null ? source.Stats.Attack : 0;
-            return Mathf.Max(1, Mathf.RoundToInt(attack * Mathf.Max(0.1f, multiplier)));
-        }
+        public override string GetStageName(int stage)
+            => stage switch { 0 => "비전 화살", 1 => "연쇄 번개", _ => "궤도 붕괴" };
 
-        public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
-            => $"예상 피해: 최대 {Mathf.Max(1, maxTargets)}명에게 각각 {CalculateRawDamage(source, ability, diceValue)}";
+        public override float GetStageMultiplier(int stage)
+            => stage switch { 0 => stage1Multiplier, 1 => stage2Multiplier, _ => stage3Multiplier };
 
-        public override string GetDynamicDescription()
-            => $"사거리 안의 몬스터를 최대 {Mathf.Max(1, maxTargets)}명까지 공격해, 각각 공격력의 {multiplier * 100f:0.#}%만큼 피해를 줍니다.";
-
-        public override string GetTargetLabel() => $"사거리 안의 몬스터 최대 {Mathf.Max(1, maxTargets)}명";
-
-        /// <summary>자기 구역부터 가까운 순으로 사거리 안의 주인들을 모은다.</summary>
-        public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
-        {
-            var result = new List<Unit>();
-            var zones = CombatZoneManager.Instance;
-            if (zones == null || source == null) return result;
-
-            int myZone = zones.GetZoneOf(source);
-            if (myZone < 0) return result;
-
-            int reach = ResolveReach(source);
-            int n = zones.ZoneCount;
-            int limit = Mathf.Clamp(reach, 0, n / 2);
-            int cap = Mathf.Max(1, maxTargets);
-
-            for (int d = 0; d <= limit && result.Count < cap; d++)
+        public override List<Unit> ResolveStageTargets(Character source, int stage, IReadOnlyList<int> passedZones)
+            => stage switch
             {
-                var forward = zones.GetOwner((myZone + d) % n);
-                if (forward != null && !result.Contains(forward)) result.Add(forward);
-                if (result.Count >= cap) break;
+                0 => MageCircuit.OwnersInCircuit(source, 1),
+                1 => MageCircuit.OwnersInCircuit(source, Mathf.Max(1, stage2MaxTargets)),
+                _ => MageCircuit.OwnersInCircuit(source, 0),   // 0 = 회로 전 구역
+            };
 
-                var backward = zones.GetOwner((myZone - d + n) % n);
-                if (backward != null && !result.Contains(backward)) result.Add(backward);
-            }
-            return result;
-        }
-
-        /// <summary>원거리 패시브가 주는 구역 사거리. 없으면 0(자기 구역만).</summary>
-        private static int ResolveReach(Character source)
+        public override void OnStageHitLanded(Character source, Unit target, int stage, int hitIndex)
         {
-            var passives = source != null && source.Stats != null ? source.Stats.PassiveInstances : null;
-            if (passives == null) return 0;
-
-            int reach = 0;
-            foreach (var p in passives)
-                if (p is Passives.IZoneReachProvider provider)
-                    reach = Mathf.Max(reach, provider.ExtraZoneReach);
-            return reach;
+            // 연쇄 번개 — 적중한 대상마다 감전 (다음에 받는 공격 행동 피해 증가, 행동 전체 적용 후 제거)
+            if (stage == 1 && shockPercent > 0)
+                GrantStatus(target, EffectType.Shock, shockPercent);
         }
+
+        public override string GetSelectionSummary()
+            => $"{FormatDiceConditionNounPhrase()}를 연속으로 사용하면 단일 적, 가까운 적 2명, 마력 회로 전체 순서로 공격하며 두 번째 공격은 감전을 부여합니다.";
+
+        public override string GetStageDescription(int stage)
+            => stage switch
+            {
+                0 => $"[비전 화살] 마력 회로 안의 몬스터 하나에게 공격력의 {stage1Multiplier * 100f:0.#}%만큼 피해를 줍니다.",
+                1 => $"[연쇄 번개] 회로 안에서 가장 가까운 몬스터 최대 {Mathf.Max(1, stage2MaxTargets)}명에게 공격력의 {stage2Multiplier * 100f:0.#}%만큼 피해를 주고 감전 {shockPercent}%를 부여합니다.",
+                _ => $"[궤도 붕괴] 회로에 연결된 모든 구역의 몬스터에게 공격력의 {stage3Multiplier * 100f:0.#}%만큼 피해를 줍니다.",
+            };
     }
 }

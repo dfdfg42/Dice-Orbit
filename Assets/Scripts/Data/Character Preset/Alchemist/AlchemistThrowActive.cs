@@ -1,60 +1,72 @@
 using System.Collections.Generic;
 using DiceOrbit.Core;
-using DiceOrbit.Core.Zones;
 using DiceOrbit.Data.Skills;
 using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
     /// <summary>
-    /// [살포] 짝수 턴에 시약을 넓게 뿌려 자기 구역과 양옆 구역의 몬스터를 한꺼번에 적신다.
-    /// 한 대상당 위력은 낮지만 닿는 범위가 가장 넓다 — 전사 돌파가 '멀리 달린 만큼'이라면
-    /// 이쪽은 '서 있는 자리 주변'이라 조건이 겹치지 않는다.
+    /// [연금술사 연성 콤보] 짝수 주사위를 연속 사용해 적을 약화시키고 파티를 끌어올리는 3단계 콤보 (2026-08-28 개편).
+    /// 1단계 산성 플라스크(단일+약화) → 2단계 촉매 살포(현+양옆+약화) → 3단계 대연성: 현자의 폭탄(전장+아군 고양).
+    /// 시약 타일 촉매(+25%)를 폭탄 직전에 밟으면 폭탄 전체가 강화된다 — 경로 계획의 정점.
+    /// 클래스명은 .asset SerializeReference 호환을 위해 유지한다.
     /// </summary>
     [System.Serializable]
-    public class AlchemistThrowActive : CharacterActiveSkill
+    public class AlchemistThrowActive : ComboActiveSkill
     {
-        [Header("Designer Tuning")]
-        [Tooltip("피해 = 공격력 x 배율 (대상마다 각각)")]
-        [SerializeField] private float multiplier = 1f;
-        [Tooltip("양옆으로 몇 구역까지 퍼질지")]
+        [Header("Designer Tuning — 단계 배율 (피해 = 공격력 × 배율)")]
+        [Tooltip("1단계 [산성 플라스크] 현재 구역 몬스터 하나 + 약화")]
+        [SerializeField] private float stage1Multiplier = 1.0f;
+        [Tooltip("2단계 [촉매 살포] 현재 구역과 양옆 구역의 모든 몬스터 + 약화")]
+        [SerializeField] private float stage2Multiplier = 0.9f;
+        [Tooltip("3단계 [대연성: 현자의 폭탄] 전장의 모든 몬스터")]
+        [SerializeField] private float stage3Multiplier = 1.8f;
+        [Tooltip("양옆으로 몇 구역까지 퍼질지 (2단계)")]
         [SerializeField] private int spreadZones = 1;
+        [Tooltip("약화 수치 — 대상의 다음 공격 행동 피해 -%")]
+        [SerializeField] private int weakenPercent = 25;
+        [Tooltip("고양 수치 — 3단계 후 아군 전원의 다음 공격 행동 피해 +%")]
+        [SerializeField] private int inspirePercent = 30;
 
-        public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
-        {
-            int attack = source != null && source.Stats != null ? source.Stats.Attack : 0;
-            return Mathf.Max(1, Mathf.RoundToInt(attack * Mathf.Max(0.1f, multiplier)));
-        }
+        public override string GetStageName(int stage)
+            => stage switch { 0 => "산성 플라스크", 1 => "촉매 살포", _ => "대연성: 현자의 폭탄" };
 
-        public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
-            => $"예상 피해: 범위 안의 몬스터마다 {CalculateRawDamage(source, ability, diceValue)}";
+        public override float GetStageMultiplier(int stage)
+            => stage switch { 0 => stage1Multiplier, 1 => stage2Multiplier, _ => stage3Multiplier };
 
-        public override string GetDynamicDescription()
-            => $"현재 구역과 양옆 {Mathf.Max(0, spreadZones)}개 구역의 몬스터에게 공격력의 {multiplier * 100f:0.#}%만큼 피해를 줍니다.";
-
-        public override string GetTargetLabel() => $"현재 구역과 양옆 {Mathf.Max(0, spreadZones)}개 구역";
-
-        /// <summary>자기 구역 + 양옆 spreadZones구역의 주인 전원.</summary>
-        public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
-        {
-            var result = new List<Unit>();
-            var zones = CombatZoneManager.Instance;
-            if (zones == null || source == null) return result;
-
-            int myZone = zones.GetZoneOf(source);
-            if (myZone < 0) return result;
-
-            int n = zones.ZoneCount;
-            int limit = Mathf.Clamp(spreadZones, 0, n / 2);
-            for (int d = 0; d <= limit; d++)
+        public override List<Unit> ResolveStageTargets(Character source, int stage, IReadOnlyList<int> passedZones)
+            => stage switch
             {
-                var forward = zones.GetOwner((myZone + d) % n);
-                if (forward != null && !result.Contains(forward)) result.Add(forward);
+                0 => OwnersOfCurrentZone(source),
+                1 => OwnersOfCurrentAndAdjacent(source, Mathf.Max(0, spreadZones)),
+                _ => AllLivingMonsters(),
+            };
 
-                var backward = zones.GetOwner((myZone - d + n) % n);
-                if (backward != null && !result.Contains(backward)) result.Add(backward);
-            }
-            return result;
+        public override void OnStageHitLanded(Character source, Unit target, int stage, int hitIndex)
+        {
+            // 1·2단계 — 적중한 모든 대상에게 약화 (다음 공격 행동 피해 감소, 행동 전체 적용 후 제거)
+            if (stage <= 1 && weakenPercent > 0)
+                GrantStatus(target, EffectType.Weaken, weakenPercent);
         }
+
+        public override void OnStageCompleted(Character source, List<Unit> targets, int stage)
+        {
+            if (stage != StageCount - 1 || inspirePercent <= 0) return;
+
+            // 현자의 폭탄 — 공격 후 살아 있는 모든 아군(자신 포함)에게 고양.
+            foreach (var ally in AllLivingAllies())
+                GrantStatus(ally, EffectType.Inspire, inspirePercent);
+        }
+
+        public override string GetSelectionSummary()
+            => $"{FormatDiceConditionNounPhrase()}를 연속으로 사용하면 단일 적, 인접 구역, 전장 전체 순서로 공격하며 앞의 두 공격은 약화를, 마지막 공격은 모든 아군에게 고양을 부여합니다.";
+
+        public override string GetStageDescription(int stage)
+            => stage switch
+            {
+                0 => $"[산성 플라스크] 현재 구역의 몬스터 하나에게 공격력의 {stage1Multiplier * 100f:0.#}%만큼 피해를 주고 약화 {weakenPercent}%를 부여합니다.",
+                1 => $"[촉매 살포] 현재 구역과 양옆 구역의 몬스터에게 공격력의 {stage2Multiplier * 100f:0.#}%만큼 피해를 주고 약화를 부여합니다.",
+                _ => $"[대연성: 현자의 폭탄] 전장의 모든 몬스터에게 공격력의 {stage3Multiplier * 100f:0.#}%만큼 피해를 줍니다. 이후 모든 아군에게 고양 {inspirePercent}%를 부여합니다.",
+            };
     }
 }

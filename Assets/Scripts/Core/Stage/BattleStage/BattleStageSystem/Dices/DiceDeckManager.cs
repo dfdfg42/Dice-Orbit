@@ -65,9 +65,30 @@ namespace DiceOrbit.Core
                 Debug.LogWarning("[DiceDeckManager] standardDie 미배선 — 덱을 채울 수 없습니다.");
         }
 
-        // ── Phase 2~3 API (지금은 로직만 준비, 호출부는 후속) ──
+        // ── 보상 드로우 ────────────────────────────────────────
+
+        /// <summary>등급 가중 무작위 드로우 — 일반 6 : 고급 3 : 희귀 1 (2026-08-28).</summary>
         public DieDefinitionSO DrawRandomSpecial()
-            => (specialPool != null && specialPool.Count > 0) ? specialPool[Random.Range(0, specialPool.Count)] : null;
+        {
+            if (specialPool == null || specialPool.Count == 0) return null;
+
+            int total = 0;
+            foreach (var die in specialPool)
+                if (die != null) total += RarityWeight(die.Rarity);
+            if (total <= 0) return null;
+
+            int pick = Random.Range(0, total);
+            foreach (var die in specialPool)
+            {
+                if (die == null) continue;
+                pick -= RarityWeight(die.Rarity);
+                if (pick < 0) return die;
+            }
+            return null;
+        }
+
+        private static int RarityWeight(DieRarity rarity)
+            => rarity switch { DieRarity.Advanced => 3, DieRarity.Rare => 1, _ => 6 };
 
         public void Replace(int index, DieDefinitionSO newBase)
         {

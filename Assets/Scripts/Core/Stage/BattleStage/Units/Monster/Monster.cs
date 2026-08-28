@@ -237,8 +237,17 @@ namespace DiceOrbit.Core
                 // AttackIntent의 유효성 확인 (죽은 타겟 제거)
                 nextIntent.RefreshTargets();
 
-                // 스킬 실행 (Intent에 저장된 타겟 사용)
-                ExecuteSkillWithIntent(nextSkill.skillData, nextIntent);
+                // 몬스터의 의도 실행 1회 = 공격 행동 1회 — 약화 등 1회성 상태가 다단 공격 전체에 적용된다.
+                Systems.Effects.AttackActionScope.Begin(this);
+                try
+                {
+                    // 스킬 실행 (Intent에 저장된 타겟 사용)
+                    ExecuteSkillWithIntent(nextSkill.skillData, nextIntent);
+                }
+                finally
+                {
+                    Systems.Effects.AttackActionScope.End();
+                }
             }
             else
             {
@@ -321,6 +330,22 @@ namespace DiceOrbit.Core
         {
             if (!IsAlive) return 0;
             int result=base.TakeDamage(damage);
+            if (!IsAlive)
+            {
+                HandleDeath();
+            }
+            else if (result > 0)
+            {
+                PlayDamageVisual();
+            }
+            return result;
+        }
+
+        /// <summary>직접 체력 손실(중독 등)도 일반 피해와 같은 사망/피격 후처리를 거친다.</summary>
+        public override int TakeDirectDamage(int damage)
+        {
+            if (!IsAlive) return 0;
+            int result = base.TakeDirectDamage(damage);
             if (!IsAlive)
             {
                 HandleDeath();

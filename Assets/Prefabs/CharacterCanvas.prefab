@@ -205,6 +205,13 @@ MonoBehaviour:
   canvasScale: 0.07
   stackSameTile: 1
   perIndexYStep: 0.5
+  comboAnchor: {x: -30, y: 3}
+  comboSpacing: 10
+  comboPipSize: 8
+  comboLitColor: {r: 1, g: 0.82, b: 0.25, a: 1}
+  comboDimColor: {r: 0.32, g: 0.32, b: 0.32, a: 0.55}
+  comboFlashColor: {r: 1, g: 0.95, b: 0.6, a: 1}
+  comboBreakColor: {r: 0.95, g: 0.3, b: 0.25, a: 1}
   moveIconSprite: {fileID: 21300000, guid: 8acfdb87041c143089569d446383a47d, type: 3}
   activeIconSprite: {fileID: 21300000, guid: 036e0a9856c214f478367a052def8fea, type: 3}
   iconAvailableColor: {r: 1, g: 1, b: 1, a: 1}

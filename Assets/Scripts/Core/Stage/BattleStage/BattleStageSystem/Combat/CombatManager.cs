@@ -223,6 +223,10 @@ namespace DiceOrbit.Core
             turnCount = 0;
             Debug.Log($"Combat started! {activeMonsters.Count} monster(s)");
 
+            // 콤보/행동 스코프는 전투 단위 상태 — 시작 시 깨끗하게 (스펙 2026-08-28 §1 규칙 9)
+            Combo.ComboSystem.EnsureInstance().ResetAll();
+            Systems.Effects.AttackActionScope.ResetAll();
+
             OnCombatStart?.Invoke();
             DiceOrbit.Visuals.VfxService.Play(DiceOrbit.Visuals.VfxTags.CombatStart,
                 Camera.main != null ? Camera.main.transform.position + Camera.main.transform.forward * 6f : Vector3.zero);
@@ -281,6 +285,10 @@ namespace DiceOrbit.Core
             // 전투가 끝나면 턴 예산도 초기화합니다.
             playerTurnBudgets.Clear();
             HideMonsterIntents(); // Clean up visuals
+
+            // 콤보/행동 스코프 정리 — 전투를 넘어 이월되지 않는다 (스펙 2026-08-28 §1 규칙 9)
+            Combo.ComboSystem.EnsureInstance().ResetAll();
+            Systems.Effects.AttackActionScope.ResetAll();
 
             if (victory)
             {
@@ -383,6 +391,21 @@ namespace DiceOrbit.Core
 
             // 이동해야만 공격이다 — 제자리로 턴을 넘긴 캐릭터는 공격하지 않는다 (2026-08-23 결정).
             // 이동을 포기하는 것 자체가 선택이고, 그 대가가 이번 턴의 딜이다.
+            // 그리고 그 대가에 콤보도 포함된다 — 이번 턴 공격하지 않은(미이동/사망) 캐릭터는 콤보가 끊긴다 (2026-08-28 §1 규칙 6·10).
+            {
+                var combo = Combo.ComboSystem.EnsureInstance();
+                var auto = AutoAttackSystem.Instance;
+                var party = PartyManager.Instance;
+                if (party != null)
+                {
+                    foreach (var ch in party.Party)
+                    {
+                        if (ch == null) continue;
+                        if (!ch.IsAlive || auto == null || !auto.HasResolved(ch))
+                            combo.ResetCombo(ch, Combo.ComboOutcome.BrokenByNoMove);
+                    }
+                }
+            }
 
             var partyManager = PartyManager.Instance;
             if (partyManager != null)

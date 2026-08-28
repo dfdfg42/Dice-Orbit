@@ -1,57 +1,65 @@
 using System.Collections.Generic;
 using DiceOrbit.Core;
-using DiceOrbit.Core.Zones;
 using DiceOrbit.Data.Skills;
 using UnityEngine;
 
 namespace DiceOrbit.Data.CharacterActives
 {
     /// <summary>
-    /// [돌파] 높은 눈으로 멀리 달리는 턴에, 지나쳐 온 모든 구역의 주인을 함께 벤다.
-    /// 이동량이 곧 위력이 되는 경로형이라 높낮이 게이트(4 이상)와 한 몸이다(불변식 5).
+    /// [전사 대검 콤보] 4 이상 주사위를 연속 사용할 때마다 강해지는 3단계 콤보 (2026-08-28 개편).
+    /// 1단계 균열 베기(단일) → 2단계 지진파(현+양옆) → 3단계 대지 가르기(전장 + 아군 방어도).
+    /// 클래스명은 .asset SerializeReference 호환을 위해 유지한다.
     /// </summary>
     [System.Serializable]
-    public class WarriorGreatswordActive : CharacterActiveSkill
+    public class WarriorGreatswordActive : ComboActiveSkill
     {
-        [Header("Designer Tuning")]
-        [Tooltip("피해 = 공격력 x 배율 (지나친 구역마다 각각)")]
-        [SerializeField] private float multiplier = 1f;
+        [Header("Designer Tuning — 단계 배율 (피해 = 공격력 × 배율)")]
+        [Tooltip("1단계 [균열 베기] 현재 구역 몬스터 하나")]
+        [SerializeField] private float stage1Multiplier = 1.5f;
+        [Tooltip("2단계 [지진파] 현재 구역과 양옆 인접 구역의 모든 몬스터")]
+        [SerializeField] private float stage2Multiplier = 1.1f;
+        [Tooltip("3단계 [대지 가르기] 전장의 모든 몬스터")]
+        [SerializeField] private float stage3Multiplier = 1.8f;
+        [Tooltip("3단계 후 모든 아군에게 부여할 임시 방어도")]
+        [SerializeField] private int stage3AllyArmor = 10;
 
-        public override Core.Pipeline.CharacterModfierContext GenerateContext(Character source, ActiveSkillSlot ability)
-        {
-            return new Core.Pipeline.WarriorGreatswordModifiedContext(source, this);
-        }
+        public override string GetStageName(int stage)
+            => stage switch { 0 => "균열 베기", 1 => "지진파", _ => "대지 가르기" };
 
-        public override int CalculateRawDamage(Character source, ActiveSkillSlot ability, int diceValue)
-        {
-            int attack = source != null && source.Stats != null ? source.Stats.Attack : 0;
-            return Mathf.Max(1, Mathf.RoundToInt(attack * Mathf.Max(0.1f, multiplier)));
-        }
+        public override float GetStageMultiplier(int stage)
+            => stage switch { 0 => stage1Multiplier, 1 => stage2Multiplier, _ => stage3Multiplier };
 
-        public override string BuildPreview(Character source, ActiveSkillSlot ability, int diceValue)
-            => $"예상 피해: 지나온 구역의 몬스터마다 {CalculateRawDamage(source, ability, diceValue)}";
-
-        public override string GetDynamicDescription()
-            => $"이동 중 지나온 모든 구역의 몬스터에게 공격력의 {multiplier * 100f:0.#}%만큼 피해를 줍니다.";
-
-        public override string GetTargetLabel() => "이동 중 지나온 모든 구역";
-
-        /// <summary>이동으로 지나온 구역들의 주인 전원.</summary>
-        public override List<Unit> ResolveTargets(Character source, IReadOnlyList<int> passedZones)
-        {
-            var result = new List<Unit>();
-            var zones = CombatZoneManager.Instance;
-            if (zones == null || source == null) return result;
-
-            if (passedZones == null || passedZones.Count == 0)
-                return base.ResolveTargets(source, passedZones);
-
-            foreach (var zone in passedZones)
+        public override List<Unit> ResolveStageTargets(Character source, int stage, IReadOnlyList<int> passedZones)
+            => stage switch
             {
-                var owner = zones.GetOwner(zone);
-                if (owner != null && !result.Contains(owner)) result.Add(owner);
+                0 => OwnersOfCurrentZone(source),
+                1 => OwnersOfCurrentAndAdjacent(source, 1),
+                _ => AllLivingMonsters(),
+            };
+
+        public override void OnStageCompleted(Character source, List<Unit> targets, int stage)
+        {
+            if (stage != StageCount - 1 || stage3AllyArmor <= 0) return;
+
+            // 대지 가르기 — 살아 있는 모든 아군에게 임시 방어도. 캐릭터 방어도는 소모될 때까지 유지되므로
+            // '최소한 다음 적 공격까지'가 자연히 보장된다.
+            foreach (var ally in AllLivingAllies())
+            {
+                if (ally == null || ally.Stats == null) continue;
+                ally.Stats.TempArmor += stage3AllyArmor;
+                UI.CombatNotifier.NotifyStatus(ally, $"방어도 +{stage3AllyArmor}", new Color(0.65f, 0.8f, 1f));
             }
-            return result;
         }
+
+        public override string GetSelectionSummary()
+            => $"{FormatDiceConditionNounPhrase()}를 연속으로 사용하면 공격 범위가 단일 대상에서 인접 구역, 전장 전체로 넓어지며 마지막 공격은 모든 아군에게 방어도를 부여합니다.";
+
+        public override string GetStageDescription(int stage)
+            => stage switch
+            {
+                0 => $"[균열 베기] 현재 구역의 몬스터 하나에게 공격력의 {stage1Multiplier * 100f:0.#}%만큼 피해를 줍니다.",
+                1 => $"[지진파] 현재 구역과 양옆 구역의 모든 몬스터에게 공격력의 {stage2Multiplier * 100f:0.#}%만큼 피해를 줍니다.",
+                _ => $"[대지 가르기] 전장의 모든 몬스터에게 공격력의 {stage3Multiplier * 100f:0.#}%만큼 피해를 주고 모든 아군이 방어도를 {stage3AllyArmor}만큼 얻습니다.",
+            };
     }
 }

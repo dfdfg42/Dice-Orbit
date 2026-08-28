@@ -8,21 +8,22 @@ using UnityEngine;
 namespace DiceOrbit.Data.Passives
 {
     /// <summary>
-    /// [협공] 같은 구역에 다른 아군이 있으면 도적의 공격이 급소를 노린다.
-    /// 개성이 주사위 눈이 아니라 '누구 옆에 서느냐'에서 나오게 하는 패시브 —
-    /// 구 자리잡기(이동 1칸당 피해 증가)가 되살리던 눈→딜 커플링을 대체한다.
+    /// [협공] 같은 구역의 '다른 아군' 수만큼 도적의 공격이 깊어진다 (2026-08-28 개편 — 인원 비례).
+    /// 다른 아군 1명당 도적이 주는 공격 피해 +30% (1/2/3명 = +30/+60/+90%). 도적 자신은 제외.
+    /// 비수 콤보·기본공격 같은 직접 공격 피해에만 적용되고, 중독 피해에는 적용되지 않는다
+    /// (직접 체력 손실은 파이프라인이 리액터 통지를 건너뜀 + 이중 방어).
     /// </summary>
     [System.Serializable]
     public class RogueFlankPassive : CharacterPassiveSkill, IPassiveRangeProvider
     {
         [Header("Designer Tuning")]
-        [Tooltip("같은 구역에 아군이 있을 때 피해 증가율(%). 예: 100은 2배")]
-        [SerializeField] private float bonusPercent = 100f;
+        [Tooltip("같은 구역의 '다른 아군' 1명당 피해 증가율(%). 예: 30이면 3명일 때 +90%")]
+        [SerializeField] private float perAllyBonusPercent = 30f;
 
         public override int Priority => 99;
 
         public override string GetDynamicDescription()
-            => $"같은 구역에 다른 아군이 있으면 도적이 주는 피해가 {(bonusPercent + GetFlankBonus()):0.#}% 증가합니다.";
+            => $"같은 구역에 있는 다른 아군 1명마다 도적이 주는 공격 피해가 {perAllyBonusPercent:0.#}% 증가합니다.";
 
         /// <summary>패시브 영향 범위 = 도적이 선 구역의 타일들.</summary>
         public IReadOnlyList<TileData> GetRangeTiles()
@@ -35,43 +36,37 @@ namespace DiceOrbit.Data.Passives
         public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (trigger != CombatTrigger.OnCalculateOutput) return;
+            if (context.IsDirectHpLoss) return;   // 중독 피해엔 적용 없음 (이중 방어)
             if (context.SourceUnit != owner) return;
-            if (!HasAllyInSameZone()) return;
+            if (!(owner is Character rogue)) return;
 
-            float percent = bonusPercent + GetFlankBonus();
+            int allyCount = CountOtherAlliesInMyZone(rogue);
+            if (allyCount <= 0) return;
+
+            float percent = perAllyBonusPercent * allyCount;
             context.OutputValue *= 1f + percent / 100f;
-            if (!context.IsSimulation) Notify();
+            if (!context.IsSimulation) Notify($"{PassiveName} +{percent:0.#}%");
         }
 
-        private bool HasAllyInSameZone()
+        /// <summary>도적 구역에 있는 '도적이 아닌' 살아 있는 아군 수.</summary>
+        private int CountOtherAlliesInMyZone(Character rogue)
         {
             var zones = CombatZoneManager.Instance;
             var party = PartyManager.Instance;
-            if (zones == null || party == null || !(owner is Character rogue)) return false;
+            if (zones == null || party == null) return 0;
 
             int myZone = zones.GetZoneOf(rogue);
-            if (myZone < 0) return false;
+            if (myZone < 0) return 0;
 
+            int count = 0;
             foreach (var ally in party.GetAliveCharacters())
             {
                 if (ally == null || ally == rogue) continue;
-                if (zones.GetZoneOf(ally) == myZone) return true;
+                if (zones.GetZoneOf(ally) == myZone) count++;
             }
-            return false;
+            return count;
         }
 
-        /// <summary>장착된 시그니처 모디파이어가 더해주는 추가 협공 계수(%) 합산.</summary>
-        private float GetFlankBonus()
-        {
-            if (!(owner is Character ch)) return 0f;
-            var mods = ch.Stats?.Modifiers?.Modifiers;
-            if (mods == null) return 0f;
-
-            float bonus = 0f;
-            foreach (var m in mods)
-                if (m is Modifiers.Rogue.RoguePositioningBoost r)
-                    bonus += r.BonusPercent;
-            return bonus;
-        }
+        // (구 시그니처 모디파이어 연동은 2026-08-28 공용 모디파이어 전면 교체로 폐기됐다)
     }
 }

@@ -397,6 +397,23 @@ namespace DiceOrbit.Core
             return actual;
         }
 
+        /// <summary>직접 체력 손실(중독 등)도 일반 피해와 같은 사망/피격 후처리를 거친다.</summary>
+        public override int TakeDirectDamage(int damage)
+        {
+            int actual = base.TakeDirectDamage(damage);
+
+            if (!IsAlive)
+            {
+                HandleDeath();
+            }
+            else if (actual > 0)
+            {
+                spriteVisual?.PlayDamage();
+            }
+
+            return actual;
+        }
+
         [SerializeField] private float deathDespawnDelay = 0.7f;
         private bool isDying = false;
 

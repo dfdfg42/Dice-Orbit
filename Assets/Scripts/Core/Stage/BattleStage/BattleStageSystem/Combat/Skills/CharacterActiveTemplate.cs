@@ -79,6 +79,15 @@ namespace DiceOrbit.Data.Skills
         /// </summary>
         public virtual string GetDynamicDescription() => Description;
 
+        /// <summary>
+        /// 소유자 문맥이 있는 동적 설명 (전투 중 정보 패널용). 콤보 스킬은 '현재 단계만' 보여주도록
+        /// 오버라이드한다. 기본은 문맥 없는 버전과 동일 — 모집 화면 등 전투 밖에서는 그쪽을 쓴다.
+        /// </summary>
+        public virtual string GetDynamicDescription(Character source) => GetDynamicDescription();
+
+        /// <summary>캐릭터 선택창에서 사용하는 짧은 설명. 기본값은 일반 동적 설명과 같다.</summary>
+        public virtual string GetSelectionSummary() => GetDynamicDescription();
+
         /// <summary>주사위 요구 조건을 한국어 문구로 변환. (정보 패널 등 UI 표시용으로도 사용)</summary>
         public string FormatDiceCondition()
         {
@@ -101,6 +110,30 @@ namespace DiceOrbit.Data.Skills
             if (max.HasValue)            return $"주사위 눈 {max.Value} 이하";
             if (min > 1)                 return $"주사위 눈 {min} 이상";
             return "모든 주사위";
+        }
+
+        /// <summary>문장 안에서 자연스럽게 쓸 수 있는 주사위 조건 명사구.</summary>
+        protected string FormatDiceConditionNounPhrase()
+        {
+            if (requirement == null) return "주사위";
+
+            if (requirement.ExactDiceValue.HasValue)
+                return $"눈이 {requirement.ExactDiceValue.Value}인 주사위";
+
+            switch (requirement.Pattern)
+            {
+                case DicePattern.Odd:  return "홀수 눈의 주사위";
+                case DicePattern.Even: return "짝수 눈의 주사위";
+                case DicePattern.High: return "눈이 4 이상인 주사위";
+                case DicePattern.Low:  return "눈이 3 이하인 주사위";
+            }
+
+            int min = requirement.MinDiceValue;
+            var max = requirement.MaxDiceValue;
+            if (max.HasValue && min > 1) return $"눈이 {min}~{max.Value}인 주사위";
+            if (max.HasValue)            return $"눈이 {max.Value} 이하인 주사위";
+            if (min > 1)                 return $"눈이 {min} 이상인 주사위";
+            return "주사위";
         }
 
         public virtual CharacterActiveSkill Clone() => (CharacterActiveSkill)MemberwiseClone();

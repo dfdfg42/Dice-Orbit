@@ -321,7 +321,8 @@ namespace DiceOrbit.UI
                 result.Add(new SkillInfoData(
                     skill.SkillName,
                     skill.FormatDiceCondition(),   // 한국어 문구 ("주사위 4 이상" 등) — GetDescription()은 영문 디버그용
-                    skill.GetDynamicDescription() ?? string.Empty,
+                    // 소유자 문맥 버전 — 콤보 스킬은 '현재 단계만' 보여준다 (전투 밖 목록형은 모집 화면 전용)
+                    skill.GetDynamicDescription(slot.Owner) ?? string.Empty,
                     // 대상은 위치에서 유도되므로 각 공격이 스스로 설명한다(옛 대상 타입 enum은 더 이상 타게팅을 정하지 않는다).
                     skill.GetTargetLabel(),
                     BuildSkillModifierLines(stats?.Modifiers?.Modifiers, skill)));

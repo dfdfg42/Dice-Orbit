@@ -333,7 +333,9 @@ namespace DiceOrbit.UI
             {
                 foreach (var p in d.Passives)
                 {
-                    string desc = JoinLines(p.DynamicEffect, p.FlavorText);
+                    // 동적 설명이 있으면 그것만 — 에셋의 정적 설명(FlavorText)은 같은 규칙 문구라
+                    // 둘을 이어붙이면 내용이 두 번 반복된다 (2026-08-28). 정적은 동적이 없을 때의 폴백.
+                    string desc = string.IsNullOrWhiteSpace(p.DynamicEffect) ? p.FlavorText : p.DynamicEffect;
                     AddEntry(passivesContainer, p.Name, "", desc, InfoPanelRows.PassiveColor);
                 }
             }

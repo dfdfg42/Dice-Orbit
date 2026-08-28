@@ -10,11 +10,12 @@ namespace DiceOrbit.Core
     /// <summary>
     /// 자동 공격 — 이동해야만 공격이다. 주사위를 배정해 이동을 마친 캐릭터가 도착 구역의 몬스터를
     /// 자동으로 한 번 때린다. 제자리로 턴을 넘긴 캐릭터는 공격하지 않는다(2026-08-23 결정) —
-    /// 이동 포기 자체가 선택이고 그 대가가 이번 턴의 딜이다.
+    /// 이동 포기 자체가 선택이고 그 대가가 이번 턴의 딜(그리고 콤보)이다.
     ///
-    /// 피해는 캐릭터 공격력이 정하고, 배정한 주사위가 액티브 조건을 만족하면 거기에 배율이 곱해진
-    /// 강화 공격으로 나간다(대체이지 추가가 아니다). 조건은 공격을 막지 못하고 배율만 얹는다.
+    /// 배정한 주사위가 게이트(전사 4+/도적 3↓/마법 홀/연금 짝)에 맞으면 현재 콤보 단계(1→2→3)의
+    /// 강화 공격이 기본공격을 '대체'하고, 조건 실패면 콤보가 끊기며 기본공격이 나간다(2026-08-28 콤보 개편).
     /// 발동 지점은 이동 직후(MoveThenAttackRoutine) 한 곳이며, 중복 발동은 턴별 기록으로 막는다.
+    /// 모든 공격(기본/강화)은 AttackActionScope로 감싼 하나의 '공격 행동'이다.
     /// </summary>
     public class AutoAttackSystem : MonoBehaviour
     {
@@ -51,6 +52,9 @@ namespace DiceOrbit.Core
 
         /// <summary>플레이어 턴 시작 시 호출 — 이번 턴 발동 기록을 비운다.</summary>
         public void ResetTurn() => _resolvedThisTurn.Clear();
+
+        /// <summary>이번 턴에 이 캐릭터의 공격이 이미 처리됐는가 (턴 종료 시 미이동 콤보 끊기 판정용).</summary>
+        public bool HasResolved(Character character) => character != null && _resolvedThisTurn.Contains(character);
 
         /// <summary>이동을 끝까지 수행한 뒤 도착 구역의 몬스터를 자동 공격한다.</summary>
         public IEnumerator MoveThenAttackRoutine(Character character, int diceValue)
@@ -95,7 +99,8 @@ namespace DiceOrbit.Core
 
         /// <summary>
         /// 한 캐릭터의 공격 1회. 이번 턴에 이미 때렸으면 아무 일도 하지 않는다.
-        /// diceValue가 액티브 조건을 만족하면 기본공격 대신 그 강화 공격이 나간다.
+        /// diceValue가 게이트를 만족하면 현재 콤보 단계의 강화 공격이, 아니면 콤보가 끊기며 기본공격이 나간다.
+        /// (2026-08-28 콤보 개편 — 단계 관리: ComboSystem / 단계 정의: ComboActiveSkill)
         /// </summary>
         public IEnumerator ResolveRoutine(Character character, int diceValue, IReadOnlyList<int> passedZones)
         {
@@ -103,33 +108,114 @@ namespace DiceOrbit.Core
             if (_resolvedThisTurn.Contains(character)) yield break;
             _resolvedThisTurn.Add(character);
 
-            var empowered = FindEmpoweredAttack(character, diceValue);
-            var skill = empowered != null ? empowered.RuntimeInstance : null;
+            // 주사위 '사용' 사건 — 공격 성사 여부와 무관하게 통지 (저속 방호 등 공용 모디파이어).
+            NotifyDiceUsed(character, diceValue);
 
-            var targets = skill != null
-                ? skill.ResolveTargets(character, passedZones)
-                : CollectTargets(character);
+            // 이동 시작 구역 vs 도착 구역 (경계 돌파 판정용)
+            var zoneMgr = CombatZoneManager.Instance;
+            int endZone = zoneMgr != null ? zoneMgr.GetZoneOf(character) : -1;
+            int startZone = passedZones != null && passedZones.Count > 0 ? passedZones[0] : endZone;
+            bool crossedZone = startZone >= 0 && endZone >= 0 && startZone != endZone;
+
+            var combo = Combo.ComboSystem.EnsureInstance();
+            var empowered = FindEmpoweredAttack(character, diceValue);
+
+            if (empowered == null)
+            {
+                // 게이트 실패 — 콤보 즉시 초기화 + 기본공격 (스펙 §1 규칙 5)
+                bool hadCombo = combo.GetTracker(character) != null && combo.GetTracker(character).Stage > 0;
+                combo.ResetCombo(character, Combo.ComboOutcome.BrokenByDice);
+                yield return BasicAttackRoutine(character, diceValue, crossedZone, hadCombo);
+                yield break;
+            }
+
+            if (!(empowered.RuntimeInstance is Data.Skills.ComboActiveSkill comboSkill))
+            {
+                // 콤보형이 아닌 액티브가 남아 있으면 설계 위반 — 드러내고 기본공격으로 처리.
+                Debug.LogError($"[AutoAttack] '{character.Stats?.CharacterName}'의 강화 공격이 ComboActiveSkill이 아니다 — 기본공격으로 대체. 프리셋을 확인할 것.");
+                yield return BasicAttackRoutine(character, diceValue, crossedZone, false);
+                yield break;
+            }
+
+            int stage = combo.GetTracker(character).RegisterGateSuccess();
+            var targets = comboSkill.ResolveStageTargets(character, stage, passedZones);
+            if (targets == null || targets.Count == 0)
+            {
+                // 게이트는 맞았지만 강화공격이 실제로 발생하지 않음 → 콤보 초기화 (스펙 §1 규칙 7)
+                combo.ResetCombo(character, Combo.ComboOutcome.BrokenByNoTarget);
+                yield break;
+            }
+
+            character.OnSkillExecutionStarted();
+            comboSkill.PlayCast(character);
+
+            // 한 단계의 모든 타격(다단×다중 대상)은 하나의 '공격 행동' — 촉매/고양/감전이 전체에 적용된다.
+            Systems.Effects.AttackActionScope.Begin(character, new Systems.Effects.AttackActionInfo
+            {
+                DiceValue = diceValue,
+                ComboStage = stage,
+                CrossedZone = crossedZone,
+                IsAutoAttack = true,
+            });
+
+            float perHit = ResolveHitDelay(comboSkill);
+            int hits = Mathf.Max(1, comboSkill.GetStageHits(stage));
+            for (int h = 0; h < hits; h++)
+            {
+                for (int i = 0; i < targets.Count; i++)
+                {
+                    var target = targets[i];
+                    if (target == null || !target.IsAlive) continue;
+
+                    comboSkill.ApplyStageHit(character, target, stage, h);
+                    if (perHit > 0f) yield return new WaitForSeconds(perHit);
+                }
+            }
+
+            Systems.Effects.AttackActionScope.End();
+
+            // 마무리 효과(방어도 부여·중독 2배·고양 살포)는 행동 스코프 밖 — 다음 행동을 위한 상태다.
+            comboSkill.OnStageCompleted(character, targets, stage);
+            combo.ReportExecuted(character);
+
+            if (attackInterval > 0f) yield return new WaitForSeconds(attackInterval);
+        }
+
+        /// <summary>
+        /// 기본공격 1회 (단일 대상). 기본공격도 하나의 공격 행동이라 촉매가 여기에도 적용·소모된다.
+        /// comboBroken=true면(1단계 이상 쌓인 콤보가 조건 불일치로 끊긴 경우) 공격 발생 시점에
+        /// 안전장치류 모디파이어에 통지한다.
+        /// </summary>
+        private IEnumerator BasicAttackRoutine(Character character, int diceValue, bool crossedZone, bool comboBroken)
+        {
+            var targets = CollectTargets(character);
             if (targets == null || targets.Count == 0) yield break;
 
             character.OnSkillExecutionStarted();
 
-            // 무기 연출은 강화 공격이든 기본공격이든 같은 발사체를 쓴다.
-            var weapon = skill != null ? skill : FindProjectileSource(character);
-            if (skill != null) skill.PlayCast(character);
+            // "콤보가 끊기고 일반 자동공격 발생" — 공격이 실제로 나가는 이 시점에만 통지.
+            if (comboBroken) NotifyComboBreak(character);
 
-            // 대상이 여럿이어도 한 번에 몰아 때리지 않는다 — 한 대상씩 때리고 기다려
-            // 피해 팝업과 패시브 발동이 순서대로 하나씩 읽히게 한다.
+            var weapon = FindProjectileSource(character);
+            Systems.Effects.AttackActionScope.Begin(character, new Systems.Effects.AttackActionInfo
+            {
+                DiceValue = diceValue,
+                ComboStage = -1,
+                CrossedZone = crossedZone,
+                IsAutoAttack = true,
+            });
+
             float perHit = ResolveHitDelay(weapon);
             for (int i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];
                 if (target == null || !target.IsAlive) continue;
 
-                if (skill != null) skill.ApplyToTarget(character, empowered, target, diceValue);
-                else               LaunchBasicHit(character, target, weapon);
-
+                LaunchBasicHit(character, target, weapon);
                 if (perHit > 0f) yield return new WaitForSeconds(perHit);
             }
+
+            Systems.Effects.AttackActionScope.End();
 
             if (attackInterval > 0f) yield return new WaitForSeconds(attackInterval);
         }
@@ -189,8 +275,9 @@ namespace DiceOrbit.Core
 
         /// <summary>
         /// 이 캐릭터가 이번 공격으로 때릴 대상들.
-        /// 기본은 자기가 선 구역의 주인 하나이며, 사거리 패시브(IZoneReachProvider)가 있으면
-        /// 그만큼 옆 구역까지 탐색한다 — 탐색 범위만 넓어지고 표적 수는 여전히 하나다.
+        /// 기본은 자기가 선 구역의 주인 하나. 집합형 패시브(IAttackZoneProvider — 마력 회로)가 있으면
+        /// 그 구역들 중 가장 가까운 주인을, 거리형(IZoneReachProvider)이 있으면 그 거리 안에서 찾는다.
+        /// 탐색 범위만 넓어지고 표적 수는 여전히 하나다.
         /// </summary>
         private List<Unit> CollectTargets(Character character)
         {
@@ -206,10 +293,78 @@ namespace DiceOrbit.Core
             int zone = zones.GetZoneOf(character);
             if (zone < 0) return result;   // 아직 타일에 배치되지 않음
 
+            // 집합형(마력 회로) 우선 — 연결된 구역들 중 자기 구역에서 원형 거리 최소인 주인.
+            var zoneProvider = FindAttackZoneProvider(character);
+            if (zoneProvider != null)
+            {
+                var nearest = FindNearestOwnerInZones(zones, zone, zoneProvider.GetAttackableZones(character));
+                if (nearest != null) result.Add(nearest);
+                return result;
+            }
+
             var owner = zones.FindNearestOwner(zone, ResolveZoneReach(character));
             if (owner != null) result.Add(owner);   // 사거리 안에 주인이 없으면 이번 턴 공격 없음
 
             return result;
+        }
+
+        /// <summary>구역 집합에서 기준 구역과의 원형 거리가 가장 짧은 주인 하나.</summary>
+        private static Unit FindNearestOwnerInZones(CombatZoneManager zones, int fromZone, List<int> candidateZones)
+        {
+            if (candidateZones == null || candidateZones.Count == 0) return null;
+
+            Unit best = null;
+            int bestDistance = int.MaxValue;
+            int n = zones.ZoneCount;
+
+            foreach (var zone in candidateZones)
+            {
+                var owner = zones.GetOwner(zone);
+                if (owner == null) continue;
+
+                int diff = Mathf.Abs(((zone - fromZone) % n + n) % n);
+                int distance = Mathf.Min(diff, n - diff);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = owner;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>주사위 사용 사건을 캐릭터의 공용 모디파이어에 통지 (저속 방호 등).</summary>
+        private static void NotifyDiceUsed(Character character, int diceValue)
+        {
+            var mods = character?.Stats?.Modifiers?.Modifiers;
+            if (mods == null) return;
+
+            foreach (var mod in mods)
+                if (mod is Data.Modifiers.Common.IDiceUseListener listener)
+                    listener.OnDiceUsed(character, diceValue);
+        }
+
+        /// <summary>콤보 끊김(조건 불일치→기본공격 발생) 사건 통지 (안전장치 등).</summary>
+        private static void NotifyComboBreak(Character character)
+        {
+            var mods = character?.Stats?.Modifiers?.Modifiers;
+            if (mods == null) return;
+
+            foreach (var mod in mods)
+                if (mod is Data.Modifiers.Common.IComboBreakListener listener)
+                    listener.OnComboBrokenBasicAttack(character);
+        }
+
+        /// <summary>캐릭터의 집합형 공격 구역 패시브 (마력 회로). 없으면 null.</summary>
+        private static Data.Passives.IAttackZoneProvider FindAttackZoneProvider(Character character)
+        {
+            var passives = character?.Stats?.PassiveInstances;
+            if (passives == null) return null;
+
+            foreach (var passive in passives)
+                if (passive is Data.Passives.IAttackZoneProvider provider)
+                    return provider;
+            return null;
         }
 
         /// <summary>캐릭터의 패시브가 제공하는 구역 사거리 중 가장 큰 값. 없으면 0(자기 구역만).</summary>

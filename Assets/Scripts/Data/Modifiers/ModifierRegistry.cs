@@ -10,15 +10,26 @@ namespace DiceOrbit.Data.Modifiers
     /// </summary>
     public static class ModifierRegistry
     {
+        // 2026-08-28 전면 교체 — 공용 12종 (위치/주사위/콤보/생존 4계열, 종류당 최대 3중첩).
+        // 캐릭터 전용 시그니처는 전부 폐기됐다. CanApplyTo가 3중첩 상한을 강제한다.
         private static readonly System.Func<CharacterModifier>[] Factories =
         {
-            () => new Generic.SharpBladeModifier(),
-            () => new Generic.BerserkModifier(),
-            () => new Generic.GiantStrengthModifier(),
-            () => new Warrior.GreatswordWideSwing(),
-            () => new Alchemist.AlchemistExtraReagent(),
-            () => new Rogue.RoguePositioningBoost(),
-            () => new Mage.MageFocusBoost(),
+            // 위치
+            () => new Common.JointTacticsModifier(),
+            () => new Common.LoneWolfModifier(),
+            () => new Common.ZoneCrossModifier(),
+            // 주사위
+            () => new Common.LowRollGuardModifier(),
+            () => new Common.MomentumStrikeModifier(),
+            () => new Common.ExtremeResonanceModifier(),
+            // 콤보
+            () => new Common.SafetyNetModifier(),
+            () => new Common.ChainReactionModifier(),
+            () => new Common.GrandFinaleModifier(),
+            // 생존
+            () => new Common.OpeningBarrierModifier(),
+            () => new Common.UnyieldingModifier(),
+            () => new Common.PaybackModifier(),
         };
 
         // 팩토리를 한 번씩만 돌려 얻은 타입명 캐시 — Exists가 매번 인스턴스를 만들지 않게 한다.

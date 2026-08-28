@@ -8,20 +8,23 @@ using UnityEngine;
 namespace DiceOrbit.Data.Passives
 {
     /// <summary>
-    /// [수호] 전사와 같은 구역에 선 아군(자신 포함)이 받는 피해를 줄인다.
-    /// 전사의 자리가 곧 '안전지대'가 되어, 도적 협공처럼 뭉쳐야 이득인 패시브와 맞물린다.
+    /// [방진] 전사와 같은 구역에 모인 '다른 아군' 수만큼 그 구역 전원이 단단해진다 (2026-08-28 개편).
+    /// 다른 아군 1명당 받는 공격 피해 -10% (1/2/3명 = -10/-20/-30%). 전사 자신도 감쇄를 받지만
+    /// 중첩 수 계산에서는 제외된다. 저장 없이 공격 시점에 계산하므로 진입·이탈·사망이 즉시 반영된다.
+    /// 중독 같은 직접 체력 손실에는 적용되지 않는다 (파이프라인이 통지를 건너뜀 + 이중 방어).
+    /// 반격·추가 공격은 없다 — 순수 감쇄만.
     /// </summary>
     [System.Serializable]
     public class WarriorGuardPassive : CharacterPassiveSkill, IPassiveRangeProvider
     {
         [Header("Designer Tuning")]
-        [Tooltip("같은 구역 아군(자신 포함)이 받는 피해 감소율(%). 예: 30은 -30%")]
-        [SerializeField] private float damageReductionPercent = 30f;
+        [Tooltip("같은 구역의 '다른 아군' 1명당 받는 공격 피해 감소율(%). 예: 10이면 3명일 때 -30%")]
+        [SerializeField] private float perAllyReductionPercent = 10f;
 
         public override int Priority => 100;
 
         public override string GetDynamicDescription()
-            => $"전사와 같은 구역에 있는 아군이 받는 피해가 {damageReductionPercent:0.#}% 감소합니다.";
+            => $"전사와 같은 구역에 있는 다른 아군 1명마다 해당 구역의 모든 아군(전사 포함)이 받는 공격 피해가 {perAllyReductionPercent:0.#}% 감소합니다.";
 
         /// <summary>패시브 영향 범위 = 전사가 선 구역의 타일들. 조회 시 범위 표시에 쓰인다.</summary>
         public IReadOnlyList<TileData> GetRangeTiles()
@@ -34,9 +37,10 @@ namespace DiceOrbit.Data.Passives
         public override void OnAttack(CombatTrigger trigger, AttackContext context)
         {
             if (trigger != CombatTrigger.OnCalculateOutput) return;
-            if (!(owner is Character guard)) return;
+            if (context.IsDirectHpLoss) return;   // 중독 등 직접 체력 손실 제외 (이중 방어)
+            if (!(owner is Character guard) || !guard.IsAlive) return;
 
-            // 아군이 맞을 때만 개입한다 (전사 자신의 공격에는 관여하지 않는다).
+            // 아군이 맞을 때만 개입한다 (아군의 공격에는 관여하지 않는다).
             if (!(context.Target is Character victim)) return;
 
             var zones = CombatZoneManager.Instance;
@@ -45,8 +49,27 @@ namespace DiceOrbit.Data.Passives
             int guardZone = zones.GetZoneOf(guard);
             if (guardZone < 0 || zones.GetZoneOf(victim) != guardZone) return;
 
-            context.OutputValue *= Mathf.Max(0f, 1f - damageReductionPercent / 100f);
-            if (!context.IsSimulation) Notify();
+            int allyCount = CountOtherAlliesInZone(guard, guardZone, zones);
+            if (allyCount <= 0) return;
+
+            float reduction = Mathf.Clamp(perAllyReductionPercent * allyCount, 0f, 90f);
+            context.OutputValue *= 1f - reduction / 100f;
+            if (!context.IsSimulation) Notify($"{PassiveName} -{reduction:0.#}%");
+        }
+
+        /// <summary>전사 구역에 있는 '전사가 아닌' 살아 있는 아군 수 (중첩 수의 기준).</summary>
+        private static int CountOtherAlliesInZone(Character guard, int guardZone, CombatZoneManager zones)
+        {
+            var party = PartyManager.Instance;
+            if (party == null) return 0;
+
+            int count = 0;
+            foreach (var ally in party.GetAliveCharacters())
+            {
+                if (ally == null || ally == guard) continue;
+                if (zones.GetZoneOf(ally) == guardZone) count++;
+            }
+            return count;
         }
     }
 }

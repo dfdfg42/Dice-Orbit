@@ -111,6 +111,20 @@ namespace DiceOrbit.Core
             return actualDamage;
         }
 
+        /// <summary>
+        /// 직접 체력 손실 (중독 등) — 방어도(TempArmor)를 우회한다. 팝업 연출은 일반 피해와 동일.
+        /// </summary>
+        public virtual int TakeDirectDamage(int damage)
+        {
+            int actualDamage = Stats.TakeDirectDamage(damage);
+            if (actualDamage > 0)
+            {
+                int shown = actualDamage;
+                UI.FloatingPopupQueue.EnqueueAfterBubbles(transform, 1.6f, pos => FloatingLabelPopup.CreateDamage(shown, pos));
+            }
+            return actualDamage;
+        }
+
         public virtual void Heal(int value)
         {
             int hpBefore = Stats.CurrentHP;
