@@ -929,7 +929,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f6827bb0815606c4fad17c80aca0b55d, type: 2}
   - {fileID: 11400000, guid: 51d3d5d5e0f54d342a2975debc4031f8, type: 2}
   - {fileID: 11400000, guid: 3598a6ceb4a35c24c8b12ddc3100c013, type: 2}
-  diePerCharacter: 2
+  diePerCharacter: 1
 --- !u!1 &35618541
 GameObject:
   m_ObjectHideFlags: 0

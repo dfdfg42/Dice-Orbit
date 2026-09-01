@@ -19,7 +19,7 @@ namespace DiceOrbit.Core
         [Tooltip("보상 획득용 특수 주사위 풀 (Phase 2에서 사용)")]
         [SerializeField] private List<DieDefinitionSO> specialPool = new List<DieDefinitionSO>();
         [Tooltip("캐릭터 1명당 시드되는 표준 주사위 수")]
-        [SerializeField] private int diePerCharacter = 2;
+        [SerializeField] private int diePerCharacter = 1;   // 2 → 1 (2026-08-28: 배분 선택지 과잉 축소)
 
         private readonly List<DieInstance> deck = new List<DieInstance>();
         public IReadOnlyList<DieInstance> Deck => deck;
