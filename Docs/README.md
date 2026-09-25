@@ -67,6 +67,7 @@
 | [superpowers/plans/2026-09-25-ui-reskin-phase3-code-ui-migration.md](superpowers/plans/2026-09-25-ui-reskin-phase3-code-ui-migration.md) | 코드 UI 13파일 UiSkin 마이그레이션 + UiSkinImage **구현 계획** | 완료 |
 | [superpowers/plans/2026-09-25-ui-reskin-phase4-scene-dropin.md](superpowers/plans/2026-09-25-ui-reskin-phase4-scene-dropin.md) | 씬 드롭인 20장 + 버튼 SpriteSwap **구현 계획** (드롭인 매핑표 포함) | 완료 |
 | [superpowers/specs/2026-09-25-ui-layout-polish-design.md](superpowers/specs/2026-09-25-ui-layout-polish-design.md) | **UI 레이아웃·간격 정리** — 화면 투어 캡처 기반 발견→수정 표 (HUD 턴 칩, 노드맵 제목, 상점 선반/카드, 이벤트 여백, 결과창 패널, combatUI 배선) + §3 정보 패널 세로 흐름·타이포 위계·타일 패널 | 완료 |
+| [superpowers/specs/2026-09-25-monster-zone-intent-reskin-design.md](superpowers/specs/2026-09-25-monster-zone-intent-reskin-design.md) | **몬스터 영역 표시 리스킨 설계** — 구역 잉크 플레이트(힉스필드) + 의도 말풍선 + 공격 타일 밴드 | 설계 승인, 구현 대기 |
 | [superpowers/plans/2026-09-25-ui-reskin-generation-log.md](superpowers/plans/2026-09-25-ui-reskin-generation-log.md) | 힉스필드 생성 로그 (프롬프트·job id·비용) | 기록 |
 
 ---
