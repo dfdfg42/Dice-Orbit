@@ -86,7 +86,7 @@ namespace DiceOrbit.Core
 
             Visuals.MonsterIdentityManager.EnsureInstance();
             Visuals.MonsterIdentityManager.Instance.Setup(spawned);
-            Visuals.ZoneFloorRenderer.EnsureInstance();
+            Visuals.ZonePlateRenderer.EnsureInstance();
             return spawned;
         }
 
