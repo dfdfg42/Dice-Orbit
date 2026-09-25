@@ -55,13 +55,13 @@
 **Interfaces:**
 - Produces: `SkinPart.Scrim` (색만 — 스프라이트 없음), `UiSkin.Circle : Sprite`, `void UiSkin.ApplySprite(Image image, SkinPart part)` (Scrim이면 sprite=null·Simple·color=Scrim, 그 외 해당 파트 Sliced·white; 버튼 파트는 Normal 면), `void UiSkin.ApplyCircle(Image image, Color tint)` (Circle·Simple·preserveAspect·color=tint).
 
-- [ ] **Step 1: 브랜치**
+- [x] **Step 1: 브랜치**
 
 ```bash
 cd "D:/Dice Orbit" && git checkout -q feature/ui-skin-core-20260925 && git checkout -q -b feature/ui-skin-migration-20260925 && git branch --show-current
 ```
 
-- [ ] **Step 2: 테스트 먼저 — UiSkinSelfTests.cs 수정**
+- [x] **Step 2: 테스트 먼저 — UiSkinSelfTests.cs 수정**
 
 `RunAll()`의 호출 목록에 4줄 추가 (기존 `TestValidatorPassesCompleteSkin();` 뒤):
 ```csharp
@@ -133,7 +133,7 @@ cd "D:/Dice Orbit" && git checkout -q feature/ui-skin-core-20260925 && git check
 ```
 (`TestUiSkinImageAppliesPart`는 Task 2의 `UiSkinImage`를 참조한다. Task 2 완료 전까지 컴파일 에러가 정상 — Task 1 Step 6에서는 이 테스트 1개만 임시로 주석 처리하지 말고, **Task 1과 Task 2를 연달아 진행**한 뒤 함께 검증한다.)
 
-- [ ] **Step 3: UiSkin.cs 구현**
+- [x] **Step 3: UiSkin.cs 구현**
 
 enum 교체:
 ```csharp
@@ -174,14 +174,14 @@ enum 교체:
         }
 ```
 
-- [ ] **Step 4: UiSkinValidator.cs — Circle 점검**
+- [x] **Step 4: UiSkinValidator.cs — Circle 점검**
 
 `Validate()`의 `CheckPresent(issues, skin.Close, nameof(skin.Close));` 뒤에:
 ```csharp
             CheckPresent(issues, skin.Circle,          nameof(skin.Circle));
 ```
 
-- [ ] **Step 5: circle.png 생성·반입·임포트 설정·배선**
+- [x] **Step 5: circle.png 생성·반입·임포트 설정·배선**
 
 ```bash
 cd "D:/Dice Orbit" && python - <<'EOF'
@@ -232,7 +232,7 @@ internal class CommandScript : IRunCommand
 ```
 Expected: `Circle 배선: circle`.
 
-- [ ] **Step 6: 검증은 Task 2 Step 4에서 함께** (UiSkinImage 테스트 때문에 컴파일이 아직 실패한다). 커밋도 Task 2에서.
+- [x] **Step 6: 검증은 Task 2 Step 4에서 함께** (UiSkinImage 테스트 때문에 컴파일이 아직 실패한다). 커밋도 Task 2에서.
 
 ---
 
@@ -245,14 +245,14 @@ Expected: `Circle 배선: circle`.
 **Interfaces:**
 - Produces: `DiceOrbit.UI.UiSkinImage : MonoBehaviour` — `[SerializeField] SkinPart part`, `SkinPart Part`, `void SetPart(SkinPart)`, `void Apply()`. Awake·OnValidate에서 Apply.
 
-- [ ] **Step 1: git mv (GUID 유지)**
+- [x] **Step 1: git mv (GUID 유지)**
 
 ```bash
 cd "D:/Dice Orbit" && git mv Assets/Scripts/UI/UiRoundedImage.cs Assets/Scripts/UI/UiSkinImage.cs && git mv Assets/Scripts/UI/UiRoundedImage.cs.meta Assets/Scripts/UI/UiSkinImage.cs.meta && grep guid Assets/Scripts/UI/UiSkinImage.cs.meta
 ```
 Expected: `guid: 6c688f30bc9e2414f819c279aa5df3f4` (씬 7개 참조가 이 GUID를 본다).
 
-- [ ] **Step 2: UiSkinImage.cs 내용 교체**
+- [x] **Step 2: UiSkinImage.cs 내용 교체**
 
 ```csharp
 using System;
@@ -310,12 +310,12 @@ namespace DiceOrbit.UI
 }
 ```
 
-- [ ] **Step 3: Refresh → 컴파일 확인**
+- [x] **Step 3: Refresh → 컴파일 확인**
 
 RunCommand `AssetDatabase.Refresh()` → `Unity_GetConsoleLogs(Error)`.
 Expected: 0건. (남아 있으면 Task 1·2 코드의 오타 — 에러 메시지대로 고친다.)
 
-- [ ] **Step 4: 자가 테스트 + 점검**
+- [x] **Step 4: 자가 테스트 + 점검**
 
 ```
 Unity_RunCommand: bool ok = DiceOrbit.EditorTools.UiSkinSelfTests.RunAll(); result.Log("{0}", ok ? "PASS" : "FAIL");
@@ -323,7 +323,7 @@ Unity_RunCommand: var n = DiceOrbit.EditorTools.UiSkinValidator.Validate(DiceOrb
 ```
 Expected: `PASS`, `issues=0`.
 
-- [ ] **Step 5: RewardCanvas 7개 파트 지정 (씬 편집)**
+- [x] **Step 5: RewardCanvas 7개 파트 지정 (씬 편집)**
 
 ```csharp
 using System.Linq;
@@ -383,7 +383,7 @@ internal class CommandScript : IRunCommand
 ```
 Expected: 7줄 `→` 로그 + `BattleScene 저장 — RewardCanvas 파트 7개`. `isDirty` 중단이면 사용자에게 알리고 대기.
 
-- [ ] **Step 6: 씬 검증 + 커밋**
+- [x] **Step 6: 씬 검증 + 커밋**
 
 ```bash
 cd "D:/Dice Orbit/Assets" && python - <<'EOF'
@@ -408,7 +408,7 @@ Expected: `UiSkinImage 컴포넌트: 7 | radius 잔존: 0 | part 값: ['0','0','
 - Modify: `Assets/Scripts/UI/InfoPanel/TileInfoPanelUI.cs:79-91, 167-170, 190`
 - Modify: `Assets/Scripts/UI/MonsterActionLabel.cs:139,144,181`
 
-- [ ] **Step 1: InfoPanelRows.cs — 상수 삭제, Skin 프록시 없음**
+- [x] **Step 1: InfoPanelRows.cs — 상수 삭제, Skin 프록시 없음**
 
 14~25행의 `public static readonly Color ...` 10줄과 28행 `public const string ModifierColorHex = "#6A48B8";`를 삭제하고 그 자리에:
 ```csharp
@@ -419,11 +419,11 @@ Expected: `UiSkinImage 컴포넌트: 7 | radius 잔존: 0 | part 값: ['0','0','
 ```
 파일 상단 using에 `using DiceOrbit.UI.Skin;` 추가. 68행 `SectionTitleColor` → `Skin.Ink`.
 
-- [ ] **Step 2: BattleInfoPanelUI.cs**
+- [x] **Step 2: BattleInfoPanelUI.cs**
 
 `using DiceOrbit.UI.Skin;` 추가. 327행 `InfoPanelRows.InkDark` → `UiSkin.Current.Ink`, 339행 `InfoPanelRows.PassiveColor` → `UiSkin.Current.Passive`, 349행 `InfoPanelRows.ModifierColor` → `UiSkin.Current.Modifier`, 427행 `InfoPanelRows.InkDark` → `UiSkin.Current.Ink`. (325행 `ModifierColorHex`는 프로퍼티라 그대로.)
 
-- [ ] **Step 3: TileInfoPanelUI.cs**
+- [x] **Step 3: TileInfoPanelUI.cs**
 
 `using DiceOrbit.UI.Skin;` 추가. 79~91행 블록을:
 ```csharp
@@ -447,12 +447,12 @@ Expected: `UiSkinImage 컴포넌트: 7 | radius 잔존: 0 | part 값: ['0','0','
 ```
 190행 `InfoPanelRows.MutedColor` → `UiSkin.Current.InkMuted`.
 
-- [ ] **Step 4: MonsterActionLabel.cs**
+- [x] **Step 4: MonsterActionLabel.cs**
 
 `using DiceOrbit.UI.Skin;` 추가. 139행 `bg.color = InfoPanelRows.PaperColor;` → `UiSkin.Current.ApplyTooltip(bg);` (말풍선 = 툴팁 파트, 색은 스프라이트가 가진다). 144행 `var ink = InfoPanelRows.InkDark;` → `var ink = UiSkin.Current.Ink;`. 181행 `InfoPanelRows.InkDark` → `UiSkin.Current.Ink`.
 `Outline` 컴포넌트(145~148행)는 스프라이트에 외곽선이 있으므로 **삭제** (3줄 + `var ink` 줄이 다른 곳에서 안 쓰이면 함께).
 
-- [ ] **Step 5: 컴파일·테스트·커밋**
+- [x] **Step 5: 컴파일·테스트·커밋**
 
 Refresh → 콘솔 에러 0 → 자가 테스트 PASS.
 ```bash
@@ -468,7 +468,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Modify: `Assets/Scripts/UI/RunHudUI.cs:41-47, 128-165, 178, 197, 230-315`
 
-- [ ] **Step 1: 상수 삭제 + Skin**
+- [x] **Step 1: 상수 삭제 + Skin**
 
 41~47행 7개 상수를 삭제하고:
 ```csharp
@@ -476,7 +476,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 `using DiceOrbit.UI.Skin;` 추가.
 
-- [ ] **Step 2: 골드 코인 — Resources.Load 제거**
+- [x] **Step 2: 골드 코인 — Resources.Load 제거**
 
 `RefreshGold()`를:
 ```csharp
@@ -494,7 +494,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 를 `var coin = Skin.Coin;`로 (null이면 UiSkin 점검이 잡는다 — 여기서 `Require`가 없으므로 `_coinIcon.sprite = coin;` 앞에 `if (coin == null) throw new System.InvalidOperationException("[RunHudUI] UiSkin.Coin이 비어 있습니다 — 「도구/Dice Orbit/UI 스킨 점검」");` 추가).
 
-- [ ] **Step 3: 칩 — tint 파라미터 제거, Chip/Slot 스프라이트**
+- [x] **Step 3: 칩 — tint 파라미터 제거, Chip/Slot 스프라이트**
 
 시그니처 `CreateChip(RectTransform parent, Sprite icon, string fallbackName, Color tint, bool empty = false, bool bare = false)` → `CreateChip(RectTransform parent, Sprite icon, string fallbackName, bool empty = false, bool bare = false)`. 178행 호출 `..., title, RelicTint, bare: true)` → `..., title, bare: true)`. 197행 `..., PotionTint, empty: !filled)` → `..., empty: !filled)`. `CreateChipFromPrefab(..., Color tint, bool empty)` → `(..., bool empty)`, 그 안의 `bg.color = empty ? CardWell : ...` 3줄을:
 ```csharp
@@ -534,7 +534,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
             }
 ```
 
-- [ ] **Step 4: 컴파일·테스트·커밋**
+- [x] **Step 4: 컴파일·테스트·커밋**
 
 Refresh → 에러 0 → PASS.
 ```bash
@@ -550,11 +550,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Modify: `Assets/Scripts/UI/NodeMapUI.cs:52-57, 92-96, 155, 207-218, 234-266, 277-284`
 
-- [ ] **Step 1: 상수 삭제 + Skin**
+- [x] **Step 1: 상수 삭제 + Skin**
 
 52~57행 6개 상수 삭제 → `private static UiSkin Skin => UiSkin.Current;`, `using DiceOrbit.UI.Skin;`.
 
-- [ ] **Step 2: 배경**
+- [x] **Step 2: 배경**
 
 ```csharp
             if (backgroundImage != null)
@@ -564,11 +564,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
             }
 ```
 
-- [ ] **Step 3: 간선 색 (155행)**
+- [x] **Step 3: 간선 색 (155행)**
 
 `Color c = active ? Gold : traveled ? CardEdge : new Color(0.25f, 0.27f, 0.34f);` → `Color c = active ? Skin.Accent : traveled ? Skin.Secondary : Skin.InkMuted;`
 
-- [ ] **Step 4: 경로 점 (207~218행)**
+- [x] **Step 4: 경로 점 (207~218행)**
 
 ```csharp
                 var img = dotGo.AddComponent<Image>();
@@ -585,7 +585,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
                 img.raycastTarget = false;
 ```
 
-- [ ] **Step 5: 노드 이미지 (234~266행)**
+- [x] **Step 5: 노드 이미지 (234~266행)**
 
 `else` 분기(스킨 스프라이트 없음)를 다음으로 — 노드 스프라이트 미배선은 배선 오류이므로 알린다:
 ```csharp
@@ -597,9 +597,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 라벨(스킨 없을 때만) 266행 `label.color = node.Visited && !isCurrent ? Dim : Ink;` → `label.color = node.Visited && !isCurrent ? Skin.InkMuted : Skin.Ink;`
 
-- [ ] **Step 6: 클릭 (277~284행)** — ColorBlock은 통짜 아이콘의 밝기 상태를 표현하므로 **유지**한다(스프라이트 스왑 대상이 아님). `cb.highlightedColor = skin != null ? Color.white : new Color(1.2f, 1.2f, 1.2f);` → `cb.highlightedColor = Color.white;`
+- [x] **Step 6: 클릭 (277~284행)** — ColorBlock은 통짜 아이콘의 밝기 상태를 표현하므로 **유지**한다(스프라이트 스왑 대상이 아님). `cb.highlightedColor = skin != null ? Color.white : new Color(1.2f, 1.2f, 1.2f);` → `cb.highlightedColor = Color.white;`
 
-- [ ] **Step 7: 컴파일·테스트·커밋**
+- [x] **Step 7: 컴파일·테스트·커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/UI/NodeMapUI.cs && git commit -q -m "refactor(ui-skin): NodeMapUI를 UiSkin으로 — 간선/점/라벨 팔레트, 경로 점 Circle, 노드 스프라이트 미배선은 에러
@@ -614,13 +614,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Modify: `Assets/Scripts/UI/ShopUI.cs:65-72, 109-113, 178, 273, 281-300, 457-474, 499`
 
-- [ ] **Step 1: 상수 삭제 + Skin** (65~72행 8개 → `private static UiSkin Skin => UiSkin.Current;`, using 추가)
+- [x] **Step 1: 상수 삭제 + Skin** (65~72행 8개 → `private static UiSkin Skin => UiSkin.Current;`, using 추가)
 
-- [ ] **Step 2: 배경** — 112행 `Felt` → `Skin.Scrim`.
+- [x] **Step 2: 배경** — 112행 `Felt` → `Skin.Scrim`.
 
-- [ ] **Step 3: 골드 리치텍스트** — 178행·273행의 `ColorUtility.ToHtmlStringRGB(Gold)` → `ColorUtility.ToHtmlStringRGB(Skin.Accent)`.
+- [x] **Step 3: 골드 리치텍스트** — 178행·273행의 `ColorUtility.ToHtmlStringRGB(Gold)` → `ColorUtility.ToHtmlStringRGB(Skin.Accent)`.
 
-- [ ] **Step 4: 상품 카드 버튼 (281~300행)**
+- [x] **Step 4: 상품 카드 버튼 (281~300행)**
 
 ```csharp
             var img = go.AddComponent<Image>();
@@ -635,7 +635,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 (`UiRoundedSprite.Get(14)`·`Image.Type.Sliced`·`fill`·ColorBlock 8줄 삭제.)
 
-- [ ] **Step 5: 선택 카드 버튼 (457~474행)**
+- [x] **Step 5: 선택 카드 버튼 (457~474행)**
 
 ```csharp
             var img = go.AddComponent<Image>();
@@ -648,9 +648,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
             btn.onClick.AddListener(() => onClick());
 ```
 
-- [ ] **Step 6: 텍스트** — 499행 `tmp.color = Ink;` → `tmp.color = Skin.Ink;`. 품절 라벨의 `#777777`/`#666666`/`#B05050` 인라인 hex는 의미색(품절 회색·불가 적색)이라 유지.
+- [x] **Step 6: 텍스트** — 499행 `tmp.color = Ink;` → `tmp.color = Skin.Ink;`. 품절 라벨의 `#777777`/`#666666`/`#B05050` 인라인 hex는 의미색(품절 회색·불가 적색)이라 유지.
 
-- [ ] **Step 7: 컴파일·테스트·커밋**
+- [x] **Step 7: 컴파일·테스트·커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/UI/ShopUI.cs && git commit -q -m "refactor(ui-skin): ShopUI를 UiSkin으로 — 상품/선택 카드 SpriteSwap 버튼, 팔레트 상수 제거
@@ -665,11 +665,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Modify: `Assets/Scripts/UI/EventUI.cs:48-54, 110-112, 279, 300, 337-340, 420-440, 454`
 
-- [ ] **Step 1: 상수 삭제 + Skin** (48~54행 7개 → 프로퍼티, using)
+- [x] **Step 1: 상수 삭제 + Skin** (48~54행 7개 → 프로퍼티, using)
 
-- [ ] **Step 2: 배경** — 111행 `Felt` → `Skin.Scrim`. 279행 `label.color = Gold;` → `Skin.Accent`. 300행 `success ? Gold : Danger` → `success ? Skin.Accent : Skin.Danger`.
+- [x] **Step 2: 배경** — 111행 `Felt` → `Skin.Scrim`. 279행 `label.color = Gold;` → `Skin.Accent`. 300행 `success ? Gold : Danger` → `success ? Skin.Accent : Skin.Danger`.
 
-- [ ] **Step 3: 주사위 타일 (337~340행)**
+- [x] **Step 3: 주사위 타일 (337~340행)**
 
 ```csharp
                 var img = die.AddComponent<Image>();
@@ -677,7 +677,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
                 img.raycastTarget = false;
 ```
 
-- [ ] **Step 4: 선택지 바 (420~440행)**
+- [x] **Step 4: 선택지 바 (420~440행)**
 
 ```csharp
             var img = go.AddComponent<Image>();
@@ -693,9 +693,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 (`fill`·ColorBlock 9줄, `txt.color = primary ? GoldInk : Ink;` 삭제 — CreateText가 `Skin.Ink`를 준다.)
 
-- [ ] **Step 5: 텍스트** — 454행 `tmp.color = Ink;` → `Skin.Ink`.
+- [x] **Step 5: 텍스트** — 454행 `tmp.color = Ink;` → `Skin.Ink`.
 
-- [ ] **Step 6: 컴파일·테스트·커밋**
+- [x] **Step 6: 컴파일·테스트·커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/UI/EventUI.cs && git commit -q -m "refactor(ui-skin): EventUI를 UiSkin으로 — 선택지 SpriteSwap 버튼, 주사위 홈 Slot, 팔레트 상수 제거
@@ -710,9 +710,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Modify: `Assets/Scripts/UI/RewardUI.cs:47-53, 193, 268, 284, 296, 300, 343, 437-445, 463`
 
-- [ ] **Step 1: 팔레트** — 48~50행 `Tile/Bar/Ink` 삭제 → `private static UiSkin Skin => UiSkin.Current;`, using. 53행 `TileRadius`·54행 `PillRadius` const는 `MakeRoundImage` 호출이 사라지면 미사용이므로 삭제.
+- [x] **Step 1: 팔레트** — 48~50행 `Tile/Bar/Ink` 삭제 → `private static UiSkin Skin => UiSkin.Current;`, using. 53행 `TileRadius`·54행 `PillRadius` const는 `MakeRoundImage` 호출이 사라지면 미사용이므로 삭제.
 
-- [ ] **Step 2: MakeRoundImage → MakeSkinImage**
+- [x] **Step 2: MakeRoundImage → MakeSkinImage**
 
 ```csharp
         /// <summary>스킨 파트 Image 하나.</summary>
@@ -727,9 +727,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 호출처 전환: `MakeRoundImage(root, "Card", Tile, TileRadius)` → `MakeSkinImage(root, "Card", SkinPart.Card)`. 그 외 `MakeRoundImage(` 호출을 모두 grep해 `Tile`→`SkinPart.Card`, `Bar`→`SkinPart.Chip`으로 (`grep -n "MakeRoundImage" RewardUI.cs`로 전수 확인).
 
-- [ ] **Step 3: 텍스트 색** — `Ink` 참조(193·268·296·300·343·463행) → `Skin.Ink` (463행은 `new Color(Skin.Ink.r, Skin.Ink.g, Skin.Ink.b, 0.75f)`).
+- [x] **Step 3: 텍스트 색** — `Ink` 참조(193·268·296·300·343·463행) → `Skin.Ink` (463행은 `new Color(Skin.Ink.r, Skin.Ink.g, Skin.Ink.b, 0.75f)`).
 
-- [ ] **Step 4: 컴파일·테스트·커밋**
+- [x] **Step 4: 컴파일·테스트·커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/UI/RewardUI.cs && git commit -q -m "refactor(ui-skin): RewardUI 동적 카드를 UiSkin으로 — MakeRoundImage→MakeSkinImage, 팔레트 상수 제거
@@ -746,7 +746,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `Assets/Scripts/UI/Tutorial/TutorialPromptUI.cs` (전체 재작성)
 - Delete: `Assets/Scripts/UI/Tutorial/TutorialSkin.cs` (+ .meta), `Assets/Resources/TutorialSkin.asset` (+ .meta)
 
-- [ ] **Step 1: TutorialOverlayUI.cs**
+- [x] **Step 1: TutorialOverlayUI.cs**
 
 28~37행(상수 6개 + `panelSprite`/`buttonSprite` 필드·주석) 삭제 → `private static UiSkin Skin => UiSkin.Current;`, using 추가. `Build()` 시작의 `var skin = TutorialSkin.Get(); if (skin != null) {...}` 2줄 삭제. Dim 이미지: `NewImage(transform, Dim, "Dim" + i)` → `NewImage(transform, Skin.Scrim, "Dim" + i)`; 124행 `d.color = Dim;` → `d.color = Skin.Scrim;`.
 버블:
@@ -779,7 +779,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 `NewText`의 `t.color = Ink;` → `t.color = Skin.Ink;` (static이므로 `UiSkin.Current.Ink`).
 
-- [ ] **Step 2: TutorialPromptUI.cs 전체**
+- [x] **Step 2: TutorialPromptUI.cs 전체**
 
 ```csharp
 using System;
@@ -872,13 +872,13 @@ namespace DiceOrbit.UI.Tutorial
 }
 ```
 
-- [ ] **Step 3: TutorialSkin 삭제**
+- [x] **Step 3: TutorialSkin 삭제**
 
 ```bash
 cd "D:/Dice Orbit" && grep -rn "TutorialSkin" --include=*.cs Assets/Scripts | grep -v "Tutorial/TutorialSkin.cs" ; echo "(위에 출력 없어야 함)"; git rm -q Assets/Scripts/UI/Tutorial/TutorialSkin.cs Assets/Scripts/UI/Tutorial/TutorialSkin.cs.meta Assets/Resources/TutorialSkin.asset Assets/Resources/TutorialSkin.asset.meta && git status --short
 ```
 
-- [ ] **Step 4: 컴파일·테스트·커밋**
+- [x] **Step 4: 컴파일·테스트·커밋**
 
 Refresh → 에러 0 (TutorialDevTools 등에서 TutorialSkin을 쓰면 에러가 뜬다 → 그 참조도 삭제) → PASS.
 ```bash
@@ -897,7 +897,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `Assets/Scripts/UI/StatusIconRow.cs:128-131`
 - Modify: `Assets/Scripts/UI/GameResultUI.cs:107-108, 139-141`
 
-- [ ] **Step 1: DiceHoverTooltipUI** — 28~29행 `Ink`/`Card` 삭제 → `private static UiSkin Skin => UiSkin.Current;`, using. 189행 `txt.color = Ink;` → `Skin.Ink`. 218행 `CreateCell(effect.Preview(), effect.Icon, Ink)` → `Skin.Ink`. 226~229행:
+- [x] **Step 1: DiceHoverTooltipUI** — 28~29행 `Ink`/`Card` 삭제 → `private static UiSkin Skin => UiSkin.Current;`, using. 189행 `txt.color = Ink;` → `Skin.Ink`. 218행 `CreateCell(effect.Preview(), effect.Icon, Ink)` → `Skin.Ink`. 226~229행:
 ```csharp
             var bg = cell.GetComponent<Image>();
             Skin.ApplyCard(bg);
@@ -905,7 +905,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 `HintRed`(216행)는 의미색 → 유지.
 
-- [ ] **Step 2: DiceElement** — `MakeCircle` 안의
+- [x] **Step 2: DiceElement** — `MakeCircle` 안의
 ```csharp
                 img.sprite = UiRoundedSprite.Get(circleRadius);
                 img.type = Image.Type.Sliced;
@@ -913,7 +913,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 → `UiSkin.Current.ApplyCircle(img, color);`. `int circleRadius = ...` 줄 삭제(미사용). using 추가. Badge 색 4개는 배지 의미색 → 유지.
 
-- [ ] **Step 3: StatusIconRow** — 128~131행:
+- [x] **Step 3: StatusIconRow** — 128~131행:
 ```csharp
                 var bg = go.AddComponent<Image>();
                 UiSkin.Current.ApplyCircle(bg, new Color(data.Color.r, data.Color.g, data.Color.b, 0.9f));
@@ -921,7 +921,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 using 추가.
 
-- [ ] **Step 4: GameResultUI** — 108행 `dimImg.color = new Color(0f, 0f, 0f, 0.82f);` → `dimImg.color = UiSkin.Current.Scrim;`. 139~141행:
+- [x] **Step 4: GameResultUI** — 108행 `dimImg.color = new Color(0f, 0f, 0f, 0.82f);` → `dimImg.color = UiSkin.Current.Scrim;`. 139~141행:
 ```csharp
             var btnImg = btnGO.gameObject.AddComponent<Image>();
             ui.restartButton = btnGO.gameObject.AddComponent<Button>();
@@ -930,7 +930,7 @@ using 추가.
 ```
 라벨 색(`label.color`, 150행 근처)이 흰색이면 `UiSkin.Current.Ink`로. using 추가. 타이틀 색 2개(GameOver/Victory)는 유지.
 
-- [ ] **Step 5: 컴파일·테스트·커밋**
+- [x] **Step 5: 컴파일·테스트·커밋**
 
 ```bash
 cd "D:/Dice Orbit" && grep -rn "UiRoundedSprite" --include=*.cs Assets/Scripts | grep -v "UiRoundedSprite.cs" ; echo "(위에 출력 없어야 함 — 남으면 그 파일도 전환)"; git add Assets/Scripts/UI/DiceHoverTooltipUI.cs Assets/Scripts/UI/DiceElement.cs Assets/Scripts/UI/StatusIconRow.cs Assets/Scripts/UI/GameResultUI.cs && git commit -q -m "refactor(ui-skin): 주사위 툴팁·배지·상태 칩·결과창을 UiSkin으로 — 원형은 Circle 틴트, 라운드 헬퍼 호출 0
@@ -964,7 +964,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 | `_EventCanvas/RightColumn/ChoiceColumn/Choice_지나간다` | ButtonSecondary |
 | `_NodeMapCanvas/Felt (1)` | Scrim |
 
-- [ ] **Step 1: RunCommand — UiSkinImage 부착 + 파트 지정 + 저장**
+- [x] **Step 1: RunCommand — UiSkinImage 부착 + 파트 지정 + 저장**
 
 ```csharp
 using System.Linq;
@@ -1031,7 +1031,7 @@ internal class CommandScript : IRunCommand
 ```
 Expected: 13줄 + 저장 로그.
 
-- [ ] **Step 2: 참조 0 확인 → 삭제**
+- [x] **Step 2: 참조 0 확인 → 삭제**
 
 ```bash
 cd "D:/Dice Orbit/Assets" && total=0; for m in Art/Generated/RoundedRect_*.asset.meta; do g=$(grep -m1 "^guid:" "$m" | awk '{print $2}'); n=$(cat Scenes/*.unity Prefabs/*.prefab | grep -c "$g"); total=$((total+n)); done; echo "Art/Generated 잔여 참조: $total"; grep -rn "UiRoundedSprite" --include=*.cs Scripts | grep -v "UiRoundedSprite.cs" | wc -l
@@ -1042,7 +1042,7 @@ cd "D:/Dice Orbit" && git rm -rq Assets/Art/Generated Assets/Art/Generated.meta 
 ```
 (`Assets/Art`가 비면 `Assets/Art.meta`도 `git rm`.)
 
-- [ ] **Step 3: 컴파일·테스트·커밋**
+- [x] **Step 3: 컴파일·테스트·커밋**
 
 Refresh → 에러 0 → PASS → `Unity_GetConsoleLogs(logTypes:"Warning")`에 "missing script"/"sprite" 경고 없음 확인.
 ```bash
@@ -1058,7 +1058,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Modify: `Docs/editor_owned_ui_pattern.md` (체크리스트 5, 적용 현황 표), `Docs/README.md` (3단계 계획 행), 스펙 상태 줄
 
-- [ ] **Step 1: 플레이 스모크 (튜토리얼 프롬프트 + 캡처)**
+- [x] **Step 1: 플레이 스모크 (튜토리얼 프롬프트 + 캡처)**
 
 ```
 Unity_ManageEditor(Action:"Play", WaitForCompletion:true)
@@ -1078,9 +1078,9 @@ internal class CommandScript : IRunCommand
 ```
 1~2초 뒤(캡처는 프레임 끝에 기록) `Read`로 이미지 확인 → 크림 패널·핑크/하늘 버튼·잉크 글자면 OK. `Unity_ManageEditor(Action:"Stop")`. 콘솔 에러 0.
 
-- [ ] **Step 2: 사용자 육안 확인 요청** — 노드맵·상점·이벤트·보상·정보 패널은 런 흐름이 필요하므로 사용자가 에디터에서 한 바퀴 돌며 확인. 깨진 곳은 파일 단위 커밋이라 되돌리기 쉽다.
+- [x] **Step 2: 사용자 육안 확인 요청** — 노드맵·상점·이벤트·보상·정보 패널은 런 흐름이 필요하므로 사용자가 에디터에서 한 바퀴 돌며 확인. 깨진 곳은 파일 단위 커밋이라 되돌리기 쉽다.
 
-- [ ] **Step 3: 문서**
+- [x] **Step 3: 문서**
 
 `Docs/editor_owned_ui_pattern.md` 체크리스트 5번을:
 ```markdown
@@ -1092,7 +1092,7 @@ internal class CommandScript : IRunCommand
 ```
 스펙 상단 상태 줄을 `> 상태: **1~3단계 완료 (코드 UI 13파일·씬 라운드 참조 20개 전환, UiRoundedSprite·TutorialSkin 철거), 4단계(씬 드롭인) 대기**`로.
 
-- [ ] **Step 4: 커밋 + 보고**
+- [x] **Step 4: 커밋 + 보고**
 
 ```bash
 cd "D:/Dice Orbit" && sed -i 's/^- \[ \] \*\*Step/- [x] **Step/' Docs/superpowers/plans/2026-09-25-ui-reskin-phase3-code-ui-migration.md && git add Docs && git commit -q -m "docs(ui-skin): 리스킨 3단계 완료 — 에디터 소유 UI 패턴·README·스펙 상태 갱신

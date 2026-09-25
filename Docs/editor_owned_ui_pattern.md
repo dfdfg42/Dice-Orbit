@@ -74,6 +74,6 @@ public class SomeUI : MonoBehaviour
 1. 슬롯 필드 선언 (`[Header("슬롯 (씬에서 배치 — [기본 레이아웃 생성]으로 자동 배선)")]`)
 2. `[ContextMenu("기본 레이아웃 생성")]` — 중복 가드, 슬롯 배선, SetDirty/MarkSceneDirty
 3. Show()에서 폴백 호출 + `BattleInfoPanelUI.SetVisible(false)` (전체화면 UI라면)
-4. 색·스프라이트는 `UiSkin.Current` (`Assets/Scripts/UI/Skin/UiSkin.cs`, 에셋 `Resources/UI/UiSkin.asset`) — 팔레트 상수를 파일에 복사하지 않는다. 패널/카드/칩/툴팁/슬롯/구분선은 `ApplyPanel/ApplyCard/...`, 버튼은 `ApplyButton(btn, ButtonKind)` (SpriteSwap). (2026-09-25 리스킨 2단계부터. 기존 UI의 Felt/Card/Gold 상수 블록은 3단계에서 전환)
-5. 라운드 사각형 절차 생성(`UiRoundedSprite.Get`)은 리스킨 3단계에서 철거 예정 — 신규 UI에서 쓰지 않는다. 점검: 「도구/Dice Orbit/UI 스킨 점검」
+4. 색·스프라이트는 `UiSkin.Current` (`Assets/Scripts/UI/Skin/UiSkin.cs`, 에셋 `Resources/UI/UiSkin.asset`) — 팔레트 상수를 파일에 복사하지 않는다. 각 UI는 `private static UiSkin Skin => UiSkin.Current;` 한 줄로 잡고 `Skin.Ink/Accent/...`를 읽는다. 패널/카드/칩/툴팁/슬롯/구분선은 `ApplyPanel/ApplyCard/...`, 버튼은 `ApplyButton(btn, ButtonKind)` (SpriteSwap), 틴트가 필요한 원형은 `ApplyCircle(img, tint)`. (2026-09-25 리스킨 2·3단계 — 코드 UI 13파일 전환 완료)
+5. 씬에 배치하는 패널/칩/버튼은 `UiSkinImage` 컴포넌트 + 파트 지정 (`Assets/Scripts/UI/UiSkinImage.cs`, Awake/OnValidate에서 적용). 절차 생성 라운드 사각형(`UiRoundedSprite`)과 `Assets/Art/Generated`는 2026-09-25 철거됨. 점검: 「도구/Dice Orbit/UI 스킨 점검」
 6. 정렬 질서: 사이드바 -5 / HUD 100 / 노드맵 900 / 상점·이벤트 1450 / 보상 1500 / 커서 툴팁 30000
