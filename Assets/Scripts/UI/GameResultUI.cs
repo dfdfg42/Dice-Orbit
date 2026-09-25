@@ -18,8 +18,8 @@ namespace DiceOrbit.UI
         private TextMeshProUGUI messageText;
         private Button restartButton;
 
-        private static readonly Color GameOverColor = new Color(1f, 0.4f, 0.4f, 1f);
-        private static readonly Color VictoryColor = new Color(1f, 0.85f, 0.35f, 1f);
+        private static Color GameOverColor => UiSkin.Current.Danger;   // 크림 패널 위 제목색 (2026-09-25)
+        private static Color VictoryColor => UiSkin.Current.Accent;
 
         private void Awake()
         {
@@ -109,13 +109,22 @@ namespace DiceOrbit.UI
             dimImg.color = UiSkin.Current.Scrim;
 
             // 타이틀
+            // 뒤판 (크림 패널) — 제목·문구·버튼이 스크림 위에 맨몸으로 뜨지 않게 (2026-09-25)
+            var panelGO = CreateChild(root.transform, "Panel");
+            panelGO.anchorMin = panelGO.anchorMax = new Vector2(0.5f, 0.5f);
+            panelGO.anchoredPosition = new Vector2(0, 0);
+            panelGO.sizeDelta = new Vector2(760, 440);
+            var panelImg = panelGO.gameObject.AddComponent<Image>();
+            UiSkin.Current.ApplyPanel(panelImg);
+            panelImg.raycastTarget = false;
+
             var titleGO = CreateChild(root.transform, "Title");
             titleGO.anchorMin = titleGO.anchorMax = new Vector2(0.5f, 0.5f);
-            titleGO.anchoredPosition = new Vector2(0, 140);
-            titleGO.sizeDelta = new Vector2(1400, 200);
+            titleGO.anchoredPosition = new Vector2(0, 118);
+            titleGO.sizeDelta = new Vector2(700, 110);
             ui.titleText = titleGO.gameObject.AddComponent<TextMeshProUGUI>();
             ui.titleText.alignment = TextAlignmentOptions.Center;
-            ui.titleText.fontSize = 110;
+            ui.titleText.fontSize = 76;
             ui.titleText.fontStyle = FontStyles.Bold;
             ui.titleText.raycastTarget = false;
             if (koreanFont != null) ui.titleText.font = koreanFont;
@@ -123,20 +132,20 @@ namespace DiceOrbit.UI
             // 메시지
             var msgGO = CreateChild(root.transform, "Message");
             msgGO.anchorMin = msgGO.anchorMax = new Vector2(0.5f, 0.5f);
-            msgGO.anchoredPosition = new Vector2(0, -10);
-            msgGO.sizeDelta = new Vector2(1400, 240);
+            msgGO.anchoredPosition = new Vector2(0, -2);
+            msgGO.sizeDelta = new Vector2(680, 130);
             ui.messageText = msgGO.gameObject.AddComponent<TextMeshProUGUI>();
             ui.messageText.alignment = TextAlignmentOptions.Center;
-            ui.messageText.fontSize = 48;
-            ui.messageText.color = new Color(0.9f, 0.9f, 0.9f, 1f);
+            ui.messageText.fontSize = 34;
+            ui.messageText.color = UiSkin.Current.Ink;
             ui.messageText.raycastTarget = false;
             if (koreanFont != null) ui.messageText.font = koreanFont;
 
             // 다시 시작 버튼
             var btnGO = CreateChild(root.transform, "RestartButton");
             btnGO.anchorMin = btnGO.anchorMax = new Vector2(0.5f, 0.5f);
-            btnGO.anchoredPosition = new Vector2(0, -260);
-            btnGO.sizeDelta = new Vector2(420, 110);
+            btnGO.anchoredPosition = new Vector2(0, -148);
+            btnGO.sizeDelta = new Vector2(300, 78);
             btnGO.gameObject.AddComponent<Image>();
             ui.restartButton = btnGO.gameObject.AddComponent<Button>();
             UiSkin.Current.ApplyButton(ui.restartButton, ButtonKind.Primary);
@@ -147,7 +156,7 @@ namespace DiceOrbit.UI
             var label = labelGO.gameObject.AddComponent<TextMeshProUGUI>();
             label.text = "다시 시작";
             label.alignment = TextAlignmentOptions.Center;
-            label.fontSize = 44;
+            label.fontSize = 34;
             label.fontStyle = FontStyles.Bold;
             label.color = UiSkin.Current.Ink;
             label.raycastTarget = false;

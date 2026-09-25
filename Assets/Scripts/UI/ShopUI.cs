@@ -264,13 +264,15 @@ namespace DiceOrbit.UI
 
             string label = sold
                 ? $"<color=#777777>{title}</color>\n\n<size=60%><color=#666666>품절</color></size>"
-                : $"{title}\n<size=50%>{desc}</size>\n<size=70%><color=#{ColorUtility.ToHtmlStringRGB(Skin.Accent)}>{price}G</color>" +
+                : $"{title}\n<size=70%>{desc}</size>\n<size=85%><color=#{ColorUtility.ToHtmlStringRGB(Skin.Accent)}>{price}G</color>" +
                   (affordable ? "" : " <color=#B05050>✕</color>") + "</size>";
 
             var go = new GameObject("Goods", typeof(RectTransform));
             go.transform.SetParent(shelf, false);
+            ((RectTransform)go.transform).sizeDelta = new Vector2(168, 180);   // 선반 레이아웃이 자식 크기를 제어하지 않으므로 직접 지정
             var le = go.AddComponent<LayoutElement>();
-            le.preferredWidth = 158; le.preferredHeight = 168;
+            le.preferredWidth = 168; le.preferredHeight = 180;
+            le.minWidth = 160;   // 선반이 좁아도 카드가 찌그러지지 않게 (5장 × 160 + 간격 ≤ 선반 폭)
 
             go.AddComponent<Image>();
             var shadow = go.AddComponent<Shadow>();
@@ -282,8 +284,10 @@ namespace DiceOrbit.UI
             btn.interactable = !sold && affordable;
             btn.onClick.AddListener(() => onBuy());
 
-            var txt = CreateText(go, label, 18, FontStyles.Bold);
-            txt.margin = new Vector4(8, 10, 8, 10);
+            var txt = CreateText(go, label, 20, FontStyles.Bold);
+            txt.margin = new Vector4(10, 12, 10, 12);
+            txt.enableAutoSizing = true; txt.fontSizeMin = 12; txt.fontSizeMax = 20;   // 설명이 길면 줄여서 카드 안에 맞춘다
+            txt.overflowMode = TextOverflowModes.Ellipsis;                           // 그래도 넘치면 말줄임 (카드 밖으로 새지 않게)
             Stretch(txt);
         }
 

@@ -42,6 +42,8 @@ namespace DiceOrbit.Core
         [SerializeField] private Button rollDiceButton;
         [SerializeField] private Button endTurnButton;
         [SerializeField] private TextMeshProUGUI turnCountText;
+        [Tooltip("턴 카운터 칩(텍스트의 부모). 전투 중에만 표시한다. 비어 있으면 텍스트 오브젝트 자체를 토글.")]
+        [SerializeField] private GameObject turnCounterRoot;
 
         /// <summary>튜토리얼 하이라이트용 — 턴 종료 버튼 Rect.</summary>
         public RectTransform EndTurnRect => endTurnButton != null ? endTurnButton.transform as RectTransform : null;
@@ -166,6 +168,7 @@ namespace DiceOrbit.Core
             DestroyActiveMonsters();
             CurrentEncounter = encounter;
             CurrentFloorNumber = floorNumber;
+            SetTurnCounterVisible(true);
 
             // 배경은 연출 전에 미리 세팅 (OnCombatStart는 연출 후 발화되므로 배경만 앞당김)
             var bg = FindFirstObjectByType<BackgroundManager>(FindObjectsInactive.Include);
@@ -282,6 +285,7 @@ namespace DiceOrbit.Core
 
             combatStatus = CombatStatus.EndCombat;
             inCombat = false;
+            SetTurnCounterVisible(false);
             // 전투가 끝나면 턴 예산도 초기화합니다.
             playerTurnBudgets.Clear();
             HideMonsterIntents(); // Clean up visuals
@@ -543,11 +547,18 @@ namespace DiceOrbit.Core
             ActionQueueManager.Instance.EnqueueAction(EndPlayerTurnRoutine());
         }
 
+        /// <summary>턴 카운터 칩은 전투 중에만 보인다 (맵·상점·보상에서 "턴 0"이 남지 않게, 2026-09-25).</summary>
+        private void SetTurnCounterVisible(bool visible)
+        {
+            var target = turnCounterRoot != null ? turnCounterRoot : turnCountText != null ? turnCountText.gameObject : null;
+            if (target != null) target.SetActive(visible);
+        }
+
         private void UpdateUI()
         {
             if (turnCountText != null)
             {
-                turnCountText.text = $"Turn: {turnCount}";
+                turnCountText.text = $"턴 {turnCount}";
             }
         }
 

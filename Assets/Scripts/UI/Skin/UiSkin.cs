@@ -63,7 +63,7 @@ namespace DiceOrbit.UI.Skin
         public Color Dice      = new Color(0.16f, 0.42f, 0.65f);           // 주사위 청색
         public Color Modifier  = new Color(0.42f, 0.28f, 0.72f);           // #6A48B8 보라
         public Color Passive   = new Color(0.514f, 0.624f, 0.557f);        // #839F8E 세이지
-        public Color Scrim     = new Color(0.043f, 0.051f, 0.078f, 0.85f); // 어두운 반투명 배경
+        public Color Scrim     = new Color(0.043f, 0.051f, 0.078f, 0.94f); // 어두운 반투명 배경 (0.85는 뒤 궤도가 비쳐 0.94로, 2026-09-25)
 
         [Header("9-slice 스프라이트")]
         public Sprite Panel;

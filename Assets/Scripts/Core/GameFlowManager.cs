@@ -623,11 +623,10 @@ namespace DiceOrbit.Core
 
             if (combatUI == null)
             {
-                var combatCanvas = GameObject.Find("CombatUI");
-                if (combatCanvas != null)
-                {
-                    combatUI = combatCanvas;
-                }
+                // 전투 캔버스 루트 이름 = "GameCanvas" (주사위 패널·액션 패널·로스터·툴팁). 없으면 배선 오류.
+                var combatCanvas = GameObject.Find("GameCanvas");
+                if (combatCanvas != null) combatUI = combatCanvas;
+                else Debug.LogError("[GameFlow] 전투 캔버스 'GameCanvas'를 찾지 못했습니다 — 맵/상점/보상에서 전투 UI가 숨겨지지 않습니다.");
             }
 
             Debug.Log($"[GameFlow] CacheSceneReferences - mainMenuUI={(mainMenuUI != null)}, characterSelectionUI={(characterSelectionUI != null)}, rewardUI={(rewardUI != null)}, combatUI={(combatUI != null)}");
