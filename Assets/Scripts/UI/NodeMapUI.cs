@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Run;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -49,12 +50,7 @@ namespace DiceOrbit.UI
         [SerializeField] private float verticalMargin = 130f; // 맨 아래/위 여백
 
         // 보드게임의 밤 팔레트
-        private static readonly Color Felt     = new Color(0.043f, 0.051f, 0.078f, 0.97f);
-        private static readonly Color Card     = new Color(0.118f, 0.133f, 0.200f);
-        private static readonly Color CardEdge = new Color(0.239f, 0.271f, 0.400f);
-        private static readonly Color Ink      = new Color(0.910f, 0.894f, 0.847f);
-        private static readonly Color Gold     = new Color(0.878f, 0.702f, 0.341f);
-        private static readonly Color Dim      = new Color(0.35f, 0.35f, 0.38f);
+        private static UiSkin Skin => UiSkin.Current;   // 팔레트·스프라이트 단일 권위 (2026-09-25)
 
         private TMP_FontAsset _font;
 
@@ -92,7 +88,7 @@ namespace DiceOrbit.UI
             if (backgroundImage != null)
             {
                 backgroundImage.sprite = backgroundSprite;
-                backgroundImage.color = backgroundSprite != null ? Color.white : Felt;
+                backgroundImage.color = backgroundSprite != null ? Color.white : Skin.Scrim;
             }
 
             Rebuild();
@@ -152,7 +148,7 @@ namespace DiceOrbit.UI
                 {
                     bool active = node.Id == currentId && selectableIds.Contains(nextId);
                     bool traveled = node.Visited && map.Get(nextId) != null && map.Get(nextId).Visited;
-                    Color c = active ? Gold : traveled ? CardEdge : new Color(0.25f, 0.27f, 0.34f);
+                    Color c = active ? Skin.Accent : traveled ? Skin.Secondary : Skin.InkMuted;
                     CreateEdge(positions[node.Id], positions[nextId], c, active ? 5f : 3f);
                 }
             }
@@ -209,12 +205,12 @@ namespace DiceOrbit.UI
                 {
                     img.sprite = edgeDotSprite;
                     img.preserveAspect = true;
+                    img.color = color;
                 }
                 else
                 {
-                    img.sprite = UiRoundedSprite.Get(Mathf.CeilToInt(dotSize * 0.5f));   // 원형 점
+                    Skin.ApplyCircle(img, color);   // 기본 = 스킨 원형 점 (edgeDotSprite는 선택 오버라이드)
                 }
-                img.color = color;
                 img.raycastTarget = false;
             }
         }
@@ -245,12 +241,8 @@ namespace DiceOrbit.UI
             }
             else
             {
-                img.sprite = UiRoundedSprite.Get(16);
-                img.type = Image.Type.Sliced;
-                img.color = isSelectable ? CardEdge
-                          : isCurrent ? new Color(0.07f, 0.08f, 0.12f)
-                          : node.Visited ? new Color(Dim.r, Dim.g, Dim.b, 0.55f)
-                          : Card;
+                Debug.LogError($"[NodeMapUI] {node.Type} 노드 스프라이트가 비어 있습니다 — 인스펙터의 Node Sprites를 배선하세요.");
+                Skin.ApplyCard(img);
             }
 
             // 라벨 (스킨이 없을 때만 — 통짜 이미지는 아트가 타입을 표현)
@@ -263,7 +255,7 @@ namespace DiceOrbit.UI
                 label.fontSize = node.Type == MapNodeType.Boss ? 22f : 16f;
                 label.fontStyle = FontStyles.Bold;
                 label.alignment = TextAlignmentOptions.Center;
-                label.color = node.Visited && !isCurrent ? Dim : Ink;
+                label.color = node.Visited && !isCurrent ? Skin.InkMuted : Skin.Ink;
                 label.raycastTarget = false;
                 if (_font != null) label.font = _font;
                 var labelRect = label.rectTransform;
@@ -278,7 +270,7 @@ namespace DiceOrbit.UI
                 btn.targetGraphic = img;
                 var cb = ColorBlock.defaultColorBlock;
                 cb.normalColor = Color.white;
-                cb.highlightedColor = skin != null ? Color.white : new Color(1.2f, 1.2f, 1.2f);
+                cb.highlightedColor = Color.white;
                 cb.pressedColor = new Color(0.8f, 0.8f, 0.8f);
                 cb.fadeDuration = 0.08f;
                 btn.colors = cb;
