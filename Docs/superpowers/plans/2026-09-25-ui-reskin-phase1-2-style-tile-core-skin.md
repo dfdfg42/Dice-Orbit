@@ -53,14 +53,14 @@
 **Interfaces:**
 - Produces: 힉스필드 media_id 3개 (`REF_NODE`, `REF_TITLE`, `REF_DICEBTN`) — 이후 모든 생성의 `medias`에 사용. 생성 로그 파일.
 
-- [ ] **Step 1: 브랜치 생성**
+- [x] **Step 1: 브랜치 생성**
 
 ```bash
 cd "D:/Dice Orbit" && git checkout design/ui-reskin-20260925 && git checkout -b feature/ui-skin-core-20260925
 ```
 Expected: `Switched to a new branch 'feature/ui-skin-core-20260925'`
 
-- [ ] **Step 2: 작업 폴더 + gitignore + 참조 사본**
+- [x] **Step 2: 작업 폴더 + gitignore + 참조 사본**
 
 ```bash
 cd "D:/Dice Orbit" && mkdir -p _workspace/2026-09-25-ui-reskin/{refs,candidates,final,tools} \
@@ -72,7 +72,7 @@ cd "D:/Dice Orbit" && mkdir -p _workspace/2026-09-25-ui-reskin/{refs,candidates,
 ```
 Expected: 파일 3개 나열, 마지막 줄 `IGNORED_OK`.
 
-- [ ] **Step 3: 생성 로그 파일 작성**
+- [x] **Step 3: 생성 로그 파일 작성**
 
 `Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md`:
 ```markdown
@@ -105,7 +105,7 @@ Expected: 파일 3개 나열, 마지막 줄 `IGNORED_OK`.
 | 시작 | 0 | 80 |
 ```
 
-- [ ] **Step 4: 참조 이미지 업로드**
+- [x] **Step 4: 참조 이미지 업로드**
 
 힉스필드 도구 호출:
 ```
@@ -124,7 +124,7 @@ media_confirm(media_ids=["<id1>","<id2>","<id3>"], type="image")
 ```
 Expected: 3건 confirmed. media_id 3개를 로그 「참조 이미지」 표에 기입.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add .gitignore Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md && git commit -q -m "chore(ui-skin): 리스킨 작업 폴더·생성 로그·참조 media_id 기록
@@ -145,7 +145,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" && git log --oneline -
 - Consumes: `REF_NODE`, `REF_TITLE`, `REF_DICEBTN`
 - Produces: `REF_STYLE` media_id (승인 시트). 이후 Task 3·4의 모든 요청은 `medias = [REF_NODE, REF_STYLE]`.
 
-- [ ] **Step 1: 스타일 타일 3변형 생성 (위젯, 저화질)**
+- [x] **Step 1: 스타일 타일 3변형 생성 (위젯, 저화질)**
 
 ```
 generate_image(params={
@@ -156,7 +156,7 @@ generate_image(params={
 ```
 `unlim_choice`가 오면 사용자에게 묻고 답대로 재호출. 응답의 job_id(들)를 로그에 기록 (비용 0.75).
 
-- [ ] **Step 2: 결과 다운로드**
+- [x] **Step 2: 결과 다운로드**
 
 ```
 jobs_wait(jobs=[{"index":0,"job_id":"<job>"} ...], timeout_seconds=15)
@@ -167,17 +167,17 @@ cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin/candidates" && curl -sL -o sty
 ```
 Expected: 3파일, 각 크기 출력 (1k 기준 약 1024×768).
 
-- [ ] **Step 3: 사용자에게 선택 요청**
+- [x] **Step 3: 사용자에게 선택 요청**
 
 위젯에 3장이 보인다. `AskUserQuestion`으로 1/2/3 중 선택 또는 "재생성(메모에 바꿀 점)" 을 묻는다. 재생성이면 메모를 프롬프트에 반영해 Step 1을 반복 (1회당 0.75, 최대 2회).
 
-- [ ] **Step 4: 승인본 확정**
+- [x] **Step 4: 승인본 확정**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && cp candidates/style_tile_<N>.png final/style_tile.png && ls -la final/style_tile.png
 ```
 
-- [ ] **Step 5: 승인본을 참조로 업로드**
+- [x] **Step 5: 승인본을 참조로 업로드**
 
 ```
 media_upload(files=[{"filename":"style_tile.png","content_type":"image/png"}])
@@ -187,7 +187,7 @@ cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin/final" && curl -s -o /dev/null
 ```
 Expected: `200`. 이어서 `media_confirm(media_ids=["<id>"], type="image")`. media_id를 로그 `REF_STYLE`에 기입.
 
-- [ ] **Step 6: 로그 커밋**
+- [x] **Step 6: 로그 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md && git commit -q -m "docs(ui-skin): 스타일 타일 승인 — 생성 로그 갱신
@@ -208,7 +208,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `python tools/trim_png.py <src> <dst> <max_side>`, `python tools/split_strip.py <src> <out_prefix> <name1,name2,...> <max_side> [--equal N]`, `python tools/contact_sheet.py <dir> <out.png>`
 
-- [ ] **Step 1: trim_png.py**
+- [x] **Step 1: trim_png.py**
 
 ```python
 """알파 bbox로 트리밍 → 최대 변 max_side로 축소(LANCZOS) → 투명 패딩 pad px."""
@@ -243,7 +243,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: split_strip.py**
+- [x] **Step 2: split_strip.py**
 
 ```python
 """가로 스트립을 투명 간격 기준으로 N조각 분할. 간격이 없으면 --equal N 으로 등분."""
@@ -302,7 +302,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 3: contact_sheet.py**
+- [x] **Step 3: contact_sheet.py**
 
 ```python
 """폴더의 PNG를 체커보드 위에 격자로 배치한 시트 (육안 검토용)."""
@@ -344,7 +344,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: 도구 즉석 검증 (합성 스트립)**
+- [x] **Step 4: 도구 즉석 검증 (합성 스트립)**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && python - <<'EOF'
@@ -373,7 +373,7 @@ Expected: `final/_test_a.png: (136, 128)` 류 4줄, `final/_test_a2.png: (72, 68
 - Consumes: `REF_NODE`, `REF_STYLE`, `tools/trim_png.py`
 - Produces: `final/` 9장 (Task 6이 반입). 최대 변: panel/card/tooltip/divider 512, chip 384, slot/icons 256.
 
-- [ ] **Step 1: 배치 제출 (9건, 고화질 투명)**
+- [x] **Step 1: 배치 제출 (9건, 고화질 투명)**
 
 공통 `params`: `"model":"gpt_image_2_5","quality":"high","resolution":"2k","background":"transparent","medias":[{"value":"<REF_NODE>","role":"image_references"},{"value":"<REF_STYLE>","role":"image_references"}]`. 공통 접두 P = 생성 로그의 「프롬프트 공통 접두」 전문.
 
@@ -392,14 +392,14 @@ generate_image_batch(requests=[
 ```
 응답의 index→job_id 9쌍을 로그에 기록 (비용 9 × 2.75 = 24.75, 누적 ≈ 25.5).
 
-- [ ] **Step 2: 완료 대기 + 위젯 표시**
+- [x] **Step 2: 완료 대기 + 위젯 표시**
 
 ```
 jobs_wait(jobs=[{index,job_id} ×9], timeout_seconds=15)   # all_terminal 될 때까지 반복
 show_generation_by_ids(jobs=[{index,job_id} ×9])
 ```
 
-- [ ] **Step 3: 다운로드**
+- [x] **Step 3: 다운로드**
 
 결과 URL마다 (index 순서 = panel, card, chip, tooltip, slot, divider, icon_coin, icon_potion_empty, icon_close):
 ```bash
@@ -410,18 +410,18 @@ for n in ['panel','card','chip','tooltip','slot','divider','icon_coin','icon_pot
 ```
 Expected: 9줄, `mode RGBA`, `alpha_min 0` (투명 배경 확인). `alpha_min`이 255인 파일은 투명 실패 → 그 파일만 힉스필드 `remove_background(media_id=<job_id>, media_type="image")` 호출 후 결과를 다시 다운로드.
 
-- [ ] **Step 4: 사용자 승인**
+- [x] **Step 4: 사용자 승인**
 
 `AskUserQuestion`: "9장 모두 승인 / 일부 재생성(메모에 번호·이유)". 재생성은 해당 index만 `generate_image_batch`로 재제출(프롬프트에 사용자 메모 반영), Step 2~4 반복. 재생성 1건 2.75. 누적 30 초과 시 `balance` 호출 후 사용자에게 잔액·누적 보고하고 계속 여부 확인.
 
-- [ ] **Step 5: 트리밍·리사이즈**
+- [x] **Step 5: 트리밍·리사이즈**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && for p in "panel 512" "card 512" "tooltip 512" "divider 512" "chip 384" "slot 256" "icon_coin 256" "icon_potion_empty 256" "icon_close 256"; do set -- $p; python tools/trim_png.py candidates/$1.png final/$1.png $2; done
 ```
 Expected: 9줄 `final/<name>.png: (w, h)`, 최대 변이 지정값 + 8 이하.
 
-- [ ] **Step 6: 로그 커밋**
+- [x] **Step 6: 로그 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md && git commit -q -m "docs(ui-skin): 코어 9종 생성 승인 — 생성 로그 갱신
@@ -442,7 +442,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `REF_NODE`, `REF_STYLE`, `tools/split_strip.py`
 - Produces: `final/` 버튼 8장 (최대 변 384)
 
-- [ ] **Step 1: 배치 제출 (2건)**
+- [x] **Step 1: 배치 제출 (2건)**
 
 ```
 generate_image_batch(requests=[
@@ -452,7 +452,7 @@ generate_image_batch(requests=[
 ```
 로그 기록 (비용 5.5, 누적 ≈ 31).
 
-- [ ] **Step 2: 대기·표시·다운로드**
+- [x] **Step 2: 대기·표시·다운로드**
 
 ```
 jobs_wait(...) → show_generation_by_ids(...)
@@ -465,25 +465,25 @@ for n in ['button_primary_strip','button_secondary_strip']:
 ```
 Expected: 2줄, `alpha_min 0`.
 
-- [ ] **Step 3: 분할**
+- [x] **Step 3: 분할**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && python tools/split_strip.py candidates/button_primary_strip.png final/button_primary_ normal,hover,pressed,disabled 384 && python tools/split_strip.py candidates/button_secondary_strip.png final/button_secondary_ normal,hover,pressed,disabled 384
 ```
 Expected: 8줄 `final/button_..._<state>.png: (w, h)`. 조각 수 오류가 나면 위젯의 이미지를 보고 간격이 없는 것이면 `--equal 4`를 붙여 재실행, 조각이 3개나 5개면 사용자 메모 없이 해당 스트립만 재생성(프롬프트에 "with wide clear gaps between the four buttons" 추가).
 
-- [ ] **Step 4: 컨택트 시트 + 사용자 승인**
+- [x] **Step 4: 컨택트 시트 + 사용자 승인**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && python tools/contact_sheet.py final final/_contact_sheet.png
 ```
 `SendUserFile(files=["D:/Dice Orbit/_workspace/2026-09-25-ui-reskin/final/_contact_sheet.png"], display="render")` 로 17장 시트를 보여주고 `AskUserQuestion`: "전부 승인 / 일부 재생성(메모)". 재생성은 스트립 단위(2.75).
 
-- [ ] **Step 5: 중간 보고 (누적 30 돌파)**
+- [x] **Step 5: 중간 보고 (누적 30 돌파)**
 
 `balance()` 호출 → 로그 「누적 비용」표에 기입 → 사용자에게 한 줄 보고 ("누적 N, 잔액 M, 다음 단계는 생성 없음").
 
-- [ ] **Step 6: 로그 커밋**
+- [x] **Step 6: 로그 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && rm -f _workspace/2026-09-25-ui-reskin/final/_contact_sheet.png && git add Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md && git commit -q -m "docs(ui-skin): 버튼 스트립 2종 생성·분할 승인 — 생성 로그 갱신
@@ -503,14 +503,14 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `final/` 17장
 - Produces: 스프라이트 에셋 경로 `Assets/Sprites/UI Skin/<name>.png` (Task 9가 로드). 이름: `panel, card, chip, tooltip, slot, divider, button_primary_normal, button_primary_hover, button_primary_pressed, button_primary_disabled, button_secondary_normal, button_secondary_hover, button_secondary_pressed, button_secondary_disabled, icon_coin, icon_potion_empty, icon_close`
 
-- [ ] **Step 1: 복사**
+- [x] **Step 1: 복사**
 
 ```bash
 cd "D:/Dice Orbit" && mkdir -p "Assets/Sprites/UI Skin" && cp _workspace/2026-09-25-ui-reskin/final/*.png "Assets/Sprites/UI Skin/" && ls "Assets/Sprites/UI Skin" | wc -l
 ```
 Expected: `17` (style_tile.png은 final에 있으면 제외: `rm "Assets/Sprites/UI Skin/style_tile.png"` 후 다시 17 확인).
 
-- [ ] **Step 2: Unity 임포트 → 콘솔 확인**
+- [x] **Step 2: Unity 임포트 → 콘솔 확인**
 
 ```
 Unity_RunCommand(Code: "using UnityEditor; internal class CommandScript : IRunCommand { public void Execute(ExecutionResult r) { AssetDatabase.Refresh(); r.Log(\"refreshed\"); } }")
@@ -518,7 +518,7 @@ Unity_GetConsoleLogs(logTypes: "Error", maxEntries: 20)
 ```
 Expected: 에러 0건. `.meta` 17개 생성됨 (`ls "Assets/Sprites/UI Skin"/*.meta | wc -l` → 17).
 
-- [ ] **Step 3: 임포터 설정 RunCommand**
+- [x] **Step 3: 임포터 설정 RunCommand**
 
 ```csharp
 using UnityEngine;
@@ -557,22 +557,30 @@ internal class CommandScript : IRunCommand
         importer.alphaIsTransparency = true;
         importer.mipmapEnabled = true;
         importer.filterMode = FilterMode.Trilinear;
-        importer.spriteMeshType = sliced ? SpriteMeshType.FullRect : SpriteMeshType.Tight;
+
+        // spriteMeshType은 TextureImporter 직접 속성이 아니라 TextureImporterSettings 경유 (실행 중 확인, 2026-09-25)
+        var settings = new TextureImporterSettings();
+        importer.ReadTextureSettings(settings);
+        settings.spriteMeshType = sliced ? SpriteMeshType.FullRect : SpriteMeshType.Tight;
+        importer.SetTextureSettings(settings);
+
         if (sliced)
         {
-            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-            float bx = Mathf.Floor(tex.width * fx), by = Mathf.Floor(tex.height * fy);
+            // LoadAssetAtPath<Texture2D>().width는 첫 임포트 직후 엉뚱한 값을 돌려준 적이 있다 (510 등).
+            // 원본 픽셀 크기는 GetSourceTextureWidthAndHeight로 읽는다.
+            importer.GetSourceTextureWidthAndHeight(out int w, out int h);
+            float bx = Mathf.Floor(w * fx), by = Mathf.Floor(h * fy);
             importer.spriteBorder = new Vector4(bx, by, bx, by);   // (left, bottom, right, top)
         }
         else importer.spriteBorder = Vector4.zero;
         importer.SaveAndReimport();
-        result.Log("{0}: border={1} mip={2} filter={3} mesh={4}", name, importer.spriteBorder, importer.mipmapEnabled, importer.filterMode, importer.spriteMeshType);
+        result.Log("{0}: border={1} mip={2} filter={3} mesh={4}", name, importer.spriteBorder, importer.mipmapEnabled, importer.filterMode, settings.spriteMeshType);
     }
 }
 ```
 Expected: 17줄 로그, sliced 14개는 border 0 아님, `Unity_GetConsoleLogs(Error)` 0건.
 
-- [ ] **Step 4: 커밋 (LFS 포인터 확인)**
+- [x] **Step 4: 커밋 (LFS 포인터 확인)**
 
 ```bash
 cd "D:/Dice Orbit" && git add "Assets/Sprites/UI Skin" && git -c core.quotepath=off status --short | head -40 && git lfs ls-files | grep -c "UI Skin"
@@ -603,7 +611,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
   - `class UiSkin : ScriptableObject` — `const string ResourcePath = "UI/UiSkin"`, `static UiSkin Current`, `static UiSkin LoadOrThrow(string)`, 팔레트 12 `Color` 필드, 스프라이트 6 필드, `ButtonSpriteSet ButtonPrimary/ButtonSecondary`, 아이콘 3 필드, `Sprite GetSprite(SkinPart)`, `ButtonSpriteSet GetButtonSet(ButtonKind)`, `void ApplyPanel/ApplyCard/ApplyChip/ApplyTooltip/ApplySlot/ApplyDivider(Image)`, `void ApplyButton(Button, ButtonKind)`
   - 테스트는 Task 8의 `UiSkinValidator.Validate(UiSkin) : List<string>`도 호출한다 — Task 8 완료 전에는 컴파일 에러가 정상.
 
-- [ ] **Step 1: 자가 테스트 먼저 작성**
+- [x] **Step 1: 자가 테스트 먼저 작성**
 
 `Assets/Scripts/Editor/UiSkinSelfTests.cs`:
 ```csharp
@@ -750,7 +758,7 @@ namespace DiceOrbit.EditorTools
 }
 ```
 
-- [ ] **Step 2: 컴파일 실패 확인**
+- [x] **Step 2: 컴파일 실패 확인**
 
 ```
 Unity_RunCommand(Code: "using UnityEditor; internal class CommandScript : IRunCommand { public void Execute(ExecutionResult r) { AssetDatabase.Refresh(); r.Log(\"refreshed\"); } }")
@@ -758,7 +766,7 @@ Unity_GetConsoleLogs(logTypes: "Error", maxEntries: 10)
 ```
 Expected: `CS0246: The type or namespace name 'UiSkin' could not be found` 류 에러 (아직 구현 전이므로 정상).
 
-- [ ] **Step 3: UiSkin.cs 구현**
+- [x] **Step 3: UiSkin.cs 구현**
 
 `Assets/Scripts/UI/Skin/UiSkin.cs`:
 ```csharp
@@ -916,12 +924,12 @@ namespace DiceOrbit.UI.Skin
 }
 ```
 
-- [ ] **Step 4: 컴파일 확인 (Validator 미구현 에러만 남아야 함)**
+- [x] **Step 4: 컴파일 확인 (Validator 미구현 에러만 남아야 함)**
 
 Refresh RunCommand + `Unity_GetConsoleLogs(Error)`.
 Expected: 남은 에러는 `UiSkinValidator` 관련 CS0103/CS0246 뿐. `UiSkin` 관련 에러 0.
 
-- [ ] **Step 5: 커밋 (테스트 + 구현)**
+- [x] **Step 5: 커밋 (테스트 + 구현)**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/UI/Skin Assets/Scripts/Editor/UiSkinSelfTests.cs Assets/Scripts/Editor/UiSkinSelfTests.cs.meta Assets/Scripts/UI/Skin.meta && git commit -q -m "feat(ui-skin): UiSkin ScriptableObject + Apply 헬퍼 + 자가 테스트
@@ -945,7 +953,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `UiSkin`, `ButtonSpriteSet`
 - Produces: `static List<string> UiSkinValidator.Validate(UiSkin skin)`, 메뉴 「도구/Dice Orbit/UI 스킨 점검」
 
-- [ ] **Step 1: 구현**
+- [x] **Step 1: 구현**
 
 `Assets/Scripts/Editor/UiSkinValidator.cs`:
 ```csharp
@@ -1025,7 +1033,7 @@ namespace DiceOrbit.EditorTools
 #endif
 ```
 
-- [ ] **Step 2: 컴파일 → 자가 테스트 실행**
+- [x] **Step 2: 컴파일 → 자가 테스트 실행**
 
 Refresh RunCommand → `Unity_GetConsoleLogs(Error)` = 0건. 그 다음:
 ```
@@ -1033,7 +1041,7 @@ Unity_RunCommand(Code: "internal class CommandScript : IRunCommand { public void
 ```
 Expected: 로그 `[SelfTest] 전체 PASS — UiSkin`, `UiSkin self-tests: PASS`. FAIL이면 FAIL 라벨을 보고 구현을 고친다 (테스트를 고치지 않는다).
 
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/Editor/UiSkinValidator.cs Assets/Scripts/Editor/UiSkinValidator.cs.meta && git commit -q -m "feat(ui-skin): UI 스킨 점검 메뉴 — 빈 필드·9-slice 경계 0·텍스처 타입 검사
@@ -1053,7 +1061,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Assets/Sprites/UI Skin/*.png` (Task 6), `UiSkin` (Task 7)
 - Produces: `UiSkin.Current`가 로드 가능한 에셋 (3단계 마이그레이션의 전제)
 
-- [ ] **Step 1: 에셋 생성·배선 RunCommand**
+- [x] **Step 1: 에셋 생성·배선 RunCommand**
 
 ```csharp
 using UnityEngine;
@@ -1111,7 +1119,7 @@ internal class CommandScript : IRunCommand
 ```
 Expected: `UiSkin.asset 배선 완료`, LogError 0건. (팔레트는 클래스 기본값이 그대로 저장된다.)
 
-- [ ] **Step 2: 점검 메뉴 실행**
+- [x] **Step 2: 점검 메뉴 실행**
 
 ```
 Unity_RunCommand(Code: "internal class CommandScript : IRunCommand { public void Execute(ExecutionResult r) { DiceOrbit.EditorTools.UiSkinValidator.ValidateFromMenu(); r.Log(\"validated\"); } }")
@@ -1119,14 +1127,14 @@ Unity_GetConsoleLogs(logTypes: "Error", maxEntries: 30)
 ```
 Expected: `[UiSkin] 점검 완료 — 이슈 0`, 에러 0건. 이슈가 있으면 Task 6 Step 3의 비율표를 고치고 재실행.
 
-- [ ] **Step 3: Current 로드 확인**
+- [x] **Step 3: Current 로드 확인**
 
 ```
 Unity_RunCommand(Code: "internal class CommandScript : IRunCommand { public void Execute(ExecutionResult r) { var s = DiceOrbit.UI.Skin.UiSkin.Current; r.Log(\"Current={0} panel={1} border={2}\", s, s.Panel, s.Panel.border); } }")
 ```
 Expected: `Current=UiSkin (...) panel=panel border=(153.0, 153.0, 153.0, 153.0)` 류 (0이 아닌 경계).
 
-- [ ] **Step 4: 커밋**
+- [x] **Step 4: 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Resources/UI/UiSkin.asset Assets/Resources/UI/UiSkin.asset.meta && git commit -q -m "feat(ui-skin): Resources/UI/UiSkin.asset 생성·배선 — 점검 0건
@@ -1143,7 +1151,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `Docs/editor_owned_ui_pattern.md` (체크리스트 4·5 아래 1줄)
 - Modify: `Docs/superpowers/specs/2026-09-25-ui-reskin-uiskin-higgsfield-design.md` (상태 줄)
 
-- [ ] **Step 1: Docs/README.md 표에 추가**
+- [x] **Step 1: Docs/README.md 표에 추가**
 
 「📐 설계안 · 구현 계획 (기록)」 표 마지막 행 뒤에:
 ```markdown
@@ -1152,7 +1160,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 | [superpowers/plans/2026-09-25-ui-reskin-generation-log.md](superpowers/plans/2026-09-25-ui-reskin-generation-log.md) | 힉스필드 생성 로그 (프롬프트·job id·비용) | 기록 |
 ```
 
-- [ ] **Step 2: editor_owned_ui_pattern.md 체크리스트 갱신**
+- [x] **Step 2: editor_owned_ui_pattern.md 체크리스트 갱신**
 
 「## 새 UI 만들 때 체크리스트」의 4·5번을 다음으로 교체:
 ```markdown
@@ -1160,11 +1168,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 5. 라운드 사각형 절차 생성(`UiRoundedSprite.Get`)은 리스킨 3단계에서 철거 예정 — 신규 UI에서 쓰지 않는다. 점검: 「도구/Dice Orbit/UI 스킨 점검」
 ```
 
-- [ ] **Step 3: 스펙 상태 갱신**
+- [x] **Step 3: 스펙 상태 갱신**
 
 스펙 상단 `> 상태: **설계 승인, 미착수**` → `> 상태: **1·2단계 완료 (스타일 타일·코어 세트·UiSkin), 3단계 대기**`
 
-- [ ] **Step 4: 최종 검증 + 커밋**
+- [x] **Step 4: 최종 검증 + 커밋**
 
 ```
 Unity_GetConsoleLogs(logTypes: "Error", maxEntries: 10)   → 0건
@@ -1176,6 +1184,6 @@ cd "D:/Dice Orbit" && git add Docs/README.md Docs/editor_owned_ui_pattern.md Doc
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" && git log --oneline -8
 ```
 
-- [ ] **Step 5: 완료 보고**
+- [x] **Step 5: 완료 보고**
 
 사용자에게: 브랜치 `feature/ui-skin-core-20260925`, 커밋 목록, 누적 크레딧·잔액, 3단계(코드 UI 13파일 마이그레이션) 계획 작성 여부.
