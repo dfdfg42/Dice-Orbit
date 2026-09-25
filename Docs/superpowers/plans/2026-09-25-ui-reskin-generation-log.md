@@ -33,6 +33,11 @@
 
 > 트리밍 교훈: 결과물 캔버스 곳곳에 알파 1~3짜리 잔여 픽셀이 있어 bbox가 부풀려짐 → `trim_png.py`에 알파 임계값 8 도입 (이하 = 완전 투명).
 
+| 13 | button_primary 스트립 (normal/hover/pressed/disabled) | gpt_image_2_5 / high / 2k / transparent / 21:9 | NODE, STYLE | `c6347f47-a754-4f1f-bb91-bb7666dc8a1d` | 승인 → 투명 간격 분할 4장 (392×138~147) | 2.75 |
+| 14 | button_secondary 스트립 (normal/hover/pressed/disabled) | 동일 | 동일 | `95cce7db-0bfa-46d8-aa62-a7f25786bee3` | 승인 → 투명 간격 분할 4장 (392×139~154) | 2.75 |
+
+버튼 스트립 프롬프트(13·14 공통, 색만 다름): `Single 2D game UI element set, centered, no text, transparent background, soft pastel cartoon, flat vector, no gradients, no glow, no drop shadow. Same line weight and outline style as the reference images. Item: four states of the SAME pill button laid out in one horizontal row, left to right, equal size, with wide clear transparent gaps between them: (1) normal: pastel pink fill (#FFA6F2) [secondary: pastel sky blue fill (#A6DDFF)], thick ink outline (#4B425C), a one-tone darker bottom edge line; (2) hover: same shape but slightly brighter fill and a thicker outline with a thin white inner ring; (3) pressed: same shape shifted down slightly, bottom edge line gone, fill a touch darker; (4) disabled: desaturated gray paper fill (#D9D4CB), dashed ink outline, no bottom edge line. All four identical in width and height, evenly spaced. No text on the buttons. Take the pink [blue] button row exactly as drawn in the reference style sheet.`
+
 > 1차 배치 교훈: 9건 동시 제출 시 "Out of credits" 오탐 5건 + 429 1건. 잔액은 실제 성공분만 차감됨(68.25). 이후 배치는 4~5건씩.
 
 스타일 타일 프롬프트(1~3 공통): `Game UI style sheet for a cute pastel cartoon roguelike, neatly arranged on a single sheet with generous spacing on a plain flat light gray background. Items: (1) a large rounded rectangle panel with tiny star ornaments only at its top corners, (2) a smaller content card with a slightly tighter corner radius and no ornament, (3) a small pill-shaped label chip in a slightly deeper cream (#E8DBC3) with a thin outline, (4) a rectangular tooltip box without a tail, (5) an empty inset square slot with a subtle inner ring, (6) a thin horizontal divider line with a small star at its center, (7) a pill button filled with pastel pink (#FFA6F2) shown in four states side by side: normal, hover (slightly brighter, thicker outline), pressed (pushed down, bottom edge line gone), disabled (desaturated gray paper, dashed outline), (8) the same four states of a pill button filled with pastel sky blue (#A6DDFF), (9) three icons: a gold coin, an empty potion bottle outline, a bold close X. All items share: cream paper fill (#FAF3E0), thick dark ink outline (#4B425C), rounded corners, a one-tone darker bottom edge line like a slightly raised paper card, flat 2D vector look, no gradients, no glow, no drop shadows, no text or letters anywhere. Match the line weight and outline style of the reference battle icon; take the pastel palette from the reference night sky and the pink from the reference button.`
@@ -46,3 +51,6 @@
 | 시점 | 누적 크레딧 | balance 응답 |
 |---|---|---|
 | 시작 | 0 | 80 |
+| 스타일 타일 3변형 후 | 0.75 | (미조회) |
+| 코어 1·2차 배치 중간 (고화질 4장) | 11.75 | 68.25 |
+| 2단계 생성 종료 (고화질 11장 = 코어 9 + 버튼 스트립 2) | 31 | 49 |
