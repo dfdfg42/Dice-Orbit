@@ -32,6 +32,8 @@ namespace DiceOrbit.EditorTools
             TestScrimPartIsColorOnly();
             TestApplyCircleKeepsTint();
             TestUiSkinImageAppliesPart();
+            TestZonePlateRequire();
+            TestApplyIntentBubble();
 
             if (_failures == 0) Debug.Log("[SelfTest] 전체 PASS — UiSkin");
             else Debug.LogError($"[SelfTest] 실패 {_failures}건 — 위 로그 확인");
@@ -65,6 +67,7 @@ namespace DiceOrbit.EditorTools
             s.ButtonPrimary = MakeSet(); s.ButtonSecondary = MakeSet();
             s.Coin = MakeSprite(false); s.PotionSlotEmpty = MakeSprite(false); s.Close = MakeSprite(false);
             s.Circle = MakeSprite(false);
+            s.ZonePlate = MakeSprite(false); s.IntentBubble = MakeSprite(true);
             return s;
         }
 
@@ -134,7 +137,7 @@ namespace DiceOrbit.EditorTools
         {
             var skin = ScriptableObject.CreateInstance<UiSkin>();
             var issues = UiSkinValidator.Validate(skin);
-            Check(issues.Count == 18, $"빈 스킨 이슈 18건 (6 sliced + 8 button + 3 icon + circle), 실제 {issues.Count}");
+            Check(issues.Count == 20, $"빈 스킨 이슈 20건 (7 sliced + 8 button + 3 icon + circle + zone plate), 실제 {issues.Count}");
             UnityEngine.Object.DestroyImmediate(skin);
         }
 
@@ -191,6 +194,33 @@ namespace DiceOrbit.EditorTools
             var img = go.GetComponent<Image>();
             Check(img.sprite == UiSkin.Current.Card && img.type == Image.Type.Sliced, "UiSkinImage.SetPart(Card): Card 스프라이트 Sliced");
             UnityEngine.Object.DestroyImmediate(go);
+        }
+
+        private static void TestZonePlateRequire()
+        {
+            var empty = ScriptableObject.CreateInstance<UiSkin>();
+            bool threw = false;
+            try { empty.GetZonePlate(); }
+            catch (InvalidOperationException) { threw = true; }
+            Check(threw, "빈 ZonePlate로 GetZonePlate는 InvalidOperationException (폴백 없음)");
+            UnityEngine.Object.DestroyImmediate(empty);
+
+            var skin = MakeCompleteSkin();
+            Check(skin.GetZonePlate() == skin.ZonePlate, "GetZonePlate: 채워진 스프라이트 반환");
+            UnityEngine.Object.DestroyImmediate(skin);
+        }
+
+        private static void TestApplyIntentBubble()
+        {
+            var skin = MakeCompleteSkin();
+            var go = new GameObject("skin-bubble", typeof(Image));
+            var img = go.GetComponent<Image>();
+            img.color = Color.red;
+            skin.ApplyIntentBubble(img);
+            Check(img.sprite == skin.IntentBubble && img.type == Image.Type.Sliced && img.color == Color.white, "ApplyIntentBubble: IntentBubble·Sliced·white");
+            Check(skin.GetSprite(SkinPart.IntentBubble) == skin.IntentBubble, "GetSprite(IntentBubble)");
+            UnityEngine.Object.DestroyImmediate(go);
+            UnityEngine.Object.DestroyImmediate(skin);
         }
     }
 }

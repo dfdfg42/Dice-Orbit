@@ -41,6 +41,8 @@ namespace DiceOrbit.EditorTools
             CheckPresent(issues, skin.PotionSlotEmpty, nameof(skin.PotionSlotEmpty));
             CheckPresent(issues, skin.Close,           nameof(skin.Close));
             CheckPresent(issues, skin.Circle,          nameof(skin.Circle));
+            CheckSliced(issues, skin.IntentBubble,     nameof(skin.IntentBubble));
+            CheckPresent(issues, skin.ZonePlate,       nameof(skin.ZonePlate));
             return issues;
         }
 

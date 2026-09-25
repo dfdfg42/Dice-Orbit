@@ -4,8 +4,8 @@ using UnityEngine.UI;
 
 namespace DiceOrbit.UI.Skin
 {
-    /// <summary>스킨 부품 이름 — Apply 헬퍼와 씬 배치용 UiSkinImage가 공유한다. Scrim은 스프라이트 없이 색만.</summary>
-    public enum SkinPart { Panel, Card, Chip, Tooltip, Slot, Divider, ButtonPrimary, ButtonSecondary, Scrim }
+    /// <summary>스킨 부품 이름 — Apply 헬퍼와 씬 배치용 UiSkinImage가 공유한다. Scrim은 스프라이트 없이 색만. IntentBubble = 몬스터 의도 말풍선(9-slice).</summary>
+    public enum SkinPart { Panel, Card, Chip, Tooltip, Slot, Divider, ButtonPrimary, ButtonSecondary, Scrim, IntentBubble }
 
     public enum ButtonKind { Primary, Secondary }
 
@@ -85,6 +85,12 @@ namespace DiceOrbit.UI.Skin
         [Header("도형")]
         public Sprite Circle;   // 흰 원 — 경로 점·배지 링·상태 칩처럼 틴트가 필요한 원형 전용
 
+        [Header("몬스터 (2026-09-25 몬스터 영역 표시 리스킨)")]
+        public Sprite IntentBubble;   // 머리 위 의도 말풍선 — 9-slice, 아래 중앙 꼬리
+
+        [Header("월드 데칼")]
+        public Sprite ZonePlate;      // 구역 플레이트 — 사분면 조각, pivot (0,0), PPU 128 = 16×16 유닛. 틴트용 흰 바탕
+
         public Sprite GetSprite(SkinPart part) => part switch
         {
             SkinPart.Scrim => null,
@@ -96,6 +102,7 @@ namespace DiceOrbit.UI.Skin
             SkinPart.Divider => Divider,
             SkinPart.ButtonPrimary => ButtonPrimary.Normal,
             SkinPart.ButtonSecondary => ButtonSecondary.Normal,
+            SkinPart.IntentBubble => IntentBubble,
             _ => throw new ArgumentOutOfRangeException(nameof(part), part, "알 수 없는 SkinPart"),
         };
 
@@ -108,6 +115,14 @@ namespace DiceOrbit.UI.Skin
         public void ApplyTooltip(Image image) => ApplySliced(image, Tooltip, nameof(Tooltip));
         public void ApplySlot(Image image)    => ApplySliced(image, Slot,    nameof(Slot));
         public void ApplyDivider(Image image) => ApplySliced(image, Divider, nameof(Divider));
+        public void ApplyIntentBubble(Image image) => ApplySliced(image, IntentBubble, nameof(IntentBubble));
+
+        /// <summary>구역 플레이트 스프라이트 (월드 SpriteRenderer용). 비면 예외 — 브래킷·기본 사각형으로 폴백하지 않는다.</summary>
+        public Sprite GetZonePlate()
+        {
+            Require(ZonePlate, nameof(ZonePlate));
+            return ZonePlate;
+        }
 
         /// <summary>파트 이름으로 적용 — 씬 배치용 UiSkinImage가 쓴다. 버튼 파트는 Normal 면만(상태는 ApplyButton).</summary>
         public void ApplySprite(Image image, SkinPart part)
