@@ -8,6 +8,7 @@ using DiceOrbit.Core;
 using DiceOrbit.Core.Run;
 using DiceOrbit.Data;
 using DiceOrbit.Data.Modifiers;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -44,13 +45,7 @@ namespace DiceOrbit.UI
         [SerializeField] private Button continueButton;            // [계속]
         [SerializeField] private Button cancelButton;              // [취소]
 
-        // ── 팔레트: 크림 종이 (목업 기준) — 동적 카드가 쓴다 ──
-        private static readonly Color Tile   = new Color(0.9529f, 0.8980f, 0.8078f);  // #F3E5CE 타일/카드
-        private static readonly Color Bar    = new Color(0.9098f, 0.8314f, 0.7333f);  // #E8D4BB 라벨바/버튼
-        private static readonly Color Ink    = new Color(0.2941f, 0.2588f, 0.3608f);  // #4B425C 잉크 텍스트
-
-        private const int TileRadius = 22;
-        private const int PillRadius = 26;
+        private static UiSkin Skin => UiSkin.Current;   // 팔레트·스프라이트 단일 권위 (2026-09-25) — 동적 카드가 쓴다
 
         // ── 런타임 상태 ────────────────────────────────────────
         private Character _pickedCharacter;
@@ -187,13 +182,13 @@ namespace DiceOrbit.UI
         {
             var root = MakeCard(rewardRow, "RewardTile", new Vector2(196f, 262f));
 
-            var nameBar = MakeRoundImage(root, "NameBar", Bar, PillRadius);
+            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.Chip);
             var nameLE = nameBar.gameObject.AddComponent<LayoutElement>();
             nameLE.preferredWidth = 172f; nameLE.preferredHeight = 50f;
-            MakeText(nameBar, label, 23f, FontStyles.Bold, Ink, TextAlignmentOptions.Center)
+            MakeText(nameBar, label, 23f, FontStyles.Bold, Skin.Ink, TextAlignmentOptions.Center)
                 .margin = new Vector4(8f, 2f, 8f, 2f);
 
-            var imgTile = MakeRoundImage(root, "ImageTile", Tile, TileRadius);
+            var imgTile = MakeSkinImage(root, "ImageTile", SkinPart.Card);
             var tileLE = imgTile.gameObject.AddComponent<LayoutElement>();
             tileLE.preferredWidth = 184f; tileLE.preferredHeight = 184f;
             FillIcon(imgTile, image, label);
@@ -262,13 +257,13 @@ namespace DiceOrbit.UI
         {
             var root = MakeCard(choiceRow, "CharacterChoice", new Vector2(230f, 300f));
 
-            var nameBar = MakeRoundImage(root, "NameBar", Bar, PillRadius);
+            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.Chip);
             var nameLE = nameBar.gameObject.AddComponent<LayoutElement>();
             nameLE.preferredWidth = 200f; nameLE.preferredHeight = 58f;
-            MakeText(nameBar, name, 28f, FontStyles.Bold, Ink, TextAlignmentOptions.Center)
+            MakeText(nameBar, name, 28f, FontStyles.Bold, Skin.Ink, TextAlignmentOptions.Center)
                 .margin = new Vector4(8f, 2f, 8f, 2f);
 
-            var imgTile = MakeRoundImage(root, "Portrait", Tile, TileRadius);
+            var imgTile = MakeSkinImage(root, "Portrait", SkinPart.Card);
             var tileLE = imgTile.gameObject.AddComponent<LayoutElement>();
             tileLE.preferredWidth = 220f; tileLE.preferredHeight = 220f;
             FillIcon(imgTile, portrait, name);
@@ -281,7 +276,7 @@ namespace DiceOrbit.UI
         {
             var root = MakeCard(choiceRow, "ModifierChoice", new Vector2(240f, 240f));
 
-            var card = MakeRoundImage(root, "Card", Tile, TileRadius);
+            var card = MakeSkinImage(root, "Card", SkinPart.Card);
             var cardLE = card.gameObject.AddComponent<LayoutElement>();
             cardLE.preferredWidth = 230f; cardLE.preferredHeight = 230f;
 
@@ -293,11 +288,11 @@ namespace DiceOrbit.UI
             vlg.childControlWidth = true; vlg.childControlHeight = true;
             vlg.childForceExpandWidth = true; vlg.childForceExpandHeight = false;
 
-            var descText = MakeText(card, desc, 18f, FontStyles.Normal, Ink, TextAlignmentOptions.Top);
+            var descText = MakeText(card, desc, 18f, FontStyles.Normal, Skin.Ink, TextAlignmentOptions.Top);
             var descLE = descText.gameObject.AddComponent<LayoutElement>();
             descLE.flexibleHeight = 1f;
 
-            var nameText = MakeText(card, name, 24f, FontStyles.Bold, Ink, TextAlignmentOptions.Bottom);
+            var nameText = MakeText(card, name, 24f, FontStyles.Bold, Skin.Ink, TextAlignmentOptions.Bottom);
             var nameLE = nameText.gameObject.AddComponent<LayoutElement>();
             nameLE.preferredHeight = 32f;
 
@@ -337,13 +332,13 @@ namespace DiceOrbit.UI
 
             var root = MakeCard(choiceRow, "DieChoice", new Vector2(180f, 240f));
 
-            var nameBar = MakeRoundImage(root, "NameBar", Bar, PillRadius);
+            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.Chip);
             var nameLE = nameBar.gameObject.AddComponent<LayoutElement>();
             nameLE.preferredWidth = 164f; nameLE.preferredHeight = 46f;
-            MakeText(nameBar, name, 20f, FontStyles.Bold, Ink, TextAlignmentOptions.Center)
+            MakeText(nameBar, name, 20f, FontStyles.Bold, Skin.Ink, TextAlignmentOptions.Center)
                 .margin = new Vector4(6f, 2f, 6f, 2f);
 
-            var imgTile = MakeRoundImage(root, "DieArt", Tile, TileRadius);
+            var imgTile = MakeSkinImage(root, "DieArt", SkinPart.Card);
             var tileLE = imgTile.gameObject.AddComponent<LayoutElement>();
             tileLE.preferredWidth = 168f; tileLE.preferredHeight = 168f;
             Sprite art = inst.BaseDie != null && inst.BaseDie.Icon != null
@@ -432,14 +427,12 @@ namespace DiceOrbit.UI
             }
         }
 
-        /// <summary>둥근 사각 Image 하나 (색 채움).</summary>
-        private RectTransform MakeRoundImage(RectTransform parent, string name, Color color, int radius)
+        /// <summary>스킨 파트 Image 하나.</summary>
+        private RectTransform MakeSkinImage(RectTransform parent, string name, SkinPart part)
         {
             var rt = MakeChild(parent, name);
             var img = rt.gameObject.AddComponent<Image>();
-            img.sprite = UiRoundedSprite.Get(radius);
-            img.type = Image.Type.Sliced;
-            img.color = color;
+            Skin.ApplySprite(img, part);
             img.raycastTarget = false;
             return rt;
         }
@@ -460,7 +453,7 @@ namespace DiceOrbit.UI
 
             // 스프라이트가 없으면 큰 텍스트(글리프/이름)로 대체
             var txt = MakeText(tile, string.IsNullOrEmpty(labelFallback) ? "?" : labelFallback,
-                40f, FontStyles.Bold, new Color(Ink.r, Ink.g, Ink.b, 0.75f), TextAlignmentOptions.Center);
+                40f, FontStyles.Bold, new Color(Skin.Ink.r, Skin.Ink.g, Skin.Ink.b, 0.75f), TextAlignmentOptions.Center);
             Stretch(txt.rectTransform);
             txt.margin = new Vector4(10f, 10f, 10f, 10f);
             txt.enableAutoSizing = true;
