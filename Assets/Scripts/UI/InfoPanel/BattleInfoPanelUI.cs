@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using DiceOrbit.Data;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -324,7 +325,7 @@ namespace DiceOrbit.UI
                         foreach (var line in a.ModifierLines)
                             desc = JoinLines(desc, $"<color={InfoPanelRows.ModifierColorHex}>{line}</color>");
 
-                    AddEntry(activesContainer, title, meta, desc, InfoPanelRows.InkDark);
+                    AddEntry(activesContainer, title, meta, desc, UiSkin.Current.Ink);
                 }
             }
 
@@ -336,7 +337,7 @@ namespace DiceOrbit.UI
                     // 동적 설명이 있으면 그것만 — 에셋의 정적 설명(FlavorText)은 같은 규칙 문구라
                     // 둘을 이어붙이면 내용이 두 번 반복된다 (2026-08-28). 정적은 동적이 없을 때의 폴백.
                     string desc = string.IsNullOrWhiteSpace(p.DynamicEffect) ? p.FlavorText : p.DynamicEffect;
-                    AddEntry(passivesContainer, p.Name, "", desc, InfoPanelRows.PassiveColor);
+                    AddEntry(passivesContainer, p.Name, "", desc, UiSkin.Current.Passive);
                 }
             }
 
@@ -346,7 +347,7 @@ namespace DiceOrbit.UI
                 foreach (var m in d.Modifiers)
                 {
                     string title = m.Count > 1 ? $"{m.Name} ×{m.Count}" : m.Name;
-                    AddEntry(modifiersContainer, title, "", m.Description, InfoPanelRows.ModifierColor);
+                    AddEntry(modifiersContainer, title, "", m.Description, UiSkin.Current.Modifier);
                 }
             }
 
@@ -424,7 +425,7 @@ namespace DiceOrbit.UI
             string line = string.IsNullOrWhiteSpace(meta) ? title : $"{title}  {meta}";
             InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 24f, titleColor, FontStyles.Bold);
             if (!string.IsNullOrWhiteSpace(desc))
-                InfoPanelRows.AddText(container, desc, 24f, InfoPanelRows.InkDark, FontStyles.Bold, linkKeywords: true);
+                InfoPanelRows.AddText(container, desc, 24f, UiSkin.Current.Ink, FontStyles.Bold, linkKeywords: true);
         }
 
         /// <summary>

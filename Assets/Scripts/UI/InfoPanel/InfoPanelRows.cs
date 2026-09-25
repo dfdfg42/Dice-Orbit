@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -10,22 +11,11 @@ namespace DiceOrbit.UI
     /// </summary>
     internal static class InfoPanelRows
     {
-        // ── 라이트(점수지) 팔레트 — Figma 배틀 UI 톤 (#FAF3E0 크림 종이) ──
-        public static readonly Color InkDark           = new Color(0.294f, 0.259f, 0.361f); // 제목/본문 잉크 #4B425C
-        public static readonly Color SectionTitleColor = new Color(0.294f, 0.259f, 0.361f); // 헤더 = 딥 잉크 #4B425C
-        public static readonly Color PassiveColor      = new Color(0.514f, 0.624f, 0.557f); // 패시브 — 세이지 그린 #839F8E
-        public static readonly Color MutedColor        = new Color(0.42f, 0.40f, 0.36f);    // 설명 — 따뜻한 회색 (가독성 유지)
-        public static readonly Color HpColor           = new Color(0.773f, 0.227f, 0.227f); // HP — 적색 #C53A3A
-        public static readonly Color DiceColor         = new Color(0.16f, 0.42f, 0.65f);    // 주사위 조건 — 진한 청색
-        public static readonly Color ModifierColor     = new Color(0.42f, 0.28f, 0.72f);    // 모디파이어 — 진한 보라
-        public static readonly Color AccentGold        = new Color(0.79f, 0.61f, 0.25f);    // 시그니처 골드 (핍)
-
-        // ── Figma 패널/칩 색 ──
-        public static readonly Color PaperColor        = new Color(0.980f, 0.953f, 0.878f, 0.98f); // 크림 패널 #FAF3E0
-        public static readonly Color ChipColor         = new Color(0.910f, 0.859f, 0.765f);        // 섹션 제목 칩 #E8DBC3
+        // 팔레트는 UiSkin이 단일 권위 (2026-09-25 리스킨 3단계) — 파일에 색을 복사하지 않는다.
+        private static UiSkin Skin => UiSkin.Current;
 
         /// <summary>모디파이어 효과 라인용 리치텍스트 색 (스킬 설명에 인라인 삽입 시).</summary>
-        public const string ModifierColorHex = "#6A48B8";
+        public static string ModifierColorHex => "#" + ColorUtility.ToHtmlStringRGB(Skin.Modifier);
 
         /// <summary>
         /// DB에서 온 색(다크 배경용으로 설계됨)을 밝은 배경 위에서 읽히게 어둡게 보정.
@@ -65,7 +55,7 @@ namespace DiceOrbit.UI
 
         /// <summary>섹션 헤더: 골드 핍 + 검정 잉크 볼드, 큼직하게.</summary>
         public static void AddSectionTitle(Transform parent, string title)
-            => AddText(parent, FormatSectionTitle(title), 26f, SectionTitleColor, FontStyles.Bold);
+            => AddText(parent, FormatSectionTitle(title), 26f, Skin.Ink, FontStyles.Bold);
 
         /// <summary>아이콘 + 텍스트 가로 행 (타일 속성 등). icon이 null이면 텍스트만.</summary>
         public static void AddIconTextRow(Transform parent, Sprite icon, Color iconTint,

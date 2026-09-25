@@ -2,6 +2,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -136,15 +137,8 @@ namespace DiceOrbit.UI
             brt.pivot = new Vector2(0.5f, 0f);
 
             var bg = bubbleGO.AddComponent<Image>();
-            bg.color = InfoPanelRows.PaperColor;
+            UiSkin.Current.ApplyTooltip(bg);   // 말풍선 = 스킨 툴팁 파트 (외곽선은 스프라이트가 가진다)
             bg.raycastTarget = false;
-
-            // UI 테두리 (잉크색 아웃라인) — 정보 패널과 같은 잉크 톤
-            var outline = bubbleGO.AddComponent<Outline>();
-            var ink = InfoPanelRows.InkDark;
-            outline.effectColor = new Color(ink.r, ink.g, ink.b, 1f);
-            outline.effectDistance = new Vector2(3f, 3f);
-            outline.useGraphicAlpha = false;
 
             // 카드 느낌의 옅은 그림자
             var shadow = bubbleGO.AddComponent<Shadow>();
@@ -178,7 +172,7 @@ namespace DiceOrbit.UI
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
             tmp.fontSize = 28f;
             tmp.fontStyle = FontStyles.Bold;
-            tmp.color = InfoPanelRows.InkDark;
+            tmp.color = UiSkin.Current.Ink;
             tmp.raycastTarget = false;
             tmp.enableWordWrapping = false;
             if (borrowed != null) tmp.font = borrowed;

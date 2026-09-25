@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -84,10 +85,7 @@ namespace DiceOrbit.UI
                 }
                 else
                 {
-                    // 스프라이트 미지정: 라운드 placeholder (아이콘의 홈)
-                    tileImage.sprite = UiRoundedSprite.Get(14);
-                    tileImage.type = Image.Type.Sliced;
-                    tileImage.color = new Color(0.84f, 0.81f, 0.74f);
+                    UiSkin.Current.ApplySlot(tileImage);   // 스프라이트 미지정: 스킨 슬롯 (아이콘의 홈)
                 }
             }
 
@@ -165,9 +163,7 @@ namespace DiceOrbit.UI
             var card = new GameObject("AttrCard", typeof(RectTransform));
             card.transform.SetParent(stack, false);
             var bg = card.AddComponent<Image>();
-            bg.sprite = UiRoundedSprite.Get(14);
-            bg.type = Image.Type.Sliced;
-            bg.color = new Color(0.950f, 0.930f, 0.885f, 0.98f);   // 점수지 종이
+            UiSkin.Current.ApplyCard(bg);
             bg.raycastTarget = true;                                // 키워드 링크 호버 영역 확보
 
             var shadow = card.AddComponent<Shadow>();
@@ -187,7 +183,7 @@ namespace DiceOrbit.UI
 
             // 설명 (키워드 링크 → 커서 옆 정의 툴팁)
             if (!string.IsNullOrWhiteSpace(desc))
-                InfoPanelRows.AddText(card.transform, desc, 15f, InfoPanelRows.MutedColor, FontStyles.Normal, linkKeywords: true);
+                InfoPanelRows.AddText(card.transform, desc, 15f, UiSkin.Current.InkMuted, FontStyles.Normal, linkKeywords: true);
         }
     }
 }
