@@ -5,6 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Run;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -38,13 +39,7 @@ namespace DiceOrbit.UI
         [SerializeField] private GameObject chipPrefab;
 
         // 보드게임의 밤 팔레트
-        private static readonly Color BarBg    = new Color(0.043f, 0.051f, 0.078f, 0.82f);
-        private static readonly Color CardWell = new Color(0.082f, 0.094f, 0.153f);
-        private static readonly Color CardEdge = new Color(0.239f, 0.271f, 0.400f);
-        private static readonly Color Ink      = new Color(0.910f, 0.894f, 0.847f);
-        private static readonly Color Gold     = new Color(0.878f, 0.702f, 0.341f);
-        private static readonly Color RelicTint  = new Color(0.68f, 0.55f, 0.30f);
-        private static readonly Color PotionTint = new Color(0.36f, 0.55f, 0.42f);
+        private static UiSkin Skin => UiSkin.Current;   // 팔레트·스프라이트 단일 권위 (2026-09-25)
 
         private TMP_FontAsset _font;
         private static readonly HashSet<GameState> VisibleStates = new HashSet<GameState>
@@ -128,9 +123,7 @@ namespace DiceOrbit.UI
         {
             if (goldText == null) return;
             EnsureCoinIcon();
-            goldText.text = _coinIcon != null
-                ? $"{GoldManager.Instance?.Gold ?? 0}"
-                : $"<color=#{ColorUtility.ToHtmlStringRGB(Gold)}>●</color> {GoldManager.Instance?.Gold ?? 0}";   // 스프라이트 폴백
+            goldText.text = $"{GoldManager.Instance?.Gold ?? 0}";
         }
 
         private Image _coinIcon;
@@ -140,8 +133,9 @@ namespace DiceOrbit.UI
         {
             if (_coinIcon != null) return;
 
-            var coin = Resources.Load<Sprite>("UI/코인");
-            if (coin == null) return;   // 스프라이트 없으면 ● 폴백 유지
+            var coin = Skin.Coin;
+            if (coin == null)
+                throw new System.InvalidOperationException("[RunHudUI] UiSkin.Coin이 비어 있습니다 — 「도구/Dice Orbit/UI 스킨 점검」");
 
             float size = goldText.fontSize + 6f;   // 글자보다 살짝 크게
 
@@ -175,7 +169,7 @@ namespace DiceOrbit.UI
                 if (artifact == null) continue;
                 var data = artifact.data;
                 string title = data != null ? data.artifactName : artifact.GetType().Name;
-                var chip = CreateChip(relicRow, data != null ? data.artifactIcon : null, title, RelicTint, bare: true);
+                var chip = CreateChip(relicRow, data != null ? data.artifactIcon : null, title, bare: true);
                 AddHoverTooltip(chip, $"<b>[{title}]</b>\n{(data != null ? data.artifactTooltip : "")}");
             }
         }
@@ -194,7 +188,7 @@ namespace DiceOrbit.UI
                 var potion = filled ? pm.Slots[i] : null;
 
                 var chip = CreateChip(potionRow, potion != null ? potion.Icon : null,
-                    potion != null ? potion.PotionName : null, PotionTint, empty: !filled);
+                    potion != null ? potion.PotionName : null, empty: !filled);
 
                 if (potion == null) continue;
 
@@ -229,10 +223,10 @@ namespace DiceOrbit.UI
 
         /// <summary>아이콘 칩. 아이콘 없으면 이름 첫 글자, empty면 빈 홈, bare면 배경판 없이 아이콘만.
         /// 프리팹이 있으면 그걸로 찍는다 (bare는 기본 생성 경로에만 적용).</summary>
-        private GameObject CreateChip(RectTransform parent, Sprite icon, string fallbackName, Color tint, bool empty = false, bool bare = false)
+        private GameObject CreateChip(RectTransform parent, Sprite icon, string fallbackName, bool empty = false, bool bare = false)
         {
             if (chipPrefab != null)
-                return CreateChipFromPrefab(parent, icon, fallbackName, tint, empty);
+                return CreateChipFromPrefab(parent, icon, fallbackName, empty);
 
             var go = new GameObject("Chip", typeof(RectTransform));
             go.transform.SetParent(parent, false);
@@ -242,12 +236,24 @@ namespace DiceOrbit.UI
             bool bareIcon = bare && icon != null;   // 아이콘 없는 유물은 글자 칩으로 폴백 (배경 유지)
 
             var bg = go.AddComponent<Image>();
-            bg.sprite = UiRoundedSprite.Get(12);
-            bg.type = Image.Type.Sliced;
-            // bare 칩의 배경은 투명 — 시각적으론 아이콘만, 호버 히트 영역으로만 기능
-            bg.color = bareIcon ? Color.clear : empty ? CardWell : Color.Lerp(CardWell, tint, 0.35f);
+            if (bareIcon) bg.color = Color.clear;          // 배경판 없이 아이콘만 — 호버 히트 영역으로만 기능
+            else if (empty) Skin.ApplySlot(bg);            // 빈 홈
+            else Skin.ApplyChip(bg);
 
-            if (empty) return go;
+            if (empty)
+            {
+                var emptyIcon = new GameObject("EmptyIcon", typeof(RectTransform));
+                emptyIcon.transform.SetParent(go.transform, false);
+                var er = (RectTransform)emptyIcon.transform;
+                er.anchorMin = Vector2.zero; er.anchorMax = Vector2.one;
+                er.offsetMin = new Vector2(10f, 10f); er.offsetMax = new Vector2(-10f, -10f);
+                var eimg = emptyIcon.AddComponent<Image>();
+                eimg.sprite = Skin.PotionSlotEmpty;
+                eimg.preserveAspect = true;
+                eimg.raycastTarget = false;
+                eimg.color = new Color(1f, 1f, 1f, 0.55f);   // 빈 자리 표시는 흐리게
+                return go;
+            }
 
             if (icon != null)
             {
@@ -271,7 +277,7 @@ namespace DiceOrbit.UI
                 tmp.fontSize = 24f;
                 tmp.fontStyle = FontStyles.Bold;
                 tmp.alignment = TextAlignmentOptions.Center;
-                tmp.color = Ink;
+                tmp.color = Skin.Ink;
                 tmp.raycastTarget = false;
                 if (_font != null) tmp.font = _font;
                 var r = tmp.rectTransform;
@@ -282,14 +288,13 @@ namespace DiceOrbit.UI
         }
 
         /// <summary>프리팹 기반 칩: 루트 Image = 배경, 자식 Icon(Image)/Label(TMP) 이름 탐색.</summary>
-        private GameObject CreateChipFromPrefab(RectTransform parent, Sprite icon, string fallbackName, Color tint, bool empty)
+        private GameObject CreateChipFromPrefab(RectTransform parent, Sprite icon, string fallbackName, bool empty)
         {
             var go = Instantiate(chipPrefab, parent);
             go.name = "Chip";
 
             var bg = go.GetComponent<Image>();
-            if (bg != null)
-                bg.color = empty ? CardWell : Color.Lerp(CardWell, tint, 0.35f);
+            if (bg != null) { if (empty) Skin.ApplySlot(bg); else Skin.ApplyChip(bg); }
 
             var iconImg = go.transform.Find("Icon")?.GetComponent<Image>();
             var label = go.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
