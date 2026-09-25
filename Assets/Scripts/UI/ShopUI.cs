@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Run;
 using DiceOrbit.Data.Modifiers;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -62,14 +63,7 @@ namespace DiceOrbit.UI
         private Character _incoming;
 
         // ── 보드게임의 밤 팔레트 (RewardUI 계승) ──
-        private static readonly Color Felt     = new Color(0.043f, 0.051f, 0.078f, 0.85f);
-        private static readonly Color Card     = new Color(0.118f, 0.133f, 0.200f);
-        private static readonly Color CardEdge = new Color(0.239f, 0.271f, 0.400f);
-        private static readonly Color Ink      = new Color(0.910f, 0.894f, 0.847f);
-        private static readonly Color InkMuted = new Color(0.910f, 0.894f, 0.847f, 0.45f);
-        private static readonly Color Gold     = new Color(0.878f, 0.702f, 0.341f);
-        private static readonly Color GoldInk  = new Color(0.140f, 0.110f, 0.055f);
-        private static readonly Color Slate    = new Color(0.200f, 0.255f, 0.368f);
+        private static UiSkin Skin => UiSkin.Current;   // 팔레트·스프라이트 단일 권위 (2026-09-25)
 
         private void Awake()
         {
@@ -109,7 +103,7 @@ namespace DiceOrbit.UI
             if (backgroundImage != null)
             {
                 backgroundImage.sprite = backgroundSprite;
-                backgroundImage.color = backgroundSprite != null ? Color.white : Felt;
+                backgroundImage.color = backgroundSprite != null ? Color.white : Skin.Scrim;
             }
             if (merchantImage != null)
             {
@@ -175,7 +169,7 @@ namespace DiceOrbit.UI
                 int cost = GetSwapCost(ch);
                 bool affordable = gold >= cost;
 
-                string label = $"{ch.Stats.CharacterName}\n<size=60%><color=#{ColorUtility.ToHtmlStringRGB(Gold)}>비용 {cost}G</color>" +
+                string label = $"{ch.Stats.CharacterName}\n<size=60%><color=#{ColorUtility.ToHtmlStringRGB(Skin.Accent)}>비용 {cost}G</color>" +
                                (affordable ? "" : "  <color=#B05050>(골드 부족)</color>") + "</size>";
                 AddChoiceButton(label, () => { if (affordable) OnOutgoingPicked(captured); });
             }
@@ -270,7 +264,7 @@ namespace DiceOrbit.UI
 
             string label = sold
                 ? $"<color=#777777>{title}</color>\n\n<size=60%><color=#666666>품절</color></size>"
-                : $"{title}\n<size=50%>{desc}</size>\n<size=70%><color=#{ColorUtility.ToHtmlStringRGB(Gold)}>{price}G</color>" +
+                : $"{title}\n<size=50%>{desc}</size>\n<size=70%><color=#{ColorUtility.ToHtmlStringRGB(Skin.Accent)}>{price}G</color>" +
                   (affordable ? "" : " <color=#B05050>✕</color>") + "</size>";
 
             var go = new GameObject("Goods", typeof(RectTransform));
@@ -278,26 +272,14 @@ namespace DiceOrbit.UI
             var le = go.AddComponent<LayoutElement>();
             le.preferredWidth = 158; le.preferredHeight = 168;
 
-            var img = go.AddComponent<Image>();
-            img.sprite = UiRoundedSprite.Get(14);
-            img.type = Image.Type.Sliced;
-
+            go.AddComponent<Image>();
             var shadow = go.AddComponent<Shadow>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.25f);
             shadow.effectDistance = new Vector2(0f, -5f);
 
             var btn = go.AddComponent<Button>();
-            btn.targetGraphic = img;
+            Skin.ApplyButton(btn, ButtonKind.Secondary);   // 상품 = 보조 톤(하늘), 품절/불가는 Disabled 면
             btn.interactable = !sold && affordable;
-            var fill = new Color(0.145f, 0.169f, 0.259f, 0.94f);
-            var cb = ColorBlock.defaultColorBlock;
-            cb.normalColor = fill;
-            cb.highlightedColor = Color.Lerp(fill, Color.white, 0.15f);
-            cb.pressedColor = Color.Lerp(fill, Color.black, 0.25f);
-            cb.selectedColor = fill;
-            cb.disabledColor = new Color(fill.r, fill.g, fill.b, 0.5f);
-            cb.fadeDuration = 0.08f;
-            btn.colors = cb;
             btn.onClick.AddListener(() => onBuy());
 
             var txt = CreateText(go, label, 18, FontStyles.Bold);
@@ -454,24 +436,13 @@ namespace DiceOrbit.UI
             var le = go.AddComponent<LayoutElement>();
             le.preferredWidth = 240; le.preferredHeight = 200;
 
-            var img = go.AddComponent<Image>();
-            img.sprite = UiRoundedSprite.Get(18);
-            img.type = Image.Type.Sliced;
-
+            go.AddComponent<Image>();
             var shadow = go.AddComponent<Shadow>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.45f);
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.25f);
             shadow.effectDistance = new Vector2(0f, -5f);
 
             var btn = go.AddComponent<Button>();
-            btn.targetGraphic = img;
-            var cb = ColorBlock.defaultColorBlock;
-            var fill = new Color(0.145f, 0.169f, 0.259f);
-            cb.normalColor = fill;
-            cb.highlightedColor = Color.Lerp(fill, Color.white, 0.15f);
-            cb.pressedColor = Color.Lerp(fill, Color.black, 0.25f);
-            cb.selectedColor = fill;
-            cb.fadeDuration = 0.08f;
-            btn.colors = cb;
+            Skin.ApplyButton(btn, ButtonKind.Primary);
             btn.onClick.AddListener(() => onClick());
 
             var txt = CreateText(go, label, 22, FontStyles.Bold);
@@ -496,7 +467,7 @@ namespace DiceOrbit.UI
             tmp.fontSize = size;
             tmp.fontStyle = style;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Ink;
+            tmp.color = Skin.Ink;
             tmp.raycastTarget = false;
             if (_font != null) tmp.font = _font;
             return tmp;
