@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using DiceOrbit.Core;
 using DiceOrbit.Core.Run;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -45,13 +46,7 @@ namespace DiceOrbit.UI
         private readonly List<TextMeshProUGUI> _diceLabels = new List<TextMeshProUGUI>();
 
         // ── 보드게임의 밤 팔레트 ──
-        private static readonly Color Felt     = new Color(0.043f, 0.051f, 0.078f, 0.85f);
-        private static readonly Color Card     = new Color(0.118f, 0.133f, 0.200f);
-        private static readonly Color Ink      = new Color(0.910f, 0.894f, 0.847f);
-        private static readonly Color Gold     = new Color(0.878f, 0.702f, 0.341f);
-        private static readonly Color GoldInk  = new Color(0.140f, 0.110f, 0.055f);
-        private static readonly Color Slate    = new Color(0.200f, 0.255f, 0.368f);
-        private static readonly Color Danger   = new Color(0.75f, 0.30f, 0.28f);
+        private static UiSkin Skin => UiSkin.Current;   // 팔레트·스프라이트 단일 권위 (2026-09-25)
 
         private void Awake()
         {
@@ -108,7 +103,7 @@ namespace DiceOrbit.UI
             if (backgroundImage != null)
             {
                 backgroundImage.sprite = _current.Background;
-                backgroundImage.color = _current.Background != null ? Color.white : Felt;
+                backgroundImage.color = _current.Background != null ? Color.white : Skin.Scrim;
             }
             if (titleText != null) titleText.text = _current.Title;
             if (descText != null) descText.text = _current.FlavorText;
@@ -276,7 +271,7 @@ namespace DiceOrbit.UI
                 int value = Random.Range(1, 7);
                 sum += value;
                 label.text = value.ToString();
-                label.color = Gold;
+                label.color = Skin.Accent;
                 yield return new WaitForSeconds(settleInterval);
             }
 
@@ -297,7 +292,7 @@ namespace DiceOrbit.UI
                 if (sum >= 0) sb.Append(success ? $"합 {sum} — 성공!  " : $"합 {sum} — 실패...  ");
                 if (!string.IsNullOrWhiteSpace(flavor)) sb.Append(flavor).Append("  ");
                 sb.Append(summary);
-                resultText.color = success ? Gold : Danger;
+                resultText.color = success ? Skin.Accent : Skin.Danger;
                 resultText.text = sb.ToString();
             }
 
@@ -335,9 +330,7 @@ namespace DiceOrbit.UI
                 le.preferredWidth = 110; le.preferredHeight = 110;
 
                 var img = die.AddComponent<Image>();
-                img.sprite = UiRoundedSprite.Get(22);
-                img.type = Image.Type.Sliced;
-                img.color = new Color(0.082f, 0.094f, 0.153f);
+                Skin.ApplySlot(img);   // 눈이 들어갈 홈
                 img.raycastTarget = false;
 
                 var label = CreateText(die, "?", 52, FontStyles.Bold);
@@ -417,26 +410,13 @@ namespace DiceOrbit.UI
             le.preferredHeight = 66f;
             le.flexibleWidth = 1f;
 
-            var img = go.AddComponent<Image>();
-            img.sprite = UiRoundedSprite.Get(16);
-            img.type = Image.Type.Sliced;
-
+            go.AddComponent<Image>();
             var btn = go.AddComponent<Button>();
-            btn.targetGraphic = img;
-            Color fill = primary ? Gold : Slate;
-            var cb = ColorBlock.defaultColorBlock;
-            cb.normalColor = fill;
-            cb.highlightedColor = Color.Lerp(fill, Color.white, 0.12f);
-            cb.pressedColor = Color.Lerp(fill, Color.black, 0.2f);
-            cb.selectedColor = fill;
-            cb.disabledColor = new Color(fill.r * 0.45f, fill.g * 0.45f, fill.b * 0.45f);
-            cb.fadeDuration = 0.08f;
-            btn.colors = cb;
+            Skin.ApplyButton(btn, primary ? ButtonKind.Primary : ButtonKind.Secondary);
             btn.interactable = interactable;
             btn.onClick.AddListener(() => onClick());
 
             var txt = CreateText(go, label, 26, FontStyles.Bold);
-            txt.color = primary ? GoldInk : Ink;
             if (!interactable) txt.color = new Color(txt.color.r, txt.color.g, txt.color.b, 0.45f);
             Stretch(txt);
             return btn;
@@ -451,7 +431,7 @@ namespace DiceOrbit.UI
             tmp.fontSize = size;
             tmp.fontStyle = style;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Ink;
+            tmp.color = Skin.Ink;
             tmp.raycastTarget = false;
             if (_font != null) tmp.font = _font;
             return tmp;
