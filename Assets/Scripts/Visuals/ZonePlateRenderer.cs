@@ -12,6 +12,7 @@ namespace DiceOrbit.Visuals
     /// 스프라이트: pivot (0,0) = 궤도 중심, PPU 128 → 16×16 유닛, 조각은 +x·+y(위) 사분면.
     /// 배치: 위치 (0, plateY, 0), 회전 Euler(90, −startDeg, 0) — 눕힌 뒤 구역 시작각만큼 반시계로 돌린다.
     /// 타일(불투명 메시, y 0~0.03) 아래에 있어 타일이 그 위에 올라앉고, 사이·안팎으로 플레이트가 드러난다.
+    /// 정렬: 유닛 레이어에서 order −50 — 방 배경 스프라이트(−100)와 발밑 마커(−1) 사이.
     ///
     /// 등장: 주인 몬스터가 인트로 팝인으로 드러난 뒤 페이드인, 중립 구역은 주인 있는 몬스터가 전부 드러난 뒤.
     /// </summary>
@@ -26,8 +27,8 @@ namespace DiceOrbit.Visuals
         [SerializeField, Range(0f, 1f)] private float ownerAlpha = 0.85f;
         [SerializeField] private Color neutralTint = new Color(0.80f, 0.80f, 0.86f, 0.5f);
         [SerializeField] private float fadeDuration = 0.25f;
-        [Tooltip("유닛 스프라이트 대비 렌더 순서. 음수여야 유닛·발밑 마커 뒤로 간다")]
-        [SerializeField] private int sortingOrderOffset = -200;
+        [Tooltip("유닛 스프라이트(0) 대비 렌더 순서. 발밑 마커(−1)보다 뒤, 방 배경 스프라이트(−100)보다는 앞이어야 한다 — −200은 배경에 가려 안 보였다 (2026-09-25)")]
+        [SerializeField] private int sortingOrderOffset = -50;
 
         private SpriteRenderer[] _plates = new SpriteRenderer[0];
         private int[] _lastOwnerIds;      // 파괴된 몬스터는 == null이라 InstanceID로 추적
