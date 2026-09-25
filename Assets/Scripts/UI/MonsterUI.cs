@@ -20,10 +20,9 @@ namespace DiceOrbit.UI
         [SerializeField] private Slider hpSlider;
         [SerializeField] private TextMeshProUGUI nameText;
         [SerializeField] private TextMeshProUGUI hpText;
-        [SerializeField] private RectTransform intentBubbleRoot;
-        [SerializeField] private Image intentBubbleBg;
-        [SerializeField] private Image intentIcon;
-        [SerializeField] private TextMeshProUGUI intentText;
+        [Header("의도 말풍선 (프리팹 MonsterCanvas/IntentBubble — UiSkinImage IntentBubble 9-slice, 아이콘만·라벨 없음, 2026-09-25)")]
+        [SerializeField] private RectTransform intentBubbleRoot;   // 말풍선 루트 (스프라이트는 UiSkinImage가 꽂는다)
+        [SerializeField] private Image intentIcon;                 // 스킬 아이콘 — AttackIntent.Icon
 
         [Header("Armor UI")]
         [SerializeField] private RectTransform armorRoot;
@@ -31,13 +30,6 @@ namespace DiceOrbit.UI
         [SerializeField] private TextMeshProUGUI armorText;
         [SerializeField] private Sprite armorIconSprite;
         [SerializeField] private bool hideArmorWhenZero = true;
-        
-        [Header("Intent Colors")]
-        [SerializeField] private Color attackColor = Color.red;
-        [SerializeField] private Color defendColor = Color.blue;
-        [SerializeField] private Color buffColor = Color.yellow;
-        [SerializeField] private Color specialColor = Color.magenta;
-        [SerializeField] private Color neutralBubbleColor = new Color(1f, 1f, 1f, 0.92f);
         
         [Header("Settings")]
         [SerializeField] private Vector3 uiOffset = new Vector3(0, 2f, 0);
@@ -47,8 +39,6 @@ namespace DiceOrbit.UI
         [Tooltip("체력바 캔버스 크기(월드 스케일). 키우려면 값을 올린다.")]
         [SerializeField] private float canvasScale = 0.1f;
         [SerializeField] private bool hideBubbleWhenNoIntent = true;
-        [SerializeField] private bool tintBubbleByIntent = false;
-        [SerializeField] private bool showIntentText = true;
         
         [Header("Animation")]
         [SerializeField] private bool animateOnIntentChange = true;
@@ -73,7 +63,7 @@ namespace DiceOrbit.UI
             }
             
             mainCamera = Camera.main;
-            AutoResolveIntentRefs();
+            RequireIntentRefs();
             AutoResolveArmorRefs();
             EnsureArmorUIExists();
         }
@@ -150,17 +140,11 @@ namespace DiceOrbit.UI
             }
         }
         
-        private void AutoResolveIntentRefs()
+        /// <summary>말풍선 슬롯은 프리팹 배선 필수 — 비면 에러로 알리고 말풍선을 끈다 (형제 오브젝트를 뒤져 채우는 폴백 없음).</summary>
+        private void RequireIntentRefs()
         {
-            if (intentBubbleRoot == null && intentIcon != null)
-            {
-                intentBubbleRoot = intentIcon.rectTransform;
-            }
-            
-            if (intentBubbleBg == null && intentBubbleRoot != null)
-            {
-                intentBubbleBg = intentBubbleRoot.GetComponent<Image>();
-            }
+            if (intentBubbleRoot == null || intentIcon == null)
+                Debug.LogError("[MonsterUI] intentBubbleRoot/intentIcon 슬롯이 비어 있습니다 — TestMonster.prefab MonsterCanvas/IntentBubble/Icon을 배선하세요.", this);
         }
         
         /// <summary>
@@ -196,85 +180,45 @@ namespace DiceOrbit.UI
             UpdateArmor();
         }
         
-        /// <summary>
-        /// 공격 의도 UI 업데이트
-        /// </summary>
+        /// <summary>공격 의도 말풍선 갱신 — 아이콘만 (라벨·타입 색 없음). 아이콘 없는 의도는 데이터 누락으로 보고 에러 1회.</summary>
         private void UpdateIntent()
         {
-            if (monster == null)
-            {
-                SetIntentVisible(false);
-                return;
-            }
+            if (monster == null || intentBubbleRoot == null) { SetIntentVisible(false); return; }
 
             AttackIntent intent = monster.CurrentIntent;
             if (intent == null)
             {
-                if (hideBubbleWhenNoIntent)
-                {
-                    SetIntentVisible(false);
-                }
+                if (hideBubbleWhenNoIntent) SetIntentVisible(false);
                 return;
             }
 
             SetIntentVisible(true);
 
-            IntentType type = intent.Type;
             int visualKey = BuildIntentVisualKey(intent);
             bool changed = visualKey != lastIntentVisualKey;
             lastIntentVisualKey = visualKey;
-
-            if (intentBubbleBg != null)
-            {
-                intentBubbleBg.color = tintBubbleByIntent ? GetIntentColor(type) : neutralBubbleColor;
-            }
 
             if (intentIcon != null)
             {
                 if (intent.Icon != null)
                 {
                     intentIcon.sprite = intent.Icon;
-                    intentIcon.color = Color.white;
                     intentIcon.enabled = true;
                 }
                 else
                 {
-                    // 기본 스프라이트를 유지하고 색상만 의도 타입에 맞춤
-                    intentIcon.color = GetIntentColor(type);
-                    intentIcon.enabled = true;
+                    intentIcon.enabled = false;
+                    if (changed) Debug.LogError($"[MonsterUI] {monster.name}의 의도 '{intent.Type}'에 아이콘이 없습니다 — 몬스터 스킬 데이터에 Icon을 지정하세요.", monster);
                 }
             }
 
-            if (intentText != null)
-            {
-                if (showIntentText)
-                {
-                    intentText.text = GetIntentLabel(type, intent);
-                    intentText.gameObject.SetActive(true);
-                }
-                else
-                {
-                    intentText.gameObject.SetActive(false);
-                }
-            }
-
-            if (animateOnIntentChange && changed)
-            {
-                PlayIntentPop();
-            }
+            if (animateOnIntentChange && changed) PlayIntentPop();
         }
-        
+
         private void SetIntentVisible(bool visible)
         {
-            if (intentBubbleRoot != null)
-            {
+            if (intentBubbleRoot != null && intentBubbleRoot.gameObject.activeSelf != visible)
                 intentBubbleRoot.gameObject.SetActive(visible);
-            }
-            else
-            {
-                if (intentIcon != null) intentIcon.gameObject.SetActive(visible);
-                if (intentText != null) intentText.gameObject.SetActive(visible && showIntentText);
-            }
         }
 
         private void UpdateArmor()
@@ -387,25 +331,6 @@ namespace DiceOrbit.UI
             }
         }
         
-        private string GetIntentLabel(IntentType type, AttackIntent intent)
-        {
-            switch (type)
-            {
-                case IntentType.Attack:
-                    return "공격";
-                case IntentType.Multi:
-                    return intent.Targets != null && intent.Targets.Count > 1 ? $"연타 x{intent.Targets.Count}" : "연타";
-                case IntentType.Defend:
-                    return "방어";
-                case IntentType.Buff:
-                    return "강화";
-                case IntentType.Special:
-                    return "특수";
-                default:
-                    return "행동";
-            }
-        }
-        
         private void PlayIntentPop()
         {
             if (intentBubbleRoot == null) return;
@@ -438,27 +363,6 @@ namespace DiceOrbit.UI
             
             intentBubbleRoot.localScale = baseScale;
             popRoutine = null;
-        }
-        
-        /// <summary>
-        /// 의도 타입별 색상
-        /// </summary>
-        private Color GetIntentColor(IntentType type)
-        {
-            switch (type)
-            {
-                case IntentType.Attack:
-                case IntentType.Multi:
-                    return attackColor;
-                case IntentType.Defend:
-                    return defendColor;
-                case IntentType.Buff:
-                    return buffColor;
-                case IntentType.Special:
-                    return specialColor;
-                default:
-                    return Color.white;
-            }
         }
         
         /// <summary>
