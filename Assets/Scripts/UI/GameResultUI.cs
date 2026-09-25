@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -105,7 +106,7 @@ namespace DiceOrbit.UI
             var dim = CreateChild(root.transform, "Dim");
             StretchFull(dim);
             var dimImg = dim.gameObject.AddComponent<Image>();
-            dimImg.color = new Color(0f, 0f, 0f, 0.82f);
+            dimImg.color = UiSkin.Current.Scrim;
 
             // 타이틀
             var titleGO = CreateChild(root.transform, "Title");
@@ -136,10 +137,9 @@ namespace DiceOrbit.UI
             btnGO.anchorMin = btnGO.anchorMax = new Vector2(0.5f, 0.5f);
             btnGO.anchoredPosition = new Vector2(0, -260);
             btnGO.sizeDelta = new Vector2(420, 110);
-            var btnImg = btnGO.gameObject.AddComponent<Image>();
-            btnImg.color = new Color(0.25f, 0.55f, 0.95f, 1f);
+            btnGO.gameObject.AddComponent<Image>();
             ui.restartButton = btnGO.gameObject.AddComponent<Button>();
-            ui.restartButton.targetGraphic = btnImg;
+            UiSkin.Current.ApplyButton(ui.restartButton, ButtonKind.Primary);
             ui.restartButton.onClick.AddListener(ui.OnRestartClicked);
 
             var labelGO = CreateChild(btnGO, "Label");
@@ -149,7 +149,7 @@ namespace DiceOrbit.UI
             label.alignment = TextAlignmentOptions.Center;
             label.fontSize = 44;
             label.fontStyle = FontStyles.Bold;
-            label.color = Color.white;
+            label.color = UiSkin.Current.Ink;
             label.raycastTarget = false;
             if (koreanFont != null) label.font = koreanFont;
 

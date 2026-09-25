@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using DiceOrbit.Data;
+using DiceOrbit.UI.Skin;
 using TMPro;
 
 namespace DiceOrbit.UI
@@ -169,8 +170,6 @@ namespace DiceOrbit.UI
             root.anchoredPosition = Vector2.zero;            // 모서리에 반쯤 걸치게
             root.sizeDelta = new Vector2(size, size);
 
-            int circleRadius = Mathf.CeilToInt(size * 0.5f);
-
             Image MakeCircle(string name, float diameter, Color color)
             {
                 var go = new GameObject(name, typeof(RectTransform), typeof(Image));
@@ -179,9 +178,7 @@ namespace DiceOrbit.UI
                 rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
                 rt.sizeDelta = new Vector2(diameter, diameter);
                 var img = go.GetComponent<Image>();
-                img.sprite = UiRoundedSprite.Get(circleRadius);
-                img.type = Image.Type.Sliced;
-                img.color = color;
+                UiSkin.Current.ApplyCircle(img, color);
                 img.raycastTarget = false;
                 return img;
             }

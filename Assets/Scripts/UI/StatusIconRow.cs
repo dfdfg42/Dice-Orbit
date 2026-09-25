@@ -4,6 +4,7 @@ using DiceOrbit.Visuals;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -126,9 +127,7 @@ namespace DiceOrbit.UI
             {
                 // 폴백: 상태색 원형 칩 + 이름 첫 글자
                 var bg = go.AddComponent<Image>();
-                bg.sprite = UiRoundedSprite.Get(Mathf.CeilToInt(iconSize * 0.5f));   // 반지름 = 절반 → 원형
-                bg.type = Image.Type.Sliced;
-                bg.color = new Color(data.Color.r, data.Color.g, data.Color.b, 0.9f);
+                UiSkin.Current.ApplyCircle(bg, new Color(data.Color.r, data.Color.g, data.Color.b, 0.9f));
                 bg.raycastTarget = false;
 
                 var letter = CreateLabel(go, data.Name.Substring(0, 1), iconSize * 0.55f, Color.black);

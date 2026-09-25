@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DiceOrbit.Data;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI
 {
@@ -25,8 +26,7 @@ namespace DiceOrbit.UI
         [SerializeField] private Vector2 aboveOffset = new Vector2(0f, 90f);
 
         // 색
-        private static readonly Color Ink  = new Color(0.12f, 0.11f, 0.16f);   // 진한 잉크 (밝은 배경 위)
-        private static readonly Color Card = new Color(0.95f, 0.93f, 0.885f, 0.98f); // 크림 카드
+        private static UiSkin Skin => UiSkin.Current;   // 팔레트·스프라이트 단일 권위 (2026-09-25)
 
         private readonly List<GameObject> _faceCells = new List<GameObject>();
         private readonly List<GameObject> _effectCells = new List<GameObject>();
@@ -186,7 +186,7 @@ namespace DiceOrbit.UI
                 txt.alignment = TextAlignmentOptions.Center;
                 txt.fontSize = 22;
                 txt.fontStyle = FontStyles.Bold;
-                txt.color = Ink;
+                txt.color = Skin.Ink;
                 txt.raycastTarget = false;
                 if (font != null) txt.font = font;
                 var rt = txt.rectTransform;
@@ -215,7 +215,7 @@ namespace DiceOrbit.UI
 
         private static readonly Color HintRed = new Color(0.78f, 0.22f, 0.25f);
 
-        private void CreateEffectCell(DieEffect effect) => CreateCell(effect.Preview(), effect.Icon, Ink);
+        private void CreateEffectCell(DieEffect effect) => CreateCell(effect.Preview(), effect.Icon, Skin.Ink);
 
         private void CreateCell(string label, Sprite cellIcon, Color textColor)
         {
@@ -224,9 +224,7 @@ namespace DiceOrbit.UI
             cell.transform.SetParent(effectRow, false);
 
             var bg = cell.GetComponent<Image>();
-            bg.sprite = UiRoundedSprite.Get(10);
-            bg.type = Image.Type.Sliced;
-            bg.color = Card;
+            Skin.ApplyCard(bg);
             bg.raycastTarget = false;
 
             var hl = cell.GetComponent<HorizontalLayoutGroup>();
