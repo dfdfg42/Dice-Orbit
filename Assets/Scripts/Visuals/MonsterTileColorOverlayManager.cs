@@ -16,7 +16,8 @@ namespace DiceOrbit.Visuals
         public static MonsterTileColorOverlayManager Instance { get; private set; }
 
         [SerializeField] private float elevation = 0.05f;       // 타일 윗면 위로 살짝 띄움 (z-fighting 방지)
-        [SerializeField, Range(0f, 1f)] private float overlayAlpha = 0.55f;
+        [Tooltip("공격 예정 타일 색 밴드 알파. 0.55는 살구색이 연해 위협이 약했다 → 0.8 (2026-09-25 몬스터 영역 표시 리스킨)")]
+        [SerializeField, Range(0f, 1f)] private float overlayAlpha = 0.8f;
 
         private readonly Dictionary<TileData, GameObject> _overlays = new();
         private readonly Dictionary<string, Texture2D> _bandCache = new();
