@@ -59,13 +59,13 @@
 - `python tools/draw_shapes.py <out_dir>` → `체력바.png`, `체력_피.png`, `hp.png`, `Dice.png`, `Rectangle 41.png` 생성
 - `python tools/text_label.py <text> <W> <H> <out.png> [--on <pill.png>]` → 투명 배경 글자 이미지, `--on`이면 알약 위에 합성
 
-- [ ] **Step 1: 브랜치**
+- [x] **Step 1: 브랜치**
 
 ```bash
 cd "D:/Dice Orbit" && git checkout -q feature/ui-skin-migration-20260925 && git checkout -q -b feature/ui-skin-dropin-20260925 && git branch --show-current && mkdir -p _workspace/2026-09-25-ui-reskin/dropin
 ```
 
-- [ ] **Step 2: render_slice.py**
+- [x] **Step 2: render_slice.py**
 
 ```python
 """9-slice 렌더. 네이티브 모드 = 모서리 원본 크기 유지(Unity Sliced와 동일, 축별로 경계 합이 크면 축소).
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 3: draw_shapes.py**
+- [x] **Step 3: draw_shapes.py**
 
 ```python
 """HP바·주사위 면·하단 바를 스킨 팔레트로 직접 그린다 (4배 슈퍼샘플 → LANCZOS 축소)."""
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 4: text_label.py**
+- [x] **Step 4: text_label.py**
 
 ```python
 """투명 배경 잉크 글자 이미지. --on <pill.png> 이면 알약 위 중앙에 합성해 같은 크기로 저장."""
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 5: 자체 검증**
+- [x] **Step 5: 자체 검증**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && python tools/render_slice.py "../../Assets/Sprites/UI Skin/panel.png" 0.30 0.30 1000 175 dropin/_t_panel.png && python tools/render_slice.py "../../Assets/Sprites/UI Skin/button_primary_normal.png" 0.40 0.45 268 102 dropin/_t_pill.png --fit-height && python tools/draw_shapes.py dropin/_t_shapes && python tools/text_label.py "선택" 268 102 dropin/_t_select.png --on dropin/_t_pill.png && python tools/text_label.py "Start Game" 394 67 dropin/_t_start.png && python -c "
@@ -228,7 +228,7 @@ Expected: 크기 일치(1000×175, 268×102, 268×102, 394×67), `alpha_max 255`
 - Create: `_workspace/2026-09-25-ui-reskin/dropin/*.png` (원본 파일명 그대로, 23장)
 - Create: `_workspace/2026-09-25-ui-reskin/dropin/borders.txt` (render_slice 출력 모음)
 
-- [ ] **Step 1: 패널·슬롯 (네이티브 9-slice)**
+- [x] **Step 1: 패널·슬롯 (네이티브 9-slice)**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && S="../../Assets/Sprites/UI Skin" && : > dropin/borders.txt && \
@@ -238,7 +238,7 @@ python tools/render_slice.py "$S/card.png" 0.30 0.30 1007 482 "dropin/패널 1�
 python tools/render_slice.py "$S/slot.png" 0.35 0.35 140 140 "dropin/파티 로스터 패널.png" | tee -a dropin/borders.txt
 ```
 
-- [ ] **Step 2: 버튼 배경 (높이맞춤)**
+- [x] **Step 2: 버튼 배경 (높이맞춤)**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && S="../../Assets/Sprites/UI Skin" && \
@@ -250,7 +250,7 @@ python tools/render_slice.py "$S/button_primary_normal.png" 0.40 0.45 268 102 "d
 python tools/render_slice.py "$S/button_secondary_normal.png" 0.40 0.45 268 102 "dropin/_pill_secondary_268.png" --fit-height
 ```
 
-- [ ] **Step 3: 글자 합성 (선택/취소 + 메인메뉴 4)**
+- [x] **Step 3: 글자 합성 (선택/취소 + 메인메뉴 4)**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && \
@@ -262,14 +262,14 @@ python tools/text_label.py "Settings" 286 80 "dropin/Settings.png" && \
 python tools/text_label.py "Quit" 154 81 "dropin/Quit.png" && rm dropin/_pill_*.png
 ```
 
-- [ ] **Step 4: PIL 도형**
+- [x] **Step 4: PIL 도형**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && python tools/draw_shapes.py dropin
 ```
 Expected: 5장 크기 출력 (153×18, 149×10, 255×23, 266×266, 1920×188).
 
-- [ ] **Step 5: 컨택트 시트 → Read로 검토**
+- [x] **Step 5: 컨택트 시트 → Read로 검토**
 
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && python tools/contact_sheet.py dropin review/dropin_sheet.png && ls dropin | wc -l
@@ -284,7 +284,7 @@ Expected: `22장` (상점 배경 제외), 시트에서 알약 글자 중앙·HP�
 - Create: `candidates/shop_bg.png` → `dropin/상점 임시배경.png` (1536×1024)
 - Modify: `Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md`
 
-- [ ] **Step 1: 제출**
+- [x] **Step 1: 제출**
 
 ```
 generate_image_batch(requests=[{"index":0,"params":{
@@ -294,7 +294,7 @@ generate_image_batch(requests=[{"index":0,"params":{
 ```
 job_id를 로그에 기록 (2.75, 누적 33.75). `unlim_choice`가 오면 사용자에게 묻고 재호출.
 
-- [ ] **Step 2: 대기·다운로드·리사이즈**
+- [x] **Step 2: 대기·다운로드·리사이즈**
 
 ```
 jobs_wait(jobs=[{"index":0,"job_id":"<job>"}], timeout_seconds=15)
@@ -306,11 +306,11 @@ im = Image.open('candidates/shop_bg.png').convert('RGB'); print(im.size)
 im.resize((1536, 1024), Image.LANCZOS).save('dropin/상점 임시배경.png'); print('resized 1536x1024')"
 ```
 
-- [ ] **Step 3: 승인 요청**
+- [x] **Step 3: 승인 요청**
 
 `SendUserFile`로 `review/dropin_sheet.png` + `dropin/상점 임시배경.png`를 보여주고 `AskUserQuestion`: "전부 승인 / 일부 재작업(메모)". 재작업이 렌더·도형·글자면 크레딧 없이 도구 파라미터만 고쳐 재실행, 배경이면 재생성(2.75).
 
-- [ ] **Step 4: 로그 커밋**
+- [x] **Step 4: 로그 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md && git commit -q -m "docs(ui-skin): 4단계 상점 배경 생성 승인 — 생성 로그 갱신
@@ -326,7 +326,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify (덮어쓰기): `Assets/Sprites/UI 이미지/{주사위 패널,오른쪽 패널,패널 1차,Rectangle 16,dice button,new act 2,new act3,파티 로스터 패널,선택,취소,Start Game,Continue,Settings,Quit}.png`, `Assets/Sprites/Info UI 이미지/{체력바,체력_피,hp}.png`, `Assets/Sprites/{Dice,Rectangle 41}.png`, `Assets/Sprites/상점/상점 임시배경.png`
 - Modify (`.meta`, Unity 경유): 위 파일들의 spriteBorder·mipmap·filter
 
-- [ ] **Step 1: 복사 (백업은 git이 가진다)**
+- [x] **Step 1: 복사 (백업은 git이 가진다)**
 
 ```bash
 cd "D:/Dice Orbit" && D=_workspace/2026-09-25-ui-reskin/dropin && \
@@ -337,7 +337,7 @@ git -c core.quotepath=off status --short | grep -c "^ M"
 ```
 Expected: `23`.
 
-- [ ] **Step 2: 임포터 설정 RunCommand** (경계값은 Task 2의 `borders.txt`를 그대로 옮긴다)
+- [x] **Step 2: 임포터 설정 RunCommand** (경계값은 Task 2의 `borders.txt`를 그대로 옮긴다)
 
 ```csharp
 using UnityEngine;
@@ -398,11 +398,11 @@ internal class CommandScript : IRunCommand
 ```
 Expected: 20줄 + 완료 로그. `Unity_GetConsoleLogs(Error)` 0건.
 
-- [ ] **Step 3: 자가 테스트 + 플레이 캡처**
+- [x] **Step 3: 자가 테스트 + 플레이 캡처**
 
 RunCommand `UiSkinSelfTests.RunAll()` → PASS. `Unity_ManageEditor(Play)` → BattleScene 시작 화면(모집 화면: 병 3개 + 선택/취소·HP바·로스터)을 `ScreenCapture.CaptureScreenshot("D:/Dice Orbit/_workspace/2026-09-25-ui-reskin/review/phase4_recruit.png")` → 캐릭터 하나 선택 상태를 만들기 어렵다면 병 화면만 캡처 → `Stop`. `Read`로 확인.
 
-- [ ] **Step 4: 커밋 (LFS 포인터 확인)**
+- [x] **Step 4: 커밋 (LFS 포인터 확인)**
 
 ```bash
 cd "D:/Dice Orbit" && git add "Assets/Sprites" && git -c core.quotepath=off status --short | head -30 && git commit -q -m "feat(ui-skin): 씬 드롭인 20장 — 전투 HUD·메인메뉴·모집 버튼·HP바·주사위 면·상점 배경을 크림 스킨으로 (파일명 유지, 재배선 없음)
@@ -414,11 +414,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ### Task 5: 문서·메모리 갱신 + 보고
 
-- [ ] **Step 1: 스펙 상태·README·생성 로그 누적 비용**
+- [x] **Step 1: 스펙 상태·README·생성 로그 누적 비용**
 
 스펙 상단 상태 줄 → `> 상태: **1~4단계 완료 — 5단계(사용자 플레이 확인·WebGL 재빌드) 대기**`. README 표: 스펙 행 상태 `진행 중 (1~4단계 완료)`, 4단계 계획 행 추가. 생성 로그 「누적 비용」에 4단계 행 추가 (`balance` 호출값).
 
-- [ ] **Step 2: 커밋 + 보고**
+- [x] **Step 2: 커밋 + 보고**
 
 ```bash
 cd "D:/Dice Orbit" && sed -i 's/^- \[ \] \*\*Step/- [x] **Step/' Docs/superpowers/plans/2026-09-25-ui-reskin-phase4-scene-dropin.md && git add Docs && git commit -q -m "docs(ui-skin): 리스킨 4단계 완료 — 스펙 상태·README·생성 로그 갱신
@@ -426,3 +426,13 @@ cd "D:/Dice Orbit" && sed -i 's/^- \[ \] \*\*Step/- [x] **Step/' Docs/superpower
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 보고: 브랜치, 커밋, 잔액, 사용자 확인 목록(메인메뉴는 MainMenu 씬에서, 전투 HUD는 전투 진입 후), 제외 항목 3종.
+
+---
+
+## 실행 기록 (2026-09-25)
+
+- 드롭인은 20장(계획의 22는 오산): UI 이미지 14 + HP바 3 + Dice + Rectangle 41 + 상점 배경. 힉스필드는 상점 배경 1장(2.75, 누적 33.75, 잔액 46.25).
+- `파티 로스터 패널` 경계는 슬롯 경계 합(180)이 140을 넘어 Unity 규칙대로 70,70,70,70으로 축소됨.
+- **추가 개선(사용자 위임)**: 드롭인만으로는 hover/pressed가 없어 `UiSkinImage`를 버튼 8개에 부착 — MainMenu `GameStart`=ButtonPrimary, `continue/setting/quit`=ButtonSecondary; BattleScene `Roll Dice`·`MoveButton`=ButtonPrimary, `End Turn Button`·`CancelButton`=ButtonSecondary (TMP 라벨은 Ink). 두 씬 모두 dirty 아님을 확인하고 저장. 이 8개 버튼은 이제 스킨 스프라이트를 직접 쓰므로 `Rectangle 16.png`·`dice button.png`·`new act 2/3.png` 드롭인은 그 오브젝트에서는 보이지 않는다(다른 참조·안전망으로 유지).
+- 검증: 콘솔 에러 0, 자가 테스트 PASS, MainMenu Play 캡처(`review/phase4_mainmenu.png`), 모집 화면 Play 캡처(`review/phase4_battle_hud.png`).
+- 사용자 확인 남음: 전투 진입 후 주사위 패널·하단 바·HP바·주사위 면, 상점 배경, 정보 패널(오른쪽 패널 Simple 스트레치), 툴팁 패널(패널 1차 Sliced).

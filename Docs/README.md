@@ -62,9 +62,10 @@
 | [superpowers/specs/2026-08-21-auto-combat-redesign-design.md](superpowers/specs/2026-08-21-auto-combat-redesign-design.md) | **전투 개편 설계** — 사분면 구역 + 자동 공격 + 강화 공격 (템포 개선) | 구현됨 (Phase 1~4). 의도의 진실 소스 |
 | [superpowers/plans/2026-08-21-auto-combat-phase1-2.md](superpowers/plans/2026-08-21-auto-combat-phase1-2.md) | 구역 시스템 + 자동 공격 **구현 계획** | 완료 (피해 산식은 이후 변경) |
 | [superpowers/plans/2026-08-21-auto-combat-phase3a-passives.md](superpowers/plans/2026-08-21-auto-combat-phase3a-passives.md) | 위치 패시브 3종 **구현 계획** | 완료 (연금술사는 Phase 3b로 보류) |
-| [superpowers/specs/2026-09-25-ui-reskin-uiskin-higgsfield-design.md](superpowers/specs/2026-09-25-ui-reskin-uiskin-higgsfield-design.md) | **UI 통일 리스킨 설계** — 크림 종이 + 굵은 외곽선, UiSkin 시스템, 힉스필드 생성 | 진행 중 (1~3단계 완료) |
+| [superpowers/specs/2026-09-25-ui-reskin-uiskin-higgsfield-design.md](superpowers/specs/2026-09-25-ui-reskin-uiskin-higgsfield-design.md) | **UI 통일 리스킨 설계** — 크림 종이 + 굵은 외곽선, UiSkin 시스템, 힉스필드 생성 | 진행 중 (1~4단계 완료, 플레이 확인 대기) |
 | [superpowers/plans/2026-09-25-ui-reskin-phase1-2-style-tile-core-skin.md](superpowers/plans/2026-09-25-ui-reskin-phase1-2-style-tile-core-skin.md) | 스타일 타일 + 코어 세트 + UiSkin **구현 계획** | 완료 |
 | [superpowers/plans/2026-09-25-ui-reskin-phase3-code-ui-migration.md](superpowers/plans/2026-09-25-ui-reskin-phase3-code-ui-migration.md) | 코드 UI 13파일 UiSkin 마이그레이션 + UiSkinImage **구현 계획** | 완료 |
+| [superpowers/plans/2026-09-25-ui-reskin-phase4-scene-dropin.md](superpowers/plans/2026-09-25-ui-reskin-phase4-scene-dropin.md) | 씬 드롭인 20장 + 버튼 SpriteSwap **구현 계획** (드롭인 매핑표 포함) | 완료 |
 | [superpowers/plans/2026-09-25-ui-reskin-generation-log.md](superpowers/plans/2026-09-25-ui-reskin-generation-log.md) | 힉스필드 생성 로그 (프롬프트·job id·비용) | 기록 |
 
 ---

@@ -1,6 +1,6 @@
 # UI 통일 리스킨 — 크림 종이 + 굵은 외곽선, UiSkin 시스템, 힉스필드 생성 (2026-09-25)
 
-> 상태: **1~3단계 완료 (코어 세트 17장 + Circle, UiSkin·UiSkinImage, 코드 UI 13파일 전환, 씬 라운드 참조 20개 전환, UiRoundedSprite·Art/Generated·TutorialSkin 철거), 4단계(씬 드롭인) 대기** — 2026-09-25, 브랜치 `feature/ui-skin-migration-20260925`(← core), 누적 31크레딧
+> 상태: **1~4단계 완료** (코어 세트 17장 + Circle, UiSkin·UiSkinImage, 코드 UI 13파일 전환, 씬 라운드 참조 20개 전환, 드롭인 20장, 메인메뉴·HUD 버튼 8개 SpriteSwap) — **5단계(사용자 플레이 확인·WebGL 재빌드) 대기**. 2026-09-25, 브랜치 `feature/ui-skin-dropin-20260925`(← migration ← core ← main), 누적 33.75크레딧. 4단계 실제 방식은 `plans/2026-09-25-ui-reskin-phase4-scene-dropin.md` 매핑표 참고 (§4.2와 다른 점: 턴 배너·타일 그림·모집 설명 패널 제외, HP바·주사위 면·하단 바는 PIL, 글자 버튼은 폰트 합성).
 > 배경: 화면마다 패널 언어가 세 갈래(메인메뉴 = 반투명 유리 알약 / 전투 HUD = 크림 종이 플레이스홀더 / 런 화면 = 코드가 그리는 남색 펠트)로 갈라져 있다. 사용자 결정 = 전부 갈아엎되 **현재 아트 방향(파스텔 밤하늘 + 굵은 외곽선 카툰)은 유지**하고 하나로 통일한다.
 > 관련: `editor_owned_ui_pattern.md`(코드 생성 UI 규약), `battle_info_panel_system.md`(크림 팔레트 원조), 메모리 `project_sprite_import`(Mipmap+Trilinear)
 
