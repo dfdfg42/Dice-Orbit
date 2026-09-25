@@ -4,8 +4,8 @@ using UnityEngine.UI;
 
 namespace DiceOrbit.UI.Skin
 {
-    /// <summary>스킨 부품 이름 — Apply 헬퍼와 씬 배치용 UiSkinImage(리스킨 3단계)가 공유한다.</summary>
-    public enum SkinPart { Panel, Card, Chip, Tooltip, Slot, Divider, ButtonPrimary, ButtonSecondary }
+    /// <summary>스킨 부품 이름 — Apply 헬퍼와 씬 배치용 UiSkinImage가 공유한다. Scrim은 스프라이트 없이 색만.</summary>
+    public enum SkinPart { Panel, Card, Chip, Tooltip, Slot, Divider, ButtonPrimary, ButtonSecondary, Scrim }
 
     public enum ButtonKind { Primary, Secondary }
 
@@ -82,8 +82,12 @@ namespace DiceOrbit.UI.Skin
         public Sprite PotionSlotEmpty;
         public Sprite Close;
 
+        [Header("도형")]
+        public Sprite Circle;   // 흰 원 — 경로 점·배지 링·상태 칩처럼 틴트가 필요한 원형 전용
+
         public Sprite GetSprite(SkinPart part) => part switch
         {
+            SkinPart.Scrim => null,
             SkinPart.Panel => Panel,
             SkinPart.Card => Card,
             SkinPart.Chip => Chip,
@@ -104,6 +108,31 @@ namespace DiceOrbit.UI.Skin
         public void ApplyTooltip(Image image) => ApplySliced(image, Tooltip, nameof(Tooltip));
         public void ApplySlot(Image image)    => ApplySliced(image, Slot,    nameof(Slot));
         public void ApplyDivider(Image image) => ApplySliced(image, Divider, nameof(Divider));
+
+        /// <summary>파트 이름으로 적용 — 씬 배치용 UiSkinImage가 쓴다. 버튼 파트는 Normal 면만(상태는 ApplyButton).</summary>
+        public void ApplySprite(Image image, SkinPart part)
+        {
+            if (image == null) throw new ArgumentNullException(nameof(image));
+            if (part == SkinPart.Scrim)
+            {
+                image.sprite = null;
+                image.type = Image.Type.Simple;
+                image.color = Scrim;
+                return;
+            }
+            ApplySliced(image, GetSprite(part), part.ToString());
+        }
+
+        /// <summary>틴트 가능한 흰 원 — 경로 점·배지 링·상태 칩 폴백 전용.</summary>
+        public void ApplyCircle(Image image, Color tint)
+        {
+            if (image == null) throw new ArgumentNullException(nameof(image));
+            Require(Circle, nameof(Circle));
+            image.sprite = Circle;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = true;
+            image.color = tint;
+        }
 
         /// <summary>버튼에 상태별 스프라이트를 꽂는다 (SpriteSwap). targetGraphic이 없으면 같은 오브젝트의 Image를 쓴다.</summary>
         public void ApplyButton(Button button, ButtonKind kind)

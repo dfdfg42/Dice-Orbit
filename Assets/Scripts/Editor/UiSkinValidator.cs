@@ -40,6 +40,7 @@ namespace DiceOrbit.EditorTools
             CheckPresent(issues, skin.Coin,            nameof(skin.Coin));
             CheckPresent(issues, skin.PotionSlotEmpty, nameof(skin.PotionSlotEmpty));
             CheckPresent(issues, skin.Close,           nameof(skin.Close));
+            CheckPresent(issues, skin.Circle,          nameof(skin.Circle));
             return issues;
         }
 

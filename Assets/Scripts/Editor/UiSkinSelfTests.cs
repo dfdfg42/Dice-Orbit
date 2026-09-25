@@ -28,6 +28,10 @@ namespace DiceOrbit.EditorTools
             TestGetSpriteCoversEveryPart();
             TestValidatorReportsEmptySkin();
             TestValidatorPassesCompleteSkin();
+            TestApplySpriteByPart();
+            TestScrimPartIsColorOnly();
+            TestApplyCircleKeepsTint();
+            TestUiSkinImageAppliesPart();
 
             if (_failures == 0) Debug.Log("[SelfTest] 전체 PASS — UiSkin");
             else Debug.LogError($"[SelfTest] 실패 {_failures}건 — 위 로그 확인");
@@ -60,6 +64,7 @@ namespace DiceOrbit.EditorTools
             s.Tooltip = MakeSprite(true); s.Slot = MakeSprite(true); s.Divider = MakeSprite(true);
             s.ButtonPrimary = MakeSet(); s.ButtonSecondary = MakeSet();
             s.Coin = MakeSprite(false); s.PotionSlotEmpty = MakeSprite(false); s.Close = MakeSprite(false);
+            s.Circle = MakeSprite(false);
             return s;
         }
 
@@ -117,7 +122,10 @@ namespace DiceOrbit.EditorTools
         {
             var skin = MakeCompleteSkin();
             foreach (SkinPart part in Enum.GetValues(typeof(SkinPart)))
+            {
+                if (part == SkinPart.Scrim) { Check(skin.GetSprite(part) == null, "GetSprite(Scrim) == null (색만)"); continue; }
                 Check(skin.GetSprite(part) != null, $"GetSprite({part}) != null");
+            }
             Check(skin.GetSprite(SkinPart.ButtonPrimary) == skin.ButtonPrimary.Normal, "GetSprite(ButtonPrimary) = Primary.Normal");
             UnityEngine.Object.DestroyImmediate(skin);
         }
@@ -126,7 +134,7 @@ namespace DiceOrbit.EditorTools
         {
             var skin = ScriptableObject.CreateInstance<UiSkin>();
             var issues = UiSkinValidator.Validate(skin);
-            Check(issues.Count == 17, $"빈 스킨 이슈 17건 (6 sliced + 8 button + 3 icon), 실제 {issues.Count}");
+            Check(issues.Count == 18, $"빈 스킨 이슈 18건 (6 sliced + 8 button + 3 icon + circle), 실제 {issues.Count}");
             UnityEngine.Object.DestroyImmediate(skin);
         }
 
@@ -136,6 +144,53 @@ namespace DiceOrbit.EditorTools
             var issues = UiSkinValidator.Validate(skin);
             Check(issues.Count == 0, "완전한 스킨 이슈 0 — " + string.Join(" / ", issues));
             UnityEngine.Object.DestroyImmediate(skin);
+        }
+
+        private static void TestApplySpriteByPart()
+        {
+            var skin = MakeCompleteSkin();
+            var go = new GameObject("skin-part", typeof(Image));
+            var img = go.GetComponent<Image>();
+            skin.ApplySprite(img, SkinPart.Chip);
+            Check(img.sprite == skin.Chip && img.type == Image.Type.Sliced && img.color == Color.white, "ApplySprite(Chip): Chip·Sliced·white");
+            skin.ApplySprite(img, SkinPart.ButtonSecondary);
+            Check(img.sprite == skin.ButtonSecondary.Normal, "ApplySprite(ButtonSecondary): Normal 면");
+            UnityEngine.Object.DestroyImmediate(go);
+            UnityEngine.Object.DestroyImmediate(skin);
+        }
+
+        private static void TestScrimPartIsColorOnly()
+        {
+            var skin = MakeCompleteSkin();
+            var go = new GameObject("skin-scrim", typeof(Image));
+            var img = go.GetComponent<Image>();
+            img.sprite = skin.Panel;
+            skin.ApplySprite(img, SkinPart.Scrim);
+            Check(img.sprite == null && img.type == Image.Type.Simple && img.color == skin.Scrim, "ApplySprite(Scrim): sprite null·Simple·Scrim 색");
+            UnityEngine.Object.DestroyImmediate(go);
+            UnityEngine.Object.DestroyImmediate(skin);
+        }
+
+        private static void TestApplyCircleKeepsTint()
+        {
+            var skin = MakeCompleteSkin();
+            var go = new GameObject("skin-circle", typeof(Image));
+            var img = go.GetComponent<Image>();
+            skin.ApplyCircle(img, Color.red);
+            Check(img.sprite == skin.Circle && img.type == Image.Type.Simple && img.preserveAspect && img.color == Color.red, "ApplyCircle: Circle·Simple·preserveAspect·틴트 유지");
+            UnityEngine.Object.DestroyImmediate(go);
+            UnityEngine.Object.DestroyImmediate(skin);
+        }
+
+        private static void TestUiSkinImageAppliesPart()
+        {
+            // 실제 Resources/UI/UiSkin.asset을 쓴다 (씬 배치 컴포넌트의 통합 확인)
+            var go = new GameObject("skin-image", typeof(Image), typeof(DiceOrbit.UI.UiSkinImage));
+            var comp = go.GetComponent<DiceOrbit.UI.UiSkinImage>();
+            comp.SetPart(SkinPart.Card);
+            var img = go.GetComponent<Image>();
+            Check(img.sprite == UiSkin.Current.Card && img.type == Image.Type.Sliced, "UiSkinImage.SetPart(Card): Card 스프라이트 Sliced");
+            UnityEngine.Object.DestroyImmediate(go);
         }
     }
 }
