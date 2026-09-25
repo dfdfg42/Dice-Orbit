@@ -1,6 +1,6 @@
 # UI 레이아웃·간격 정리 (2026-09-25)
 
-> 상태: **완료 (2026-09-25)** — 사용자 위임("더 좋은 UI나 개선 방향 있으면 그대로 실천") 하에 설계·실행을 한 세션에서 진행. A~L 전부 적용, 재캡처(`tour2_*`, `tour3_*`)로 확인. 추가 보정: 상점 카드는 레이아웃 그룹이 자식 크기를 제어하지 않아 `sizeDelta` 직접 지정 + 자동 축소 + 말줄임; 선반 앵커를 y 0.52~0.84 / 0.16~0.48로 정규화하고 제목 칩을 선반 안쪽 상단에; 주사위 버튼 폭 220·fs24.
+> 상태: **완료 (2026-09-25)** — 사용자 위임("더 좋은 UI나 개선 방향 있으면 그대로 실천") 하에 설계·실행을 한 세션에서 진행. A~L 전부 적용, 재캡처(`tour2_*`, `tour3_*`)로 확인. 같은 날 §3 정보 패널(M~R) 추가 — 캐릭터 조회 캡처 기반. 추가 보정: 상점 카드는 레이아웃 그룹이 자식 크기를 제어하지 않아 `sizeDelta` 직접 지정 + 자동 축소 + 말줄임; 선반 앵커를 y 0.52~0.84 / 0.16~0.48로 정규화하고 제목 칩을 선반 안쪽 상단에; 주사위 버튼 폭 220·fs24.
 > 근거: Play 모드 화면 투어 캡처 6장 (`_workspace/2026-09-25-ui-reskin/review/tour_0*.png`, 노드맵·상점·이벤트·전투·보상·결과) + BattleScene 정적 파싱(앵커·크기·글자 크기).
 > 관련: 리스킨 스펙 `2026-09-25-ui-reskin-uiskin-higgsfield-design.md`(1~4단계 완료 위에 진행), `editor_owned_ui_pattern.md`.
 
@@ -28,7 +28,22 @@
 | K | 결과창 | 제목·문구·버튼이 스크림 위에 맨몸으로 떠 있다 | 코드: Panel(760×440) 뒤판 추가, 제목 Accent, 문구 Ink, 버튼 y -150 |
 | L | 에디터 플레이 | BattleScene에서 바로 Play하면 combatUI 참조가 비어 전투 UI가 맵·상점에 남는다(sceneLoaded 미발화) | `GameFlowManager.Start`에서 `CacheSceneReferences()` 1회 호출 |
 
-보류(캡처로 확인 못 함): 정보 패널 헤더(이름 fs40/HP fs30/설명 fs24가 93px 안에 적층) — 캐릭터 호버 캡처 후 판단.
+~~보류(캡처로 확인 못 함): 정보 패널 헤더(이름 fs40/HP fs30/설명 fs24가 93px 안에 적층) — 캐릭터 호버 캡처 후 판단.~~ → §3에서 처리.
+
+## 3. 정보 패널 (오른쪽 사이드바 + 타일 패널) — 2026-09-25 추가
+
+> 근거: Play 투어에서 `ShowUnitExternal`로 전사(모디파이어 2종 장착)·마법사·파란 슬라임을 차례로 표시해 캡처 (`review/info_0*.png` 전 → `review/info2_0*.png` 후). 사용자 지적 "캐릭터 눌렀을 때 오른쪽 정보 여백·배치가 이상하다".
+
+| # | 문제 (캡처 근거) | 수정 |
+|---|---|---|
+| M | 섹션이 앵커 고정 슬롯(액티브 136px·패시브 190px)이라 내용이 넘치면 RectMask2D에 잘리고, 적으면 빈 칸이 남는다. 몬스터는 패시브가 없는데 "패시브" 칩만 덩그러니 뜬다 | `Panel/Body`(VerticalLayoutGroup, spacing 18, RectMask2D)에 헤더→구분선→액티브→패시브→모디파이어를 세로 흐름으로 쌓음. 섹션은 내용 높이만큼, 비면 통째로 숨김(`SetSectionVisibility(unit, actives, passives, modifiers)`). `modifiersDropY`·`ApplyModifiersDrop`·`statusesContainer`·`paperColor` 제거 |
+| N | 텍스트 폭이 407px로 패널(433px) 테두리에 13px까지 붙는다 | Body 인셋 좌 30 / 우 28 / 상 42(모서리 별 장식 회피) / 하 30 → 본문 폭 375. 항목 컨테이너 좌 들여쓰기 6 |
+| O | 항목 제목·설명·메타가 전부 24 볼드라 위계가 없다; 이름 40 / HP 30 / 상태 24 이탤릭이 148px 헤더에 적층 | 이름 칩 30 볼드(KOTRA HOPE) → HP 26 볼드 → 상태 줄 21 보통(InkMuted). 섹션 칩 24 볼드. 항목 = `InfoPanelRows.AddEntry` 세로 그룹(제목 23 볼드 + `<size=19>` 흐린 메타, 설명 21 보통 잉크), 항목 사이 14 / 제목↔설명 2 |
+| P | 칩 폭을 `ChipBackground`(LateUpdate에서 offsetMax 조정)가 텍스트 선호 폭으로 맞추던 방식 — 흐름 레이아웃과 충돌 | 칩 = HorizontalLayoutGroup(패딩 이름 18/18/5/7, 섹션 16/16/4/6) + 자식 TMP. 배경 스킨 Image는 `ignoreLayout` 자식 `Bg`. `ChipBackground.cs` 삭제 |
+| Q | 헤더와 섹션 사이 경계가 없다 | 헤더 아래 `Divider`(UiSkinImage Divider, 높이 16) |
+| R | 타일 패널: 맨 일반 타일도 그림만 있는 패널이 뜬다; 속성 카드가 글자 2줄인데 ~150px로 부풀어 있다; 글자 19/15로 정보 패널과 안 맞는다 | `TileInfoPanelUI.HasContent`(레벨업 타일이거나 속성 ≥1)일 때만 표시. 카드 배경 Image를 `ignoreLayout` 자식으로(아래 교훈). 제목 21 볼드 / 설명 18 잉크, 패딩 14/14/10/12 |
+
+**교훈 — 레이아웃 그룹이 있는 오브젝트에 스킨 Image를 같이 두지 말 것.** `Image`는 ILayoutElement로 스프라이트 원본 크기를 선호 크기로 내놓고, 같은 우선순위(0)의 LayoutGroup 값과 **최댓값**이 채택되므로 칩이 312×106, 카드가 150px로 부푼다. 배경은 앵커 스트레치 + `LayoutElement.ignoreLayout` 자식으로 분리한다. (`editor_owned_ui_pattern.md` 체크리스트 7)
 
 ## 2. 순서
 
