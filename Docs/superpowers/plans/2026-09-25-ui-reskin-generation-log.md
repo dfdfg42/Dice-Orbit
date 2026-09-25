@@ -61,3 +61,18 @@
 | 코어 1·2차 배치 중간 (고화질 4장) | 11.75 | 68.25 |
 | 2단계 생성 종료 (고화질 11장 = 코어 9 + 버튼 스트립 2) | 31 | 49 |
 | 4단계 상점 배경 1장 후 (드롭인 나머지 19장은 로컬 제작) | 33.75 | 46.25 |
+
+## 몬스터 영역 표시 리스킨 (2026-09-25 밤) — 스펙 `2026-09-25-monster-zone-intent-reskin-design.md`
+
+참조 추가: `REF_ZONE_SHAPE` = PIL 실루엣(`refs/zone_plate_ref.png`, `tools/zone_silhouette.py`) → media_id `53d05b97-6812-49ce-a171-3e38a5f159e2`. 스타일 참조는 REF_STYLE 재사용(만료 없이 동작).
+
+| # | 항목 | 모델/품질 | 참조 | job id | 결과 | 비용 |
+|---|---|---|---|---|---|---|
+| 13 | 말풍선 초안 ×2 | gpt_image_2_5 / low / 1k / transparent / 1:1 | STYLE | `994de9b5`, `4b794205` | 2번 승인 | 0.5 |
+| 14 | 플레이트 초안 ×2 | 동일 | ZONE_SHAPE, STYLE | `4113bf99`, `ec37e2d5` | 1번 승인 (실루엣 IoU 0.94) | 0.5 |
+| 15 | 플레이트 최종 | high / 2k / transparent | ZONE_SHAPE, STYLE, 초안 job 4113bf99 | `8ace3395-642d-421c-9e0c-72b1b5f5343d` | `final/zone_plate.png` 2048² — `finalize_zone_plate.py`로 실루엣 마스킹(종이 평균 L 0.92 → 0.94) | 2.75 |
+| 16 | 말풍선 최종 | 동일 | STYLE, 초안 job 4b794205 | `bbdf7466-abfc-44c3-ac15-fc03bce7d22b` | `final/intent_bubble.png` 560×352, 꼬리 41px, 9-slice L84 B88 R84 T47 | 2.75 |
+
+소계 6.5 → 누적 40.25, `balance` 39.75 (basic).
+
+교훈: 정확한 기하가 필요한 데칼은 PIL 실루엣을 참조로 넣고 결과를 그 실루엣으로 마스킹하면 모델 편차와 무관하게 게임 기하와 맞는다. 9-slice 경계가 렌더 크기보다 크면 `Image.pixelsPerUnitMultiplier`로 경계를 줄인다(말풍선 2.2).

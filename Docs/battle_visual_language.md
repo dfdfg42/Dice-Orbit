@@ -10,7 +10,9 @@
 | 스킬 타게팅 범위 | 타일 **면 채움 + 외곽선, 동기화된 숨쉬기 펄스** | `Visuals/TileSkillPreviewManager.cs` |
 | 이동 경로 | 타일마다 **셰브런(V) + 알파 웨이브** (방향으로 흐름) | `Visuals/MovePathPreview.cs` |
 | 이동 목적지 | **소나 핑** (사각 루프 확장·페이드) + 타일 리프트 | `Visuals/MovePathPreview.cs` |
-| 몬스터 공격 예고 타일 | 타일 **리프트** (고스트 메시 부상) + 정체성 색 파이 오버레이 | `Visuals/IntentTileLiftEffect.cs`, `MonsterTileColorOverlayManager.cs` |
+| 몬스터 공격 예고 타일 | 타일 **리프트** (고스트 메시 부상) + 정체성 색 파이 오버레이 (알파 0.8) | `Visuals/IntentTileLiftEffect.cs`, `MonsterTileColorOverlayManager.cs` |
+| 구역(사분면) 소유 | 타일 아래 **잉크 플레이트** — 사분면 조각 스프라이트, 주인 색 틴트 / 중립 회색 반투명 | `Visuals/ZonePlateRenderer.cs` + `UiSkin.ZonePlate` (2026-09-25) |
+| 몬스터 다음 행동 | 머리 위 **크림 말풍선 + 스킬 아이콘** (라벨 없음) | `UI/MonsterUI.cs`, `UiSkin.IntentBubble` (2026-09-25) |
 | 패시브 영향 범위 (조회 시) | 타일 모서리 **ㄱ자 브래킷** | `Visuals/PassiveRangeIndicator.cs` + `IPassiveRangeProvider` |
 | 조준선 (캐릭터↔몬스터 공통) | **포물선 + 흐르는 점선 + 화살촉** | `Visuals/DashedArcLine.cs` (공용 헬퍼) |
 | 몬스터 정체성 | 몬스터별 고유 색 — 발밑 마커·타일 파이·조준선이 **같은 색** | `Visuals/MonsterIdentityManager.cs` |
@@ -37,3 +39,4 @@
 
 - **코밋 트레일(빙글빙글 도는 선)** — 스킬/패시브/목적지 세 의미에 겹쳐 쓰여 혼란 → 전면 철거
 - **타일 틴트 글로우(패시브 범위)** — 몬스터 공격 오버레이와 색 면이 겹침 → 브래킷으로 대체
+- **구역 브래킷(중앙 V자 + 모서리 ㄱ자 LineRenderer)** — 낙서처럼 읽히고 구역 범위가 안 보임 → 잉크 플레이트로 대체 (2026-09-25). 플레이트 정렬은 방 배경 스프라이트(order −100)보다 앞, 발밑 마커(−1)보다 뒤 = −50

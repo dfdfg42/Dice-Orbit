@@ -56,7 +56,7 @@
 **Interfaces:**
 - Produces: `SkinPart.IntentBubble`; `UiSkin.ZonePlate` (Sprite, 월드 데칼, 9-slice 아님); `UiSkin.IntentBubble` (Sprite, 9-slice); `Sprite UiSkin.GetZonePlate()` (비면 InvalidOperationException); `void UiSkin.ApplyIntentBubble(Image)` (Sliced·white).
 
-- [ ] **Step 1: 자가 테스트 기대값을 먼저 바꾼다 (실패 확인용)**
+- [x] **Step 1: 자가 테스트 기대값을 먼저 바꾼다 (실패 확인용)**
 
 `Assets/Scripts/Editor/UiSkinSelfTests.cs`에서:
 
@@ -106,12 +106,12 @@
         }
 ```
 
-- [ ] **Step 2: 컴파일이 깨지는지 확인 (필드 없음)**
+- [x] **Step 2: 컴파일이 깨지는지 확인 (필드 없음)**
 
 `Unity_RunCommand`: `AssetDatabase.Refresh(); r.Log("refreshed");` → 이어서 `Unity_GetConsoleLogs(types=["error"])`.
 Expected: `UiSkinSelfTests.cs`에서 `ZonePlate`/`IntentBubble`/`GetZonePlate`/`ApplyIntentBubble` 정의 없음 에러 (컴파일 실패 = 실패하는 테스트).
 
-- [ ] **Step 3: UiSkin에 파트·필드·헬퍼 추가**
+- [x] **Step 3: UiSkin에 파트·필드·헬퍼 추가**
 
 `Assets/Scripts/UI/Skin/UiSkin.cs`:
 
@@ -148,7 +148,7 @@ enum 교체:
         }
 ```
 
-- [ ] **Step 4: 점검기에 두 필드 추가**
+- [x] **Step 4: 점검기에 두 필드 추가**
 
 `Assets/Scripts/Editor/UiSkinValidator.cs`의 `CheckPresent(issues, skin.Circle, nameof(skin.Circle));` 아래:
 ```csharp
@@ -156,7 +156,7 @@ enum 교체:
             CheckPresent(issues, skin.ZonePlate, nameof(skin.ZonePlate));
 ```
 
-- [ ] **Step 5: 컴파일 + 자가 테스트**
+- [x] **Step 5: 컴파일 + 자가 테스트**
 
 `Unity_RunCommand`:
 ```csharp
@@ -169,7 +169,7 @@ internal class CommandScript : IRunCommand { public void Execute(ExecutionResult
 ```
 Expected: `selftest=True`, 콘솔 `[SelfTest] 전체 PASS — UiSkin`. (실제 `UiSkin.asset` 점검은 이 시점에 이슈 2건 — 두 스프라이트가 비어 있어 정상. Task 2·3에서 채운다.)
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/UI/Skin/UiSkin.cs Assets/Scripts/Editor/UiSkinValidator.cs Assets/Scripts/Editor/UiSkinSelfTests.cs && git commit -q -m "feat(ui-skin): 구역 플레이트·의도 말풍선 스프라이트 슬롯 + 점검·자가 테스트
@@ -189,7 +189,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `UiSkin.Current.ZonePlate` = 2048×2048 스프라이트, pivot (0,0), PPU 128 (월드 16×16), 실루엣 밖 알파 0.
 
-- [ ] **Step 1: 실루엣 도구 작성**
+- [x] **Step 1: 실루엣 도구 작성**
 
 `_workspace/2026-09-25-ui-reskin/tools/zone_silhouette.py`:
 ```python
@@ -256,7 +256,7 @@ cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && mkdir -p refs && python to
 ```
 Expected: `(2048, 2048)`, bbox 왼쪽 x≈0~40, 아래 y≈2047, 오른쪽 x≈2035, 위 y≈0~15 (조각이 좌하단 원점에서 우상단으로 펼쳐짐). `Read`로 `refs/zone_plate_ref.png`를 열어 둥근 피자 조각 + 잉크 테두리인지 확인.
 
-- [ ] **Step 2: 참조 업로드 (실루엣 ref) — 스타일 참조는 기존 REF_STYLE 재사용**
+- [x] **Step 2: 참조 업로드 (실루엣 ref) — 스타일 참조는 기존 REF_STYLE 재사용**
 
 `media_upload(files=[{"filename":"zone_plate_ref.png","content_type":"image/png"}])` → `upload_url`, `media_id`.
 ```bash
@@ -264,7 +264,7 @@ cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin/refs" && curl -s -o /dev/null 
 ```
 Expected: `200`. `media_confirm(media_ids=["<id>"], type="image")`. 생성 로그에 `REF_ZONE_SHAPE = <id>`로 기록. (REF_STYLE `5d029aa6-d2ec-4fd7-9a41-ef6e157d2ffe`가 만료·실패하면 `final/style_tile.png`를 같은 방식으로 재업로드.)
 
-- [ ] **Step 3: 초안 생성 (low, 1k, 2변형) — 사용자 승인 체크포인트**
+- [x] **Step 3: 초안 생성 (low, 1k, 2변형) — 사용자 승인 체크포인트**
 
 `generate_image(params={"model":"gpt_image_2_5","prompt":"<아래>","aspect_ratio":"1:1","count":2,"medias":[{"value":"<REF_ZONE_SHAPE>","role":"reference"},{"value":"5d029aa6-d2ec-4fd7-9a41-ef6e157d2ffe","role":"reference"}],"quality":"low","size":"1024x1024","background":"transparent"})` (파라미터 이름은 `models_explore`로 확인한 값을 쓴다 — 리스킨 1·2단계와 동일).
 
@@ -274,7 +274,7 @@ Single 2D game floor decal, transparent background, flat vector, soft pastel car
 ```
 위젯 결과를 사용자에게 보여 주고 승인 변형을 고른다. 거절 시 프롬프트에서 어긋난 점을 한 줄 고쳐 1회 재생성(0.5). 승인 전에는 고해상 생성으로 넘어가지 않는다.
 
-- [ ] **Step 4: 최종 생성 (high, 2k, transparent) + 다운로드**
+- [x] **Step 4: 최종 생성 (high, 2k, transparent) + 다운로드**
 
 승인 변형과 같은 프롬프트로 `generate_image(... "quality":"high","size":"2048x2048","background":"transparent","count":1)`. 결과 URL:
 ```bash
@@ -282,7 +282,7 @@ cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && mkdir -p candidates final 
 ```
 Expected: `(2048, 2048) RGBA`. 생성 로그에 job id·비용(2.75) 기록.
 
-- [ ] **Step 5: 마스킹·정규화 도구 작성 + 실행**
+- [x] **Step 5: 마스킹·정규화 도구 작성 + 실행**
 
 `_workspace/2026-09-25-ui-reskin/tools/finalize_zone_plate.py`:
 ```python
@@ -351,7 +351,7 @@ cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && python tools/finalize_zone
 ```
 Expected: `paper mean L=0.8~0.95 gain≈1.0~1.15`, `saved final/zone_plate.png (2048, 2048)`. `Read`로 확인 — 외곽선이 마스크에 잘려 끊겼으면 `--ink-ring 45`를 붙여 재실행.
 
-- [ ] **Step 6: 에셋 복사 + 임포트 설정 (RunCommand)**
+- [x] **Step 6: 에셋 복사 + 임포트 설정 (RunCommand)**
 
 ```bash
 cp "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin/final/zone_plate.png" "D:/Dice Orbit/Assets/Sprites/UI Skin/zone_plate.png"
@@ -391,7 +391,7 @@ internal class CommandScript : IRunCommand
 ```
 Expected: `pivot=(0.0, 0.0) ppu=128 bounds=(16.0, 16.0, 0.0)`.
 
-- [ ] **Step 7: UiSkin.asset 배선 + 점검**
+- [x] **Step 7: UiSkin.asset 배선 + 점검**
 
 `Unity_RunCommand`:
 ```csharp
@@ -415,7 +415,7 @@ internal class CommandScript : IRunCommand
 ```
 Expected: `issues=1 : IntentBubble: 비어 있음` (말풍선은 Task 3).
 
-- [ ] **Step 8: 커밋 (LFS 포인터 확인)**
+- [x] **Step 8: 커밋 (LFS 포인터 확인)**
 
 ```bash
 cd "D:/Dice Orbit" && git add "Assets/Sprites/UI Skin/zone_plate.png" "Assets/Sprites/UI Skin/zone_plate.png.meta" Assets/Resources/UI/UiSkin.asset && git commit -q -m "feat(ui-skin): 구역 플레이트 스프라이트 (힉스필드 생성, 실루엣 마스킹) + 스킨 배선
@@ -435,7 +435,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" && git show --stat HEA
 **Interfaces:**
 - Produces: `UiSkin.Current.IntentBubble` = 9-slice 스프라이트, 경계 (좌, 하=꼬리+몸통 15%, 우, 상), 「UI 스킨 점검」 이슈 0.
 
-- [ ] **Step 1: 초안 생성 (low, 1k, 2변형) — 사용자 승인 체크포인트**
+- [x] **Step 1: 초안 생성 (low, 1k, 2변형) — 사용자 승인 체크포인트**
 
 `generate_image(params={"model":"gpt_image_2_5","prompt":"<아래>","aspect_ratio":"1:1","count":2,"medias":[{"value":"5d029aa6-d2ec-4fd7-9a41-ef6e157d2ffe","role":"reference"}],"quality":"low","size":"1024x1024","background":"transparent"})`
 
@@ -445,14 +445,14 @@ Single 2D game UI element, centered, no text, transparent background, cream pape
 ```
 위젯 결과를 사용자에게 보여 승인 변형을 고른다.
 
-- [ ] **Step 2: 최종 생성 (high, 2k, transparent) + 다운로드**
+- [x] **Step 2: 최종 생성 (high, 2k, transparent) + 다운로드**
 
 `generate_image(... "quality":"high","size":"2048x2048","background":"transparent","count":1)` →
 ```bash
 cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && curl -sL -o candidates/intent_bubble_raw.png "<url>" && python -c "from PIL import Image; im=Image.open('candidates/intent_bubble_raw.png'); print(im.size, im.getbbox())"
 ```
 
-- [ ] **Step 3: 트림 + 9-slice 경계 제안 도구**
+- [x] **Step 3: 트림 + 9-slice 경계 제안 도구**
 
 `_workspace/2026-09-25-ui-reskin/tools/finalize_bubble.py`:
 ```python
@@ -501,7 +501,7 @@ cd "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin" && python tools/finalize_bubb
 ```
 Expected: `size≈560x460 body≈560x380 tail≈80px border L84 B137 R84 T57` 근처 값. 숫자를 Step 4에 넣는다.
 
-- [ ] **Step 4: 에셋 복사 + 임포트(9-slice) + 배선 + 점검**
+- [x] **Step 4: 에셋 복사 + 임포트(9-slice) + 배선 + 점검**
 
 ```bash
 cp "D:/Dice Orbit/_workspace/2026-09-25-ui-reskin/final/intent_bubble.png" "D:/Dice Orbit/Assets/Sprites/UI Skin/intent_bubble.png"
@@ -543,7 +543,7 @@ internal class CommandScript : IRunCommand
 ```
 Expected: `border=(L, B, R, T)` 0 아님, `issues=0`, `selftest=True`.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add "Assets/Sprites/UI Skin/intent_bubble.png" "Assets/Sprites/UI Skin/intent_bubble.png.meta" Assets/Resources/UI/UiSkin.asset && git commit -q -m "feat(ui-skin): 의도 말풍선 9-slice 스프라이트 (힉스필드 생성) + 스킨 배선
@@ -565,7 +565,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `UiSkin.Current.GetZonePlate()` (Task 1·2), `CombatZoneManager.Instance` (`ZoneCount`, `IsGeometryReady`, `GetZoneAngularRangeDeg(int, out float, out float)`, `GetOwner(int)`), `MonsterIdentityManager.Instance.GetColor(Monster)`, `MonsterIdentityManager.FindVisibleSprite(Transform)`, `Monster.IntroBaseScale`.
 - Produces: `DiceOrbit.Visuals.ZonePlateRenderer` — `static ZonePlateRenderer EnsureInstance()`, `static Quaternion PlateRotation(float startDeg)`, `static Color OwnerTint(Color identity, float saturation, float alpha)`.
 
-- [ ] **Step 1: 헬퍼 자가 테스트 작성 (실패 확인용)**
+- [x] **Step 1: 헬퍼 자가 테스트 작성 (실패 확인용)**
 
 `Assets/Scripts/Editor/ZonePlateSelfTests.cs`:
 ```csharp
@@ -627,12 +627,12 @@ namespace DiceOrbit.EditorTools
 }
 ```
 
-- [ ] **Step 2: 컴파일 실패 확인**
+- [x] **Step 2: 컴파일 실패 확인**
 
 `Unity_RunCommand`: `AssetDatabase.Refresh()` → `Unity_GetConsoleLogs(types=["error"])`.
 Expected: `ZonePlateRenderer` 정의 없음 에러.
 
-- [ ] **Step 3: ZonePlateRenderer 작성**
+- [x] **Step 3: ZonePlateRenderer 작성**
 
 `Assets/Scripts/Visuals/ZonePlateRenderer.cs`:
 ```csharp
@@ -864,7 +864,7 @@ namespace DiceOrbit.Visuals
 }
 ```
 
-- [ ] **Step 4: 스포너 훅 교체 + 브래킷 렌더러 삭제**
+- [x] **Step 4: 스포너 훅 교체 + 브래킷 렌더러 삭제**
 
 `EncounterSpawner.cs:89` `Visuals.ZoneFloorRenderer.EnsureInstance();` → `Visuals.ZonePlateRenderer.EnsureInstance();`
 
@@ -873,7 +873,7 @@ cd "D:/Dice Orbit" && git rm -q Assets/Scripts/Visuals/ZoneFloorRenderer.cs Asse
 ```
 Expected: grep 출력 없음 (`refs left: 1`).
 
-- [ ] **Step 5: 컴파일 + 자가 테스트**
+- [x] **Step 5: 컴파일 + 자가 테스트**
 
 `Unity_RunCommand`: `AssetDatabase.Refresh()` → 콘솔 에러 0 →
 ```csharp
@@ -881,7 +881,7 @@ internal class CommandScript : IRunCommand { public void Execute(ExecutionResult
 ```
 Expected: `zone=True skin=True`.
 
-- [ ] **Step 6: Play 검증 — 플레이트 방향·정렬**
+- [x] **Step 6: Play 검증 — 플레이트 방향·정렬**
 
 `Unity_ManageEditor(action="play")` → `Unity_RunCommand` (전투 진입 투어 — 기존 `[UiTour]` 코루틴과 같은 흐름):
 ```csharp
@@ -936,7 +936,7 @@ internal class CommandScript : IRunCommand
 ```
 1~2초 뒤 `Read`로 `review/zone_01_battle.png` 확인. Expected: 사분면마다 플레이트가 타일 아래 깔리고 주인 색으로 옅게 틴트, 중립은 회색; 구역 0(−9°~81°) 플레이트가 화면 우상단 타일 5장 아래; 유닛·발밑 마커가 플레이트 위에 그려짐. 로그: 4구역 `enabled=True`, 잉크선이 타일 사이로 보임. 어긋나면(예: 좌우 반전) `PlateRotation` 부호를 고치고 자가 테스트 기대값도 함께 수정한다 — 둘이 어긋난 채 두지 않는다. `Unity_ManageEditor(action="stop")`.
 
-- [ ] **Step 7: 커밋**
+- [x] **Step 7: 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/Visuals/ZonePlateRenderer.cs Assets/Scripts/Visuals/ZonePlateRenderer.cs.meta Assets/Scripts/Editor/ZonePlateSelfTests.cs Assets/Scripts/Editor/ZonePlateSelfTests.cs.meta Assets/Scripts/Core/Stage/BattleStage/BattleStageSystem/EncounterSpawner.cs && git commit -q -m "feat(visuals): 구역 잉크 플레이트 렌더러 — 브래킷 LineRenderer 철거, 주인 색 틴트·페이드인
@@ -957,7 +957,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `UiSkin.ApplyIntentBubble(Image)`, `SkinPart.IntentBubble`, `UiSkinImage.SetPart` (Task 1), `UiSkin.IntentBubble` 스프라이트 (Task 3).
 - Produces: `MonsterUI` 슬롯 `intentBubbleRoot`(RectTransform, 말풍선 루트 — UiSkinImage IntentBubble), `intentIcon`(Image, 스킬 아이콘). 공개 API `IntentBubbleRect`/`IsIntentBubbleActive`/`IntentWorldCamera`는 그대로.
 
-- [ ] **Step 1: MonsterUI 필드·의도 갱신 코드 정리**
+- [x] **Step 1: MonsterUI 필드·의도 갱신 코드 정리**
 
 `Assets/Scripts/UI/MonsterUI.cs`:
 
@@ -1033,11 +1033,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 `GetIntentLabel(...)` 메서드와 `GetIntentColor(...)` 메서드(및 그 `/// 의도 타입별 색상` 주석) 삭제.
 
-- [ ] **Step 2: 컴파일 확인**
+- [x] **Step 2: 컴파일 확인**
 
 `Unity_RunCommand`: `AssetDatabase.Refresh()` → `Unity_GetConsoleLogs(types=["error"])` 0건 (남은 참조가 있으면 그 줄을 삭제).
 
-- [ ] **Step 3: 프리팹 재구성 (RunCommand)**
+- [x] **Step 3: 프리팹 재구성 (RunCommand)**
 
 ```csharp
 using UnityEngine;
@@ -1100,11 +1100,11 @@ internal class CommandScript : IRunCommand
 ```
 Expected: `sprite=intent_bubble type=Sliced`. 이어서 `python dump_subtree.py Assets/Prefabs/TestMonster.prefab MonsterCanvas`(스크래치패드 도구)로 `IntentBubble`(92×84) → `Icon`(56×56) 구조와 `IntentText` 부재 확인.
 
-- [ ] **Step 4: Play 검증 — 말풍선**
+- [x] **Step 4: Play 검증 — 말풍선**
 
 Task 4 Step 6의 투어를 다시 실행하되 캡처 이름 `zone_02_bubble.png`, 추가로 몬스터 1마리 `BattleInfoPanelUI.Instance.ShowUnitExternal(m)` 후 `zone_03_monster_hover.png` 캡처(호버 붉은 외곽선과 플레이트 공존). `Read`로 확인: 크림 말풍선이 HP바 위 중앙, 스킬 아이콘이 크게, 글자 없음, 꼬리가 몬스터를 가리킴. 콘솔에 `[MonsterUI] … 아이콘이 없습니다` 에러가 있으면 해당 몬스터 스킬 데이터의 Icon 누락 — 목록을 보고서에 적는다(데이터 수정은 범위 밖). `Unity_ManageEditor(action="stop")`.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Assets/Scripts/UI/MonsterUI.cs Assets/Prefabs/TestMonster.prefab && git commit -q -m "feat(ui): 몬스터 의도 말풍선 — 크림 9-slice + 아이콘 56, 라벨·타입 색 제거, 슬롯 배선 필수
@@ -1119,7 +1119,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Modify: `Assets/Scripts/Visuals/MonsterTileColorOverlayManager.cs:19`
 
-- [ ] **Step 1: 기본값 변경**
+- [x] **Step 1: 기본값 변경**
 
 ```csharp
         [Tooltip("공격 예정 타일 색 밴드 알파. 0.55는 살구색이 연해 위협이 약했다 → 0.8 (2026-09-25 몬스터 영역 표시 리스킨)")]
@@ -1127,7 +1127,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 (씬·프리팹에 이 컴포넌트가 직렬화돼 있지 않음 — `EnsureInstance`로 런타임 생성 — 을 `grep -rn overlayAlpha Assets/Scenes Assets/Prefabs`로 재확인. 출력 없음이면 기본값만으로 충분.)
 
-- [ ] **Step 2: 컴파일 + 커밋**
+- [x] **Step 2: 컴파일 + 커밋**
 
 `AssetDatabase.Refresh()` → 에러 0.
 ```bash
@@ -1144,7 +1144,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `Docs/battle_visual_language.md`, `Docs/README.md`, `Docs/superpowers/specs/2026-09-25-monster-zone-intent-reskin-design.md`(상태), `Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md`
 - Modify: `C:/Users/kokyungwoo/.claude/projects/D--Dice-Orbit/memory/project_ui_reskin.md`
 
-- [ ] **Step 1: 최종 투어 캡처 + 전후 비교 시트**
+- [x] **Step 1: 최종 투어 캡처 + 전후 비교 시트**
 
 Play → Task 4 Step 6 투어(캡처 `zone_final_battle.png`, `zone_final_hover.png`) → stop. 콘솔 에러 0 확인.
 ```bash
@@ -1156,7 +1156,7 @@ EOF
 ```
 `SendUserFile`로 `zone_before_after.png` 전달.
 
-- [ ] **Step 2: 시각 언어 사전 갱신**
+- [x] **Step 2: 시각 언어 사전 갱신**
 
 `Docs/battle_visual_language.md` 의미→형태 표에서 "몬스터 공격 예고 타일" 행 아래에 추가하고 기각 목록에 브래킷을 넣는다:
 ```markdown
@@ -1168,7 +1168,7 @@ EOF
 - **구역 브래킷(중앙 V자 + 모서리 ㄱ자 LineRenderer)** — 낙서처럼 읽히고 구역 범위가 안 보임 → 잉크 플레이트로 대체 (2026-09-25)
 ```
 
-- [ ] **Step 3: README·스펙 상태·생성 로그**
+- [x] **Step 3: README·스펙 상태·생성 로그**
 
 `Docs/README.md` 스펙 행 상태 `설계 승인, 구현 대기` → `구현됨`, 계획 행 추가:
 ```markdown
@@ -1176,11 +1176,11 @@ EOF
 ```
 스펙 상단 상태를 `**구현 완료 (2026-09-25)** — …` 로. 생성 로그 표에 zone_plate·intent_bubble 행(모델/품질/참조/job id/결과/비용)과 `REF_ZONE_SHAPE` media_id, 누적 비용·`balance` 응답을 추가.
 
-- [ ] **Step 4: 메모리 갱신**
+- [x] **Step 4: 메모리 갱신**
 
 `project_ui_reskin.md`에 한 단락: 몬스터 영역 표시 리스킨 완료(플레이트·말풍선·밴드), 스프라이트 2장 위치, 플레이트 기하(1유닛=128px, pivot 0,0, Euler(90,−startDeg,0)), 남은 것(발밑 마커·HP바·FloatingIntentUI·모집 화면). `MEMORY.md` 한 줄 갱신.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 
 ```bash
 cd "D:/Dice Orbit" && git add Docs/battle_visual_language.md Docs/README.md "Docs/superpowers/specs/2026-09-25-monster-zone-intent-reskin-design.md" "Docs/superpowers/plans/2026-09-25-monster-zone-intent-reskin.md" Docs/superpowers/plans/2026-09-25-ui-reskin-generation-log.md && git commit -q -m "docs(ui): 몬스터 영역 표시 리스킨 — 시각 언어 사전·계획·생성 로그 갱신
