@@ -36,6 +36,12 @@
 | 13 | button_primary 스트립 (normal/hover/pressed/disabled) | gpt_image_2_5 / high / 2k / transparent / 21:9 | NODE, STYLE | `c6347f47-a754-4f1f-bb91-bb7666dc8a1d` | 승인 → 투명 간격 분할 4장 (392×138~147) | 2.75 |
 | 14 | button_secondary 스트립 (normal/hover/pressed/disabled) | 동일 | 동일 | `95cce7db-0bfa-46d8-aa62-a7f25786bee3` | 승인 → 투명 간격 분할 4장 (392×139~154) | 2.75 |
 
+| 15 | 상점 배경 (4단계, `상점/상점 임시배경.png` 드롭인) | gpt_image_2_5 / high / 2k / opaque / 3:2 | STYLE, TITLE, NODE | `c00c6fdf-3579-463c-a8e1-e39d81ac224d` | 채택 → 1536×1024 리사이즈, `상점 임시배경.png` 덮어씀 | 2.75 |
+
+상점 배경 프롬프트(15): `Background illustration for a shop screen in a cute pastel cartoon roguelike: the inside of a witch's laboratory at night used as a small shop. Wooden shelves lined with potion bottles, flasks, jars and rolled scrolls along the left and right sides, a wooden counter across the lower third, warm candle light, a round window showing the night sky and stars at the top center. Thick dark ink outlines, flat pastel colors (cream, lavender, sky blue, pink accents), the same line weight and palette as the reference images. Keep the center of the image uncluttered so a shopkeeper character can stand there. No text, no characters, no UI elements.`
+
+> 4단계 참고: 나머지 드롭인 19장은 힉스필드 없이 제작 — 코어 9-slice 렌더(`tools/render_slice.py`), PIL 도형(`tools/draw_shapes.py`), ONE Mobile POP 글자 합성(`tools/text_label.py`).
+
 버튼 스트립 프롬프트(13·14 공통, 색만 다름): `Single 2D game UI element set, centered, no text, transparent background, soft pastel cartoon, flat vector, no gradients, no glow, no drop shadow. Same line weight and outline style as the reference images. Item: four states of the SAME pill button laid out in one horizontal row, left to right, equal size, with wide clear transparent gaps between them: (1) normal: pastel pink fill (#FFA6F2) [secondary: pastel sky blue fill (#A6DDFF)], thick ink outline (#4B425C), a one-tone darker bottom edge line; (2) hover: same shape but slightly brighter fill and a thicker outline with a thin white inner ring; (3) pressed: same shape shifted down slightly, bottom edge line gone, fill a touch darker; (4) disabled: desaturated gray paper fill (#D9D4CB), dashed ink outline, no bottom edge line. All four identical in width and height, evenly spaced. No text on the buttons. Take the pink [blue] button row exactly as drawn in the reference style sheet.`
 
 > 1차 배치 교훈: 9건 동시 제출 시 "Out of credits" 오탐 5건 + 429 1건. 잔액은 실제 성공분만 차감됨(68.25). 이후 배치는 4~5건씩.

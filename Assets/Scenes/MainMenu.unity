@@ -529,6 +529,7 @@ GameObject:
   - component: {fileID: 707110076}
   - component: {fileID: 707110075}
   - component: {fileID: 707110074}
+  - component: {fileID: 707110078}
   m_Layer: 5
   m_Name: setting
   m_TagString: Untagged
@@ -589,7 +590,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 2
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -599,10 +600,10 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
+    m_HighlightedSprite: {fileID: 21300000, guid: 002a1f65290bf4f489b7071854279c46, type: 3}
+    m_PressedSprite: {fileID: 21300000, guid: 9347bc2a9009d4f4799842783bd8715c, type: 3}
+    m_SelectedSprite: {fileID: 21300000, guid: 002a1f65290bf4f489b7071854279c46, type: 3}
+    m_DisabledSprite: {fileID: 21300000, guid: 4e324274fdf383c45bc769af945a4b74, type: 3}
   m_AnimationTriggers:
     m_NormalTrigger: Normal
     m_HighlightedTrigger: Highlighted
@@ -634,8 +635,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 57cd98277b9fb9e448154bc761f634a0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 745774b2d1aac8d408bf94b6be67ae53, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -652,6 +653,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 707110072}
   m_CullTransparentMesh: 1
+--- !u!114 &707110078
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 707110072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 7
 --- !u!1 &894035202
 GameObject:
   m_ObjectHideFlags: 0
@@ -819,6 +833,7 @@ GameObject:
   - component: {fileID: 1135846477}
   - component: {fileID: 1135846476}
   - component: {fileID: 1135846475}
+  - component: {fileID: 1135846479}
   m_Layer: 5
   m_Name: quit
   m_TagString: Untagged
@@ -879,7 +894,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 2
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -889,10 +904,10 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
+    m_HighlightedSprite: {fileID: 21300000, guid: 002a1f65290bf4f489b7071854279c46, type: 3}
+    m_PressedSprite: {fileID: 21300000, guid: 9347bc2a9009d4f4799842783bd8715c, type: 3}
+    m_SelectedSprite: {fileID: 21300000, guid: 002a1f65290bf4f489b7071854279c46, type: 3}
+    m_DisabledSprite: {fileID: 21300000, guid: 4e324274fdf383c45bc769af945a4b74, type: 3}
   m_AnimationTriggers:
     m_NormalTrigger: Normal
     m_HighlightedTrigger: Highlighted
@@ -924,8 +939,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 57cd98277b9fb9e448154bc761f634a0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 745774b2d1aac8d408bf94b6be67ae53, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -942,6 +957,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1135846473}
   m_CullTransparentMesh: 1
+--- !u!114 &1135846479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1135846473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 7
 --- !u!1 &1250905771
 GameObject:
   m_ObjectHideFlags: 0
@@ -1493,6 +1521,7 @@ GameObject:
   - component: {fileID: 1793103657}
   - component: {fileID: 1793103656}
   - component: {fileID: 1793103659}
+  - component: {fileID: 1793103660}
   m_Layer: 5
   m_Name: continue
   m_TagString: Untagged
@@ -1539,7 +1568,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 2
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -1549,10 +1578,10 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
+    m_HighlightedSprite: {fileID: 21300000, guid: 002a1f65290bf4f489b7071854279c46, type: 3}
+    m_PressedSprite: {fileID: 21300000, guid: 9347bc2a9009d4f4799842783bd8715c, type: 3}
+    m_SelectedSprite: {fileID: 21300000, guid: 002a1f65290bf4f489b7071854279c46, type: 3}
+    m_DisabledSprite: {fileID: 21300000, guid: 4e324274fdf383c45bc769af945a4b74, type: 3}
   m_AnimationTriggers:
     m_NormalTrigger: Normal
     m_HighlightedTrigger: Highlighted
@@ -1584,8 +1613,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 57cd98277b9fb9e448154bc761f634a0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 745774b2d1aac8d408bf94b6be67ae53, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -1616,6 +1645,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UIButtonScale
   hoverScale: 0.85
   animationDuration: 0.1
+--- !u!114 &1793103660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1793103654}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 7
 --- !u!1 &1810798520
 GameObject:
   m_ObjectHideFlags: 0
@@ -1629,6 +1671,7 @@ GameObject:
   - component: {fileID: 1810798523}
   - component: {fileID: 1810798522}
   - component: {fileID: 1810798525}
+  - component: {fileID: 1810798526}
   m_Layer: 5
   m_Name: GameStart
   m_TagString: Untagged
@@ -1675,7 +1718,7 @@ MonoBehaviour:
     m_SelectOnDown: {fileID: 0}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
-  m_Transition: 1
+  m_Transition: 2
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -1685,10 +1728,10 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
+    m_HighlightedSprite: {fileID: 21300000, guid: edfa4cbe75238e149b9e5dec0b6ec27d, type: 3}
+    m_PressedSprite: {fileID: 21300000, guid: e8819ec98cf0ac54a8082badfb1b7166, type: 3}
+    m_SelectedSprite: {fileID: 21300000, guid: edfa4cbe75238e149b9e5dec0b6ec27d, type: 3}
+    m_DisabledSprite: {fileID: 21300000, guid: 84d5cf6bc10421944aa27f166405cc42, type: 3}
   m_AnimationTriggers:
     m_NormalTrigger: Normal
     m_HighlightedTrigger: Highlighted
@@ -1720,8 +1763,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 57cd98277b9fb9e448154bc761f634a0, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 21300000, guid: 2307e1c5efd711b43813ee5e0da7ce66, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -1752,6 +1795,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UIButtonScale
   hoverScale: 0.85
   animationDuration: 0.1
+--- !u!114 &1810798526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1810798520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 6
 --- !u!1 &1840780325
 GameObject:
   m_ObjectHideFlags: 0
