@@ -17,6 +17,32 @@ namespace DiceOrbit.UI
         /// <summary>모디파이어 효과 라인용 리치텍스트 색 (스킬 설명에 인라인 삽입 시).</summary>
         public static string ModifierColorHex => "#" + ColorUtility.ToHtmlStringRGB(Skin.Modifier);
 
+        /// <summary>보조 정보(주사위 조건·대상 등 메타)용 리치텍스트 색.</summary>
+        public static string MutedColorHex => "#" + ColorUtility.ToHtmlStringRGB(Skin.InkMuted);
+
+        // ── 항목 타이포 (2026-09-25 정리) — 제목 볼드 > 설명 보통 > 메타 작게. 씬 섹션 제목 칩(24 볼드)보다 한 단계 아래.
+        public const float EntryTitleSize = 23f;
+        public const float EntryBodySize = 21f;
+        public const float EntryMetaSize = 19f;
+        public const float EntryInnerSpacing = 2f;      // 제목 행 ↔ 설명
+
+        /// <summary>
+        /// 항목 1개(제목 행 + 설명)를 묶는 세로 그룹. 컨테이너의 spacing이 항목 사이 간격, 이 그룹의 spacing이 제목↔설명 간격이라
+        /// 항목끼리는 띄고 안쪽은 붙는다 (구: 행을 컨테이너에 직접 넣어 모든 줄 간격이 균일 → 항목 경계가 안 보였다).
+        /// </summary>
+        public static RectTransform AddEntry(Transform parent)
+        {
+            var go = new GameObject("Entry", typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var layout = go.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = EntryInnerSpacing;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            return (RectTransform)go.transform;
+        }
+
         /// <summary>
         /// DB에서 온 색(다크 배경용으로 설계됨)을 밝은 배경 위에서 읽히게 어둡게 보정.
         /// 상태이상/키워드/타일 틴트 등 외부 색 소스에 사용.
@@ -49,13 +75,9 @@ namespace DiceOrbit.UI
             return tmp;
         }
 
-        /// <summary>섹션 헤더 서식: Figma 배틀 UI는 크림 칩 위 텍스트만 (핍 없음).</summary>
+        /// <summary>섹션 헤더 서식: 크림 칩 위 텍스트만 (핍 없음). 칩·글자 크기는 씬(TitleChip)이 소유.</summary>
         public static string FormatSectionTitle(string title)
             => title;
-
-        /// <summary>섹션 헤더: 골드 핍 + 검정 잉크 볼드, 큼직하게.</summary>
-        public static void AddSectionTitle(Transform parent, string title)
-            => AddText(parent, FormatSectionTitle(title), 26f, Skin.Ink, FontStyles.Bold);
 
         /// <summary>아이콘 + 텍스트 가로 행 (타일 속성 등). icon이 null이면 텍스트만.</summary>
         public static void AddIconTextRow(Transform parent, Sprite icon, Color iconTint,
@@ -90,19 +112,6 @@ namespace DiceOrbit.UI
 
             var tmp = AddText(row.transform, text, size, color, style);
             tmp.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
-        }
-
-        public static void AddDivider(Transform parent)
-        {
-            var go = new GameObject("Divider", typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var img = go.AddComponent<Image>();
-            img.color = new Color(0.10f, 0.11f, 0.16f, 0.12f);   // 종이 위 옅은 잉크 선
-            img.raycastTarget = false;
-            var le = go.AddComponent<LayoutElement>();
-            le.minHeight = 2f;
-            le.preferredHeight = 2f;
-            le.flexibleWidth = 1f;
         }
 
         public static void Clear(Transform content)

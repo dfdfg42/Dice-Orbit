@@ -57,6 +57,10 @@ namespace DiceOrbit.UI
 
         // ── 공개 API ──────────────────────────────────────────────
 
+        /// <summary>패널을 띄울 가치가 있는 타일인가 — 레벨업 타일이거나 속성이 하나라도 붙은 타일. 맨 일반 타일은 그림뿐이라 소음.</summary>
+        public static bool HasContent(in TileInfoData t)
+            => t.Type == Data.TileType.LevelUp || (t.Attributes != null && t.Attributes.Count > 0);
+
         public void Show(TileInfoData t)
         {
             rootCanvas.SetActive(true);
@@ -159,31 +163,40 @@ namespace DiceOrbit.UI
 
         private void CreateAttributeCard(Sprite icon, Color tint, string title, string desc)
         {
-            // 크림 카드 한 장
+            // 크림 카드 한 장. 배경 Image는 레이아웃을 무시하는 자식에 둔다 — 레이아웃 그룹과 같은 오브젝트에 두면
+            // Image가 스프라이트 원본 높이를 선호 높이로 내놓아 카드가 글자와 무관하게 ~150px로 부푼다 (2026-09-25).
             var card = new GameObject("AttrCard", typeof(RectTransform));
             card.transform.SetParent(stack, false);
-            var bg = card.AddComponent<Image>();
-            UiSkin.Current.ApplyCard(bg);
-            bg.raycastTarget = true;                                // 키워드 링크 호버 영역 확보
 
-            var shadow = card.AddComponent<Shadow>();
+            var bg = new GameObject("Bg", typeof(RectTransform));
+            bg.transform.SetParent(card.transform, false);
+            var bgRect = (RectTransform)bg.transform;
+            bgRect.anchorMin = Vector2.zero;
+            bgRect.anchorMax = Vector2.one;
+            bgRect.offsetMin = Vector2.zero;
+            bgRect.offsetMax = Vector2.zero;
+            var bgImage = bg.AddComponent<Image>();
+            UiSkin.Current.ApplyCard(bgImage);
+            bgImage.raycastTarget = true;                           // 카드 위 커서 = UI 위 (월드 호버 차단) + 키워드 링크 호버 영역
+            var shadow = bg.AddComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0f, 0f, 0.35f);
             shadow.effectDistance = new Vector2(0f, -4f);
+            bg.AddComponent<LayoutElement>().ignoreLayout = true;
 
             var layout = card.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(12, 12, 10, 10);
+            layout.padding = new RectOffset(14, 14, 10, 12);
             layout.spacing = 4f;
             layout.childForceExpandHeight = false;
             layout.childControlHeight = true;
             layout.childControlWidth = true;
             card.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            // 제목 행 (아이콘 + 이름 + 스택/지속) — 라이트 배경 색 보정
-            InfoPanelRows.AddIconTextRow(card.transform, icon, tint, title, 19f, InfoPanelRows.OnLight(tint), FontStyles.Bold, cardIconSize);
+            // 제목 행 (아이콘 + 이름 + 스택/지속) — 라이트 배경 색 보정. 글자 크기는 오른쪽 정보 패널 항목(23/21)보다 한 단계 작게 (2026-09-25)
+            InfoPanelRows.AddIconTextRow(card.transform, icon, tint, title, 21f, InfoPanelRows.OnLight(tint), FontStyles.Bold, cardIconSize);
 
             // 설명 (키워드 링크 → 커서 옆 정의 툴팁)
             if (!string.IsNullOrWhiteSpace(desc))
-                InfoPanelRows.AddText(card.transform, desc, 15f, UiSkin.Current.InkMuted, FontStyles.Normal, linkKeywords: true);
+                InfoPanelRows.AddText(card.transform, desc, 18f, UiSkin.Current.Ink, FontStyles.Normal, linkKeywords: true);
         }
     }
 }

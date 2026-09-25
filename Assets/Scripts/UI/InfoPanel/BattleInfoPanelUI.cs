@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,8 +11,9 @@ namespace DiceOrbit.UI
     /// 화면 오른쪽 상시 정보 패널 (스펙: Docs/superpowers/specs/2026-07-05-battle-info-panel-design.md).
     ///
     /// ── 에디터 소유 레이아웃 ─────────────────────────────────────
-    /// 섹션(헤더/액티브/패시브/상태이상/타일)의 위치·크기·배경은 씬에서 고정 슬롯으로 배치하고,
-    /// 이 컴포넌트는 슬롯 참조에 "내용만" 채워 넣는다. 섹션이 비어도 슬롯 위치는 변하지 않는다.
+    /// 씬의 `InfoPanelCanvas/Panel/Body`가 세로 흐름(VerticalLayoutGroup)이고, 헤더·액티브·패시브·모디파이어
+    /// 섹션이 그 안에 순서대로 쌓인다. 이 컴포넌트는 슬롯 참조에 "내용만" 채워 넣고, 각 섹션은 내용 높이만큼
+    /// 자라며 비면 통째로 숨겨 아래 섹션이 당겨 올라온다 (2026-09-25 — 구 고정 슬롯은 내용이 넘치면 잘렸다).
     ///
     /// 슬롯은 씬에서 배치하고 인스펙터 슬롯에 배선한다.
     ///
@@ -38,7 +40,7 @@ namespace DiceOrbit.UI
         [SerializeField] private RectTransform activesContainer;
         [SerializeField] private RectTransform passivesContainer;
         [SerializeField] private RectTransform modifiersContainer;   // 장착 모디파이어
-        [SerializeField] private RectTransform statusesContainer;
+        // (상태이상 섹션 철거 — 헤더의 flavorText 한 줄로 요약)
         // (키워드 섹션 철거 — 정의는 텍스트 링크 호버 시 커서 옆 툴팁. KeywordLinkHover)
         // (타일 섹션 철거 — 왼쪽 위 독립 패널로 분리. TileInfoPanelUI)
 
@@ -51,14 +53,10 @@ namespace DiceOrbit.UI
         [Header("스킨")]
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
         [SerializeField] private float refreshInterval = 0.5f;
-        [Tooltip("점수지(크림 종이) 배경색 — 라이트 테마 #FAF3E0")]
-        [SerializeField] private Color paperColor = new Color(0.980f, 0.953f, 0.878f, 0.98f);
 
         [Header("정렬")]
         [Tooltip("사이드바는 배경 레이어 — 일반 UI(0)와 팝업(캐릭터 액션 패널 등)이 항상 위에 그려지도록 음수 유지")]
         [SerializeField] private int panelSortingOrder = -5;
-        [Tooltip("모디파이어 섹션을 이 픽셀만큼 아래로 내림 (다른 섹션과 간격 확보)")]
-        [SerializeField] private float modifiersDropY = 24f;
 
         private InfoPanelSelectionController _selection;
         private float _nextRefresh;
@@ -177,18 +175,6 @@ namespace DiceOrbit.UI
 
             // 씬에 저장된 캔버스에도 최신 정렬값 강제 (기존 생성 레이아웃의 100 등 옛 값 교정)
             ApplyPanelSortingOrder();
-
-            // 모디파이어 섹션을 살짝 아래로 (텍스트 확대로 위 섹션과 겹치지 않게)
-            ApplyModifiersDrop();
-        }
-
-        /// <summary>모디파이어 섹션(컨테이너의 부모 슬롯)을 modifiersDropY 픽셀만큼 아래로 이동.</summary>
-        private void ApplyModifiersDrop()
-        {
-            if (modifiersContainer == null || Mathf.Approximately(modifiersDropY, 0f)) return;
-            var section = modifiersContainer.parent as RectTransform;
-            if (section != null)
-                section.anchoredPosition -= new Vector2(0f, modifiersDropY);
         }
 
         private void Update()
@@ -220,8 +206,10 @@ namespace DiceOrbit.UI
             {
                 if (emptyState != null) emptyState.SetActive(false);
                 var d = unit.GetBattleInfo();
-                bool hasModifiers = d.Modifiers != null && d.Modifiers.Count > 0;
-                SetSectionVisibility(unitSections: true, modifiersSection: hasModifiers);
+                SetSectionVisibility(unitSections: true,
+                    activesSection: HasAny(d.Actives),
+                    passivesSection: HasAny(d.Passives),
+                    modifiersSection: HasAny(d.Modifiers));
                 RenderUnit(d);
 
                 // 밟은 타일 → 왼쪽 위 독립 타일 패널
@@ -234,20 +222,23 @@ namespace DiceOrbit.UI
             {
                 // 타일 단독 뷰: 오른쪽 패널은 비우고 왼쪽 위 타일 패널만
                 if (emptyState != null) emptyState.SetActive(false);
-                SetSectionVisibility(unitSections: false, modifiersSection: false);
+                SetSectionVisibility(unitSections: false, activesSection: false, passivesSection: false, modifiersSection: false);
                 SyncTilePanel(tile.GetTileInfo());
                 return;
             }
 
-            SetSectionVisibility(unitSections: false, modifiersSection: false);      // 빈 상태: 안내 문구만
+            SetSectionVisibility(unitSections: false, activesSection: false, passivesSection: false, modifiersSection: false);      // 빈 상태: 안내 문구만
             if (emptyState != null) emptyState.SetActive(true);
             SyncTilePanel(null);
         }
 
-        /// <summary>왼쪽 위 독립 타일 패널 동기화.</summary>
+        /// <summary>
+        /// 패널 왼쪽에 도킹된 독립 타일 패널 동기화.
+        /// 말할 거리가 있는 타일(레벨업 타일이거나 속성이 붙은 타일)만 띄운다 — 맨 일반 타일은 그림만 남아 소음이라 숨김 (2026-09-25).
+        /// </summary>
         private static void SyncTilePanel(TileInfoData? tile)
         {
-            if (tile.HasValue)
+            if (tile.HasValue && TileInfoPanelUI.HasContent(tile.Value))
             {
                 TileInfoPanelUI.EnsureInstance();
                 TileInfoPanelUI.Instance?.Show(tile.Value);
@@ -258,6 +249,8 @@ namespace DiceOrbit.UI
             }
         }
 
+        private static bool HasAny<T>(IReadOnlyList<T> list) => list != null && list.Count > 0;
+
         private void ClearAllSlots()
         {
             SetText(nameText, "");
@@ -267,7 +260,6 @@ namespace DiceOrbit.UI
             ClearContainer(activesContainer);
             ClearContainer(passivesContainer);
             ClearContainer(modifiersContainer);
-            ClearContainer(statusesContainer);
         }
 
         /// <summary>상태이상 줄(flavorText)을 키워드 링크 호버 대상으로 1회 등록.</summary>
@@ -351,7 +343,7 @@ namespace DiceOrbit.UI
                 }
             }
 
-            // ── Statuses ── (헤더 상태 라인으로 이동 — 아래 별도 섹션은 SetSectionVisibility에서 숨김)
+            // ── Statuses ── (헤더의 flavorText 한 줄로 요약 — 별도 섹션 없음)
 
             // (타일 정보는 왼쪽 위 독립 패널(TileInfoPanelUI), 키워드 정의는 링크 호버 툴팁(KeywordLinkHover))
         }
@@ -362,19 +354,26 @@ namespace DiceOrbit.UI
 
         /// <summary>
         /// 조회 대상에 맞는 섹션만 표시.
-        /// 유닛 뷰: 헤더+액티브+패시브+상태이상 / 빈 상태·타일 뷰: 전부 숨김.
-        /// 섹션 위치는 고정(앵커)이므로 숨겨도 다른 섹션이 밀리지 않는다.
+        /// 유닛 뷰: 헤더 + 내용이 있는 섹션만 / 빈 상태·타일 뷰: 전부 숨김.
+        /// 섹션은 세로 흐름이라 숨기면 아래 섹션이 당겨 올라온다 — 빈 섹션 제목만 덩그러니 남지 않는다.
         /// </summary>
-        private void SetSectionVisibility(bool unitSections, bool modifiersSection)
+        private void SetSectionVisibility(bool unitSections, bool activesSection, bool passivesSection, bool modifiersSection)
         {
-            // 헤더(이름/HP/설명): nameText의 부모 오브젝트를 통째로 토글
+            // 헤더(이름/HP/상태이상 줄): nameText가 속한 헤더 그룹을 통째로 토글
             if (nameText != null && nameText.transform.parent != null)
-                SetActiveIfChanged(nameText.transform.parent.gameObject, unitSections);
+                SetActiveIfChanged(HeaderRoot(nameText.transform).gameObject, unitSections);
 
-            ToggleSection(activesContainer, unitSections);
-            ToggleSection(passivesContainer, unitSections);
-            ToggleSection(modifiersContainer, modifiersSection);   // 장착한 게 있을 때만
-            ToggleSection(statusesContainer, false);               // 상태이상은 헤더 라인으로 이동 — 하단 섹션 상시 숨김
+            ToggleSection(activesContainer, unitSections && activesSection);
+            ToggleSection(passivesContainer, unitSections && passivesSection);
+            ToggleSection(modifiersContainer, unitSections && modifiersSection);
+        }
+
+        /// <summary>헤더 그룹 루트 — 이름 칩(NameRow/NameChip) 안에 있어도 "Header"까지 올라간다.</summary>
+        private static Transform HeaderRoot(Transform nameTextTr)
+        {
+            var t = nameTextTr.parent;
+            while (t != null && t.name != "Header" && t.parent != null && t.parent.name != "Panel") t = t.parent;
+            return t != null ? t : nameTextTr.parent;
         }
 
         /// <summary>컨테이너의 부모(섹션 루트: 타이틀 포함)를 토글.</summary>
@@ -422,23 +421,28 @@ namespace DiceOrbit.UI
                 return;
             }
 
-            string line = string.IsNullOrWhiteSpace(meta) ? title : $"{title}  {meta}";
-            InfoPanelRows.AddIconTextRow(container, icon, iconTint ?? Color.white, line, 24f, titleColor, FontStyles.Bold);
+            // 항목 = 세로 그룹 1개(제목 행 + 설명). 컨테이너 spacing이 항목 사이, 그룹 spacing이 제목↔설명 간격.
+            // 제목은 볼드·색, 메타(주사위 조건·대상)는 작고 흐리게, 설명은 보통 굵기 잉크 — 위계가 한눈에 읽히게 (2026-09-25).
+            var entry = InfoPanelRows.AddEntry(container);
+            string line = string.IsNullOrWhiteSpace(meta)
+                ? title
+                : $"{title}  <size={InfoPanelRows.EntryMetaSize}><color={InfoPanelRows.MutedColorHex}>{meta}</color></size>";
+            InfoPanelRows.AddIconTextRow(entry, icon, iconTint ?? Color.white, line, InfoPanelRows.EntryTitleSize, titleColor, FontStyles.Bold);
             if (!string.IsNullOrWhiteSpace(desc))
-                InfoPanelRows.AddText(container, desc, 24f, UiSkin.Current.Ink, FontStyles.Bold, linkKeywords: true);
+                InfoPanelRows.AddText(entry, desc, InfoPanelRows.EntryBodySize, UiSkin.Current.Ink, FontStyles.Normal, linkKeywords: true);
         }
 
-        /// <summary>
-        /// 액티브 섹션 타이틀 TMP를 찾는다. Inspector 배선이 우선, 없으면
-        /// 기본 레이아웃 관례(activesContainer의 형제 "Title")로 폴백 — 이미 생성한 레이아웃도 재배선 없이 동작.
-        /// </summary>
+        /// <summary>액티브 섹션 타이틀 TMP (씬 배선 필수 — 비어 있으면 에러로 알리고 제목 교체를 건너뛴다).</summary>
         private TextMeshProUGUI ResolveActivesTitle()
         {
-            if (activesTitle != null) return activesTitle;
-            var title = activesContainer != null ? activesContainer.parent?.Find("Title") : null;
-            activesTitle = title != null ? title.GetComponent<TextMeshProUGUI>() : null;
+            if (activesTitle == null && !_activesTitleMissingReported)
+            {
+                _activesTitleMissingReported = true;
+                Debug.LogError("[BattleInfoPanelUI] activesTitle 슬롯이 비어 있습니다 — 씬 InfoPanelCanvas/Panel/Body/ActivesSection/TitleRow/TitleChip/Title을 배선하세요.", this);
+            }
             return activesTitle;
         }
+        private bool _activesTitleMissingReported;
 
         private static string JoinLines(string a, string b)
         {
