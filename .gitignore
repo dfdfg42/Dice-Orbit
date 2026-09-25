@@ -79,3 +79,6 @@ crashlytics-build.properties
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# UI 리스킨 생성 작업물 (2026-09-25) — 승인본은 Assets/로 반입, 나머지는 로컬만
+_workspace/2026-09-25-ui-reskin/
