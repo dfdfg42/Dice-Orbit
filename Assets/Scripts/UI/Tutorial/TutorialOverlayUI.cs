@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DiceOrbit.UI.Skin;
 
 namespace DiceOrbit.UI.Tutorial
 {
@@ -25,16 +26,7 @@ namespace DiceOrbit.UI.Tutorial
         private Vector4 _hlPad;      // 현재 단계 하이라이트 변별 확장 (x=좌,y=우,z=상,w=하)
         private bool _centerBubble;  // 대상이 있어도 말풍선을 화면 중앙(하단)에
 
-        private static readonly Color Dim = new Color(0f, 0f, 0f, 0.72f);
-        private static readonly Color Card = new Color(0.118f, 0.133f, 0.200f, 0.98f);
-        private static readonly Color Ink = new Color(0.910f, 0.894f, 0.847f);
-        private static readonly Color InkDark = new Color(0.16f, 0.12f, 0.08f);   // 크림 배경용 어두운 글자
-        private static readonly Color Gold = new Color(0.878f, 0.702f, 0.341f);
-        private static readonly Color SkipTan = new Color(0.72f, 0.66f, 0.56f, 0.95f);
-
-        // 스킨 스프라이트는 TutorialSkin(Resources)에서 Build 시 주입. 없으면 단색 폴백.
-        private Sprite panelSprite;    // 버블 배경: 오른쪽 정보 패널 스프라이트(9-slice)
-        private Sprite buttonSprite;   // 버튼 배경: 환경설정 버튼(UISprite, 9-slice)
+        private static UiSkin Skin => UiSkin.Current;   // 룩은 UiSkin 단일 권위 (2026-09-25, TutorialSkin 철거)
 
         public static TutorialOverlayUI EnsureInstance()
         {
@@ -50,9 +42,6 @@ namespace DiceOrbit.UI.Tutorial
 
         private void Build()
         {
-            var skin = TutorialSkin.Get();
-            if (skin != null) { panelSprite = skin.panelSprite; buttonSprite = skin.buttonSprite; }
-
             canvas = gameObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 4000;
@@ -60,31 +49,25 @@ namespace DiceOrbit.UI.Tutorial
 
             for (int i = 0; i < 4; i++)
             {
-                var img = NewImage(transform, Dim, "Dim" + i);
+                var img = NewImage(transform, Skin.Scrim, "Dim" + i);
                 img.raycastTarget = true;   // 대상 외 클릭 차단
                 dim[i] = img;
             }
 
-            var bubbleImg = NewImage(transform, Card, "Bubble");
-            if (panelSprite != null)
-            {
-                bubbleImg.sprite = panelSprite;
-                bubbleImg.type = UnityEngine.UI.Image.Type.Sliced;
-                bubbleImg.color = Color.white;   // 스프라이트 원색(크림) 유지
-            }
+            var bubbleImg = NewImage(transform, Color.white, "Bubble");
+            Skin.ApplyTooltip(bubbleImg);
             bubble = bubbleImg.rectTransform;
             bubble.anchorMin = bubble.anchorMax = bubble.pivot = new Vector2(0.5f, 0.5f);
             bubble.sizeDelta = new Vector2(560, 150);
 
             bubbleText = NewText(bubble, "", 26);
-            if (panelSprite != null) bubbleText.color = InkDark;   // 크림 배경 → 어두운 글자
             var brt = bubbleText.rectTransform;
             brt.anchorMin = new Vector2(0, 0); brt.anchorMax = new Vector2(1, 1);
             brt.offsetMin = new Vector2(24, 54); brt.offsetMax = new Vector2(-24, -18);
 
-            nextButton = MakeButton(bubble, "다음", new Vector2(-24, 16), new Vector2(1, 0), new Vector2(140, 40), Gold);
+            nextButton = MakeButton(bubble, "다음", new Vector2(-24, 16), new Vector2(1, 0), new Vector2(140, 40), ButtonKind.Primary);
             nextButtonLabel = nextButton.GetComponentInChildren<TextMeshProUGUI>();
-            skipButton = MakeButton(transform, "튜토리얼 스킵", new Vector2(-16, -16), new Vector2(1, 1), new Vector2(160, 40), SkipTan);
+            skipButton = MakeButton(transform, "튜토리얼 스킵", new Vector2(-16, -16), new Vector2(1, 1), new Vector2(160, 40), ButtonKind.Secondary);
             skipButton.onClick.AddListener(() => onSkip?.Invoke());
 
             gameObject.SetActive(false);
@@ -121,7 +104,7 @@ namespace DiceOrbit.UI.Tutorial
                 return;
             }
 
-            foreach (var d in dim) { d.color = Dim; d.raycastTarget = gateInput; } // 잠금 아니면 클릭 통과
+            foreach (var d in dim) { d.color = Skin.Scrim; d.raycastTarget = gateInput; } // 잠금 아니면 클릭 통과
 
             if (screenTarget != null) HighlightScreenRect(AdjustRect(GetScreenRect(screenTarget)));
             else HighlightScreenRect(new Rect(-9999, -9999, 0, 0)); // 대상 없음 → 전체 딤
@@ -201,17 +184,16 @@ namespace DiceOrbit.UI.Tutorial
             rt.sizeDelta = new Vector2(Mathf.Max(0, w), Mathf.Max(0, h));
         }
 
-        private Button MakeButton(Transform parent, string text, Vector2 pos, Vector2 anchor, Vector2 size, Color color)
+        private Button MakeButton(Transform parent, string text, Vector2 pos, Vector2 anchor, Vector2 size, ButtonKind kind)
         {
-            var img = NewImage(parent, color, "Btn");
-            if (buttonSprite != null) { img.sprite = buttonSprite; img.type = UnityEngine.UI.Image.Type.Sliced; }
+            var img = NewImage(parent, Color.white, "Btn");
             var rt = img.rectTransform;
             rt.anchorMin = rt.anchorMax = rt.pivot = anchor;
             rt.sizeDelta = size; rt.anchoredPosition = pos;
-            var btn = img.gameObject.AddComponent<Button>(); btn.targetGraphic = img;
+            var btn = img.gameObject.AddComponent<Button>();
+            Skin.ApplyButton(btn, kind);
             var t = NewText(img.rectTransform, text, 20); Stretch(t.rectTransform);
             t.alignment = TextAlignmentOptions.Center;
-            t.color = new Color(0.14f, 0.11f, 0.055f);
             return btn;
         }
 
@@ -229,7 +211,7 @@ namespace DiceOrbit.UI.Tutorial
             go.transform.SetParent(parent, false);
             var t = go.AddComponent<TextMeshProUGUI>();
             t.text = s; t.fontSize = size; t.alignment = TextAlignmentOptions.Left;
-            t.color = Ink; t.raycastTarget = false; t.enableWordWrapping = true;
+            t.color = Skin.Ink; t.raycastTarget = false; t.enableWordWrapping = true;
             return t;
         }
 
