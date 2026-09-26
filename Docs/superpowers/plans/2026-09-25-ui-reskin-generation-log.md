@@ -107,3 +107,14 @@
 | 24 | 타일 image-to-3D | `tripo_h3_1_image_to_3d` (textured) | 초안 1번 | (세션 요약에 미보존) → `models/tile_tripo.glb` 41MB, 1.44M면 | 4k면 데시메이트 후 UV 균열 → 사용자 결정 "이건 하지 말자"로 폐기 (스펙 layout-polish §4 V) | 9 |
 
 소계 9.5 → 누적 59.5, `balance` 20.5 (basic). 교훈: image-to-3D는 데시메이트 시 정점 UV 이식이 아니라 새 아틀라스로 텍셀 단위 재베이크가 필요하다. 타일은 2D 카드 유지.
+
+## 전용 스프라이트 전환 (2026-09-26) — 스펙 `2026-09-26-ui-dedicated-sprites-design.md`
+
+참조 크롭(캡처 잘라 업로드): INFO `f6462d10-a902-45d8-889e-1852fbf04915`, TRAY `e7a80702-e263-40ce-8cbf-7f248cee8a9a`, HUD `b1fbe554-a546-4c1c-8bb0-c813f9f385a8`, ACTIONBTN `a8724c7e-f147-46a5-838f-ec4fbea5f5cb`, LABEL `beb156b6-27ee-4d72-bf91-24c861cdf4f5`, DICETIP `4f198b51-52bb-4213-a18a-ee77ac388215`, TILECARD `e93df8eb-fe5a-4484-b974-cc1aa5ba6ecb`.
+
+| # | 항목 | 모델/품질 | 참조 | job id | 결과 | 비용 |
+|---|---|---|---|---|---|---|
+| 25 | 전투 16종 초안 ×2 (정보 프레임·트레이·HUD 바·턴 배지·물약 홈·턴종료/이동/취소 시트·행동 라벨·주사위 툴팁·타일 카드·속성 카드·이름표·섹션 칩·구분선·정의 툴팁) | gpt_image_2_5 / low / 1k / transparent | STYLE + 해당 크롭 | 채택: 10 `addc7537`, 20 `69413c30`, 30 `c43abfe3`, 41 `10d17f2f`, 50 `b321091e`, 60 `57943d80`, 70 `a7180ef2`, 80 `d6fd26fc`, 90 `803b3f4e`, 101 `25282665`, 111 `a810ad58`, 120 `37ebe641`, 130 `23cde80a`, 140 `a45095d8`, 150 `fd0569e9`, 160 `8b1ea37d` | 사용자 승인 "추천번호대로" (`drafts/ded/contact_all.png`) | 8.0 |
+| 26 | 전투 최종 1차: 정보 프레임·주사위 트레이·HUD 바·턴 배지 | high / 2k / transparent | STYLE + 채택 초안 job | `e27fc7fd`, `b471e853`, `49496146`, `0088fbae` | `UI Skin/battle_info_frame.png` 724×1557 (9V, ppu 1.672) · `battle_dice_tray.png` 2048×293 (9H, ppu 1.952) · `hud_bar.png` 800×139 (S) · `hud_turn_badge.png` 400×220 (S). rect 비율로 리사이즈(왜곡 ≤ 30%) | 11.0 |
+
+소계 19.0 → 누적 78.5, `balance` 1.5 (basic). 남은 전투 최종 12장(≈33)은 충전 후. 교훈: 배치 12건 동시 제출은 429가 절반 — 5~6건씩.

@@ -102,9 +102,12 @@ public enum SkinPart { InfoFrame, DiceTray, ActionFrame, HudBar, HudTurnBadge, H
     RewardFrame, RewardGoldBar, RewardCard, RewardNameTag, UpgradeFrame,
     ShopTitleSign, ShelfTag, ShopGoldPill, ShopStepFrame, EventFrame, ResultFrame, TutorialPromptFrame, TutorialBubble,
     Scrim, ZonePlate }
-public enum SkinButton { EndTurn, Move, CancelAction, RecruitCancel, RecruitSelect, RewardContinue, UpgradeCancel,
-    Goods, ShopSwap, ShopLeave, EventMain, EventSkip, Restart, TutorialStart, TutorialSkip,
+public enum SkinButton { EndTurn, Move, CancelAction, RollDice, RecruitCancel, RecruitSelect, RewardContinue, UpgradeCancel,
+    Goods, ShopSwap, ShopLeave, EventMain, EventSkip, Restart, TutorialStart, TutorialSkip, ShopChoice, ShopStepCancel,
     MenuStart, MenuContinue, MenuSettings, MenuQuit }
+// 구현 중 추가된 역할(2026-09-26): RollDice(DicePanel/Roll Dice 220×56), ShopChoice(상점 단계 패널 선택 카드 240×200, AddChoiceButton), ShopStepCancel(StepPanel/CancelButton 200×56).
+// 열거 값은 명시 고정(100번대 전투, 200 모집, 300 보상, 400 상점·이벤트·결과·튜토리얼, 500 메인메뉴, Scrim 900)이라 씬 직렬화가 안정적이다.
+// 임시(Provisional) 항목: 전용 아트가 오기 전에는 구 공용 스프라이트를 꽂고 Provisional=true → 점검기가 "임시"로 보고 (조용한 폴백이 아니라 드러난 임시).
 
 [Serializable] class SkinEntry { SkinPart part; Sprite sprite; SkinMode mode; float ppuMultiplier = 1f; }   // mode: Simple | Sliced
 [Serializable] class SkinButtonEntry { SkinButton button; Sprite normal, hover, pressed, disabled; }
