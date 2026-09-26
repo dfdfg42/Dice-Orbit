@@ -50,11 +50,8 @@ namespace DiceOrbit.UI
         [SerializeField] private int numberOfChoices = 3;
         [Tooltip("시작 시 고를 캐릭터 수 (이 횟수만큼 선택을 반복)")]
         [SerializeField] private int charactersToSelect = 2;
-        [Tooltip("LeftDescriptionPanel이 일자에서 위아래로 펼쳐지는 시간(초)")]
+        [Tooltip("상세 Panel이 일자에서 위아래로 펼쳐지는 시간(초)")]
         [SerializeField] private float panelUnfoldDuration = 0.3f;
-        [Header("Shade (패널 전체 어둡게)")]
-        [Tooltip("반투명 검정 알파 (0~1). 190/255 ≈ 0.745")]
-        [SerializeField, Range(0f, 1f)] private float topShadeStrength = 0.745f;
 
         private List<Core.CharacterPreset> currentChoices = new List<Core.CharacterPreset>();
         private List<CharacterCard> currentCards = new List<CharacterCard>();
@@ -63,9 +60,8 @@ namespace DiceOrbit.UI
         private bool isTransitioning;
         private Coroutine activeTransitionRoutine;
         private Coroutine _unfoldCo;
-        private RectTransform _leftPanel;
+        private RectTransform _leftPanel;   // DetailRoot/Panel — 크림 캐릭터 시트 (2026-09-26 리스킨)
         private Vector3 _leftPanelFullScale = Vector3.one;
-        private Image _topShade;
 
         private int selectedCount;
         private int sessionTargetCount = 1;
@@ -80,9 +76,14 @@ namespace DiceOrbit.UI
 
             if (detailRoot != null)
             {
-                _leftPanel = detailRoot.transform.Find("LeftDescriptionPanel") as RectTransform;
-                if (_leftPanel != null) { _leftPanelFullScale = _leftPanel.localScale; EnsureTopShade(); }
+                _leftPanel = detailRoot.transform.Find("Panel") as RectTransform;
+                if (_leftPanel != null) _leftPanelFullScale = _leftPanel.localScale;
             }
+
+            // 상세 슬롯은 씬 배선 필수 — 비면 에러로 알린다 (조용히 빈 화면을 띄우지 않는다)
+            if (detailRoot == null || _leftPanel == null || detailNameText == null || detailStatsText == null
+                || detailActiveText == null || detailPassiveText == null || ldConfirmButton == null || cancelButton == null || ldIllustrationImage == null)
+                Debug.LogError("[CharacterSelectionUI] 상세 슬롯이 비어 있습니다 — 씬 RecuritUI/DetailRoot/Panel 아래를 배선하세요.", this);
 
             HideDetail();
             WireDetailButtons();
@@ -250,9 +251,14 @@ namespace DiceOrbit.UI
                 }
             }
 
-            var anchorPos = selectedBottleAnchor != null
-                ? selectedBottleAnchor.anchoredPosition
-                : selectedCard.GetComponent<RectTransform>().anchoredPosition;
+            // 앵커는 캔버스 직속(CardContainer 자식이면 GenerateRandomChoices가 파괴한다). 카드는 CardContainer 자식이고
+            // 앵커가 중앙 정렬이라, 앵커의 월드 위치를 CardContainer 로컬로 바꾸면 그대로 카드의 anchoredPosition이 된다.
+            if (selectedBottleAnchor == null)
+            {
+                Debug.LogError("[CharacterSelectionUI] selectedBottleAnchor가 비어 있습니다 — 씬 RecuritUI/SelectedBottleAnchor를 배선하세요.", this);
+                yield break;
+            }
+            Vector2 anchorPos = cardContainer.InverseTransformPoint(selectedBottleAnchor.position);
 
             yield return StartCoroutine(selectedCard.PlayDetailEntryRoutine(anchorPos));
 
@@ -284,7 +290,7 @@ namespace DiceOrbit.UI
             if (cancelButton != null) cancelButton.interactable = true;
             if (ldConfirmButton != null) ldConfirmButton.interactable = true;
 
-            // LeftDescriptionPanel을 가로선(일자)에서 위아래로 펼치는 연출 (center pivot → 위아래 양방향).
+            // Panel을 가로선(일자)에서 위아래로 펼치는 연출 (center pivot → 위아래 양방향).
             if (_leftPanel != null)
             {
                 _leftPanel.localScale = new Vector3(_leftPanelFullScale.x, 0f, _leftPanelFullScale.z);
@@ -316,24 +322,6 @@ namespace DiceOrbit.UI
             return 1f + c3 * Mathf.Pow(x - 1f, 3f) + c1 * Mathf.Pow(x - 1f, 2f);
         }
 
-        /// <summary>LeftDescriptionPanel 전체를 균일하게 어둡게 하는 반투명 검정 오버레이를 배경 위·내용 아래에 1회 생성.
-        /// 패널 자식이라 언폴드 때 함께 나타난다.</summary>
-        private void EnsureTopShade()
-        {
-            if (_leftPanel == null || _topShade != null) return;
-
-            var go = new GameObject("Shade", typeof(RectTransform));
-            var rt = go.GetComponent<RectTransform>();
-            rt.SetParent(_leftPanel, false);
-            rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
-            rt.SetAsFirstSibling();   // 배경 위 · 내용(텍스트/일러스트) 아래
-
-            _topShade = go.AddComponent<Image>();
-            _topShade.color = new Color(0f, 0f, 0f, topShadeStrength);   // 그라데이션 없이 균일 반투명
-            _topShade.raycastTarget = false;
-        }
-
         private string BuildPassiveSummary(Core.CharacterPreset character)
         {
             if (character?.StartingPassives == null) return string.Empty;
@@ -348,7 +336,9 @@ namespace DiceOrbit.UI
                 if (string.IsNullOrWhiteSpace(body)) body = passive.Description;
 
                 if (sb.Length > 0) sb.Append('\n').Append('\n');
-                sb.Append("<b>[").Append(name).Append("]</b>");
+                // 패시브 이름은 전투 정보 패널과 같은 세이지색 볼드 (크림 시트 위 위계)
+                sb.Append("<b><color=#").Append(ColorUtility.ToHtmlStringRGB(Skin.UiSkin.Current.Passive)).Append('>')
+                  .Append(name).Append("</color></b>");
                 if (!string.IsNullOrWhiteSpace(body)) sb.Append('\n').Append(body);
             }
             return sb.ToString();
