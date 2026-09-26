@@ -144,8 +144,7 @@ namespace DiceOrbit.UI
             bgRT.anchorMin = Vector2.zero; bgRT.anchorMax = Vector2.one;
             bgRT.offsetMin = Vector2.zero; bgRT.offsetMax = Vector2.zero;
             var bg = bgGO.AddComponent<Image>();
-            UiSkin.Current.ApplyTooltip(bg);   // 말풍선 = 스킨 툴팁 파트 (외곽선은 스프라이트가 가진다)
-            bg.pixelsPerUnitMultiplier = 2f;    // 툴팁 9-slice 경계를 작은 라벨에 맞게 절반으로
+            UiSkin.Current.Apply(bg, SkinPart.ActionLabel);   // 전용 행동 라벨 파트 (9-slice 배수는 카탈로그 항목이 가진다)
             bg.raycastTarget = false;
             bgGO.AddComponent<LayoutElement>().ignoreLayout = true;
 

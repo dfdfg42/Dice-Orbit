@@ -29,7 +29,7 @@ namespace DiceOrbit.UI.Tutorial
             Stretch(dim.rectTransform);
 
             var panel = NewImage(transform, Color.white);
-            Skin.ApplyPanel(panel);
+            Skin.Apply(panel, SkinPart.TutorialPromptFrame);
             var prt = panel.rectTransform;
             prt.sizeDelta = new Vector2(560, 260);
             prt.anchorMin = prt.anchorMax = prt.pivot = new Vector2(0.5f, 0.5f);
@@ -40,13 +40,13 @@ namespace DiceOrbit.UI.Tutorial
             lrt.anchorMin = new Vector2(0, 0.5f); lrt.anchorMax = new Vector2(1, 1f);
             lrt.offsetMin = new Vector2(20, 0); lrt.offsetMax = new Vector2(-20, -20);
 
-            MakeButton(panel.transform, "시작", new Vector2(-130, -70), ButtonKind.Primary, () => { Close(); onYes?.Invoke(); });
-            MakeButton(panel.transform, "건너뛰기", new Vector2(130, -70), ButtonKind.Secondary, () => { Close(); onNo?.Invoke(); });
+            MakeButton(panel.transform, "시작", new Vector2(-130, -70), SkinButton.TutorialStart, () => { Close(); onYes?.Invoke(); });
+            MakeButton(panel.transform, "건너뛰기", new Vector2(130, -70), SkinButton.TutorialSkip, () => { Close(); onNo?.Invoke(); });
         }
 
         private void Close() => Destroy(gameObject);
 
-        private void MakeButton(Transform parent, string text, Vector2 pos, ButtonKind kind, Action onClick)
+        private void MakeButton(Transform parent, string text, Vector2 pos, SkinButton kind, Action onClick)
         {
             var img = NewImage(parent, Color.white);
             var rt = img.rectTransform;

@@ -182,13 +182,13 @@ namespace DiceOrbit.UI
         {
             var root = MakeCard(rewardRow, "RewardTile", new Vector2(196f, 262f));
 
-            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.Chip);
+            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.RewardNameTag);
             var nameLE = nameBar.gameObject.AddComponent<LayoutElement>();
             nameLE.preferredWidth = 172f; nameLE.preferredHeight = 50f;
             MakeText(nameBar, label, 23f, FontStyles.Bold, Skin.Ink, TextAlignmentOptions.Center)
                 .margin = new Vector4(8f, 2f, 8f, 2f);
 
-            var imgTile = MakeSkinImage(root, "ImageTile", SkinPart.Card);
+            var imgTile = MakeSkinImage(root, "ImageTile", SkinPart.RewardCard);
             var tileLE = imgTile.gameObject.AddComponent<LayoutElement>();
             tileLE.preferredWidth = 184f; tileLE.preferredHeight = 184f;
             FillIcon(imgTile, image, label);
@@ -257,13 +257,13 @@ namespace DiceOrbit.UI
         {
             var root = MakeCard(choiceRow, "CharacterChoice", new Vector2(230f, 300f));
 
-            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.Chip);
+            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.RewardNameTag);
             var nameLE = nameBar.gameObject.AddComponent<LayoutElement>();
             nameLE.preferredWidth = 200f; nameLE.preferredHeight = 58f;
             MakeText(nameBar, name, 28f, FontStyles.Bold, Skin.Ink, TextAlignmentOptions.Center)
                 .margin = new Vector4(8f, 2f, 8f, 2f);
 
-            var imgTile = MakeSkinImage(root, "Portrait", SkinPart.Card);
+            var imgTile = MakeSkinImage(root, "Portrait", SkinPart.RewardCard);
             var tileLE = imgTile.gameObject.AddComponent<LayoutElement>();
             tileLE.preferredWidth = 220f; tileLE.preferredHeight = 220f;
             FillIcon(imgTile, portrait, name);
@@ -276,7 +276,7 @@ namespace DiceOrbit.UI
         {
             var root = MakeCard(choiceRow, "ModifierChoice", new Vector2(240f, 240f));
 
-            var card = MakeSkinImage(root, "Card", SkinPart.Card);
+            var card = MakeSkinImage(root, "Card", SkinPart.RewardCard);
             var cardLE = card.gameObject.AddComponent<LayoutElement>();
             cardLE.preferredWidth = 230f; cardLE.preferredHeight = 230f;
 
@@ -332,13 +332,13 @@ namespace DiceOrbit.UI
 
             var root = MakeCard(choiceRow, "DieChoice", new Vector2(180f, 240f));
 
-            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.Chip);
+            var nameBar = MakeSkinImage(root, "NameBar", SkinPart.RewardNameTag);
             var nameLE = nameBar.gameObject.AddComponent<LayoutElement>();
             nameLE.preferredWidth = 164f; nameLE.preferredHeight = 46f;
             MakeText(nameBar, name, 20f, FontStyles.Bold, Skin.Ink, TextAlignmentOptions.Center)
                 .margin = new Vector4(6f, 2f, 6f, 2f);
 
-            var imgTile = MakeSkinImage(root, "DieArt", SkinPart.Card);
+            var imgTile = MakeSkinImage(root, "DieArt", SkinPart.RewardCard);
             var tileLE = imgTile.gameObject.AddComponent<LayoutElement>();
             tileLE.preferredWidth = 168f; tileLE.preferredHeight = 168f;
             Sprite art = inst.BaseDie != null && inst.BaseDie.Icon != null
@@ -432,7 +432,7 @@ namespace DiceOrbit.UI
         {
             var rt = MakeChild(parent, name);
             var img = rt.gameObject.AddComponent<Image>();
-            Skin.ApplySprite(img, part);
+            Skin.Apply(img, part);
             img.raycastTarget = false;
             return rt;
         }

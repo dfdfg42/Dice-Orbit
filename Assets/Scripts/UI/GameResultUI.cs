@@ -115,7 +115,7 @@ namespace DiceOrbit.UI
             panelGO.anchoredPosition = new Vector2(0, 0);
             panelGO.sizeDelta = new Vector2(760, 440);
             var panelImg = panelGO.gameObject.AddComponent<Image>();
-            UiSkin.Current.ApplyPanel(panelImg);
+            UiSkin.Current.Apply(panelImg, SkinPart.ResultFrame);
             panelImg.raycastTarget = false;
 
             var titleGO = CreateChild(root.transform, "Title");
@@ -148,7 +148,7 @@ namespace DiceOrbit.UI
             btnGO.sizeDelta = new Vector2(300, 78);
             btnGO.gameObject.AddComponent<Image>();
             ui.restartButton = btnGO.gameObject.AddComponent<Button>();
-            UiSkin.Current.ApplyButton(ui.restartButton, ButtonKind.Primary);
+            UiSkin.Current.ApplyButton(ui.restartButton, SkinButton.Restart);
             ui.restartButton.onClick.AddListener(ui.OnRestartClicked);
 
             var labelGO = CreateChild(btnGO, "Label");

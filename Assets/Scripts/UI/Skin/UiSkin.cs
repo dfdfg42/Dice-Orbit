@@ -1,29 +1,100 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace DiceOrbit.UI.Skin
 {
-    /// <summary>스킨 부품 이름 — Apply 헬퍼와 씬 배치용 UiSkinImage가 공유한다. Scrim은 스프라이트 없이 색만. IntentBubble = 몬스터 의도 말풍선(9-slice).</summary>
-    public enum SkinPart { Panel, Card, Chip, Tooltip, Slot, Divider, ButtonPrimary, ButtonSecondary, Scrim, IntentBubble }
-
-    public enum ButtonKind { Primary, Secondary }
-
-    /// <summary>버튼 1종의 상태별 스프라이트. 틴트가 아니라 스프라이트 교체(SpriteSwap)로 상태를 표현한다.</summary>
-    [Serializable]
-    public class ButtonSpriteSet
+    /// <summary>
+    /// 스킨 역할 파트 — 한 파트 = 한 용도 = 한 전용 스프라이트 (전용 스프라이트 스펙 2026-09-26 §4).
+    /// 값은 명시 고정(씬 직렬화 안정). Scrim은 스프라이트 없이 색만.
+    /// </summary>
+    public enum SkinPart
     {
+        // 전투
+        InfoFrame = 100,        // 오른쪽 정보 패널 프레임 (세로 9-slice)
+        DiceTray = 101,         // 하단 주사위 트레이 (가로 9-slice)
+        TooltipFrame = 102,     // 키워드 정의 툴팁
+        HudBar = 103,           // HUD 골드·물약 바
+        HudTurnBadge = 104,     // 턴 배지
+        HudPotionSlot = 105,    // 빈 물약 홈
+        HudPotionChip = 106,    // 채워진 물약·유물 칩
+        ActionLabel = 107,      // 몬스터 행동 라벨
+        DiceTooltip = 108,      // 주사위 6면 툴팁 카드
+        TileCard = 109,         // 타일 정보 그림 액자
+        AttrCard = 110,         // 타일 속성 카드
+        NameChip = 111,         // 이름표 (정보 패널·모집 시트)
+        SectionChip = 112,      // 섹션 탭 칩
+        Divider = 113,          // 구분선
+        // 모집
+        RecruitSheet = 200,
+        RecruitTitleSign = 201,
+        BottleNameTag = 202,
+        // 노드맵 · 보상
+        ActSign = 300,
+        NodeCard = 301,
+        RewardFrame = 302,
+        RewardGoldBar = 303,
+        RewardCard = 304,
+        RewardNameTag = 305,
+        UpgradeFrame = 306,
+        // 상점 · 이벤트 · 결과 · 튜토리얼
+        ShopTitleSign = 400,
+        ShelfTag = 401,
+        ShopGoldPill = 402,
+        ShopStepFrame = 403,
+        EventFrame = 404,
+        EventDieSlot = 405,
+        ResultFrame = 406,
+        TutorialPromptFrame = 407,
+        TutorialBubble = 408,
+        // 색만
+        Scrim = 900,
+    }
+
+    /// <summary>버튼 역할 — 역할마다 전용 4상태 스프라이트.</summary>
+    public enum SkinButton
+    {
+        EndTurn = 100, Move = 101, CancelAction = 102, RollDice = 103,
+        RecruitCancel = 200, RecruitSelect = 201,
+        RewardContinue = 300, UpgradeCancel = 301,
+        Goods = 400, ShopSwap = 401, ShopLeave = 402, EventMain = 403, EventSkip = 404, Restart = 405, TutorialStart = 406, TutorialSkip = 407, ShopChoice = 408, ShopStepCancel = 409,
+        MenuStart = 500, MenuContinue = 501, MenuSettings = 502, MenuQuit = 503,
+    }
+
+    /// <summary>Sliced = 9-slice로 늘림, Simple = 고정 비율(preserveAspect) 일러스트.</summary>
+    public enum SkinMode { Sliced = 0, Simple = 1 }
+
+    [Serializable]
+    public class SkinEntry
+    {
+        public SkinPart Part;
+        public Sprite Sprite;
+        public SkinMode Mode = SkinMode.Sliced;
+        [Tooltip("9-slice 경계를 화면에서 줄이는 배수 (2 = 절반)")]
+        public float PixelsPerUnitMultiplier = 1f;
+        [Tooltip("전용 아트가 아직 없어 임시 스프라이트를 꽂아 둔 상태 — 점검에서 이슈로 보고")]
+        public bool Provisional;
+    }
+
+    [Serializable]
+    public class SkinButtonEntry
+    {
+        public SkinButton Button;
         public Sprite Normal;
         public Sprite Hover;
         public Sprite Pressed;
         public Sprite Disabled;
+        public SkinMode Mode = SkinMode.Sliced;
+        public float PixelsPerUnitMultiplier = 1f;
+        public bool Provisional;
     }
 
     /// <summary>
-    /// UI 스킨 단일 권위 (리스킨 스펙 2026-09-25 §3). 팔레트·9-slice·버튼 상태·아이콘을 한 에셋에 모은다.
-    /// 코드 생성 UI는 색상 상수 대신 <see cref="Current"/>를 읽고, 씬 UI는 UiSkinImage로 파트를 지정한다.
-    /// 에셋이 없거나 필드가 비면 예외 — 기본색·기본 스프라이트로 조용히 굴러가지 않는다.
-    /// 점검: 「도구/Dice Orbit/UI 스킨 점검」.
+    /// UI 스킨 단일 권위 (리스킨 스펙 2026-09-25 §3, 전용 스프라이트 스펙 2026-09-26 §4).
+    /// 팔레트 + 역할 파트 카탈로그(<see cref="Parts"/>) + 역할 버튼 카탈로그(<see cref="Buttons"/>) + 아이콘.
+    /// 코드 생성 UI는 <see cref="Apply(Image, SkinPart)"/>/<see cref="ApplyButton(Button, SkinButton)"/>로, 씬 UI는 UiSkinImage/UiSkinButton으로 역할만 지정한다.
+    /// 에셋이 없거나 파트가 비면 예외 — 다른 스프라이트로 조용히 굴러가지 않는다. 점검: 「도구/Dice Orbit/UI 스킨 점검」.
     /// </summary>
     [CreateAssetMenu(fileName = "UiSkin", menuName = "Dice Orbit/UI/UI Skin")]
     public class UiSkin : ScriptableObject
@@ -65,17 +136,11 @@ namespace DiceOrbit.UI.Skin
         public Color Passive   = new Color(0.514f, 0.624f, 0.557f);        // #839F8E 세이지
         public Color Scrim     = new Color(0.043f, 0.051f, 0.078f, 0.94f); // 어두운 반투명 배경 (0.85는 뒤 궤도가 비쳐 0.94로, 2026-09-25)
 
-        [Header("9-slice 스프라이트")]
-        public Sprite Panel;
-        public Sprite Card;
-        public Sprite Chip;
-        public Sprite Tooltip;
-        public Sprite Slot;
-        public Sprite Divider;
+        [Header("역할 파트 카탈로그 (SkinPart마다 1항목)")]
+        public List<SkinEntry> Parts = new List<SkinEntry>();
 
-        [Header("버튼 (상태별 스프라이트)")]
-        public ButtonSpriteSet ButtonPrimary = new ButtonSpriteSet();
-        public ButtonSpriteSet ButtonSecondary = new ButtonSpriteSet();
+        [Header("역할 버튼 카탈로그 (SkinButton마다 1항목, 4상태)")]
+        public List<SkinButtonEntry> Buttons = new List<SkinButtonEntry>();
 
         [Header("아이콘")]
         public Sprite Coin;
@@ -85,47 +150,36 @@ namespace DiceOrbit.UI.Skin
         [Header("도형")]
         public Sprite Circle;   // 흰 원 — 경로 점·배지 링·상태 칩처럼 틴트가 필요한 원형 전용
 
-        [Header("몬스터 (2026-09-25 몬스터 영역 표시 리스킨)")]
-        public Sprite IntentBubble;   // 머리 위 의도 말풍선 — 9-slice, 아래 중앙 꼬리
-
         [Header("월드 데칼")]
         public Sprite ZonePlate;      // 구역 플레이트 — 사분면 조각, pivot (0,0), PPU 128 = 16×16 유닛. 틴트용 흰 바탕
 
-        public Sprite GetSprite(SkinPart part) => part switch
+        // ── 파트 ──────────────────────────────────────────────
+
+        /// <summary>파트 항목 조회. 없거나 스프라이트가 비면 예외 (폴백 없음). Scrim은 항목이 없다 — <see cref="Apply"/>를 쓸 것.</summary>
+        public SkinEntry GetEntry(SkinPart part)
         {
-            SkinPart.Scrim => null,
-            SkinPart.Panel => Panel,
-            SkinPart.Card => Card,
-            SkinPart.Chip => Chip,
-            SkinPart.Tooltip => Tooltip,
-            SkinPart.Slot => Slot,
-            SkinPart.Divider => Divider,
-            SkinPart.ButtonPrimary => ButtonPrimary.Normal,
-            SkinPart.ButtonSecondary => ButtonSecondary.Normal,
-            SkinPart.IntentBubble => IntentBubble,
-            _ => throw new ArgumentOutOfRangeException(nameof(part), part, "알 수 없는 SkinPart"),
-        };
-
-        public ButtonSpriteSet GetButtonSet(ButtonKind kind)
-            => kind == ButtonKind.Primary ? ButtonPrimary : ButtonSecondary;
-
-        public void ApplyPanel(Image image)   => ApplySliced(image, Panel,   nameof(Panel));
-        public void ApplyCard(Image image)    => ApplySliced(image, Card,    nameof(Card));
-        public void ApplyChip(Image image)    => ApplySliced(image, Chip,    nameof(Chip));
-        public void ApplyTooltip(Image image) => ApplySliced(image, Tooltip, nameof(Tooltip));
-        public void ApplySlot(Image image)    => ApplySliced(image, Slot,    nameof(Slot));
-        public void ApplyDivider(Image image) => ApplySliced(image, Divider, nameof(Divider));
-        public void ApplyIntentBubble(Image image) => ApplySliced(image, IntentBubble, nameof(IntentBubble));
-
-        /// <summary>구역 플레이트 스프라이트 (월드 SpriteRenderer용). 비면 예외 — 브래킷·기본 사각형으로 폴백하지 않는다.</summary>
-        public Sprite GetZonePlate()
-        {
-            Require(ZonePlate, nameof(ZonePlate));
-            return ZonePlate;
+            if (part == SkinPart.Scrim)
+                throw new InvalidOperationException("[UiSkin] Scrim은 스프라이트 항목이 없습니다 (색만) — Apply(image, SkinPart.Scrim)을 쓰세요.");
+            if (!TryGetEntry(part, out var entry))
+                throw new InvalidOperationException($"[UiSkin] 파트 {part} 항목이 카탈로그에 없습니다 — 「도구/Dice Orbit/UI 스킨 점검」으로 확인하세요.");
+            if (entry.Sprite == null)
+                throw new InvalidOperationException($"[UiSkin] 파트 {part} 스프라이트가 비어 있습니다 — 「도구/Dice Orbit/UI 스킨 점검」으로 확인하세요.");
+            return entry;
         }
 
-        /// <summary>파트 이름으로 적용 — 씬 배치용 UiSkinImage가 쓴다. 버튼 파트는 Normal 면만(상태는 ApplyButton).</summary>
-        public void ApplySprite(Image image, SkinPart part)
+        /// <summary>항목이 있으면 true (스프라이트가 비어 있어도 true). 점검기·에디터 도구용.</summary>
+        public bool TryGetEntry(SkinPart part, out SkinEntry entry)
+        {
+            for (int i = 0; i < Parts.Count; i++)
+                if (Parts[i] != null && Parts[i].Part == part) { entry = Parts[i]; return true; }
+            entry = null;
+            return false;
+        }
+
+        public Sprite GetSprite(SkinPart part) => part == SkinPart.Scrim ? null : GetEntry(part).Sprite;
+
+        /// <summary>역할 파트를 Image에 적용 — 모드(Sliced/Simple)·9-slice 배수까지. Scrim은 색만.</summary>
+        public void Apply(Image image, SkinPart part)
         {
             if (image == null) throw new ArgumentNullException(nameof(image));
             if (part == SkinPart.Scrim)
@@ -135,10 +189,76 @@ namespace DiceOrbit.UI.Skin
                 image.color = Scrim;
                 return;
             }
-            ApplySliced(image, GetSprite(part), part.ToString());
+            var entry = GetEntry(part);
+            ApplyEntry(image, entry.Sprite, entry.Mode, entry.PixelsPerUnitMultiplier);
         }
 
-        /// <summary>틴트 가능한 흰 원 — 경로 점·배지 링·상태 칩 폴백 전용.</summary>
+        /// <summary>항목 추가 또는 교체 — 에디터 배선 도구용.</summary>
+        public SkinEntry SetEntry(SkinPart part, Sprite sprite, SkinMode mode, float pixelsPerUnitMultiplier = 1f, bool provisional = false)
+        {
+            if (part == SkinPart.Scrim) throw new ArgumentException("Scrim은 항목을 두지 않습니다", nameof(part));
+            if (!TryGetEntry(part, out var entry)) { entry = new SkinEntry { Part = part }; Parts.Add(entry); }
+            entry.Sprite = sprite; entry.Mode = mode; entry.PixelsPerUnitMultiplier = pixelsPerUnitMultiplier; entry.Provisional = provisional;
+            return entry;
+        }
+
+        // ── 버튼 ──────────────────────────────────────────────
+
+        /// <summary>버튼 항목 조회. 없거나 4상태 중 하나라도 비면 예외.</summary>
+        public SkinButtonEntry GetButton(SkinButton button)
+        {
+            if (!TryGetButton(button, out var entry))
+                throw new InvalidOperationException($"[UiSkin] 버튼 {button} 항목이 카탈로그에 없습니다 — 「도구/Dice Orbit/UI 스킨 점검」으로 확인하세요.");
+            RequireButtonSprite(entry.Normal,   button, "Normal");
+            RequireButtonSprite(entry.Hover,    button, "Hover");
+            RequireButtonSprite(entry.Pressed,  button, "Pressed");
+            RequireButtonSprite(entry.Disabled, button, "Disabled");
+            return entry;
+        }
+
+        public bool TryGetButton(SkinButton button, out SkinButtonEntry entry)
+        {
+            for (int i = 0; i < Buttons.Count; i++)
+                if (Buttons[i] != null && Buttons[i].Button == button) { entry = Buttons[i]; return true; }
+            entry = null;
+            return false;
+        }
+
+        /// <summary>버튼에 역할 4상태 스프라이트를 꽂는다 (SpriteSwap). targetGraphic이 없으면 같은 오브젝트의 Image.</summary>
+        public void ApplyButton(Button button, SkinButton role)
+        {
+            if (button == null) throw new ArgumentNullException(nameof(button));
+            var entry = GetButton(role);
+
+            var image = button.targetGraphic as Image;
+            if (image == null) image = button.GetComponent<Image>();
+            if (image == null)
+                throw new InvalidOperationException($"[UiSkin] 버튼 '{button.name}'에 Image가 없어 스프라이트를 꽂을 수 없습니다.");
+
+            ApplyEntry(image, entry.Normal, entry.Mode, entry.PixelsPerUnitMultiplier);
+            button.targetGraphic = image;
+            button.transition = Selectable.Transition.SpriteSwap;
+            button.spriteState = new SpriteState
+            {
+                highlightedSprite = entry.Hover,
+                selectedSprite = entry.Hover,
+                pressedSprite = entry.Pressed,
+                disabledSprite = entry.Disabled,
+            };
+        }
+
+        public SkinButtonEntry SetButton(SkinButton button, Sprite normal, Sprite hover, Sprite pressed, Sprite disabled,
+                                         SkinMode mode, float pixelsPerUnitMultiplier = 1f, bool provisional = false)
+        {
+            if (!TryGetButton(button, out var entry)) { entry = new SkinButtonEntry { Button = button }; Buttons.Add(entry); }
+            entry.Normal = normal; entry.Hover = hover; entry.Pressed = pressed; entry.Disabled = disabled;
+            entry.Mode = mode; entry.PixelsPerUnitMultiplier = pixelsPerUnitMultiplier; entry.Provisional = provisional;
+            return entry;
+        }
+
+        // ── 기타 ──────────────────────────────────────────────
+
+        /// <summary>틴트 가능한 흰 원 — 경로 점·배지 링·상태 칩 전용.</summary>
         public void ApplyCircle(Image image, Color tint)
         {
             if (image == null) throw new ArgumentNullException(nameof(image));
@@ -149,41 +269,33 @@ namespace DiceOrbit.UI.Skin
             image.color = tint;
         }
 
-        /// <summary>버튼에 상태별 스프라이트를 꽂는다 (SpriteSwap). targetGraphic이 없으면 같은 오브젝트의 Image를 쓴다.</summary>
-        public void ApplyButton(Button button, ButtonKind kind)
+        /// <summary>구역 플레이트 스프라이트 (월드 SpriteRenderer용). 비면 예외.</summary>
+        public Sprite GetZonePlate()
         {
-            if (button == null) throw new ArgumentNullException(nameof(button));
-            var set = GetButtonSet(kind);
-            string field = kind == ButtonKind.Primary ? nameof(ButtonPrimary) : nameof(ButtonSecondary);
-            Require(set.Normal,   field + ".Normal");
-            Require(set.Hover,    field + ".Hover");
-            Require(set.Pressed,  field + ".Pressed");
-            Require(set.Disabled, field + ".Disabled");
-
-            var image = button.targetGraphic as Image;
-            if (image == null) image = button.GetComponent<Image>();
-            if (image == null)
-                throw new InvalidOperationException($"[UiSkin] 버튼 '{button.name}'에 Image가 없어 스프라이트를 꽂을 수 없습니다.");
-
-            ApplySliced(image, set.Normal, field + ".Normal");
-            button.targetGraphic = image;
-            button.transition = Selectable.Transition.SpriteSwap;
-            button.spriteState = new SpriteState
-            {
-                highlightedSprite = set.Hover,
-                selectedSprite = set.Hover,
-                pressedSprite = set.Pressed,
-                disabledSprite = set.Disabled,
-            };
+            Require(ZonePlate, nameof(ZonePlate));
+            return ZonePlate;
         }
 
-        private static void ApplySliced(Image image, Sprite sprite, string field)
+        private static void ApplyEntry(Image image, Sprite sprite, SkinMode mode, float ppuMultiplier)
         {
-            if (image == null) throw new ArgumentNullException(nameof(image));
-            Require(sprite, field);
             image.sprite = sprite;
-            image.type = Image.Type.Sliced;
             image.color = Color.white;   // 스프라이트가 색을 가진다 — 틴트 금지
+            if (mode == SkinMode.Simple)
+            {
+                image.type = Image.Type.Simple;
+                image.preserveAspect = true;
+            }
+            else
+            {
+                image.type = Image.Type.Sliced;
+                image.pixelsPerUnitMultiplier = ppuMultiplier <= 0f ? 1f : ppuMultiplier;
+            }
+        }
+
+        private static void RequireButtonSprite(Sprite sprite, SkinButton button, string state)
+        {
+            if (sprite == null)
+                throw new InvalidOperationException($"[UiSkin] 버튼 {button}.{state} 스프라이트가 비어 있습니다 — 「도구/Dice Orbit/UI 스킨 점검」으로 확인하세요.");
         }
 
         private static void Require(Sprite sprite, string field)

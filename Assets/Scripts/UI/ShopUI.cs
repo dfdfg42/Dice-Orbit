@@ -280,7 +280,7 @@ namespace DiceOrbit.UI
             shadow.effectDistance = new Vector2(0f, -5f);
 
             var btn = go.AddComponent<Button>();
-            Skin.ApplyButton(btn, ButtonKind.Secondary);   // 상품 = 보조 톤(하늘), 품절/불가는 Disabled 면
+            Skin.ApplyButton(btn, SkinButton.Goods);   // 상품 태그 전용 4상태, 품절/불가는 Disabled 면
             btn.interactable = !sold && affordable;
             btn.onClick.AddListener(() => onBuy());
 
@@ -446,7 +446,7 @@ namespace DiceOrbit.UI
             shadow.effectDistance = new Vector2(0f, -5f);
 
             var btn = go.AddComponent<Button>();
-            Skin.ApplyButton(btn, ButtonKind.Primary);
+            Skin.ApplyButton(btn, SkinButton.ShopChoice);
             btn.onClick.AddListener(() => onClick());
 
             var txt = CreateText(go, label, 22, FontStyles.Bold);

@@ -330,7 +330,7 @@ namespace DiceOrbit.UI
                 le.preferredWidth = 110; le.preferredHeight = 110;
 
                 var img = die.AddComponent<Image>();
-                Skin.ApplySlot(img);   // 눈이 들어갈 홈
+                Skin.Apply(img, SkinPart.EventDieSlot);   // 눈이 들어갈 홈
                 img.raycastTarget = false;
 
                 var label = CreateText(die, "?", 52, FontStyles.Bold);
@@ -412,7 +412,7 @@ namespace DiceOrbit.UI
 
             go.AddComponent<Image>();
             var btn = go.AddComponent<Button>();
-            Skin.ApplyButton(btn, primary ? ButtonKind.Primary : ButtonKind.Secondary);
+            Skin.ApplyButton(btn, primary ? SkinButton.EventMain : SkinButton.EventSkip);
             btn.interactable = interactable;
             btn.onClick.AddListener(() => onClick());
 

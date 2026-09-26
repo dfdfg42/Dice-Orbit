@@ -1447,7 +1447,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 112
 --- !u!114 &180476990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1725,8 +1725,8 @@ GameObject:
   - component: {fileID: 218182118}
   - component: {fileID: 218182117}
   - component: {fileID: 218182115}
-  - component: {fileID: 218182116}
   - component: {fileID: 218182114}
+  - component: {fileID: 218182119}
   m_Layer: 0
   m_Name: "\uACC4\uC18DButton"
   m_TagString: Untagged
@@ -1808,19 +1808,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &218182116
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 218182113}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiRoundedImage
-  part: 6
 --- !u!222 &218182117
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1849,6 +1836,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -245}
   m_SizeDelta: {x: 200, y: 66}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &218182119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 218182113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 300
 --- !u!1 &234577135
 GameObject:
   m_ObjectHideFlags: 0
@@ -2055,10 +2055,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 249773289}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 7
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 409
 --- !u!1 &251060615
 GameObject:
   m_ObjectHideFlags: 0
@@ -2303,10 +2303,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 255274426}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 6
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 101
 --- !u!1 &261425718
 GameObject:
   m_ObjectHideFlags: 0
@@ -2522,7 +2522,6 @@ GameObject:
   - component: {fileID: 267126150}
   - component: {fileID: 267126153}
   - component: {fileID: 267126152}
-  - component: {fileID: 267126151}
   m_Layer: 0
   m_Name: Paper
   m_TagString: Untagged
@@ -2549,19 +2548,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -14, y: -14}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &267126151
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 267126149}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiRoundedImage
-  part: 1
 --- !u!114 &267126152
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2569,7 +2555,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 267126149}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -2769,7 +2755,7 @@ GameObject:
   - component: {fileID: 299159882}
   - component: {fileID: 299159881}
   - component: {fileID: 299159880}
-  - component: {fileID: 299159879}
+  - component: {fileID: 299159883}
   m_Layer: 0
   m_Name: CancelButton
   m_TagString: Untagged
@@ -2797,19 +2783,6 @@ RectTransform:
   m_AnchoredPosition: {x: 150, y: -255}
   m_SizeDelta: {x: 220, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &299159879
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 299159877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 7
 --- !u!114 &299159880
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2892,6 +2865,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 299159877}
   m_CullTransparentMesh: 1
+--- !u!114 &299159883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 299159877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 200
 --- !u!1 &302653669
 GameObject:
   m_ObjectHideFlags: 0
@@ -3210,7 +3196,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 0
+  part: 403
 --- !u!1 &316169698
 GameObject:
   m_ObjectHideFlags: 0
@@ -4219,6 +4205,7 @@ GameObject:
   - component: {fileID: 396733013}
   - component: {fileID: 396733015}
   - component: {fileID: 396733016}
+  - component: {fileID: 396733017}
   m_Layer: 5
   m_Name: DicePanel
   m_TagString: Untagged
@@ -4269,7 +4256,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: be68e86986a19ff47bc18dc476a83899, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 3fd4f68666f4b5c4fbb13298007ebdf9, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -4278,7 +4265,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  m_PixelsPerUnitMultiplier: 1.952
 --- !u!222 &396733014
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4333,6 +4320,19 @@ MonoBehaviour:
   shuffleMaxValue: 6
   bounceScale: 1.25
   bounceDuration: 0.15
+--- !u!114 &396733017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 396733011}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 101
 --- !u!1 &409322016
 GameObject:
   m_ObjectHideFlags: 0
@@ -5016,10 +5016,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 451284317}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 7
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 100
 --- !u!1 &451681958
 GameObject:
   m_ObjectHideFlags: 0
@@ -5264,7 +5264,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 0
+  part: 404
 --- !u!1 &462529402
 GameObject:
   m_ObjectHideFlags: 0
@@ -5382,7 +5382,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 111
 --- !u!114 &476586819
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5826,7 +5826,6 @@ GameObject:
   - component: {fileID: 506806378}
   - component: {fileID: 506806380}
   - component: {fileID: 506806379}
-  - component: {fileID: 506806381}
   m_Layer: 0
   m_Name: BG
   m_TagString: Untagged
@@ -5860,7 +5859,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 506806377}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -5891,19 +5890,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 506806377}
   m_CullTransparentMesh: 1
---- !u!114 &506806381
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 506806377}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 1
 --- !u!1 &510417139
 GameObject:
   m_ObjectHideFlags: 0
@@ -5955,7 +5941,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiRoundedImage
-  part: 2
+  part: 303
 --- !u!114 &510417142
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6418,7 +6404,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 0
+  part: 200
 --- !u!114 &560183496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6546,7 +6532,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 402
 --- !u!1 &561405522
 GameObject:
   m_ObjectHideFlags: 0
@@ -6914,7 +6900,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 5
+  part: 113
 --- !u!114 &606799623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7240,10 +7226,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 634404879}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 7
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 404
 --- !u!1 &646162345
 GameObject:
   m_ObjectHideFlags: 0
@@ -8071,10 +8057,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 723251451}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 6
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 103
 --- !u!1 &758120396
 GameObject:
   m_ObjectHideFlags: 0
@@ -9107,7 +9093,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 401
 --- !u!114 &894461709
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9398,10 +9384,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 905552743}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 6
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 401
 --- !u!1 &910316534
 GameObject:
   m_ObjectHideFlags: 0
@@ -9413,6 +9399,7 @@ GameObject:
   - component: {fileID: 910316535}
   - component: {fileID: 910316537}
   - component: {fileID: 910316536}
+  - component: {fileID: 910316538}
   m_Layer: 0
   m_Name: MainPanel
   m_TagString: Untagged
@@ -9460,7 +9447,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2a48715af2029e94c9cff5eb68ce8313, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b9723ae45c63c21489e326d6ced894d5, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -9478,6 +9465,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 910316534}
   m_CullTransparentMesh: 1
+--- !u!114 &910316538
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910316534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 102
 --- !u!1 &914833060
 GameObject:
   m_ObjectHideFlags: 0
@@ -9490,7 +9490,7 @@ GameObject:
   - component: {fileID: 914833065}
   - component: {fileID: 914833064}
   - component: {fileID: 914833063}
-  - component: {fileID: 914833062}
+  - component: {fileID: 914833066}
   m_Layer: 0
   m_Name: SelectButton
   m_TagString: Untagged
@@ -9518,19 +9518,6 @@ RectTransform:
   m_AnchoredPosition: {x: 400, y: -255}
   m_SizeDelta: {x: 220, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &914833062
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 914833060}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 6
 --- !u!114 &914833063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9613,6 +9600,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 914833060}
   m_CullTransparentMesh: 1
+--- !u!114 &914833066
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 914833060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 201
 --- !u!1 &916535557
 GameObject:
   m_ObjectHideFlags: 0
@@ -10222,7 +10222,6 @@ GameObject:
   - component: {fileID: 1015714627}
   - component: {fileID: 1015714630}
   - component: {fileID: 1015714629}
-  - component: {fileID: 1015714628}
   m_Layer: 0
   m_Name: Paper
   m_TagString: Untagged
@@ -10249,19 +10248,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -14, y: -14}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1015714628
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1015714626}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiRoundedImage
-  part: 1
 --- !u!114 &1015714629
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10269,7 +10255,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1015714626}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -10791,10 +10777,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1080242301}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 6
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 403
 --- !u!1 &1085913308
 GameObject:
   m_ObjectHideFlags: 0
@@ -11122,7 +11108,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 104
 --- !u!114 &1095797030
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11143,9 +11129,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e930b0b8427cb06489f8b5e73df6ce6d, type: 3}
-  m_Type: 1
-  m_PreserveAspect: 0
+  m_Sprite: {fileID: 21300000, guid: 7ea7672b89fe0dc4ca4acce644b2f37d, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -12115,7 +12101,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 112
 --- !u!114 &1204204125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12225,7 +12211,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 112
 --- !u!114 &1208918286
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12334,7 +12320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiRoundedImage
-  part: 0
+  part: 306
 --- !u!114 &1209487356
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12742,7 +12728,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 400
 --- !u!114 &1256713490
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12869,9 +12855,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e930b0b8427cb06489f8b5e73df6ce6d, type: 3}
-  m_Type: 1
-  m_PreserveAspect: 0
+  m_Sprite: {fileID: 21300000, guid: fff414bc11e25bc4e8da22ee578076c0, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -12899,7 +12885,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 103
 --- !u!1 &1279031967
 GameObject:
   m_ObjectHideFlags: 0
@@ -12971,7 +12957,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 201
 --- !u!114 &1279031971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13708,6 +13694,7 @@ GameObject:
   - component: {fileID: 1377115573}
   - component: {fileID: 1377115575}
   - component: {fileID: 1377115574}
+  - component: {fileID: 1377115576}
   m_Layer: 0
   m_Name: DHT_Panel
   m_TagString: Untagged
@@ -13756,7 +13743,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: be68e86986a19ff47bc18dc476a83899, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e439a332e3138214e980b1ea291244e6, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -13774,6 +13761,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1377115572}
   m_CullTransparentMesh: 1
+--- !u!114 &1377115576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1377115572}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 108
 --- !u!1 &1379319586
 GameObject:
   m_ObjectHideFlags: 0
@@ -14193,8 +14193,8 @@ GameObject:
   - component: {fileID: 1406206006}
   - component: {fileID: 1406206005}
   - component: {fileID: 1406206003}
-  - component: {fileID: 1406206004}
   - component: {fileID: 1406206002}
+  - component: {fileID: 1406206007}
   m_Layer: 0
   m_Name: "\uCDE8\uC18CButton"
   m_TagString: Untagged
@@ -14276,19 +14276,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &1406206004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1406206001}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiRoundedImage
-  part: 7
 --- !u!222 &1406206005
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -14317,6 +14304,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -232}
   m_SizeDelta: {x: 190, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1406206007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1406206001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 301
 --- !u!1 &1420129953
 GameObject:
   m_ObjectHideFlags: 0
@@ -14901,7 +14901,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 112
 --- !u!114 &1528654353
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15594,6 +15594,7 @@ GameObject:
   - component: {fileID: 1602640675}
   - component: {fileID: 1602640674}
   - component: {fileID: 1602640673}
+  - component: {fileID: 1602640677}
   m_Layer: 0
   m_Name: TileCard
   m_TagString: Untagged
@@ -15649,14 +15650,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.95, g: 0.93, b: 0.885, a: 0.98}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: be68e86986a19ff47bc18dc476a83899, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e439a332e3138214e980b1ea291244e6, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -15694,6 +15695,19 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &1602640677
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1602640671}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 109
 --- !u!1 &1605391424
 GameObject:
   m_ObjectHideFlags: 0
@@ -15782,7 +15796,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 8
+  part: 900
 --- !u!1 &1632323648
 GameObject:
   m_ObjectHideFlags: 0
@@ -15834,7 +15848,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 401
 --- !u!114 &1632323651
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16541,10 +16555,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1704944222}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 7
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 402
 --- !u!1 &1713839057
 GameObject:
   m_ObjectHideFlags: 0
@@ -16707,7 +16721,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiRoundedImage
-  part: 0
+  part: 302
 --- !u!114 &1737791421
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16817,7 +16831,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 112
 --- !u!114 &1765069327
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17650,7 +17664,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 5
+  part: 113
 --- !u!114 &1881269779
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17835,10 +17849,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1887001024}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Script: {fileID: 11500000, guid: 6600c4fbcbd20544b8ae792ba753ce5f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 7
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinButton
+  button: 102
 --- !u!1 &1890710753
 GameObject:
   m_ObjectHideFlags: 0
@@ -18413,7 +18427,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b9723ae45c63c21489e326d6ced894d5, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c58126d654c845d44b6281f066e42718, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -18422,7 +18436,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  m_PixelsPerUnitMultiplier: 1.672
 --- !u!222 &1961252767
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -18443,7 +18457,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 0
+  part: 100
 --- !u!1 &1971101200
 GameObject:
   m_ObjectHideFlags: 0
@@ -19054,7 +19068,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 111
 --- !u!114 &2018290680
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19514,7 +19528,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
-  part: 2
+  part: 300
 --- !u!114 &2106608389
 MonoBehaviour:
   m_ObjectHideFlags: 0

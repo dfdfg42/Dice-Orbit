@@ -55,7 +55,7 @@ namespace DiceOrbit.UI.Tutorial
             }
 
             var bubbleImg = NewImage(transform, Color.white, "Bubble");
-            Skin.ApplyTooltip(bubbleImg);
+            Skin.Apply(bubbleImg, SkinPart.TutorialBubble);
             bubble = bubbleImg.rectTransform;
             bubble.anchorMin = bubble.anchorMax = bubble.pivot = new Vector2(0.5f, 0.5f);
             bubble.sizeDelta = new Vector2(560, 150);
@@ -65,9 +65,9 @@ namespace DiceOrbit.UI.Tutorial
             brt.anchorMin = new Vector2(0, 0); brt.anchorMax = new Vector2(1, 1);
             brt.offsetMin = new Vector2(24, 54); brt.offsetMax = new Vector2(-24, -18);
 
-            nextButton = MakeButton(bubble, "다음", new Vector2(-24, 16), new Vector2(1, 0), new Vector2(140, 40), ButtonKind.Primary);
+            nextButton = MakeButton(bubble, "다음", new Vector2(-24, 16), new Vector2(1, 0), new Vector2(140, 40), SkinButton.TutorialStart);
             nextButtonLabel = nextButton.GetComponentInChildren<TextMeshProUGUI>();
-            skipButton = MakeButton(transform, "튜토리얼 스킵", new Vector2(-16, -16), new Vector2(1, 1), new Vector2(160, 40), ButtonKind.Secondary);
+            skipButton = MakeButton(transform, "튜토리얼 스킵", new Vector2(-16, -16), new Vector2(1, 1), new Vector2(160, 40), SkinButton.TutorialSkip);
             skipButton.onClick.AddListener(() => onSkip?.Invoke());
 
             gameObject.SetActive(false);
@@ -184,7 +184,7 @@ namespace DiceOrbit.UI.Tutorial
             rt.sizeDelta = new Vector2(Mathf.Max(0, w), Mathf.Max(0, h));
         }
 
-        private Button MakeButton(Transform parent, string text, Vector2 pos, Vector2 anchor, Vector2 size, ButtonKind kind)
+        private Button MakeButton(Transform parent, string text, Vector2 pos, Vector2 anchor, Vector2 size, SkinButton kind)
         {
             var img = NewImage(parent, Color.white, "Btn");
             var rt = img.rectTransform;

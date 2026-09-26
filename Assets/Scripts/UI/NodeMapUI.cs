@@ -242,7 +242,7 @@ namespace DiceOrbit.UI
             else
             {
                 Debug.LogError($"[NodeMapUI] {node.Type} 노드 스프라이트가 비어 있습니다 — 인스펙터의 Node Sprites를 배선하세요.");
-                Skin.ApplyCard(img);
+                Skin.Apply(img, SkinPart.NodeCard);
             }
 
             // 라벨 (스킨이 없을 때만 — 통짜 이미지는 아트가 타입을 표현)

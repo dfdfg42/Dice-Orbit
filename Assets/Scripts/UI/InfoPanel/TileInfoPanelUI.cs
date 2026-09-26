@@ -178,7 +178,7 @@ namespace DiceOrbit.UI
             bgRect.offsetMin = Vector2.zero;
             bgRect.offsetMax = Vector2.zero;
             var bgImage = bg.AddComponent<Image>();
-            UiSkin.Current.ApplyCard(bgImage);
+            UiSkin.Current.Apply(bgImage, SkinPart.AttrCard);
             bgImage.raycastTarget = true;                           // 카드 위 커서 = UI 위 (월드 호버 차단) + 키워드 링크 호버 영역
             var shadow = bg.AddComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0f, 0f, 0.35f);

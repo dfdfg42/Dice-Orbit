@@ -224,7 +224,7 @@ namespace DiceOrbit.UI
             cell.transform.SetParent(effectRow, false);
 
             var bg = cell.GetComponent<Image>();
-            Skin.ApplyCard(bg);
+            Skin.Apply(bg, SkinPart.DiceTooltip);
             bg.raycastTarget = false;
 
             var hl = cell.GetComponent<HorizontalLayoutGroup>();

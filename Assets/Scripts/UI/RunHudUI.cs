@@ -237,8 +237,8 @@ namespace DiceOrbit.UI
 
             var bg = go.AddComponent<Image>();
             if (bareIcon) bg.color = Color.clear;          // 배경판 없이 아이콘만 — 호버 히트 영역으로만 기능
-            else if (empty) Skin.ApplySlot(bg);            // 빈 홈
-            else Skin.ApplyChip(bg);
+            else if (empty) Skin.Apply(bg, SkinPart.HudPotionSlot);            // 빈 홈
+            else Skin.Apply(bg, SkinPart.HudPotionChip);
 
             if (empty)
             {
@@ -294,7 +294,7 @@ namespace DiceOrbit.UI
             go.name = "Chip";
 
             var bg = go.GetComponent<Image>();
-            if (bg != null) { if (empty) Skin.ApplySlot(bg); else Skin.ApplyChip(bg); }
+            if (bg != null) { if (empty) Skin.Apply(bg, SkinPart.HudPotionSlot); else Skin.Apply(bg, SkinPart.HudPotionChip); }
 
             var iconImg = go.transform.Find("Icon")?.GetComponent<Image>();
             var label = go.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
