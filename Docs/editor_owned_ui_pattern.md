@@ -78,3 +78,5 @@ public class SomeUI : MonoBehaviour
 5. 씬에 배치하는 패널/칩/버튼은 `UiSkinImage` 컴포넌트 + 파트 지정 (`Assets/Scripts/UI/UiSkinImage.cs`, Awake/OnValidate에서 적용). 절차 생성 라운드 사각형(`UiRoundedSprite`)과 `Assets/Art/Generated`는 2026-09-25 철거됨. 점검: 「도구/Dice Orbit/UI 스킨 점검」
 6. 정렬 질서: 사이드바 -5 / HUD 100 / 노드맵 900 / 상점·이벤트 1450 / 보상 1500 / 커서 툴팁 30000
 7. **레이아웃 그룹이 있는 오브젝트에 스킨 Image를 같이 두지 않는다.** `Image`는 ILayoutElement로 스프라이트 원본 크기를 선호 크기로 내놓고, 같은 우선순위의 LayoutGroup 값과 최댓값이 채택되므로 글자에 맞춰야 할 칩·카드가 스프라이트 크기(칩 312×106, 카드 ~150px)로 부푼다. 배경은 앵커 스트레치 + `LayoutElement.ignoreLayout` 자식(`Bg`)으로 분리한다 (2026-09-25 정보 패널·타일 카드에서 발견)
+
+> 2026-09-26 추가 — 스킨은 역할 카탈로그다. 씬 Image에는 `UiSkinImage.part`(역할), 씬 Button에는 `UiSkinButton.button`(역할)만 적고 스프라이트를 직접 배선하지 않는다. 새 역할이 필요하면 `SkinPart`/`SkinButton`에 값을 명시 번호로 추가하고 `UiSkin.asset`에 항목을 넣는다(비면 점검기가 잡는다). 전용 아트가 오기 전에는 `Provisional=true`로 임시 스프라이트를 꽂는다 — 조용한 폴백 대신 드러난 임시.

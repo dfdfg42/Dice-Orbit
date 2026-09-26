@@ -72,6 +72,8 @@
 | [superpowers/specs/2026-09-26-recruit-detail-reskin-design.md](superpowers/specs/2026-09-26-recruit-detail-reskin-design.md) | **모집 상세 화면 + 배경 리스킨 설계** — 크림 캐릭터 시트, 힉스필드 배경(옛 구도 참조), 캔버스 스케일 | 구현됨 |
 | [superpowers/plans/2026-09-26-recruit-detail-reskin.md](superpowers/plans/2026-09-26-recruit-detail-reskin.md) | 모집 상세·배경 **구현 계획** (4 태스크) | 완료 |
 | [superpowers/specs/2026-09-26-recruit-bottles-design.md](superpowers/specs/2026-09-26-recruit-bottles-design.md) | **모집 유리병 선택지 정리** — 잉크 유리병(힉스필드), 카운터 위 배치, 이름 칩·HP·제목 칩, 투명도 | 구현됨 |
+| [superpowers/specs/2026-09-26-ui-dedicated-sprites-design.md](superpowers/specs/2026-09-26-ui-dedicated-sprites-design.md) | **UI 전용 스프라이트 전환** — 공용 8부품을 역할별 전용 59항목(프레임·칩·버튼 4상태)으로, UiSkin 역할 카탈로그, 별 장식 제거 | 구현됨 |
+| [superpowers/plans/2026-09-26-ui-dedicated-sprites.md](superpowers/plans/2026-09-26-ui-dedicated-sprites.md) | 전용 스프라이트 **구현 계획** (구조 → 화면 5묶음 → 정리) | 완료 |
 | [superpowers/plans/2026-09-25-ui-reskin-generation-log.md](superpowers/plans/2026-09-25-ui-reskin-generation-log.md) | 힉스필드 생성 로그 (프롬프트·job id·비용) | 기록 |
 
 ---
