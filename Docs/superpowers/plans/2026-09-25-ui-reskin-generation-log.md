@@ -98,3 +98,12 @@
 | 22 | 유리병 최종 | high / 2k / 2:3 / transparent | STYLE + job c4394f8f | `364429c5-2a2a-431a-b5de-54abc9cf5d85` | `Assets/Sprites/캐릭터 선택화면/bottle_ink.png` 687×1208 (알파 트림, 최대 변 1200) | 2.75 |
 
 소계 3.25 → 누적 50.0, `balance` 30 (basic).
+
+## 3D 타일 실험 (2026-09-26) — 폐기
+
+| # | 항목 | 모델/품질 | 참조 | job id | 결과 | 비용 |
+|---|---|---|---|---|---|---|
+| 23 | 카툰 타일 컨셉 초안 ×2 | gpt_image_2_5 / low / 1k / opaque | STYLE | (세션 요약에 미보존) → `candidates/tile_concept_{1,2}.png` | 1번 채택 | 0.5 |
+| 24 | 타일 image-to-3D | `tripo_h3_1_image_to_3d` (textured) | 초안 1번 | (세션 요약에 미보존) → `models/tile_tripo.glb` 41MB, 1.44M면 | 4k면 데시메이트 후 UV 균열 → 사용자 결정 "이건 하지 말자"로 폐기 (스펙 layout-polish §4 V) | 9 |
+
+소계 9.5 → 누적 59.5, `balance` 20.5 (basic). 교훈: image-to-3D는 데시메이트 시 정점 UV 이식이 아니라 새 아틀라스로 텍셀 단위 재베이크가 필요하다. 타일은 2D 카드 유지.

@@ -50,3 +50,16 @@
 1. 코드: A(UiSkin), C(CombatManager), K(GameResultUI), I-카드(ShopUI), L(GameFlowManager) → 컴파일·자가 테스트.
 2. 씬(RunCommand, dirty 가드): B·C·D·E·F·G·H·I·J → 저장.
 3. 재캡처 투어 → 전후 비교 → 커밋(코드 1, 씬 1, 문서 1).
+
+## 4. 인게임 말풍선·행동 라벨·타일 패널 — 2026-09-26 추가
+
+> 근거: 사용자 지적 "몬스터 intent 말풍선 꼬리가 너무 짜부됐다, 공격 스킬명 패널이 너무 크다, 타일 정보 그림은 타일과 같은 이미지를 써야 한다, 타일도 카툰 느낌 3D로 뽑아볼까". 캡처 `review/fix_01_bubble_zoom.png`·`fix_03_tile_panel_zoom.png`·`fix_04_label_zoom.png`·`tile3d_01_battle.png`·`revert_01_battle.png`.
+
+| # | 문제 (캡처 근거) | 결과 |
+|---|---|---|
+| S | 행동 라벨(`MonsterActionLabel`)이 스킬명 한 줄인데 툴팁 스프라이트 원본 크기로 부푼다 — 배경 Image가 레이아웃 그룹 오브젝트에 같이 있었다(§3 교훈과 같은 원인) | 배경을 `ignoreLayout` 자식 `Bg`로 분리(툴팁 파트, `pixelsPerUnitMultiplier` 2, 그림자), 패딩 10/12/4/4, 간격 6, 아이콘 26, 글자 22 NoWrap. **적용** |
+| T | 타일 패널 그림이 스킨 슬롯 폴백이라 인게임 타일과 다르다 | `TileInfoPanelUI.SetTileVisual`이 타일 재질 텍스처(`new cardNormal`) 스프라이트를 Simple·비율 유지로 표시. 씬 `normalTileSprite`/`levelUpTileSprite` 배선, 비면 LogError(폴백 없음). **적용** |
+| U | 의도 말풍선 꼬리가 9-slice 가운데 열 압축으로 납작하다 | 몸통·꼬리 스프라이트 분리(`Tail` 자식, Simple)를 시도해 Play 확인까지 했으나 사용자 결정 "말풍선은 원래 거 쓰자" → **되돌림**. 현재 = 단일 `intent_bubble.png` 9-slice(ppuMultiplier 2.2, y 116) |
+| V | 타일을 카툰 3D로 | 힉스필드 컨셉 초안 2장(1번 채택) → Tripo image-to-3D(1.44M면 GLB) → 4k면 데시메이트·OBJ 임포트·프리팹 자식 `Visual`(3.56×2.38×4.82, 두께 0.55, 윗면 y 0.03)·루트 BoxCollider·URP 재질·플레이트 y −0.53까지 Play 확인. 정점 단위 최근접 UV 이식 때문에 삼각형 1,201/3,999개가 텍스처 섬을 가로질러 균열 무늬가 생겼고, 재베이크 전에 사용자 결정 "이건 하지 말자" → **전부 되돌림**(프리팹·재질·모델·씬 배선·plateY). 도구는 `_workspace/2026-09-25-ui-reskin/tools/{glb_to_obj,decimate_uv,rotate_obj_y90}.py`에 보존 |
+
+**교훈** — image-to-3D 결과를 데시메이트할 때는 정점 UV 이식이 아니라 새 아틀라스(xatlas)로 텍셀 단위 재베이크가 필요하다. 그리고 타일은 사용자 취향상 2D 카드로 유지한다.

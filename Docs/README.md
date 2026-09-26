@@ -66,7 +66,7 @@
 | [superpowers/plans/2026-09-25-ui-reskin-phase1-2-style-tile-core-skin.md](superpowers/plans/2026-09-25-ui-reskin-phase1-2-style-tile-core-skin.md) | 스타일 타일 + 코어 세트 + UiSkin **구현 계획** | 완료 |
 | [superpowers/plans/2026-09-25-ui-reskin-phase3-code-ui-migration.md](superpowers/plans/2026-09-25-ui-reskin-phase3-code-ui-migration.md) | 코드 UI 13파일 UiSkin 마이그레이션 + UiSkinImage **구현 계획** | 완료 |
 | [superpowers/plans/2026-09-25-ui-reskin-phase4-scene-dropin.md](superpowers/plans/2026-09-25-ui-reskin-phase4-scene-dropin.md) | 씬 드롭인 20장 + 버튼 SpriteSwap **구현 계획** (드롭인 매핑표 포함) | 완료 |
-| [superpowers/specs/2026-09-25-ui-layout-polish-design.md](superpowers/specs/2026-09-25-ui-layout-polish-design.md) | **UI 레이아웃·간격 정리** — 화면 투어 캡처 기반 발견→수정 표 (HUD 턴 칩, 노드맵 제목, 상점 선반/카드, 이벤트 여백, 결과창 패널, combatUI 배선) + §3 정보 패널 세로 흐름·타이포 위계·타일 패널 | 완료 |
+| [superpowers/specs/2026-09-25-ui-layout-polish-design.md](superpowers/specs/2026-09-25-ui-layout-polish-design.md) | **UI 레이아웃·간격 정리** — 화면 투어 캡처 기반 발견→수정 표 (HUD 턴 칩, 노드맵 제목, 상점 선반/카드, 이벤트 여백, 결과창 패널, combatUI 배선) + §3 정보 패널 세로 흐름·타이포 위계·타일 패널 + §4 행동 라벨·타일 패널 그림·말풍선 꼬리(되돌림)·3D 타일 실험(폐기) | 완료 |
 | [superpowers/specs/2026-09-25-monster-zone-intent-reskin-design.md](superpowers/specs/2026-09-25-monster-zone-intent-reskin-design.md) | **몬스터 영역 표시 리스킨 설계** — 구역 잉크 플레이트(힉스필드) + 의도 말풍선 + 공격 타일 밴드 | 구현됨 |
 | [superpowers/plans/2026-09-25-monster-zone-intent-reskin.md](superpowers/plans/2026-09-25-monster-zone-intent-reskin.md) | 구역 플레이트·의도 말풍선 **구현 계획** (7 태스크) | 완료 |
 | [superpowers/specs/2026-09-26-recruit-detail-reskin-design.md](superpowers/specs/2026-09-26-recruit-detail-reskin-design.md) | **모집 상세 화면 + 배경 리스킨 설계** — 크림 캐릭터 시트, 힉스필드 배경(옛 구도 참조), 캔버스 스케일 | 구현됨 |
