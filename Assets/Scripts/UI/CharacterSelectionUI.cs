@@ -27,6 +27,8 @@ namespace DiceOrbit.UI
         [SerializeField] private Transform cardContainer;
         [SerializeField] private GameObject characterCardPrefab;
         [SerializeField] private Canvas selectionCanvas;
+        [Tooltip("상단 제목 칩 글자 — \"동료를 고르세요 · n/m\" (2026-09-26)")]
+        [SerializeField] private TextMeshProUGUI titleText;
 
         [Header("Detail UI References")]
         [SerializeField] private GameObject detailRoot;
@@ -84,6 +86,8 @@ namespace DiceOrbit.UI
             if (detailRoot == null || _leftPanel == null || detailNameText == null || detailStatsText == null
                 || detailActiveText == null || detailPassiveText == null || ldConfirmButton == null || cancelButton == null || ldIllustrationImage == null)
                 Debug.LogError("[CharacterSelectionUI] 상세 슬롯이 비어 있습니다 — 씬 RecuritUI/DetailRoot/Panel 아래를 배선하세요.", this);
+            if (titleText == null)
+                Debug.LogError("[CharacterSelectionUI] titleText 슬롯이 비어 있습니다 — 씬 RecuritUI/TitleChip/Title을 배선하세요.", this);
 
             HideDetail();
             WireDetailButtons();
@@ -150,8 +154,19 @@ namespace DiceOrbit.UI
             BattleInfoPanelUI.SetVisible(true);    // 전투 복귀 시 정보 패널 복원
         }
 
+        /// <summary>상단 제목 칩 — 몇 번째 동료를 고르는 중인지.</summary>
+        private void UpdateTitle()
+        {
+            if (titleText == null) return;
+            titleText.text = sessionTargetCount > 1
+                ? $"동료를 고르세요 · {Mathf.Min(selectedCount + 1, sessionTargetCount)}/{sessionTargetCount}"
+                : "동료를 고르세요";
+        }
+
         private void GenerateRandomChoices()
         {
+            UpdateTitle();
+
             foreach (Transform child in cardContainer)
             {
                 Destroy(child.gameObject);

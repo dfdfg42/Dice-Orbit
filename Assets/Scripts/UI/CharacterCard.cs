@@ -54,6 +54,9 @@ namespace DiceOrbit.UI
 
         [Header("Dim Settings")]
         [SerializeField] private float dimmedAlpha = 0.25f;
+        [Tooltip("호버 전 카드 전체 투명도. 구 0.3은 병이 배경에 묻혀 안 보였다 (2026-09-26)")]
+        [SerializeField, Range(0f, 1f)] private float restingGroupAlpha = 0.85f;
+        [SerializeField, Range(0f, 1f)] private float hoverGroupAlpha = 1f;
 
         [Header("Tilt & Fall Animation")]
         [SerializeField] private float fallTiltAngle = 90f;
@@ -179,7 +182,7 @@ namespace DiceOrbit.UI
 
                 if (canvasGroup != null)
                 {
-                    canvasGroup.alpha = Mathf.Lerp(0f, 0.3f, easedT);
+                    canvasGroup.alpha = Mathf.Lerp(0f, restingGroupAlpha, easedT);
                 }
 
                 yield return null;
@@ -189,7 +192,7 @@ namespace DiceOrbit.UI
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha = 0.3f;
+                canvasGroup.alpha = restingGroupAlpha;
                 canvasGroup.interactable = true;
                 canvasGroup.blocksRaycasts = true;
             }
@@ -286,7 +289,7 @@ namespace DiceOrbit.UI
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha = hover ? 0.8f : 0.3f;
+                canvasGroup.alpha = hover ? hoverGroupAlpha : restingGroupAlpha;
             }
 
             if (portraitImage != null)
@@ -354,7 +357,7 @@ namespace DiceOrbit.UI
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha = dimmed ? dimmedAlpha : 0.3f;
+                canvasGroup.alpha = dimmed ? dimmedAlpha : restingGroupAlpha;
                 canvasGroup.interactable = !dimmed;
                 canvasGroup.blocksRaycasts = !dimmed;
             }
@@ -432,7 +435,7 @@ namespace DiceOrbit.UI
             rectTransform.anchoredPosition = introTargetPosition;
             hoverSuppressed = false;
             ApplyAlphaToUI(normalAlpha);
-            if (canvasGroup != null) canvasGroup.alpha = 0.3f;
+            if (canvasGroup != null) canvasGroup.alpha = restingGroupAlpha;
         }
 
         public IEnumerator PlayConfirmFallRoutine()
@@ -646,7 +649,7 @@ namespace DiceOrbit.UI
 
                 if (canvasGroup != null)
                 {
-                    canvasGroup.alpha = Mathf.Lerp(0.3f, 0f, easedT);
+                    canvasGroup.alpha = Mathf.Lerp(restingGroupAlpha, 0f, easedT);
                 }
 
                 yield return null;
