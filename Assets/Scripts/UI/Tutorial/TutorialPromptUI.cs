@@ -58,6 +58,7 @@ namespace DiceOrbit.UI.Tutorial
             btn.onClick.AddListener(() => onClick());
             var t = NewText(img.transform, text, 28);
             Stretch(t.rectTransform);
+            t.margin = kind == SkinButton.TutorialStart ? new Vector4(44, 0, 8, 0) : new Vector4(8, 0, 44, 0);   // 전용 버튼의 배지(왼쪽/오른쪽) 자리를 비워 글자가 겹치지 않게 (2026-09-26)
         }
 
         private static Image NewImage(Transform parent, Color c)

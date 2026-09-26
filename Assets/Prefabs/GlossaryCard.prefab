@@ -425,6 +425,7 @@ GameObject:
   - component: {fileID: 8923523254599365215}
   - component: {fileID: 8810470057300641496}
   - component: {fileID: 785588198168377387}
+  - component: {fileID: 2427343714410366046}
   m_Layer: 0
   m_Name: GlossaryCard
   m_TagString: Untagged
@@ -482,7 +483,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2a48715af2029e94c9cff5eb68ce8313, type: 3}
+  m_Sprite: {fileID: 21300000, guid: eea48183cb2f3c248bf65db7113fa9b9, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -491,7 +492,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  m_PixelsPerUnitMultiplier: 3
 --- !u!114 &8923523254599365215
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -548,3 +549,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
   m_HorizontalFit: 0
   m_VerticalFit: 2
+--- !u!114 &2427343714410366046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9049439282300756101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c688f30bc9e2414f819c279aa5df3f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.UI.UiSkinImage
+  part: 102

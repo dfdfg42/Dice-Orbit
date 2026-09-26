@@ -65,9 +65,9 @@ namespace DiceOrbit.UI.Tutorial
             brt.anchorMin = new Vector2(0, 0); brt.anchorMax = new Vector2(1, 1);
             brt.offsetMin = new Vector2(24, 54); brt.offsetMax = new Vector2(-24, -18);
 
-            nextButton = MakeButton(bubble, "다음", new Vector2(-24, 16), new Vector2(1, 0), new Vector2(140, 40), SkinButton.TutorialStart);
+            nextButton = MakeButton(bubble, "다음", new Vector2(-24, 16), new Vector2(1, 0), new Vector2(170, 52), SkinButton.TutorialStart);   // 전용 4상태 스프라이트(배지 포함)가 40px 높이에선 짜부돼 52로 (2026-09-26)
             nextButtonLabel = nextButton.GetComponentInChildren<TextMeshProUGUI>();
-            skipButton = MakeButton(transform, "튜토리얼 스킵", new Vector2(-16, -16), new Vector2(1, 1), new Vector2(160, 40), SkinButton.TutorialSkip);
+            skipButton = MakeButton(transform, "튜토리얼 스킵", new Vector2(-16, -16), new Vector2(1, 1), new Vector2(190, 52), SkinButton.TutorialSkip);
             skipButton.onClick.AddListener(() => onSkip?.Invoke());
 
             gameObject.SetActive(false);
@@ -193,6 +193,7 @@ namespace DiceOrbit.UI.Tutorial
             var btn = img.gameObject.AddComponent<Button>();
             Skin.ApplyButton(btn, kind);
             var t = NewText(img.rectTransform, text, 20); Stretch(t.rectTransform);
+            t.margin = kind == SkinButton.TutorialStart ? new Vector4(40, 0, 6, 0) : new Vector4(6, 0, 40, 0);   // 배지 자리 비우기 (2026-09-26)
             t.alignment = TextAlignmentOptions.Center;
             return btn;
         }
