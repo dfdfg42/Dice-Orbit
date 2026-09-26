@@ -265,7 +265,7 @@ namespace DiceOrbit.UI
             string label = sold
                 ? $"<color=#777777>{title}</color>\n\n<size=60%><color=#666666>품절</color></size>"
                 : $"{title}\n<size=70%>{desc}</size>\n<size=85%><color=#{ColorUtility.ToHtmlStringRGB(Skin.Accent)}>{price}G</color>" +
-                  (affordable ? "" : " <color=#B05050>✕</color>") + "</size>";
+                  (affordable ? "" : " <color=#B05050>×</color>") + "</size>";   // ×(U+00D7): ✕(U+2715)는 Pretendard에 없어 □로 떠다 (2026-09-26)
 
             var go = new GameObject("Goods", typeof(RectTransform));
             go.transform.SetParent(shelf, false);
