@@ -153,8 +153,11 @@ namespace DiceOrbit.UI
             shadow.effectColor = new Color(0f, 0f, 0f, 0.25f);
             shadow.effectDistance = new Vector2(2f, -2f);
 
+            // 전용 라벨 스프라이트는 아래 중앙에 꼬리가 있다(9-slice 아래 경계 = 꼬리 높이). 글자가 꼬리 위 몸통에 앉도록 아래 패딩에 꼬리 높이를 더한다 (2026-09-26)
+            var labelEntry = UiSkin.Current.GetEntry(SkinPart.ActionLabel);
+            int tailPx = Mathf.RoundToInt(labelEntry.Sprite.border.y / Mathf.Max(labelEntry.PixelsPerUnitMultiplier, 0.01f));
             var hlg = bubbleGO.AddComponent<HorizontalLayoutGroup>();
-            hlg.padding = new RectOffset(10, 12, 4, 4);
+            hlg.padding = new RectOffset(12, 14, 6, 6 + tailPx);
             hlg.spacing = 6f;
             hlg.childAlignment = TextAnchor.MiddleLeft;
             hlg.childControlWidth = true;  hlg.childControlHeight = true;

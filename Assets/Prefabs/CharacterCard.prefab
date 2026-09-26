@@ -509,7 +509,7 @@ MonoBehaviour:
   m_Padding:
     m_Left: 16
     m_Right: 16
-    m_Top: 4
+    m_Top: 26
     m_Bottom: 6
   m_ChildAlignment: 3
   m_Spacing: 0
@@ -601,7 +601,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e930b0b8427cb06489f8b5e73df6ce6d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e5d3f511a6c5895479123a747a041a0e, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -610,7 +610,7 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  m_PixelsPerUnitMultiplier: 3.8
 --- !u!114 &4016775332971933461
 MonoBehaviour:
   m_ObjectHideFlags: 0
