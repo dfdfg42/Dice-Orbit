@@ -153,7 +153,7 @@ namespace DiceOrbit.UI
             _coinIcon.preserveAspect = true;
             _coinIcon.raycastTarget = false;
 
-            goldText.margin = new Vector4(size + 4f, 0f, 0f, 0f);   // 아이콘 폭 + 간격만큼 텍스트 들여쓰기
+            goldText.margin = new Vector4(size + 10f, 0f, 0f, 0f);  // 아이콘 폭 + 간격 — 전용 HUD 바의 동전 홈(지름 49) 오른쪽 테두리를 글자가 넘지 않게 (2026-09-26)
         }
 
         private void RebuildRelics()
