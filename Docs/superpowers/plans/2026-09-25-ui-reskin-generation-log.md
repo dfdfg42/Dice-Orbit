@@ -89,3 +89,12 @@
 | 20 | 배경 최종 (4번) | 동일 | + job e04a065e | `f5df3944-0a7a-41ea-aade-b4e745b9d314` | `Assets/Sprites/캐릭터 선택화면/recruit_bg.png` 2688×1520 → 임포트 2048 | 2.75 |
 
 소계 6.5 → 누적 46.75. 교훈: 초안 선택 답변은 번호를 되물어 확정한 뒤 고해상을 뽑을 것(3번 2.75 낭비).
+
+## 모집 유리병 (2026-09-26) — 스펙 `2026-09-26-recruit-bottles-design.md`
+
+| # | 항목 | 모델/품질 | 참조 | job id | 결과 | 비용 |
+|---|---|---|---|---|---|---|
+| 21 | 유리병 초안 ×2 | gpt_image_2_5 / low / 1k / 2:3 / transparent | STYLE | `c4394f8f`(1번), `2413a13e`(2번) | 1번 채택 | 0.5 |
+| 22 | 유리병 최종 | high / 2k / 2:3 / transparent | STYLE + job c4394f8f | `364429c5-2a2a-431a-b5de-54abc9cf5d85` | `Assets/Sprites/캐릭터 선택화면/bottle_ink.png` 687×1208 (알파 트림, 최대 변 1200) | 2.75 |
+
+소계 3.25 → 누적 50.0, `balance` 30 (basic).

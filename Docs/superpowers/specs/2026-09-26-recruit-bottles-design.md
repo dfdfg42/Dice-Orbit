@@ -1,6 +1,6 @@
 # 모집 유리병 선택지 화면 정리 (2026-09-26)
 
-> 상태: **설계 승인, 구현 중** — 사용자 위임. 앞선 `2026-09-26-recruit-detail-reskin-design.md`(상세 화면·배경)의 후속.
+> 상태: **구현 완료 (2026-09-26)** — 사용자 위임. 앞선 `2026-09-26-recruit-detail-reskin-design.md`(상세 화면·배경)의 후속. 병 그림 `bottle_ink.png`(초안 1번 채택, 3.25크레딧, 잔액 30). 캡처 `review/recruit_07_cards.png`, `recruit_08_detail.png`.
 > 근거 캡처: `review/recruit_03_cards.png`(새 배경 위 병 3개 — 호버 전 알파 0.3으로 묻히고 이름·HP 없음, 병이 카운터 아래까지 내려옴).
 
 ## 1. 결정
