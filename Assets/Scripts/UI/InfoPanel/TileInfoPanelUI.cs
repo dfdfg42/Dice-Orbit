@@ -80,16 +80,18 @@ namespace DiceOrbit.UI
         {
             if (tileImage != null)
             {
+                // 인게임 타일과 같은 그림(타일 재질 텍스처 new cardNormal)을 같은 비율로. 비면 에러 — 슬롯 그림으로 대체하지 않는다 (2026-09-26)
                 var sprite = t.Type == Data.TileType.LevelUp ? levelUpTileSprite : normalTileSprite;
-                if (sprite != null)
+                if (sprite == null)
                 {
-                    tileImage.sprite = sprite;
-                    tileImage.type = Image.Type.Simple;
-                    tileImage.color = Color.white;
+                    Debug.LogError($"[TileInfoPanelUI] {t.Type} 타일 스프라이트가 비어 있습니다 — 씬 TileInfoPanelUI의 normalTileSprite/levelUpTileSprite에 타일 재질 텍스처를 배선하세요.", this);
                 }
                 else
                 {
-                    UiSkin.Current.ApplySlot(tileImage);   // 스프라이트 미지정: 스킨 슬롯 (아이콘의 홈)
+                    tileImage.sprite = sprite;
+                    tileImage.type = Image.Type.Simple;
+                    tileImage.preserveAspect = true;
+                    tileImage.color = Color.white;
                 }
             }
 

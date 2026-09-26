@@ -136,18 +136,27 @@ namespace DiceOrbit.UI
             var brt = (RectTransform)bubbleGO.transform;
             brt.pivot = new Vector2(0.5f, 0f);
 
-            var bg = bubbleGO.AddComponent<Image>();
+            // 배경 Image는 레이아웃 무시 자식에 — 레이아웃 그룹·ContentSizeFitter와 같은 오브젝트에 두면 Image가
+            // 스프라이트 원본 크기를 선호 크기로 내놓아 말풍선이 글자와 무관하게 부풀었다 (editor_owned_ui_pattern 체크리스트 7, 2026-09-26)
+            var bgGO = new GameObject("Bg", typeof(RectTransform));
+            bgGO.transform.SetParent(bubbleGO.transform, false);
+            var bgRT = (RectTransform)bgGO.transform;
+            bgRT.anchorMin = Vector2.zero; bgRT.anchorMax = Vector2.one;
+            bgRT.offsetMin = Vector2.zero; bgRT.offsetMax = Vector2.zero;
+            var bg = bgGO.AddComponent<Image>();
             UiSkin.Current.ApplyTooltip(bg);   // 말풍선 = 스킨 툴팁 파트 (외곽선은 스프라이트가 가진다)
+            bg.pixelsPerUnitMultiplier = 2f;    // 툴팁 9-slice 경계를 작은 라벨에 맞게 절반으로
             bg.raycastTarget = false;
+            bgGO.AddComponent<LayoutElement>().ignoreLayout = true;
 
             // 카드 느낌의 옅은 그림자
-            var shadow = bubbleGO.AddComponent<Shadow>();
+            var shadow = bgGO.AddComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0f, 0f, 0.25f);
             shadow.effectDistance = new Vector2(2f, -2f);
 
             var hlg = bubbleGO.AddComponent<HorizontalLayoutGroup>();
-            hlg.padding = new RectOffset(12, 14, 6, 6);
-            hlg.spacing = 8f;
+            hlg.padding = new RectOffset(10, 12, 4, 4);
+            hlg.spacing = 6f;
             hlg.childAlignment = TextAnchor.MiddleLeft;
             hlg.childControlWidth = true;  hlg.childControlHeight = true;
             hlg.childForceExpandWidth = false; hlg.childForceExpandHeight = false;
@@ -163,18 +172,18 @@ namespace DiceOrbit.UI
             img.preserveAspect = true;
             img.raycastTarget = false;
             var iconLE = iconGO.AddComponent<LayoutElement>();
-            iconLE.preferredWidth = 30f; iconLE.preferredHeight = 30f;
+            iconLE.preferredWidth = 26f; iconLE.preferredHeight = 26f;
 
             // ── 스킬명 라벨 (잉크색 볼드) ──
             var labelGO = new GameObject("Label", typeof(RectTransform));
             labelGO.transform.SetParent(bubbleGO.transform, false);
             var tmp = labelGO.AddComponent<TextMeshProUGUI>();
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
-            tmp.fontSize = 28f;
+            tmp.fontSize = 22f;                 // 28은 머리 위 라벨치고 컸다 (2026-09-26)
             tmp.fontStyle = FontStyles.Bold;
             tmp.color = UiSkin.Current.Ink;
             tmp.raycastTarget = false;
-            tmp.enableWordWrapping = false;
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
             if (borrowed != null) tmp.font = borrowed;
 
             ui.group = group;
