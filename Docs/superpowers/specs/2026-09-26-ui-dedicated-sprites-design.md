@@ -34,7 +34,7 @@
 | InfoFrame | `battle_info_frame` | 433×931 | 9V | InfoPanelCanvas/Panel | 캐릭터 시트: 상단 제목 띠(이름 칩이 걸릴 자리), 하단 잉크 장식 |
 | DiceTray | `battle_dice_tray` | 1900×130 | 9H | GameCanvas/DicePanel | 나무·크림 트레이, 양끝 둥근 모서리, 주사위가 놓이는 홈 느낌 |
 | TooltipFrame | `battle_tooltip_frame` | 동적 (패널 1차 자리) | 9 | TooltipCanvas/MainPanel (키워드 정의 툴팁) | 작은 정의 카드 |
-| HudBar | `hud_bar` | 380×66 | S | RunHud TopBar | 왼쪽 동전 홈 + 오른쪽 물약 3홈 자리 |
+| HudBar | `hud_bar` | 380×66 | S | RunHud TopBar | 왼쪽 동전 홈 + 오른쪽 물약 3홈 자리. **적용됨** — 홈 실측(800px 기준 ×0.475): 동전 홈 중심 36.6·지름 49, 물약 홈 중심 226/282/338·폭 49 → TopBar 패딩 좌 20, GoldText 143, PotionRow 간격 7, chipSize 49 |
 | HudTurnBadge | `hud_turn_badge` | 120×66 | S | RunHud TurnChip | 둥근 턴 배지 |
 | HudPotionSlot / HudPotionChip | `hud_potion_slot` / `hud_potion_chip` | 52×52 | S | PotionRow/Chip | 빈 홈 / 채워진 칩 |
 | EndTurnButton | `btn_end_turn_*` | 220×56 | 시트 | DicePanel/End Turn Button | 도장 느낌, 파랑 |
