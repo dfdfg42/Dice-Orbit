@@ -76,3 +76,16 @@
 소계 6.5 → 누적 40.25, `balance` 39.75 (basic).
 
 교훈: 정확한 기하가 필요한 데칼은 PIL 실루엣을 참조로 넣고 결과를 그 실루엣으로 마스킹하면 모델 편차와 무관하게 게임 기하와 맞는다. 9-slice 경계가 렌더 크기보다 크면 `Image.pixelsPerUnitMultiplier`로 경계를 줄인다(말풍선 2.2).
+
+## 모집 상세·배경 리스킨 (2026-09-26) — 스펙 `2026-09-26-recruit-detail-reskin-design.md`
+
+참조 추가: `REF_SHOP_BG` = `Assets/Sprites/상점/상점 임시배경.png` → `ed754fc6-7194-476f-8e9f-c50bfecdeaea`, `REF_RECRUIT_OLD` = `SelectScreen2.png` → `14c76fc6-b7d4-4ee8-a3b5-5e75e4402833`.
+
+| # | 항목 | 모델/품질 | 참조 | job id | 결과 | 비용 |
+|---|---|---|---|---|---|---|
+| 17 | 배경 초안 ×2 (선반 위주) | gpt_image_2_5 / low / 1k / 16:9 | SHOP_BG, STYLE | `c1125795`, `f3c8a71b` | 사용자: "기존 배경을 참조해 달라" → 재생성 | 0.5 |
+| 18 | 배경 초안 ×2 (옛 구도 참조) | 동일 | RECRUIT_OLD, SHOP_BG, STYLE | `020c9fce`(3번), `e04a065e`(4번) | 4번 채택 | 0.5 |
+| 19 | 배경 최종 (3번) | high / 2k / 16:9 / opaque | + job 020c9fce | `d592a9a1-e314-4fa1-9a47-f5dedd9d79af` | **폐기** (사용자가 4번으로 정정) | 2.75 |
+| 20 | 배경 최종 (4번) | 동일 | + job e04a065e | `f5df3944-0a7a-41ea-aade-b4e745b9d314` | `Assets/Sprites/캐릭터 선택화면/recruit_bg.png` 2688×1520 → 임포트 2048 | 2.75 |
+
+소계 6.5 → 누적 46.75. 교훈: 초안 선택 답변은 번호를 되물어 확정한 뒤 고해상을 뽑을 것(3번 2.75 낭비).

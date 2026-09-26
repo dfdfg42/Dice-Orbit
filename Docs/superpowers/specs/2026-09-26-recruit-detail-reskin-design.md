@@ -1,6 +1,7 @@
 # 모집(캐릭터 선택) 상세 화면 + 배경 리스킨 (2026-09-26)
 
-> 상태: **설계 승인, 구현 중** — 사용자 위임("유리병 이후 선택 화면이랑 배경을 네가 생각해서 바꿔봐"). 유리병 3개 선택지 화면 자체는 범위 밖.
+> 상태: **구현 완료 (2026-09-26)** — 계획 `2026-09-26-recruit-detail-reskin.md`. 실행 중 보정: (1) `SelectedBottleAnchor`가 CardContainer 자식이라 `GenerateRandomChoices`가 파괴하고 HLayout이 위치를 덮어써 고른 병이 제자리에 머물렀음 → 캔버스 직속으로 옮기고 카드 목표는 `cardContainer.InverseTransformPoint(anchor.position)`; (2) 배경은 사용자 요청으로 "기존 배경 구도 참조" 초안(4번)으로 재생성. 비용: 초안 1.0 + 고해상 2회(3번 폐기·4번 채택) 5.5 = 6.5.
+> 사용자 위임("유리병 이후 선택 화면이랑 배경을 네가 생각해서 바꿔봐"). 유리병 3개 선택지 화면 자체는 범위 밖.
 > 근거 캡처: `_workspace/2026-09-25-ui-reskin/review/sel_01_cards.png`(병 3개), `sel_02_detail.png`(상세), `recruit_assets_sheet.png`(기존 에셋 43장).
 > 관련: `2026-09-25-ui-reskin-uiskin-higgsfield-design.md`(스킨), `battle_info_panel_system.md`(상세 패널이 따르는 타이포·칩 문법), `editor_owned_ui_pattern.md` 체크리스트 7(레이아웃 그룹 + Image 함정).
 

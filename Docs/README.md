@@ -69,6 +69,8 @@
 | [superpowers/specs/2026-09-25-ui-layout-polish-design.md](superpowers/specs/2026-09-25-ui-layout-polish-design.md) | **UI 레이아웃·간격 정리** — 화면 투어 캡처 기반 발견→수정 표 (HUD 턴 칩, 노드맵 제목, 상점 선반/카드, 이벤트 여백, 결과창 패널, combatUI 배선) + §3 정보 패널 세로 흐름·타이포 위계·타일 패널 | 완료 |
 | [superpowers/specs/2026-09-25-monster-zone-intent-reskin-design.md](superpowers/specs/2026-09-25-monster-zone-intent-reskin-design.md) | **몬스터 영역 표시 리스킨 설계** — 구역 잉크 플레이트(힉스필드) + 의도 말풍선 + 공격 타일 밴드 | 구현됨 |
 | [superpowers/plans/2026-09-25-monster-zone-intent-reskin.md](superpowers/plans/2026-09-25-monster-zone-intent-reskin.md) | 구역 플레이트·의도 말풍선 **구현 계획** (7 태스크) | 완료 |
+| [superpowers/specs/2026-09-26-recruit-detail-reskin-design.md](superpowers/specs/2026-09-26-recruit-detail-reskin-design.md) | **모집 상세 화면 + 배경 리스킨 설계** — 크림 캐릭터 시트, 힉스필드 배경(옛 구도 참조), 캔버스 스케일 | 구현됨 |
+| [superpowers/plans/2026-09-26-recruit-detail-reskin.md](superpowers/plans/2026-09-26-recruit-detail-reskin.md) | 모집 상세·배경 **구현 계획** (4 태스크) | 완료 |
 | [superpowers/plans/2026-09-25-ui-reskin-generation-log.md](superpowers/plans/2026-09-25-ui-reskin-generation-log.md) | 힉스필드 생성 로그 (프롬프트·job id·비용) | 기록 |
 
 ---

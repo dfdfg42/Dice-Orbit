@@ -24,16 +24,16 @@
 - Create: `Assets/Sprites/캐릭터 선택화면/recruit_bg.png`
 - Modify (RunCommand): `Assets/Scenes/BattleScene.unity` — `RecuritUI` CanvasScaler, `BackGround` sprite
 
-- [ ] **Step 1: 참조 업로드** — `Assets/Sprites/상점/상점 임시배경.png`를 `media_upload` → curl PUT → `media_confirm`. media_id를 `REF_SHOP_BG`로 기록.
-- [ ] **Step 2: 초안 2장 (low·1k·16:9)** — 사용자 승인 체크포인트.
+- [x] **Step 1: 참조 업로드** — `Assets/Sprites/상점/상점 임시배경.png`를 `media_upload` → curl PUT → `media_confirm`. media_id를 `REF_SHOP_BG`로 기록.
+- [x] **Step 2: 초안 2장 (low·1k·16:9)** — 사용자 승인 체크포인트.
 
 프롬프트:
 ```
 Background illustration for a character recruitment screen in a cute pastel cartoon roguelike: the inside of a witch's laboratory at night, the same room and palette as the reference shop background (warm candle light, cream, lavender, sky blue, pink accents, thick dark ink outlines, flat pastel colors). Composition: a long empty wooden shelf runs across the middle third of the image where three large potion bottles will be placed later — keep that shelf and the space above it completely empty and uncluttered. Above and below the shelf: jars, books, hanging herbs, a round window with the night sky and stars, soft glowing candles. No text, no characters, no UI elements, no bottles on the shelf.
 ```
 `generate_image(model gpt_image_2_5, aspect_ratio 16:9, count 2, quality low, resolution 1k, background opaque, medias [REF_SHOP_BG, REF_STYLE])`. 승인 변형을 고른다.
-- [ ] **Step 3: 최종 (high·2k·16:9·opaque)** — 승인 변형 job을 참조에 추가. 다운로드 → `candidates/recruit_bg_raw.png` → `final/recruit_bg.png`(그대로) → `Assets/Sprites/캐릭터 선택화면/recruit_bg.png` 복사.
-- [ ] **Step 4: 임포트 + 배경 교체 + 스케일러 (RunCommand)**
+- [x] **Step 3: 최종 (high·2k·16:9·opaque)** — 승인 변형 job을 참조에 추가. 다운로드 → `candidates/recruit_bg_raw.png` → `final/recruit_bg.png`(그대로) → `Assets/Sprites/캐릭터 선택화면/recruit_bg.png` 복사.
+- [x] **Step 4: 임포트 + 배경 교체 + 스케일러 (RunCommand)**
 
 ```csharp
 using UnityEngine; using UnityEditor; using UnityEditor.SceneManagement; using UnityEngine.UI;
@@ -67,29 +67,29 @@ internal class CommandScript : IRunCommand
     }
 }
 ```
-- [ ] **Step 5: 커밋** — png(+meta) + 씬.
+- [x] **Step 5: 커밋** — png(+meta) + 씬.
 
 ### Task 2: CharacterSelectionUI 코드 정리
 
 **Files:** Modify `Assets/Scripts/UI/CharacterSelectionUI.cs`
 
-- [ ] **Step 1**: `Start()`의 `_leftPanel = detailRoot.transform.Find("LeftDescriptionPanel")` → `Find("Panel")`, `EnsureTopShade()` 호출·메서드·`_topShade`·`topShadeStrength`·`[Header("Shade …")]` 삭제. 슬롯 검사 추가:
+- [x] **Step 1**: `Start()`의 `_leftPanel = detailRoot.transform.Find("LeftDescriptionPanel")` → `Find("Panel")`, `EnsureTopShade()` 호출·메서드·`_topShade`·`topShadeStrength`·`[Header("Shade …")]` 삭제. 슬롯 검사 추가:
 ```csharp
             if (detailRoot == null || _leftPanel == null || detailNameText == null || detailActiveText == null || detailPassiveText == null || ldConfirmButton == null || cancelButton == null)
                 Debug.LogError("[CharacterSelectionUI] 상세 슬롯이 비어 있습니다 — 씬 RecuritUI/DetailRoot/Panel 아래를 배선하세요.", this);
 ```
-- [ ] **Step 2**: `BuildPassiveSummary`의 `sb.Append("<b>[").Append(name).Append("]</b>")` → `sb.Append("<b><color=#").Append(ColorUtility.ToHtmlStringRGB(DiceOrbit.UI.Skin.UiSkin.Current.Passive)).Append(">").Append(name).Append("</color></b>")`.
-- [ ] **Step 3**: Refresh → 콘솔 에러 0 → 커밋.
+- [x] **Step 2**: `BuildPassiveSummary`의 `sb.Append("<b>[").Append(name).Append("]</b>")` → `sb.Append("<b><color=#").Append(ColorUtility.ToHtmlStringRGB(DiceOrbit.UI.Skin.UiSkin.Current.Passive)).Append(">").Append(name).Append("</color></b>")`.
+- [x] **Step 3**: Refresh → 콘솔 에러 0 → 커밋.
 
 ### Task 3: DetailRoot 재구성 (RunCommand) + 슬롯 재배선
 
 **Files:** Modify (RunCommand) `Assets/Scenes/BattleScene.unity`
 
-- [ ] **Step 1**: RunCommand — 폰트 로드(`Assets/Resources/Fonts/KOTRA HOPE SDF.asset`, `Assets/TextMesh Pro/Fonts/에이투지체-4Regular SDF.asset`), `DetailRoot` 자식 전부 삭제(옛 LeftDescriptionPanel·라벨 이미지·버튼·LDIllust), `DetailRoot.anchoredPosition=(0,0)`, 스펙 §2 구조 생성(정보 패널 재구성 명령과 같은 헬퍼: NewRect/VLayout/HLayout/NewChip(Bg ignoreLayout)/NewTMP), 버튼 = Image + Button + UiSkinImage(ButtonPrimary/Secondary) + 라벨 TMP, LDIllust = Image(preserveAspect, 기존 `alche window.png`를 기본), `SelectedBottleAnchor.anchoredPosition=(−331,116)`. `SerializedObject(CharacterSelectionUI)`로 detailNameText/detailStatsText/detailPassiveText/detailActiveText/detailDescriptionText(null)/cancelButton/ldIllustrationImage/ldConfirmButton 배선. 저장.
-- [ ] **Step 2**: `dump_subtree.py … RecuritUI`로 구조 확인, 콘솔 에러 0.
+- [x] **Step 1**: RunCommand — 폰트 로드(`Assets/Resources/Fonts/KOTRA HOPE SDF.asset`, `Assets/TextMesh Pro/Fonts/에이투지체-4Regular SDF.asset`), `DetailRoot` 자식 전부 삭제(옛 LeftDescriptionPanel·라벨 이미지·버튼·LDIllust), `DetailRoot.anchoredPosition=(0,0)`, 스펙 §2 구조 생성(정보 패널 재구성 명령과 같은 헬퍼: NewRect/VLayout/HLayout/NewChip(Bg ignoreLayout)/NewTMP), 버튼 = Image + Button + UiSkinImage(ButtonPrimary/Secondary) + 라벨 TMP, LDIllust = Image(preserveAspect, 기존 `alche window.png`를 기본), `SelectedBottleAnchor.anchoredPosition=(−331,116)`. `SerializedObject(CharacterSelectionUI)`로 detailNameText/detailStatsText/detailPassiveText/detailActiveText/detailDescriptionText(null)/cancelButton/ldIllustrationImage/ldConfirmButton 배선. 저장.
+- [x] **Step 2**: `dump_subtree.py … RecuritUI`로 구조 확인, 콘솔 에러 0.
 
 ### Task 4: Play 검증 + 문서 + 커밋
 
-- [ ] **Step 1**: Play → 2초 후 `recruit_01_bg.png` 캡처 → 첫 `CharacterCard`의 Button `onClick.Invoke()` → 1.2초 후 `recruit_02_detail.png` → stop. `Read`로 확인: 배경·크림 시트·병·일러스트·버튼 위치, 콘솔 에러 0.
-- [ ] **Step 2**: 전후 시트(`sel_01`/`sel_02` vs 새 캡처) → `SendUserFile`.
-- [ ] **Step 3**: 문서 — 스펙 상태 `구현 완료`, README 행(스펙·계획), 생성 로그 행(+`REF_SHOP_BG`), 메모리. 커밋(씬+코드, 문서 각각).
+- [x] **Step 1**: Play → 2초 후 `recruit_01_bg.png` 캡처 → 첫 `CharacterCard`의 Button `onClick.Invoke()` → 1.2초 후 `recruit_02_detail.png` → stop. `Read`로 확인: 배경·크림 시트·병·일러스트·버튼 위치, 콘솔 에러 0.
+- [x] **Step 2**: 전후 시트(`sel_01`/`sel_02` vs 새 캡처) → `SendUserFile`.
+- [x] **Step 3**: 문서 — 스펙 상태 `구현 완료`, README 행(스펙·계획), 생성 로그 행(+`REF_SHOP_BG`), 메모리. 커밋(씬+코드, 문서 각각).
