@@ -127,4 +127,18 @@
 | 32 | 위 22종 최종 | high / 2k / transparent | STYLE + 채택 초안 job | `1563778f`, `061b509e`, `c83e505c`, `484fd701`, `9cc96d71`, `743bad6b`, `5b6892e5`, `be689867`, `e96a1cb2`, `bc0506a7`, `4469497f`, `d45e429f`, `ca71cbdf`, `1589d2c3`, `360654cf`, `0c44132a`, `efc2087e`, `249c26b9`, `b61dd8b1`, `8ff1e1d4`, `f5bbc83b`, `2f66b7ed` | `UI Skin/shop_*`, `event_frame`, `result_frame`, `tutorial_*`, `btn_goods/shop_*/event_*/restart/tutorial_*/menu_*` (시트 절단). 상품 태그는 고리를 왼쪽 경계(320px)에 넣어 늘림에서 제외 | 60.5 |
 | 33 | 이벤트 주사위 홈 + 주사위 굴리기 버튼 시트 (초안 생략, 직행) | high / 2k / transparent | STYLE | `d70a9d9f-67f6-42ce-bf25-2e3c80b9fb9e`, `48071e8f-50aa-44f8-a2c7-a93d129b9190` | `event_die_slot.png`, `btn_roll_dice_*` | 5.5 |
 
-소계 177.25 → 누적 236.75. 교훈: 6건 묶음도 직전 묶음이 아직 돌면 429 — 묶음 사이 jobs_wait 한 번.
+소계 177.25 → 누적 236.75.
+
+### 2026-09-26 밤 — 노드맵 배경 (임시 탑 그림 교체)
+
+참조 추가: `REF_RECRUIT_BG` = `Assets/Sprites/캐릭터 선택화면/recruit_bg.png` → `502c894e-ebe8-48f2-afe1-e3c95cdda231` (24시간 만료).
+
+| # | 대상 | 설정 | 참조 | job_id | 결과 | 크레딧 |
+|---|------|------|------|--------|------|--------|
+| 34 | 노드맵 배경 초안 3종 (밤하늘 탑 / 마녀 상점 게시판 / 지도 책상 탑뷰) | gpt_image_2_5 / low / 1k / opaque / 16:9 | STYLE, RECRUIT_BG | `c55865d8`, `4566da19`, `f2f5da80` | 사용자 3번(지도 책상) 채택 — "양피지 안에 맵 들어가게" | 0.75 |
+| 35 | 노드맵 배경 최종 — 양피지를 중앙 22~78% 폭·4~96% 높이로 재구성, 소품은 양옆 띠 | high / 2k / opaque / 16:9 | 초안 job f2f5da80, STYLE | `545f620a-030b-4c17-b3c3-26ee0a976641` | `Assets/Sprites/배경/nodemap_bg.png` 2688×1520 → 임포트 2048. 양피지 내부 ≈ x 27~72%, y 9~91% → ScrollView 뷰포트를 이 앵커로 | 2.75 |
+
+노드맵 배경 프롬프트(35): `Same scene, style, palette and line weight as the reference draft: a wooden desk seen from directly above with a large unrolled parchment map, cute pastel cartoon, thick dark ink outlines, flat colors, 16:9. Composition change: the parchment is perfectly centered horizontally and much taller. It spans from about 22% to 78% of the image width and from about 4% to 96% of the image height, with softly curled top and bottom edges. Its surface is plain muted lavender-gray with only a faint paper texture and nothing drawn on it, because a map of small cards will be placed over it later. Every prop stays outside the parchment on the wooden desk, in the left and right side bands: on the left a lit candle in a brass holder, a brass compass, a few scattered pastel dice and a rolled scroll tied with a ribbon; on the right an ink bottle with a quill, a steaming teacup on a saucer, a couple of pastel dice, and a sleeping black cat curled up at the bottom right corner. Warm candle light, flat pastel colors (cream, lavender, wood brown, sky blue, pink accents). No text, no people, no UI elements.`
+
+소계 3.5 → 누적 240.25.
+ 교훈: 6건 묶음도 직전 묶음이 아직 돌면 429 — 묶음 사이 jobs_wait 한 번.
