@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using DiceOrbit.Data.Modifiers;
 
 namespace DiceOrbit.UI.Skin
 {
@@ -38,6 +39,8 @@ namespace DiceOrbit.UI.Skin
         RewardCard = 304,
         RewardNameTag = 305,
         UpgradeFrame = 306,
+        RewardLootChip = 307,   // 전리품 칩 (유물·포션 — 둥근 아이콘 홈)
+        RewardStamp = 308,      // 확정 도장 테두리 (글자는 TMP)
         // 상점 · 이벤트 · 결과 · 튜토리얼
         ShopTitleSign = 400,
         ShelfTag = 401,
@@ -57,7 +60,7 @@ namespace DiceOrbit.UI.Skin
     {
         EndTurn = 100, Move = 101, CancelAction = 102, RollDice = 103,
         RecruitCancel = 200, RecruitSelect = 201,
-        RewardContinue = 300, UpgradeCancel = 301,
+        RewardContinue = 300, RewardSkip = 301, RewardChoiceCard = 302, RewardPortrait = 303,   // 주 버튼 · 보조(건너뛰기) · 선택 카드(선택 = Pressed) · 파티 초상 프레임
         Goods = 400, ShopSwap = 401, ShopLeave = 402, EventMain = 403, EventSkip = 404, Restart = 405, TutorialStart = 406, TutorialSkip = 407, ShopChoice = 408, ShopStepCancel = 409,
         MenuStart = 500, MenuContinue = 501, MenuSettings = 502, MenuQuit = 503,
     }
@@ -146,6 +149,12 @@ namespace DiceOrbit.UI.Skin
         public Sprite Coin;
         public Sprite PotionSlotEmpty;
         public Sprite Close;
+
+        [Header("모디파이어 계열 아이콘 (보상 카드)")]
+        public Sprite FamilyPosition;
+        public Sprite FamilyDice;
+        public Sprite FamilyCombo;
+        public Sprite FamilySurvival;
 
         [Header("도형")]
         public Sprite Circle;   // 흰 원 — 경로 점·배지 링·상태 칩처럼 틴트가 필요한 원형 전용
@@ -267,6 +276,20 @@ namespace DiceOrbit.UI.Skin
             image.type = Image.Type.Simple;
             image.preserveAspect = true;
             image.color = tint;
+        }
+
+        /// <summary>모디파이어 계열 아이콘. 계열이 None이거나 스프라이트가 비면 예외 (폴백 없음).</summary>
+        public Sprite GetFamilyIcon(ModifierFamily family)
+        {
+            switch (family)
+            {
+                case ModifierFamily.Position: Require(FamilyPosition, nameof(FamilyPosition)); return FamilyPosition;
+                case ModifierFamily.Dice:     Require(FamilyDice,     nameof(FamilyDice));     return FamilyDice;
+                case ModifierFamily.Combo:    Require(FamilyCombo,    nameof(FamilyCombo));    return FamilyCombo;
+                case ModifierFamily.Survival: Require(FamilySurvival, nameof(FamilySurvival)); return FamilySurvival;
+                default:
+                    throw new InvalidOperationException($"[UiSkin] 계열 {family}에는 아이콘이 없습니다 — 보상 카드로 제시할 모디파이어는 계열을 지정해야 합니다.");
+            }
         }
 
         /// <summary>구역 플레이트 스프라이트 (월드 SpriteRenderer용). 비면 예외.</summary>

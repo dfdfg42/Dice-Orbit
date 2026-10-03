@@ -26,7 +26,7 @@ namespace DiceOrbit.EditorTools
             else Debug.LogError($"[UiSkin] 이슈 {issues.Count}건 — 위 로그 확인");
         }
 
-        /// <summary>이슈 목록을 돌려준다. 비어 있으면 정상. 빈 스킨 = 파트(Scrim 제외) + 버튼 + 아이콘 3 + 원 + 플레이트 건.</summary>
+        /// <summary>이슈 목록을 돌려준다. 비어 있으면 정상. 빈 스킨 = 파트(Scrim 제외) + 버튼 + 아이콘 3 + 계열 아이콘 4 + 원 + 플레이트 건.</summary>
         public static List<string> Validate(UiSkin skin)
         {
             var issues = new List<string>();
@@ -66,6 +66,10 @@ namespace DiceOrbit.EditorTools
             CheckPresent(issues, skin.Coin,            nameof(skin.Coin));
             CheckPresent(issues, skin.PotionSlotEmpty, nameof(skin.PotionSlotEmpty));
             CheckPresent(issues, skin.Close,           nameof(skin.Close));
+            CheckPresent(issues, skin.FamilyPosition,  nameof(skin.FamilyPosition));
+            CheckPresent(issues, skin.FamilyDice,      nameof(skin.FamilyDice));
+            CheckPresent(issues, skin.FamilyCombo,     nameof(skin.FamilyCombo));
+            CheckPresent(issues, skin.FamilySurvival,  nameof(skin.FamilySurvival));
             CheckPresent(issues, skin.Circle,          nameof(skin.Circle));
             CheckPresent(issues, skin.ZonePlate,       nameof(skin.ZonePlate));
             return issues;

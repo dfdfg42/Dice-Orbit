@@ -68,13 +68,14 @@ namespace DiceOrbit.EditorTools
             foreach (SkinButton button in Enum.GetValues(typeof(SkinButton)))
                 s.SetButton(button, MakeSprite(true), MakeSprite(true), MakeSprite(true), MakeSprite(true), SkinMode.Sliced);
             s.Coin = MakeSprite(false); s.PotionSlotEmpty = MakeSprite(false); s.Close = MakeSprite(false);
+            s.FamilyPosition = MakeSprite(false); s.FamilyDice = MakeSprite(false); s.FamilyCombo = MakeSprite(false); s.FamilySurvival = MakeSprite(false);
             s.Circle = MakeSprite(false);
             s.ZonePlate = MakeSprite(false);
             return s;
         }
 
         private static int ExpectedEmptyIssueCount()
-            => (Enum.GetValues(typeof(SkinPart)).Length - 1) + Enum.GetValues(typeof(SkinButton)).Length + 5;
+            => (Enum.GetValues(typeof(SkinPart)).Length - 1) + Enum.GetValues(typeof(SkinButton)).Length + 9;   // 아이콘 3 + 계열 아이콘 4 + 원 + 플레이트
 
         private static void TestLoadOrThrowOnMissingAsset()
         {
