@@ -16,6 +16,7 @@
 | [skill_targeting_system.md](skill_targeting_system.md) | 액티브 스킬 타겟 선택 시스템 (OneEnemy~MultiTile) |
 | [combat_reactor_dispatch.md](combat_reactor_dispatch.md) | ICombatReactor DIM 타입별 디스패치 (OnAttack/OnHeal/OnMove/OnTurnEvent) |
 | [modifireSystem.md](modifireSystem.md) | 스킬 런타임 갱신(Modifier) 시스템 — Signature/Generic, 휘발성 컨텍스트 |
+| [hit_feel_system.md](hit_feel_system.md) | **타격감** — 한 방의 여섯 겹(임팩트·플래시·히트스톱·밀림·카메라 트라우마·타격음), 타격 등급(HitTier), HitFeelProfile, 렌더 전용 변형, 확장 지점 (2026-10-03) |
 | [combat_floating_notification_system.md](combat_floating_notification_system.md) | 패시브/상태이상 발동 시 플로팅 알림 버블 |
 | [Pipeline.md](Pipeline.md) | 전투 파이프라인 플로차트 (mermaid) |
 | [TurnSystem.md](TurnSystem.md) | 턴 시스템 플로차트 (mermaid) |

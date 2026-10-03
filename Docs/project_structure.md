@@ -174,4 +174,5 @@ graph TD
 
 ### 연출 및 알림 (Visuals / Notifications)
 *   **VFX** (`Assets/Scripts/Visuals/`): `CombatVfxProfile`(SO) + `VfxManager`(PlayCast/PlayHit/PlayHeal/PlayTile 등). `vfxProfile`는 `CharacterActiveSkill`에 있고, VFX는 `Execute` 내부에서 인라인 재생됩니다(PlayCast → 대상별 AttackContext → 파이프라인 → PlayHit). 커스텀 VFX 억제는 `context.AddTag("CustomVfx")` 태그로 처리. 프로필은 `Assets/Resources/Skill/VFX/`.
+*   **타격감** (`Assets/Scripts/Visuals/HitFeel/`): `HitDirector`(단일 창구 — `CombatPipeline.ApplyAction`이 `ReportHit` 호출) → `HitTier` 등급 → `HitFeelProfile`(Resources/Combat) 수치 → `UnitHitReactor`(플래시·밀림, 렌더 전용 변형) + `ImpactFeedback`(히트스톱) + `CameraShaker`(트라우마) + 타격음. 상세: [hit_feel_system.md](hit_feel_system.md).
 *   **알림/툴팁**: `FloatingLabelPopup`(월드 공간), `CombatNotifier`(NotifyStatus/NotifyPassive + 스태거), `HoverTooltipUI` + `GlossaryContainerUI` + `TooltipKeywordDatabase` + `IHoverTooltipProvider`(Character/Monster/TileData).
