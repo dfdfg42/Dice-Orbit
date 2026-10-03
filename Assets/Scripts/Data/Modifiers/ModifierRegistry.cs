@@ -90,13 +90,35 @@ namespace DiceOrbit.Data.Modifiers
         /// </summary>
         public static List<CharacterModifier> GetRandomChoicesFor(Core.Character character, int count)
         {
-            // 캐릭터에 적용 가능한 팩토리만 필터
+            return GetRandomChoicesWhere(m => character == null || m.CanApplyTo(character), count);
+        }
+
+        /// <summary>
+        /// 보상 공용 3택 (2026-10-03 보상 리워크) — 생존 파티원 중 한 명이라도 장착 가능한 종류에서 중복 없이 count개.
+        /// 파티가 비었거나 아무도 받을 수 없으면 빈 목록 (전체 풀로 대신 뽑지 않는다 — 받을 사람이 없는 카드는 제시하지 않는다).
+        /// </summary>
+        public static List<CharacterModifier> GetRandomChoicesForParty(IReadOnlyList<Core.Character> party, int count)
+        {
+            if (party == null || party.Count == 0) return new List<CharacterModifier>();
+            return GetRandomChoicesWhere(m =>
+            {
+                for (int i = 0; i < party.Count; i++)
+                {
+                    var c = party[i];
+                    if (c != null && c.IsAlive && m.CanApplyTo(c)) return true;
+                }
+                return false;
+            }, count);
+        }
+
+        /// <summary>조건을 통과한 종류에서 중복 없이 무작위 count개를 새 인스턴스로 반환. 조건 판정용 인스턴스는 버린다.</summary>
+        public static List<CharacterModifier> GetRandomChoicesWhere(System.Func<CharacterModifier, bool> eligible, int count)
+        {
+            if (eligible == null) throw new System.ArgumentNullException(nameof(eligible));
+
             var pool = new List<System.Func<CharacterModifier>>();
             foreach (var f in Factories)
-            {
-                if (character == null) { pool.Add(f); continue; }
-                if (f().CanApplyTo(character)) pool.Add(f);
-            }
+                if (eligible(f())) pool.Add(f);
 
             // Fisher-Yates 셔플
             for (int i = pool.Count - 1; i > 0; i--)
@@ -109,6 +131,20 @@ namespace DiceOrbit.Data.Modifiers
             var result = new List<CharacterModifier>(n);
             for (int i = 0; i < n; i++) result.Add(pool[i]());
             return result;
+        }
+
+        /// <summary>캐릭터에 장착된 같은 종류(타입) 모디파이어 수 — 보상 카드의 "중첩 n → n+1" 표시용.</summary>
+        public static int CountOn(Core.Character character, CharacterModifier modifier)
+        {
+            if (modifier == null) return 0;
+            var mods = character?.Stats?.Modifiers?.Modifiers;
+            if (mods == null) return 0;
+
+            int count = 0;
+            var type = modifier.GetType();
+            for (int i = 0; i < mods.Count; i++)
+                if (mods[i] != null && mods[i].GetType() == type) count++;
+            return count;
         }
     }
 }

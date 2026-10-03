@@ -12,6 +12,7 @@ namespace DiceOrbit.Data.Modifiers.Common
         private const float PercentPerStack = 10f;
 
         public override string ModifierName => "합류 전술";
+        public override ModifierFamily Family => ModifierFamily.Position;
         public override string Description
             => $"같은 구역에 다른 아군이 있으면 공격 피해가 {PercentPerStack:0.#}% 증가합니다.";
 
@@ -33,6 +34,7 @@ namespace DiceOrbit.Data.Modifiers.Common
         private const float PercentPerStack = 12f;
 
         public override string ModifierName => "독립 행동";
+        public override ModifierFamily Family => ModifierFamily.Position;
         public override string Description
             => $"같은 구역에 다른 아군이 없으면 공격 피해가 {PercentPerStack:0.#}% 증가합니다.";
 
@@ -57,6 +59,7 @@ namespace DiceOrbit.Data.Modifiers.Common
         private const float PercentPerStack = 10f;
 
         public override string ModifierName => "경계 돌파";
+        public override ModifierFamily Family => ModifierFamily.Position;
         public override string Description
             => $"다른 구역으로 이동하면 이번 자동공격 피해가 {PercentPerStack:0.#}% 증가합니다.";
 

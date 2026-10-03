@@ -26,6 +26,9 @@ namespace DiceOrbit.Data.Modifiers
         public virtual  Sprite           Icon         => null;
         public abstract ModifierCategory Category     { get; }
 
+        /// <summary>계열 — 보상 카드의 아이콘·라벨 (2026-10-03). 공용 12종은 전부 지정, 기본은 None(보상 카드로 제시 불가).</summary>
+        public virtual  ModifierFamily   Family       => ModifierFamily.None;
+
         // 패시브 50~100, 모디파이어 10~30 대역
         public virtual int Priority => 10;
 

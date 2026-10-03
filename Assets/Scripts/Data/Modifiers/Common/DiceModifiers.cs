@@ -11,6 +11,7 @@ namespace DiceOrbit.Data.Modifiers.Common
         private const int ArmorPerStack = 3;
 
         public override string ModifierName => "저속 방호";
+        public override ModifierFamily Family => ModifierFamily.Dice;
         public override string Description
             => $"주사위 눈이 3 이하면 방어도를 {ArmorPerStack}만큼 얻습니다.";
 
@@ -29,6 +30,7 @@ namespace DiceOrbit.Data.Modifiers.Common
         private const float PercentPerStack = 8f;
 
         public override string ModifierName => "관성 타격";
+        public override ModifierFamily Family => ModifierFamily.Dice;
         public override string Description
             => $"주사위 눈이 4 이상이면 이동 후 자동공격 피해가 {PercentPerStack:0.#}% 증가합니다.";
 
@@ -51,6 +53,7 @@ namespace DiceOrbit.Data.Modifiers.Common
         private const float PercentPerStack = 15f;
 
         public override string ModifierName => "극점 공명";
+        public override ModifierFamily Family => ModifierFamily.Dice;
         public override string Description
             => $"주사위 눈이 1 또는 6이면 이동 후 자동공격 피해가 {PercentPerStack:0.#}% 증가합니다.";
 
