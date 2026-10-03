@@ -69,6 +69,7 @@ Templates (비활성)      LootChip · StepPip · ModifierCard · PartyPortrait 
 ## 레이아웃 메모
 
 - 선택 카드 스프라이트(`btn_reward_choice_card_*`)는 선택 테두리·리본만큼 캔버스 여백이 있다 (위 약 17, 옆·아래 약 12 + 안쪽 테두리선 약 26). 카드 내용은 그 안쪽에 둔다. 리본은 우상단 — 이름은 리본 아래에서 시작한다.
+- 작은 덱 카드는 `RewardDieCard.borderScaleOverride`(3.2)로 9-slice 경계 배수를 키워 테두리·선택 리본을 카드 크기에 맞게 가늘게 한다 (0 = 스킨 카탈로그 값 2.37).
 - `DiceRow`는 부모가 자식의 선호 폭으로 배치한다 (`childControlWidth = true`). 자식에 `ContentSizeFitter`를 두면 부모가 갱신 전 폭으로 배치해 덱 줄이 새 주사위 카드와 겹친다.
 - 박자 몸통은 **먼저 켠 뒤 채운다** (`OpenBody` → `Build…`). 켜지는 순간 `UiSkinButton.Awake`가 스프라이트를 보통 상태로 되돌리기 때문.
 - "버릴 포션 고르기" 줄은 박자 안내문과 같은 자리를 쓴다 — 줄이 나와 있으면 안내문을 숨긴다.

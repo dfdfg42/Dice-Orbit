@@ -25,6 +25,8 @@ namespace DiceOrbit.UI
         [Tooltip("보조 설명 (새 주사위 카드에만 있다 — 덱 카드는 비워 둔다)")]
         [SerializeField] private TextMeshProUGUI descriptionText;
         [SerializeField] private CanvasGroup group;
+        [Tooltip("9-slice 경계 배수 덮어쓰기 — 작은 카드에서 테두리·선택 리본이 카드에 비해 과하게 크지 않게 (0 = 스킨 카탈로그 값)")]
+        [SerializeField] private float borderScaleOverride;
 
         public RectTransform Rect => (RectTransform)transform;
 
@@ -52,6 +54,7 @@ namespace DiceOrbit.UI
         public void SetSelected(bool selected)
         {
             UiSkin.Current.ApplyButtonSelected(button, SkinButton.RewardChoiceCard, selected);
+            if (borderScaleOverride > 0f) ((Image)button.targetGraphic).pixelsPerUnitMultiplier = borderScaleOverride;
             Rect.localScale = Vector3.one * (selected ? 1.04f : 1f);
         }
 

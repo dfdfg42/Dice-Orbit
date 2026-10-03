@@ -295,6 +295,7 @@ namespace DiceOrbit.EditorTools
             var view = root.gameObject.AddComponent<RewardDieCard>();
             Wire(view, ("button", button), ("nameText", name), ("rarityText", rarity), ("effectText", effect), ("group", group));
             WireArray(view, "faceLabels", faces);
+            WireFloat(view, "borderScaleOverride", 3.2f);   // 작은 카드 — 테두리·리본을 카드 크기에 맞게 가늘게
             return view;
         }
 
@@ -484,6 +485,15 @@ namespace DiceOrbit.EditorTools
             prop.arraySize = values.Length;
             for (int i = 0; i < values.Length; i++)
                 prop.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void WireFloat(UnityEngine.Object target, string field, float value)
+        {
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(field);
+            if (prop == null) throw new InvalidOperationException($"[RewardUiScaffold] {target.GetType().Name}.{field} 필드가 없다.");
+            prop.floatValue = value;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
