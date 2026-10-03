@@ -59,7 +59,7 @@
 - 주 버튼: `바꿀 주사위를 고르세요`(비활성) → `교체`. 보조 버튼 `받지 않기`.
 
 ### 전리품 칩
-- 골드: 동전 홈이 있는 골드 바 + `+N` 카운트업. 진입 즉시 지갑에 들어간다 (유물 보너스 포함).
+- 골드: 전리품 칩(동전 아이콘) + `+N` 카운트업. 진입 즉시 지갑에 들어간다 (유물 보너스 포함).
 - 유물(엘리트): 아이콘 + 이름, 즉시 획득. 호버 = 설명.
 - 포션(35%): 빈 슬롯이 있으면 즉시 획득. 가득 차면 칩이 `가방 가득` 상태가 되고, 전리품 줄 아래에 "버릴 포션 고르기" 줄이 나온다 — 가진 포션을 누르면 그걸 버리고 새 포션을 받는다. 그냥 두면 포기.
 
@@ -85,9 +85,9 @@ Data/Modifiers/
   ModifierRegistry     + GetRandomChoicesForParty(party, count)
 UI/Reward/
   RewardUI.cs          씬 슬롯 + 박자 렌더링 (Show/Hide 계약 유지 — GameFlowManager 무변경)
-  RewardLootChip.cs · RewardModifierCard.cs · RewardPartyPortrait.cs · RewardDieCard.cs
+  RewardLootChip.cs · RewardStepPip.cs · RewardModifierCard.cs · RewardPartyPortrait.cs · RewardDieCard.cs
                        씬 템플릿에 붙는 뷰 컴포넌트 (Bind + 상태 표시)
-  RewardHoverProxies.cs  DiceCardHover · RewardHoverInfo (상점이 같이 쓴다)
+  RewardHoverInfo.cs   호버 설명 프록시 (DiceCardHover는 삭제 — 주사위 카드가 6면·효과를 직접 보여 준다)
 UI/UiMotion.cs         코루틴 미니 모션 (팝인·페이드·카운트업·도장) — unscaled time
 Editor/RewardUiScaffold.cs   [DiceOrbit/보상 UI 레이아웃 재생성] — 캔버스 계층 + 템플릿 + 슬롯 배선을 씬에 박제
 Editor/RewardFlowSelfTests.cs
@@ -101,16 +101,15 @@ Editor/RewardFlowSelfTests.cs
 
 | 역할 | 종류 | 상태 | 비고 |
 |------|------|------|------|
-| `RewardFrame` (302) | 파트 | 유지 | 시트 프레임 (물결 띠) — 크기만 1320×860 |
-| `RewardGoldBar` (303) | 파트 | 유지 | 골드 전리품 칩 |
-| `RewardLootChip` (307) | 파트 | **신규** | 유물·포션 칩 (둥근 아이콘 홈) |
+| `RewardFrame` (302) | 파트 | 유지 | 시트 프레임 (물결 띠) — 크기만 1320×920 |
+| `RewardLootChip` (307) | 파트 | **신규** | 전리품 칩 — 골드·유물·포션 공용 (둥근 아이콘 홈) |
 | `RewardStamp` (308) | 파트 | **신규** | 확정 도장 테두리 (글자는 TMP) |
 | `RewardChoiceCard` (302) | 버튼 4상태 | **신규** | 모디파이어·주사위 카드 (선택 = pressed) |
 | `RewardPortrait` (303) | 버튼 4상태 | **신규** | 파티 초상 프레임 |
 | `RewardContinue` (300) | 버튼 | 유지 | 주 버튼 (장착/교체/계속) |
 | `RewardSkip` (301) | 버튼 | 이름 변경 (구 `UpgradeCancel`) | 보조 버튼 |
 | 모디파이어 계열 아이콘 4종 | 아이콘 | **신규** | 위치·주사위·콤보·생존 |
-| `RewardCard`(304) · `RewardNameTag`(305) · `UpgradeFrame`(306) | 파트 | **삭제** | 스프라이트도 삭제 |
+| `RewardGoldBar`(303) · `RewardCard`(304) · `RewardNameTag`(305) · `UpgradeFrame`(306) | 파트 | **삭제** | 스프라이트도 삭제 |
 
 신규 아트 5건은 힉스필드 초안(low) → 채택 → 고해상(2k 투명). 오기 전에는 `Provisional=true`로 드러낸다.
 

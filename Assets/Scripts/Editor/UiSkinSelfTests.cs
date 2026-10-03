@@ -28,6 +28,7 @@ namespace DiceOrbit.EditorTools
             TestApplyThrowsWhenSpriteEmpty();
             TestApplyButtonSetsSpriteSwap();
             TestApplyButtonThrowsWhenStateMissing();
+            TestApplyButtonSelectedUsesPressedAsBase();
             TestGetSpriteCoversEveryPart();
             TestValidatorReportsEmptySkin();
             TestValidatorPassesCompleteSkin();
@@ -150,6 +151,28 @@ namespace DiceOrbit.EditorTools
             Check(btn.spriteState.pressedSprite == set.Pressed, "ApplyButton: pressed = Pressed");
             Check(btn.spriteState.disabledSprite == set.Disabled, "ApplyButton: disabled = Disabled");
             Check(btn.targetGraphic is Image tg && tg.sprite == set.Normal && tg.type == Image.Type.Sliced, "ApplyButton: targetGraphic = Normal, Sliced");
+            UnityEngine.Object.DestroyImmediate(go);
+            UnityEngine.Object.DestroyImmediate(skin);
+        }
+
+        private static void TestApplyButtonSelectedUsesPressedAsBase()
+        {
+            var skin = ScriptableObject.CreateInstance<UiSkin>();
+            Sprite n = MakeSprite(true), h = MakeSprite(true), p = MakeSprite(true), d = MakeSprite(true);
+            skin.SetButton(SkinButton.RewardChoiceCard, n, h, p, d, SkinMode.Sliced);
+            var go = new GameObject("selectable", typeof(Image), typeof(Button));
+            var btn = go.GetComponent<Button>();
+            var img = go.GetComponent<Image>();
+
+            skin.ApplyButtonSelected(btn, SkinButton.RewardChoiceCard, true);
+            Check(img.sprite == p, "선택: 바탕 = Pressed");
+            Check(btn.spriteState.highlightedSprite == p, "선택: 호버도 Pressed (선택이 풀려 보이지 않게)");
+            Check(btn.spriteState.disabledSprite == d, "선택: 비활성 스프라이트는 그대로");
+
+            skin.ApplyButtonSelected(btn, SkinButton.RewardChoiceCard, false);
+            Check(img.sprite == n, "해제: 바탕 = Normal");
+            Check(btn.spriteState.highlightedSprite == h, "해제: 호버 = Hover");
+
             UnityEngine.Object.DestroyImmediate(go);
             UnityEngine.Object.DestroyImmediate(skin);
         }

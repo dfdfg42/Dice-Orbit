@@ -35,11 +35,8 @@ namespace DiceOrbit.UI.Skin
         ActSign = 300,
         NodeCard = 301,
         RewardFrame = 302,
-        RewardGoldBar = 303,
-        RewardCard = 304,
-        RewardNameTag = 305,
-        UpgradeFrame = 306,
-        RewardLootChip = 307,   // 전리품 칩 (유물·포션 — 둥근 아이콘 홈)
+        // 303~306 (RewardGoldBar·RewardCard·RewardNameTag·UpgradeFrame)은 보상 리워크(2026-10-03)로 삭제 — 번호 재사용 금지
+        RewardLootChip = 307,   // 전리품 칩 (골드·유물·포션 공용 — 둥근 아이콘 홈)
         RewardStamp = 308,      // 확정 도장 테두리 (글자는 TMP)
         // 상점 · 이벤트 · 결과 · 튜토리얼
         ShopTitleSign = 400,
@@ -254,6 +251,23 @@ namespace DiceOrbit.UI.Skin
                 pressedSprite = entry.Pressed,
                 disabledSprite = entry.Disabled,
             };
+        }
+
+        /// <summary>
+        /// 선택 상태가 유지되는 버튼(보상 카드·파티 초상)용 — 선택이면 Pressed 스프라이트를 바탕·호버로 쓴다.
+        /// 선택 해제는 같은 메서드에 false (보통 상태로 되돌린다).
+        /// </summary>
+        public void ApplyButtonSelected(Button button, SkinButton role, bool selected)
+        {
+            ApplyButton(button, role);
+            if (!selected) return;
+
+            var entry = GetButton(role);
+            ((Image)button.targetGraphic).sprite = entry.Pressed;
+            var state = button.spriteState;
+            state.highlightedSprite = entry.Pressed;
+            state.selectedSprite = entry.Pressed;
+            button.spriteState = state;
         }
 
         public SkinButtonEntry SetButton(SkinButton button, Sprite normal, Sprite hover, Sprite pressed, Sprite disabled,
