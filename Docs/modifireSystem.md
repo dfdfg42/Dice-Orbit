@@ -88,12 +88,12 @@ public override void OnRefreshSkill(CharacterModfierContext context)
 - **`ModifierManager : IModifierManager`** (`.../Modifiers/ModifierManager.cs`) — 캐릭터에 장착된 모디파이어 컨테이너. `Add/Remove/Modifiers`, `ApplyTo(ctx)`(장착 순서대로 `OnRefreshSkill` 일괄 적용, `ctx.IsCancelled` 시 중단), `CollectReactors(list)`(Generic 훅을 파이프라인 리액터로 등록).
 - **`CharacterModfierContext`** (`Combat/Pipeline/CharacterModfierContext.cs`) — 스킬의 초기 타게팅값(`TargetType/TargetCount/PreviewStyle`)을 담는 "도화지". 생성자가 스킬의 기본값으로 채운다. 파생: `WarriorGreatswordModifiedContext`(전용 `BaseDamageMultiplier`, 기본 1). ⚠️ `BaseDamageMultiplier`는 현재 **미배선** — 정의만 있고 읽는/쓰는 곳이 없다(`CalculateRawDamage`는 자기 `multiplier` 필드만 사용). 향후 대검 배율 모디파이어용 자리.
 - **`CharacterActiveSkill.GenerateContext(source, slot)`** — 스킬이 자기 초기 컨텍스트를 만든다. 기본은 `CharacterModfierContext`; 전용 기믹이 있으면 override해 파생 컨텍스트를 반환(예: `WarriorGreatswordActive`).
-- **`ModifierRegistry`** (`Data/Modifiers/ModifierRegistry.cs`) — 보상 풀(정적 팩토리 배열). `GetRandomChoicesFor(character, count)`가 `CanApplyTo`로 거른 뒤 셔플해 제시하고, `ModifierManager.Add`로 장착된다.
+- **`ModifierRegistry`** (`Data/Modifiers/ModifierRegistry.cs`) — 보상 풀(정적 팩토리 배열). 보상은 `GetRandomChoicesForParty(party, count)`가 생존 파티원 중 1명이라도 `CanApplyTo`인 종류를 셔플해 **공용 3장**으로 제시하고(2026-10-03), 고른 대상에게 `ModifierManager.Add`로 장착된다. `CountOn(character, modifier)` = 같은 종류 장착 수(카드의 "중첩 n → n+1"). 계열(`ModifierFamily`: 위치/주사위/콤보/생존)은 보상 카드 아이콘·라벨용.
 
 ### 4.3 런타임 흐름 — 세 순간별 호출 경로
 
 #### 0) 획득/장착 (계산 없음)
-웨이브 보상에서 `RewardUI` → `ModifierRegistry.GetRandomChoicesFor(캐릭터, N)`이 후보마다 `CanApplyTo(캐릭터)`를 호출해 제시 가능한 것만 거른다. 유저가 고르면 `Stats.Modifiers.Add(mod)` — **리스트에 넣을 뿐 이 시점엔 아무 수치도 안 바뀐다.**
+전투 보상에서 `RewardRoller` → `ModifierRegistry.GetRandomChoicesForParty(파티, N)`이 후보마다 생존 파티원에 `CanApplyTo`를 물어 제시 가능한 것만 거른다. 유저가 카드와 대상을 고르면 `Stats.Modifiers.Add(mod)` — **리스트에 넣을 뿐 이 시점엔 아무 수치도 안 바뀐다.**
 
 > ⚠️ `CanApplyTo`(장착 가능 여부 확인, 보상 시점 1회)와 `ApplyTo`(컨텍스트 일괄 적용, 읽을 때마다)는 이름만 비슷한 **전혀 다른 메서드**다.
 

@@ -42,9 +42,9 @@
 - **면 그리드**: 6칸 = 주사위 이미지 + 숫자(진한 잉크), 3×2.
 - **효과 카드**: 효과별로 카드 셀 동적 생성(둥근 크림 카드 + 아이콘 + `Preview()`), 타일 정보 카드 감각.
 
-## 획득 · 교체 (`UI/RewardUI.cs`)
+## 획득 · 교체 (`UI/Reward/RewardUI.cs`)
 
-전투 보상창에 **주사위 보상 행** 추가 — `DrawRandomSpecial()`로 특수 주사위 제시. 행 클릭 시 캐릭터 강화와 같은 패널을 재사용해 **현재 덱 슬롯을 나열 → 선택 슬롯을 `Replace`**. 받기 선택형(안 받으면 행 유지), 교체 슬롯 필수. specialPool이 비면 행이 안 뜬다.
+전투 보상의 **주사위 박자** — `RewardRoller`가 `DrawRandomSpecial()`로 특수 주사위 1개를 뽑는다(진입 시 1회). 왼쪽 "새 주사위" 카드에 이름·등급·6면·사용 효과·설명이 호버 없이 전부 보이고, 오른쪽 "내 덱" 카드에서 교체할 주사위를 고른 뒤 [교체] → `Replace(index, newDie)`. [받지 않기]로 넘길 수 있다. specialPool이 비면 박자 자체가 없다. 상세: [[reward_screen_system]].
 
 ## 이벤트 효과 부여 (`Core/Run/EventOutcomes.cs`)
 

@@ -142,3 +142,16 @@
 
 소계 3.5 → 누적 240.25.
  교훈: 6건 묶음도 직전 묶음이 아직 돌면 429 — 묶음 사이 jobs_wait 한 번.
+
+### 2026-10-03 — 보상 화면 리워크 전용 아트
+
+참조 추가: `REF_REWARD_FAMILY` = 기존 보상 아트 묶음 합성(`refs/reward2/ref_reward_family.png`) → `45e819e7-c61d-437f-876c-b664eaea7bb6` (24시간 만료). 업로드 도메인이 `upload.higgsfield.ai`로 바뀌어 `If-None-Match: *` 헤더가 필요하고 python urllib는 403(1010) — curl로 PUT.
+
+| # | 대상 | 설정 | 참조 | job_id | 결과 | 크레딧 |
+|---|------|------|------|--------|------|--------|
+| 36 | 초안 5종: 선택 카드 4상태 시트 / 초상 프레임 4상태 시트 / 전리품 칩 / 도장 테두리 / 계열 아이콘 4종 시트 | gpt_image_2_5 / low / 1k / transparent | STYLE, REWARD_FAMILY | `0f7a36ec`, `bfe71c17`, `07f28c1d`, `57d32fae`, `6f9497dc` | 전부 채택 (사용자 위임 — 자체 선정). 505는 429로 1회 재제출 | 1.25 |
+| 37 | 최종 5장 | high / 2k / transparent | 채택 초안 job + STYLE | `4c39e313-76ac-4d81-82ff-eea5225d1f7c`, `97a76397-fc54-452b-94b4-1e8f00260517`, `e3ab669b-4889-4882-b506-d21c20910b90`, `01649c0d-a061-4f9f-b0e7-989c9e970435`, `5f8c54b6-6b64-48fd-a7bf-05e352411b4a` | `UI Skin/btn_reward_choice_card_*`(640×822, 경계 110/110/135/165, ppu 2.37), `btn_reward_portrait_*`(400×399 Simple), `reward_loot_chip.png`(900×196, 경계 215/40/185/40, ppu 3.06), `reward_stamp.png`(Simple), `icon_family_{position,dice,combo,survival}.png`(256) | 13.75 |
+
+시트 절단은 `tools/cut_state_sheet.py`(신규) — 선택 상태의 리본·깃발처럼 한쪽으로 튀어나온 장식이 있어도 '종이 몸통' 중심으로 정렬한다 (`cut_button_sheet.py`는 bbox 중심이라 상태 전환 시 카드가 튄다).
+
+소계 15.0 → 누적 255.25. 잔액 93.5.

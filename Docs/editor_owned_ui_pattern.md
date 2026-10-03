@@ -41,7 +41,7 @@ public class SomeUI : MonoBehaviour
 
 | UI | 슬롯 | 프리팹 요구사항 |
 |---|---|---|
-| RewardUI | choiceButtonPrefab / rewardRowPrefab | Button 루트 + 자식 TMP |
+| RewardUI | 씬 템플릿 5종 (`RewardCanvas/Templates`) | 뷰 컴포넌트(RewardLootChip 등)가 붙은 비활성 오브젝트 — 런타임에 복제 (2026-10-03) |
 | ShopUI | choiceButtonPrefab | Button 루트 + 자식 TMP |
 | RunHudUI | chipPrefab | Image 루트 + 자식 `Icon`(Image)/`Label`(TMP) 이름 탐색 |
 | BattleInfoPanelUI | cardPrefab (GlossaryCardUI) | GlossaryCardUI 컴포넌트 |
@@ -64,7 +64,7 @@ public class SomeUI : MonoBehaviour
 | 전투 정보 패널 | `InfoPanel/BattleInfoPanelUI.cs` | 섹션 앵커 고정형 |
 | 타일 패널 | `InfoPanel/TileInfoPanelUI.cs` | 정보 패널 왼쪽 경계 도킹 |
 | 노드맵 | `NodeMapUI.cs` | 세로 스크롤 (ScrollRect 뼈대는 씬, 노드는 런타임) |
-| 보상 | `RewardUI.cs` | StS식 수령 리스트 |
+| 보상 | `Reward/RewardUI.cs` | 전리품 시트 3박자 — 스캐폴드는 에디터 메뉴 [DiceOrbit/Rebuild Reward UI Layout], 런타임 폴백 없음 ([[reward_screen_system]]) |
 | 상점 | `ShopUI.cs` | 무대형 (배경/상인 스프라이트 슬롯) |
 | 이벤트 | `EventUI.cs` | 무대형 + EventDefinition 에셋 |
 | 런 HUD | `RunHudUI.cs` | 상태별 자동 표시/숨김 |

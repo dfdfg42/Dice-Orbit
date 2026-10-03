@@ -63,7 +63,7 @@ Assets/Scripts/
 │
 ├── UI/                                      # 사용자 인터페이스
 │   # MainMenuUI, DiceUI, CharacterActionUI, RecruitUI, CombatNotifier, FloatingLabelPopup ...
-│   # 런 화면: NodeMapUI, ShopUI, EventUI, RewardUI, RunHudUI (에디터 소유 + 런타임 폴백 패턴)
+│   # 런 화면: NodeMapUI, ShopUI, EventUI, Reward/RewardUI(+뷰 5종), RunHudUI (에디터 소유 패턴)
 │   # 정보 패널: InfoPanel/ (battle_info_panel_system.md)
 │
 └── Visuals/                                 # 시각적 연출 (VfxManager, CombatVfxProfile, TileVisual ...)

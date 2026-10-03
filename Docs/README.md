@@ -11,6 +11,7 @@
 | [project_structure.md](project_structure.md) | 스크립트 폴더 구조 + 전투 아키텍처 개요 |
 | [run_structure_system.md](run_structure_system.md) | **런 구조 (노드맵)** — 맵 생성/경제/파티/점감 부활/유물/포션/이벤트/상점 (2026-07) |
 | [dice_deck_system.md](dice_deck_system.md) | **주사위 덱** — 소유 덱/커스텀 면/사용 효과/호버 툴팁/보상 교체/이벤트 효과 부여 (2026-07-29) |
+| [reward_screen_system.md](reward_screen_system.md) | **보상 화면** — 전리품 시트 3박자(자동 수령 → 강화 공용 3택 → 주사위 교체), RewardRoller/RewardFlow, 씬 계층·스캐폴드·확장 지점 (2026-10-03) |
 | [skill_system_structure.md](skill_system_structure.md) | 전투 도메인 클래스 다이어그램, 스킬/패시브/컨텍스트 구조 |
 | [skill_targeting_system.md](skill_targeting_system.md) | 액티브 스킬 타겟 선택 시스템 (OneEnemy~MultiTile) |
 | [combat_reactor_dispatch.md](combat_reactor_dispatch.md) | ICombatReactor DIM 타입별 디스패치 (OnAttack/OnHeal/OnMove/OnTurnEvent) |
