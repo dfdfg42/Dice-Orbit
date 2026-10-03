@@ -182,13 +182,17 @@ namespace DiceOrbit.Core.Pipeline
             switch (context)
             {
                 case AttackContext atk:
+                    bool wasAlive = atk.Target.IsAlive;
+                    int amount = Mathf.RoundToInt(atk.OutputValue);
                     int applied = atk.IsDirectHpLoss
-                        ? atk.Target.TakeDirectDamage(Mathf.RoundToInt(atk.OutputValue))   // 방어도 우회
-                        : atk.Target.TakeDamage(Mathf.RoundToInt(atk.OutputValue));
+                        ? atk.Target.TakeDirectDamage(amount)   // 방어도 우회
+                        : atk.Target.TakeDamage(amount);
                     if (applied != 0) atk.IsEffected = true;
-                    // VFX 재생 판단은 여기 한 곳 — 컨텍스트의 프로필에 hit이 있으면 그걸, 없으면 전역 기본
-                    if (atk.IsEffected)
-                        VfxService.PlayOn(string.IsNullOrEmpty(atk.VfxCue) ? VfxTags.Impact : atk.VfxCue, atk.Target, atk.OutputValue);
+                    // 타격 연출 판단은 여기 한 곳 (타격감 리워크 2026-10-03) — 피해가 들어갔거나, 들어갔어야 할 공격이 방어도에 막혔을 때.
+                    // 등급(약/중/강/처치/막힘/틱)과 여섯 겹의 세기는 HitDirector가 HitFeelProfile에서 정한다.
+                    if (wasAlive && (atk.IsEffected || amount > 0))
+                        HitDirector.ReportHit(atk.SourceUnit, atk.Target, Mathf.Max(0, applied),
+                            killed: !atk.Target.IsAlive, directLoss: atk.IsDirectHpLoss, vfxCue: atk.VfxCue);
                     break;
                 case HealContext heal:
                     // Unit.Heal을 사용하는 것이 일관성에 좋음 (오버라이드 가능성 고려)

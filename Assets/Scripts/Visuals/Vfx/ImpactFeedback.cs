@@ -3,12 +3,17 @@ using UnityEngine;
 
 namespace DiceOrbit.Visuals
 {
-    /// <summary>카메라 쉐이크 + 히트스탑 진입점. VfxService가 큐 설정에 따라 호출.</summary>
+    /// <summary>
+    /// 카메라 쉐이크 + 히트스톱 진입점. VfxService(큐 설정)와 HitDirector(타격 등급)가 호출한다.
+    /// 히트스톱은 겹치면 긴 쪽 하나만 — 같은 프레임의 여러 타격이 멈춤을 쌓거나 서로 끊지 않는다 (타격감 리워크 2026-10-03).
+    /// </summary>
     public class ImpactFeedback : MonoBehaviour
     {
         public static ImpactFeedback Instance { get; private set; }
 
-        private Coroutine hitStopRoutine;
+        private Coroutine _hitStopRoutine;
+        private float _stopEndRealtime;
+        private float _resumeTimeScale = 1f;
 
         private void Awake()
         {
@@ -16,7 +21,12 @@ namespace DiceOrbit.Visuals
             Instance = this;
         }
 
-        private void OnDestroy() { if (Instance == this) Instance = null; }
+        private void OnDestroy()
+        {
+            if (Instance != this) return;
+            if (_hitStopRoutine != null) Time.timeScale = _resumeTimeScale;   // 멈춘 채 파괴되면 시간이 멈춘 채로 남는다
+            Instance = null;
+        }
 
         public static void EnsureInstance()
         {
@@ -31,22 +41,35 @@ namespace DiceOrbit.Visuals
             if (CameraShaker.Instance != null) CameraShaker.Instance.Shake(amplitude, duration);
         }
 
+        /// <summary>seconds(realtime) 동안 게임 시간을 멈춘다. 이미 멈춰 있으면 더 늦게 끝나는 쪽으로만 늘어난다.</summary>
         public static void HitStop(float seconds)
         {
             if (seconds <= 0f) return;
             EnsureInstance();
             if (Instance == null) return;
-            if (Instance.hitStopRoutine != null) Instance.StopCoroutine(Instance.hitStopRoutine);
-            Instance.hitStopRoutine = Instance.StartCoroutine(Instance.HitStopRoutine(seconds));
+            Instance.RequestStop(seconds);
         }
 
-        private IEnumerator HitStopRoutine(float seconds)
+        private void RequestStop(float seconds)
         {
-            float prev = Time.timeScale;
+            float end = Time.realtimeSinceStartup + seconds;
+            if (_hitStopRoutine != null)
+            {
+                if (end > _stopEndRealtime) _stopEndRealtime = end;
+                return;
+            }
+
+            _stopEndRealtime = end;
+            _hitStopRoutine = StartCoroutine(HitStopRoutine());
+        }
+
+        private IEnumerator HitStopRoutine()
+        {
+            _resumeTimeScale = Time.timeScale > 0f ? Time.timeScale : 1f;
             Time.timeScale = 0f;
-            yield return new WaitForSecondsRealtime(seconds);
-            Time.timeScale = prev == 0f ? 1f : prev;   // 중첩 대비 0 복원 방지
-            hitStopRoutine = null;
+            while (Time.realtimeSinceStartup < _stopEndRealtime) yield return null;
+            Time.timeScale = _resumeTimeScale;
+            _hitStopRoutine = null;
         }
     }
 }

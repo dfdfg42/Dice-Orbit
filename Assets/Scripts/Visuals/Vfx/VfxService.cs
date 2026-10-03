@@ -18,20 +18,6 @@ namespace DiceOrbit.Visuals
         [SerializeField] private VfxLibrary library;
         [SerializeField] private Transform vfxRoot;
 
-        [Header("Damage-scaled Impact (피해량 비례 임팩트 크기·화면 흔들림)")]
-        [Tooltip("이 피해 이하 = 최소, 이상 = 최대로 보간")]
-        [SerializeField] private float dmgLow = 8f;
-        [SerializeField] private float dmgHigh = 45f;
-        [Tooltip("임팩트 VFX 스케일 배수(피해 low→high)")]
-        [SerializeField] private float scaleLow = 0.9f;
-        [SerializeField] private float scaleHigh = 2.0f;
-        [Tooltip("화면 흔들림 세기(피해 low→high)")]
-        [SerializeField] private float shakeLow = 0.06f;
-        [SerializeField] private float shakeHigh = 0.5f;
-        [Tooltip("화면 흔들림 지속(초, 피해 low→high)")]
-        [SerializeField] private float shakeDurLow = 0.12f;
-        [SerializeField] private float shakeDurHigh = 0.32f;
-
         // 지속(Looping) 인스턴스 추적: (유닛 인스턴스ID, 태그) → 스폰된 오브젝트
         private readonly Dictionary<(int, string), GameObject> loops = new Dictionary<(int, string), GameObject>();
 
@@ -65,12 +51,15 @@ namespace DiceOrbit.Visuals
             Play(tag, unit.transform.position);
         }
 
-        /// <summary>피해량 비례 임팩트 — 이펙트 크기와 화면 흔들림이 damage에 따라 커진다.</summary>
-        public static void PlayOn(string tag, Unit unit, float damage)
+        /// <summary>
+        /// 타격 임팩트 — 프리팹만 scale배로 스폰한다. 흔들림·히트스톱은 HitDirector가 타격 등급으로 정하므로
+        /// 큐의 shake/hitStop은 여기서 쓰지 않는다 (타격감 리워크 2026-10-03).
+        /// </summary>
+        public static void PlayImpact(string tag, Unit unit, float scale)
         {
             if (unit == null) return;
             EnsureInstance();
-            Instance?.SpawnBurstScaled(tag, unit.transform.position, damage);
+            Instance?.SpawnImpact(tag, unit.transform.position, scale);
         }
 
         public static void PlayOn(string tag, DiceOrbit.Data.TileData tile)
@@ -119,23 +108,14 @@ namespace DiceOrbit.Visuals
                 ImpactFeedback.HitStop(cue.hitStop);
         }
 
-        /// <summary>피해량 비례 임팩트 — 이펙트 스케일과 화면 흔들림을 damage로 보간. 큐 쉐이크 대신 피해 기반.</summary>
-        private void SpawnBurstScaled(string tag, Vector3 at, float damage)
+        private void SpawnImpact(string tag, Vector3 at, float scale)
         {
             var cue = library != null ? library.ResolveCue(tag) : null;
             if (cue == null || cue.prefab == null) return;
 
-            float t = Mathf.Clamp01(Mathf.InverseLerp(dmgLow, dmgHigh, damage));
-            float scale = Mathf.Lerp(scaleLow, scaleHigh, t);
-
             var go = Instantiate(cue.prefab, at + cue.offset, Quaternion.identity, vfxRoot);
-            go.transform.localScale *= scale;
+            go.transform.localScale *= Mathf.Max(0.01f, scale);
             if (cue.lifetime > 0f) Destroy(go, cue.lifetime);
-
-            float amp = Mathf.Lerp(shakeLow, shakeHigh, t);
-            float dur = Mathf.Lerp(shakeDurLow, shakeDurHigh, t);
-            ImpactFeedback.Shake(amp, dur);
-            if (cue.hitStop > 0f) ImpactFeedback.HitStop(cue.hitStop);
         }
 
         private void SpawnLoop(string tag, Unit unit)

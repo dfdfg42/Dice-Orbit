@@ -72,6 +72,7 @@ namespace DiceOrbit.Data.Skills
             int raw = CalculateStageDamage(source, stage);
             var context = new AttackContext(source, target, GetStageName(stage), raw);
             context.VfxCue = impactCue;
+            HitDirector.ReportAttackLaunched(source, target.transform.position);   // 발사 반동 + 휘두르는 소리
 
             if (projectilePrefab != null)
             {

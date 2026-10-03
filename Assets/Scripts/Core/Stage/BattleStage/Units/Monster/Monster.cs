@@ -383,6 +383,7 @@ namespace DiceOrbit.Core
 
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
+            DiceOrbit.Visuals.HitDirector.MonsterDeathPop(this, destroyDelayAfterDeath);   // 커지며 사라진다 (타격감 리워크)
             StartCoroutine(CoDestroyAfterDeath());
         }
 

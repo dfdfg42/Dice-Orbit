@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using DiceOrbit.Visuals;
 
 namespace DiceOrbit.UI
 {
@@ -21,11 +22,11 @@ namespace DiceOrbit.UI
         /// <summary>팝업이 떠올랐다 사라지기까지의 수명(초). 표시 대기열이 이 시간을 기다린다.</summary>
         public  const float Lifetime       = 1.2f;
         private const float LabelFontSize  = 13.0f;   // 패시브/상태 버블
-        private const float DamageFontSize = 15.0f;   // 데미지 숫자
-        private const float CritFontSize   = 19.0f;   // 치명타
+        private const float DamageFontSize = 15.0f;   // 데미지 숫자 (등급 배율이 곱해진다 — HitFeelProfile)
 
-        private static readonly Color DamageColor   = Color.red;
-        private static readonly Color CriticalColor = Color.yellow;
+        // 나타날 때 팡 튀는 연출 (데미지 숫자·막음 전용 — 버블은 0)
+        private float _punchScale = 1f;
+        private float _punchDuration;
 
         // KOTRA HOPE 폰트 + 검은 외곽선(두껍게). 런타임 생성 팝업이라 Resources에서 로드해 정적 캐시.
         private static TMP_FontAsset _font;
@@ -95,6 +96,12 @@ namespace DiceOrbit.UI
 
                 transform.position = start + Vector3.up * (MoveSpeed * elapsed);
 
+                if (_punchDuration > 0f)
+                {
+                    float k = Mathf.Clamp01(elapsed / _punchDuration);
+                    transform.localScale = Vector3.one * Mathf.LerpUnclamped(_punchScale, 1f, EaseOutBack(k));
+                }
+
                 if (_text != null)
                     _text.color = new Color(_baseColor.r, _baseColor.g, _baseColor.b, 1f - t);
 
@@ -116,15 +123,45 @@ namespace DiceOrbit.UI
             return popup;
         }
 
-        public static FloatingLabelPopup CreateDamage(int damage, Vector3 worldPos, bool isCritical = false)
+        /// <summary>데미지 숫자 — 타격 등급이 크기·색을 정하고, 나타날 때 팡 튄다 (타격감 리워크 2026-10-03).</summary>
+        public static FloatingLabelPopup CreateDamage(int damage, Vector3 worldPos, HitTier tier)
         {
-            Color color = isCritical ? CriticalColor : DamageColor;
-            float size  = isCritical ? CritFontSize  : DamageFontSize;
-            var go      = new GameObject("_DamagePopup");
-            var popup   = go.AddComponent<FloatingLabelPopup>();
-            go.transform.position = worldPos;
-            popup.Setup(damage.ToString(), color, size);
+            var profile = HitFeelProfile.Current;
+            var feel = profile.Get(tier);
+            return CreatePunched("_DamagePopup", damage.ToString(), feel.popupColor, DamageFontSize * feel.popupScale, worldPos, profile);
+        }
+
+        /// <summary>공격이 방어도에 막혀 피해가 0일 때 — 숫자 대신 "막음".</summary>
+        public static FloatingLabelPopup CreateBlocked(Vector3 worldPos)
+        {
+            var profile = HitFeelProfile.Current;
+            var feel = profile.Get(HitTier.Blocked);
+            return CreatePunched("_BlockedPopup", "막음", profile.blockedPopupColor, DamageFontSize * feel.popupScale, worldPos, profile);
+        }
+
+        private static FloatingLabelPopup CreatePunched(string objectName, string text, Color color, float fontSize, Vector3 worldPos, HitFeelProfile profile)
+        {
+            var go = new GameObject(objectName);
+            var popup = go.AddComponent<FloatingLabelPopup>();
+
+            // 동시 타격 숫자가 겹치지 않게 화면 좌우로 살짝 흩는다
+            var cam = Camera.main;
+            Vector3 scatter = cam != null
+                ? cam.transform.right * Random.Range(-profile.popupScatter, profile.popupScatter)
+                : Vector3.zero;
+            go.transform.position = worldPos + scatter;
+
+            popup._punchScale = profile.popupPunchScale;
+            popup._punchDuration = profile.popupPunchDuration;
+            go.transform.localScale = Vector3.one * popup._punchScale;
+            popup.Setup(text, color, fontSize);
             return popup;
+        }
+
+        private static float EaseOutBack(float k)
+        {
+            const float c1 = 1.70158f, c3 = c1 + 1f;
+            return 1f + c3 * Mathf.Pow(k - 1f, 3f) + c1 * Mathf.Pow(k - 1f, 2f);
         }
     }
 }

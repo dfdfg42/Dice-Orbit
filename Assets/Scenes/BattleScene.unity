@@ -4405,6 +4405,63 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1001 &291863715
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 875008917452799787, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6762597194092406167, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
+      propertyPath: m_Name
+      value: AudioManager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a1eef829d9aa0514986892d60ad5bf4a, type: 3}
 --- !u!1 &299159877
 GameObject:
   m_ObjectHideFlags: 0
@@ -5831,14 +5888,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Visuals.VfxService
   library: {fileID: 11400000, guid: 675138d2463274a4aa1f95c113e6a662, type: 2}
   vfxRoot: {fileID: 0}
-  dmgLow: 8
-  dmgHigh: 45
-  scaleLow: 0.9
-  scaleHigh: 2
-  shakeLow: 0.06
-  shakeHigh: 0.5
-  shakeDurLow: 0.12
-  shakeDurHigh: 0.32
 --- !u!4 &372182536
 Transform:
   m_ObjectHideFlags: 0
@@ -11076,6 +11125,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4553e873a437c7f47ae1b720e36348ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceOrbit.Visuals.CameraShaker
+  maxOffset: 0.55
+  maxRollDegrees: 1.2
+  decayPerSecond: 1.9
+  frequency: 26
 --- !u!4 &788142784
 Transform:
   m_ObjectHideFlags: 0
@@ -27262,3 +27315,4 @@ SceneRoots:
   - {fileID: 788142784}
   - {fileID: 2075587032}
   - {fileID: 462529404}
+  - {fileID: 291863715}

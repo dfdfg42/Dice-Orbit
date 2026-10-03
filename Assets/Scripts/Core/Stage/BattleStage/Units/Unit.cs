@@ -13,6 +13,9 @@ namespace DiceOrbit.Core
     {
         [Header("Visual")]
         protected SpriteRenderer spriteRenderer;
+
+        /// <summary>지금 화면에 보이는 스프라이트 렌더러 — 몬스터는 런타임에 만든 MonsterVisualRoot의 것, 캐릭터는 루트의 것. (타격 반응이 이 렌더러의 트랜스폼을 변형한다)</summary>
+        public SpriteRenderer SpriteRenderer => spriteRenderer;
         protected Color originalColor;
         protected Camera mainCamera;
 
@@ -106,10 +109,16 @@ namespace DiceOrbit.Core
                 // 데미지 숫자는 앞선 버블(수호·협공 등)이 다 사라진 뒤에 뜬다 — 원인(패시브) 먼저, 결과(피해) 나중.
                 // 버블이 없으면 즉시 뜨고, 데미지끼리는 줄 서지 않아 동시 타격은 동시에 보인다.
                 int shown = actualDamage;
-                UI.FloatingPopupQueue.EnqueueAfterBubbles(transform, 1.6f, pos => FloatingLabelPopup.CreateDamage(shown, pos));
+                var tier = PopupTier(shown, directLoss: false);
+                UI.FloatingPopupQueue.EnqueueAfterBubbles(transform, 1.6f, pos => FloatingLabelPopup.CreateDamage(shown, pos, tier));
             }
             return actualDamage;
         }
+
+        /// <summary>데미지 숫자의 등급 — 타격 연출(HitDirector)과 같은 기준으로 크기·색이 정해진다.</summary>
+        private DiceOrbit.Visuals.HitTier PopupTier(int damage, bool directLoss)
+            => DiceOrbit.Visuals.HitTierClassifier.Classify(damage, Stats.MaxHP, killed: !Stats.IsAlive, directLoss,
+                   DiceOrbit.Visuals.HitFeelProfile.Current.thresholds);
 
         /// <summary>
         /// 직접 체력 손실 (중독 등) — 방어도(TempArmor)를 우회한다. 팝업 연출은 일반 피해와 동일.
@@ -120,7 +129,8 @@ namespace DiceOrbit.Core
             if (actualDamage > 0)
             {
                 int shown = actualDamage;
-                UI.FloatingPopupQueue.EnqueueAfterBubbles(transform, 1.6f, pos => FloatingLabelPopup.CreateDamage(shown, pos));
+                var tier = PopupTier(shown, directLoss: true);
+                UI.FloatingPopupQueue.EnqueueAfterBubbles(transform, 1.6f, pos => FloatingLabelPopup.CreateDamage(shown, pos, tier));
             }
             return actualDamage;
         }

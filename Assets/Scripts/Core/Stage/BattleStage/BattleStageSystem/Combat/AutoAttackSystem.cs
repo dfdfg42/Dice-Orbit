@@ -224,6 +224,7 @@ namespace DiceOrbit.Core
         private void LaunchBasicHit(Character character, Unit target, Data.Skills.CharacterActiveSkill weapon)
         {
             var context = new AttackContext(character, target, attackName, character.Stats.Attack);
+            HitDirector.ReportAttackLaunched(character, target.transform.position);   // 발사 반동 + 휘두르는 소리
 
             if (weapon != null && weapon.ProjectilePrefab != null)
             {

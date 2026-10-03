@@ -649,6 +649,16 @@ namespace DiceOrbit.Core
                     if (lbl != null) yield return lbl.Show(monster, actionName, actionIcon);
                     if (monsterActionLeadIn > 0f) yield return new WaitForSeconds(monsterActionLeadIn);
 
+                    // 공격(대상 타일이 있는 행동)이면 움츠렸다가 대상 쪽으로 내리찍는다 — 피해는 내리찍는 순간 들어간다 (타격감 리워크)
+                    if (threatTiles != null && threatTiles.Count > 0)
+                    {
+                        Vector3 aim = Vector3.zero;
+                        foreach (var tile in threatTiles) aim += tile.Position;
+                        aim /= threatTiles.Count;
+                        yield return Visuals.HitDirector.MonsterWindup(monster, aim);
+                        Visuals.HitDirector.MonsterStrike(monster, aim);
+                    }
+
                     monster.ExecuteIntent();
 
                     if (monsterActionDelay > 0f) yield return new WaitForSeconds(monsterActionDelay);

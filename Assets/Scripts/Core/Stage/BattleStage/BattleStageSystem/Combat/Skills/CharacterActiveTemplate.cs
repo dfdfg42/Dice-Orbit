@@ -194,6 +194,7 @@ namespace DiceOrbit.Data.Skills
 
             var context = new AttackContext(source, target, skillName, rawDamage);
             context.VfxCue = impactCue;   // 비면 파이프라인이 루트 impact 사용
+            HitDirector.ReportAttackLaunched(source, target.transform.position);   // 발사 반동 + 휘두르는 소리
 
             if (projectilePrefab != null)
             {
