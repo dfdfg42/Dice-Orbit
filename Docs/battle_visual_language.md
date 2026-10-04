@@ -15,7 +15,7 @@
 | 몬스터 다음 행동 | 머리 위 **크림 말풍선 + 스킬 아이콘** (라벨 없음) | `UI/MonsterUI.cs`, `UiSkin.IntentBubble` (2026-09-25) |
 | 패시브 구역 (조회 시) | **구역 테두리** — 구역 부채꼴을 통째로 감싸는 둥근 폐곡선(남색 밑선 + 하늘색 심선) + 플레이트 밝힘. 효과가 꺼져 있으면 흐리게. 지금 값은 정보 패널 패시브 제목 옆 | `Visuals/PassiveZoneIndicator.cs` + `IPassiveZoneProvider`, `Visuals/ZoneSectorShape.cs` (2026-10-04) |
 | 조준선 (캐릭터↔몬스터 공통) | **포물선 + 흐르는 점선 + 화살촉** | `Visuals/DashedArcLine.cs` (공용 헬퍼) |
-| 행동 예고 (주사위 선택·호버 시) | 도착 타일 → 대상 **노란 조준선**(이동 경로와 같은 색) + 대상 몸 위 **예상 피해 숫자**(피해 팝업 글꼴, 처치는 노랑) + [이동] 버튼 위 **예고 카드** | `Visuals/ActionForecastView.cs` + `Combat/Forecast/` (2026-10-04) |
+| 행동 예고 (주사위 선택·호버 시) | 도착 타일 → 대상 **노란 조준선**(이동 경로와 같은 색) + 대상 몸 위 **예상 피해 숫자**(피해 팝업 글꼴, 처치는 노랑) + 대상 체력바의 **깎일 구간 깜빡임**(밝은 크림색) + [이동] 버튼 위 **예고 카드** | `Visuals/ActionForecastView.cs` + `Combat/Forecast/` (2026-10-04) |
 | 몬스터 정체성 | 몬스터별 고유 색 — 발밑 마커·타일 파이·조준선이 **같은 색** | `Visuals/MonsterIdentityManager.cs` |
 | 스킬 못 쓰는 주사위 | 주사위 **살짝 붉게** (캐릭터 선택 중) | `UI/DiceElement.cs` (skillUnusableHint) |
 
