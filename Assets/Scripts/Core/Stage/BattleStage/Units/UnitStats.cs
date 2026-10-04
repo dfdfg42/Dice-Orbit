@@ -43,29 +43,36 @@ namespace DiceOrbit.Data
         }
 
         /// <summary>
+        /// 피해 1회가 방어도·체력에 어떻게 들어가는지 (순수 — TakeDamage와 행동 예고가 공유).
+        /// Slay-the-Spire 방식: 고정 방어력은 쓰지 않고, 방어도(TempArmor)가 먼저 흡수한 뒤 남은 값만 체력에 들어간다.
+        /// 무적이면 체력이 1 밑으로 내려가지 않게 자른다. hpDamage는 초과분(오버킬)을 포함한 값이다.
+        /// </summary>
+        public static void ResolveDamage(int damage, int armor, int hp, bool invulnerable, out int armorAbsorbed, out int hpDamage)
+        {
+            int remaining = Mathf.Max(0, damage);
+
+            armorAbsorbed = armor > 0 ? Mathf.Min(remaining, armor) : 0;
+            remaining -= armorAbsorbed;
+
+            if (invulnerable && remaining > 0)
+                remaining = Mathf.Min(remaining, Mathf.Max(0, hp - 1));
+
+            hpDamage = remaining;
+        }
+
+        /// <summary>
         /// 데미지 받기, 받은 데미지만큼 리턴
         /// </summary>
         public int TakeDamage(int damage)
         {
-            // Slay-the-Spire style:
-            // 1) 고정 방어력(Defense)은 사용하지 않음
-            // 2) TempArmor가 먼저 소모되고 남은 값만 HP에 적용
-            int remainingDamage = Mathf.Max(0, damage);
+            ResolveDamage(damage, TempArmor, CurrentHP, Invulnerable, out int absorbed, out int actualDamage);
 
-            // 임시 방어도가 있다면 데미지를 우선 흡수
-            if (TempArmor > 0 && remainingDamage > 0)
+            if (absorbed > 0)
             {
-                int absorbed = Mathf.Min(remainingDamage, TempArmor);
                 TempArmor -= absorbed;
-                remainingDamage -= absorbed;
                 Debug.Log($"TempArmor absorbed {absorbed} dmg");
             }
 
-            // 무적: 남은 데미지를 HP가 1 미만으로 내려가지 않게 제한(사망 방지)
-            if (Invulnerable && remainingDamage > 0)
-                remainingDamage = Mathf.Min(remainingDamage, Mathf.Max(0, CurrentHP - 1));
-
-            int actualDamage = remainingDamage;
             CurrentHP = Mathf.Max(0, CurrentHP - actualDamage);
             Debug.Log($" took {actualDamage} damage! (HP: {CurrentHP}/{MaxHP})");
             return actualDamage;

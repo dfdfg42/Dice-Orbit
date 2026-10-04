@@ -73,24 +73,23 @@ namespace DiceOrbit.Core
             yield return ResolveRoutine(character, diceValue, passedZones);
         }
 
-        /// <summary>이번 이동에서 지나갈 구역 번호들(출발 구역 포함, 중복 없이 순서대로).</summary>
-        private static List<int> CollectPassedZones(Character character, int diceValue)
+        /// <summary>
+        /// 이번 이동에서 지나갈 구역 번호들(출발 구역 포함, 중복 없이 순서대로). 이동 '전' 위치에서 불러야 한다.
+        /// 경로는 이동 루틴과 같은 계산(OrbitManager.BuildMovePath)을 쓴다 — 버프/디버프로 실제 이동이 달라지므로.
+        /// </summary>
+        public static List<int> CollectPassedZones(Character character, int diceValue)
         {
             var result = new List<int>();
             var zones = Zones.CombatZoneManager.Instance;
             if (zones == null || character == null || character.CurrentTile == null) return result;
 
-            // MoveRoutine과 같은 유효 걸음 수를 쓴다 — 버프/디버프로 실제 이동이 달라지므로.
-            int steps = Mathf.Max(diceValue + character.Stats.MoveBuff - character.Stats.MoveDebuff, 0);
-
-            var tile = character.CurrentTile;
-            int startZone = zones.GetZoneOfTile(tile);
+            int startZone = zones.GetZoneOfTile(character.CurrentTile);
             if (startZone >= 0) result.Add(startZone);
 
-            for (int i = 0; i < steps; i++)
+            var path = new List<Data.TileData>();
+            OrbitManager.BuildMovePath(character, diceValue, path);
+            foreach (var tile in path)
             {
-                if (tile.NextTile == null) break;
-                tile = tile.NextTile;
                 int zone = zones.GetZoneOfTile(tile);
                 if (zone >= 0 && !result.Contains(zone)) result.Add(zone);
             }
@@ -98,9 +97,64 @@ namespace DiceOrbit.Core
         }
 
         /// <summary>
+        /// 이 캐릭터가 '지금 선 자리'에서 diceValue로 공격하면 무엇이 나가고 누구를 때리는가 (상태를 바꾸지 않는다).
+        /// 실행 루틴(ResolveRoutine)과 행동 예고(ActionForecaster)가 같이 쓴다 — 판정이 두 벌로 갈라지지 않게.
+        /// diceValue가 게이트를 만족하면 현재 콤보 단계의 강화 공격, 아니면 기본공격.
+        /// </summary>
+        public AttackPlan PlanAttack(Character character, int diceValue, IReadOnlyList<int> passedZones)
+        {
+            var plan = new AttackPlan();
+
+            // 이동 시작 구역 vs 도착 구역 (경계 돌파 판정용)
+            var zoneMgr = CombatZoneManager.Instance;
+            int endZone = zoneMgr != null ? zoneMgr.GetZoneOf(character) : -1;
+            int startZone = passedZones != null && passedZones.Count > 0 ? passedZones[0] : endZone;
+            plan.CrossedZone = startZone >= 0 && endZone >= 0 && startZone != endZone;
+
+            int currentStage = Combo.ComboSystem.Instance != null ? Combo.ComboSystem.Instance.PeekStage(character) : 0;
+            var empowered = FindEmpoweredAttack(character, diceValue);
+
+            if (empowered == null)
+            {
+                // 게이트 실패 — 기본공격. 쌓인 콤보가 있었다면 끊긴다 (스펙 §1 규칙 5)
+                plan.Kind = AttackPlanKind.Basic;
+                plan.HadCombo = currentStage > 0;
+                plan.Targets.AddRange(CollectTargets(character));
+                return plan;
+            }
+
+            if (!(empowered.RuntimeInstance is Data.Skills.ComboActiveSkill comboSkill))
+            {
+                // 콤보형이 아닌 액티브가 남아 있으면 설계 위반 — 기본공격으로 처리 (실행 루틴이 에러로 드러낸다)
+                plan.Kind = AttackPlanKind.Basic;
+                plan.EmpoweredIsNotCombo = true;
+                plan.Targets.AddRange(CollectTargets(character));
+                return plan;
+            }
+
+            plan.ComboSkill = comboSkill;
+            plan.Stage = currentStage;
+
+            var targets = comboSkill.ResolveStageTargets(character, currentStage, passedZones);
+            if (targets == null || targets.Count == 0)
+            {
+                // 게이트는 맞았지만 강화공격이 실제로 발생하지 않음 → 콤보 초기화 (스펙 §1 규칙 7)
+                plan.Kind = AttackPlanKind.ComboNoTarget;
+                return plan;
+            }
+
+            plan.Kind = AttackPlanKind.Combo;
+            plan.Targets.AddRange(targets);
+            return plan;
+        }
+
+        /// <summary>기본공격의 표시 이름 (실행과 예고가 공유).</summary>
+        public string BasicAttackName => attackName;
+
+        /// <summary>
         /// 한 캐릭터의 공격 1회. 이번 턴에 이미 때렸으면 아무 일도 하지 않는다.
         /// diceValue가 게이트를 만족하면 현재 콤보 단계의 강화 공격이, 아니면 콤보가 끊기며 기본공격이 나간다.
-        /// (2026-08-28 콤보 개편 — 단계 관리: ComboSystem / 단계 정의: ComboActiveSkill)
+        /// (2026-08-28 콤보 개편 — 단계 관리: ComboSystem / 단계 정의: ComboActiveSkill / 판정: PlanAttack)
         /// </summary>
         public IEnumerator ResolveRoutine(Character character, int diceValue, IReadOnlyList<int> passedZones)
         {
@@ -111,55 +165,38 @@ namespace DiceOrbit.Core
             // 주사위 '사용' 사건 — 공격 성사 여부와 무관하게 통지 (저속 방호 등 공용 모디파이어).
             NotifyDiceUsed(character, diceValue);
 
-            // 이동 시작 구역 vs 도착 구역 (경계 돌파 판정용)
-            var zoneMgr = CombatZoneManager.Instance;
-            int endZone = zoneMgr != null ? zoneMgr.GetZoneOf(character) : -1;
-            int startZone = passedZones != null && passedZones.Count > 0 ? passedZones[0] : endZone;
-            bool crossedZone = startZone >= 0 && endZone >= 0 && startZone != endZone;
-
             var combo = Combo.ComboSystem.EnsureInstance();
-            var empowered = FindEmpoweredAttack(character, diceValue);
+            var plan = PlanAttack(character, diceValue, passedZones);
 
-            if (empowered == null)
+            if (plan.Kind == AttackPlanKind.Basic)
             {
-                // 게이트 실패 — 콤보 즉시 초기화 + 기본공격 (스펙 §1 규칙 5)
-                bool hadCombo = combo.GetTracker(character) != null && combo.GetTracker(character).Stage > 0;
-                combo.ResetCombo(character, Combo.ComboOutcome.BrokenByDice);
-                yield return BasicAttackRoutine(character, diceValue, crossedZone, hadCombo);
+                if (plan.EmpoweredIsNotCombo)
+                    Debug.LogError($"[AutoAttack] '{character.Stats?.CharacterName}'의 강화 공격이 ComboActiveSkill이 아니다 — 기본공격으로 대체. 프리셋을 확인할 것.");
+                else
+                    combo.ResetCombo(character, Combo.ComboOutcome.BrokenByDice);   // 게이트 실패 — 콤보 즉시 초기화
+
+                yield return BasicAttackRoutine(character, diceValue, plan);
                 yield break;
             }
 
-            if (!(empowered.RuntimeInstance is Data.Skills.ComboActiveSkill comboSkill))
+            if (plan.Kind == AttackPlanKind.ComboNoTarget)
             {
-                // 콤보형이 아닌 액티브가 남아 있으면 설계 위반 — 드러내고 기본공격으로 처리.
-                Debug.LogError($"[AutoAttack] '{character.Stats?.CharacterName}'의 강화 공격이 ComboActiveSkill이 아니다 — 기본공격으로 대체. 프리셋을 확인할 것.");
-                yield return BasicAttackRoutine(character, diceValue, crossedZone, false);
-                yield break;
-            }
-
-            int stage = combo.GetTracker(character).RegisterGateSuccess();
-            var targets = comboSkill.ResolveStageTargets(character, stage, passedZones);
-            if (targets == null || targets.Count == 0)
-            {
-                // 게이트는 맞았지만 강화공격이 실제로 발생하지 않음 → 콤보 초기화 (스펙 §1 규칙 7)
                 combo.ResetCombo(character, Combo.ComboOutcome.BrokenByNoTarget);
                 yield break;
             }
+
+            var comboSkill = plan.ComboSkill;
+            int stage = plan.Stage;
+            var targets = plan.Targets;
 
             character.OnSkillExecutionStarted();
             comboSkill.PlayCast(character);
 
             // 한 단계의 모든 타격(다단×다중 대상)은 하나의 '공격 행동' — 촉매/고양/감전이 전체에 적용된다.
-            Systems.Effects.AttackActionScope.Begin(character, new Systems.Effects.AttackActionInfo
-            {
-                DiceValue = diceValue,
-                ComboStage = stage,
-                CrossedZone = crossedZone,
-                IsAutoAttack = true,
-            });
+            Systems.Effects.AttackActionScope.Begin(character, plan.BuildActionInfo(diceValue));
 
             float perHit = ResolveHitDelay(comboSkill);
-            int hits = Mathf.Max(1, comboSkill.GetStageHits(stage));
+            int hits = plan.Hits;
             for (int h = 0; h < hits; h++)
             {
                 for (int i = 0; i < targets.Count; i++)
@@ -183,27 +220,21 @@ namespace DiceOrbit.Core
 
         /// <summary>
         /// 기본공격 1회 (단일 대상). 기본공격도 하나의 공격 행동이라 촉매가 여기에도 적용·소모된다.
-        /// comboBroken=true면(1단계 이상 쌓인 콤보가 조건 불일치로 끊긴 경우) 공격 발생 시점에
+        /// plan.HadCombo면(1단계 이상 쌓인 콤보가 조건 불일치로 끊긴 경우) 공격 발생 시점에
         /// 안전장치류 모디파이어에 통지한다.
         /// </summary>
-        private IEnumerator BasicAttackRoutine(Character character, int diceValue, bool crossedZone, bool comboBroken)
+        private IEnumerator BasicAttackRoutine(Character character, int diceValue, AttackPlan plan)
         {
-            var targets = CollectTargets(character);
-            if (targets == null || targets.Count == 0) yield break;
+            var targets = plan.Targets;
+            if (targets.Count == 0) yield break;
 
             character.OnSkillExecutionStarted();
 
             // "콤보가 끊기고 일반 자동공격 발생" — 공격이 실제로 나가는 이 시점에만 통지.
-            if (comboBroken) NotifyComboBreak(character);
+            if (plan.HadCombo) NotifyComboBreak(character);
 
             var weapon = FindProjectileSource(character);
-            Systems.Effects.AttackActionScope.Begin(character, new Systems.Effects.AttackActionInfo
-            {
-                DiceValue = diceValue,
-                ComboStage = -1,
-                CrossedZone = crossedZone,
-                IsAutoAttack = true,
-            });
+            Systems.Effects.AttackActionScope.Begin(character, plan.BuildActionInfo(diceValue));
 
             float perHit = ResolveHitDelay(weapon);
             for (int i = 0; i < targets.Count; i++)

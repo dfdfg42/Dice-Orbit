@@ -187,31 +187,40 @@ namespace DiceOrbit.Core
             }
         }
         
-        public System.Collections.IEnumerator MoveRoutine(Character character, int steps)
+        /// <summary>
+        /// 이 캐릭터가 주사위 눈 diceValue로 이동할 때 밟는 타일들(순서대로, 도착 타일 포함)을 path에 채운다.
+        /// 이동 버프/디버프를 반영한 유효 걸음 수를 쓴다. 이동 루틴·행동 예고·지나간 구역 수집이 공유하는 단일 출처.
+        /// 타일 연결이 끊겨 있으면 거기까지만 담는다.
+        /// </summary>
+        public static void BuildMovePath(Character character, int diceValue, List<TileData> path)
         {
-            int netMoveModifier = character.Stats.MoveBuff - character.Stats.MoveDebuff;
-            steps = Mathf.Max(steps + netMoveModifier, 0);
-            var currentTile = character.CurrentTile;
-            // 타일 경로 계산
-            var tilePath = new List<TileData>();
-            TileData currentStep = currentTile;
+            path.Clear();
+            if (character == null || character.CurrentTile == null || character.Stats == null) return;
 
+            int steps = EffectiveSteps(character, diceValue);
+            var tile = character.CurrentTile;
             for (int i = 0; i < steps; i++)
             {
-                if (currentStep.NextTile == null)
-                {
-                    Debug.LogError($"NextTile is null at step {i}! Tiles may not be connected properly.");
-                    break;
-                }
-                currentStep = currentStep.NextTile;
-                tilePath.Add(currentStep);
+                if (tile.NextTile == null) break;
+                tile = tile.NextTile;
+                path.Add(tile);
             }
+        }
+
+        /// <summary>주사위 눈에 이동 버프/디버프를 반영한 실제 걸음 수 (0 이상).</summary>
+        public static int EffectiveSteps(Character character, int diceValue)
+            => Mathf.Max(diceValue + character.Stats.MoveBuff - character.Stats.MoveDebuff, 0);
+
+        public System.Collections.IEnumerator MoveRoutine(Character character, int steps)
+        {
+            var tilePath = new List<TileData>();
+            BuildMovePath(character, steps, tilePath);
+
+            if (tilePath.Count < EffectiveSteps(character, steps))
+                Debug.LogError($"NextTile is null at step {tilePath.Count}! Tiles may not be connected properly.");
 
             if (tilePath.Count > 0)
             {
-                // 마지막 타일로 currentTile 업데이트
-                currentTile = tilePath[tilePath.Count - 1];
-
                 // 타일을 하나씩 이동하는 코루틴의 종료를 기다림
                 yield return character.MoveStepByStep(tilePath);
             }
