@@ -92,4 +92,4 @@ public override void ForecastTraverse(Core.Character character, TileForecast for
 ## 6. 검증
 
 - `ActionForecastSelfTests` (메뉴 **DiceOrbit → Run ActionForecast Self-Tests**) — `ResolveDamage`와 `TakeDamage` 일치, 타격 누적·방어도·무적, 카드·꼬리표 문구, 타일 예고 노트, 시뮬레이션 스코프 복원.
-- Play 대조 — 예고를 만든 뒤 같은 주사위로 실제 이동·공격을 실행해 대상별 체력 손실·도착 타일·콤보 단계를 비교한다. 2026-10-04: 전사 1·2·3단계, 기본공격, 콤보 끊김, 도적 다단(3×2), 표적 없는 구역, 마법사 1·2단계 등 11건 전부 일치.
+- Play 대조 — 예고를 만든 뒤 같은 주사위로 실제 이동·공격을 실행해 대상별 체력 손실·도착 타일·콤보 단계를 비교한다. 2026-10-04: 15건 전부 일치 — 전사 1·2·3단계(다중 대상), 기본공격, 콤보 끊김, 도적 다단(3×2), 표적 없는 구역, 마법사 1·2단계, 방어도 있는 몬스터, 시약 타일 촉매(7 → 9), 지뢰 경로, 처치. 확인하지 못한 범위는 스펙 §7.
