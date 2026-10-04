@@ -234,7 +234,7 @@ namespace DiceOrbit.UI
 
         /// <summary>
         /// 패널 왼쪽에 도킹된 독립 타일 패널 동기화.
-        /// 말할 거리가 있는 타일(속성이 붙은 타일)만 띄운다 — 속성 없는 타일은 보여 줄 내용이 없다.
+        /// 말할 거리가 있는 타일(레벨업 타일이거나 속성이 붙은 타일)만 띄운다 — 맨 일반 타일은 그림만 남아 소음이라 숨김 (2026-09-25).
         /// </summary>
         private static void SyncTilePanel(TileInfoData? tile)
         {

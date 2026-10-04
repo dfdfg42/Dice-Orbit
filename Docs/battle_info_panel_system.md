@@ -23,7 +23,7 @@
 | 데이터 빌더 | `UI/InfoPanel/UnitInfoBuilder.cs` | Character/Monster/TileData → 표시 데이터 (모디파이어 반영값) |
 | 데이터 모델 | `UI/InfoPanel/BattleInfoData.cs` | UnitInfoData/SkillInfoData/PassiveInfoData/TileInfoData... |
 | 행 헬퍼 | `UI/InfoPanel/InfoPanelRows.cs` | 항목 그룹(`AddEntry`)·행 생성, 항목 타이포 상수(23/21/19), `OnLight()` 색 보정. 색은 UiSkin |
-| 타일 패널 | `UI/InfoPanel/TileInfoPanelUI.cs` | 패널 왼쪽 경계 도킹 — **평평한 패널 한 장**에 속성마다 [아이콘 + 이름 (값·지속)] + 설명을 세로로. `HasContent`(속성 ≥1)일 때만 표시. 2026-10-04 단순화: 타일 그림 액자 + 속성마다 따로 뜨던 카드를 없앴다 (패널이 겹겹이 붙어 내용이 묻혔다) |
+| 타일 패널 | `UI/InfoPanel/TileInfoPanelUI.cs` | 패널 왼쪽 경계 도킹 — **평평한 패널 한 장**: 맨 위 타일 미리보기(타일 그림 + 그 위 속성 아이콘), 그 아래 속성마다 [아이콘 + 이름 (값·지속)] + 설명. `HasContent`(레벨업 타일 또는 속성 ≥1)일 때만 표시. 2026-10-04 단순화: 그림을 감싸던 액자와 속성마다 따로 뜨던 카드를 없앴다 (패널이 겹겹이 붙어 내용이 묻혔다). 미리보기 그림 자체는 남긴다 — 사용자 결정 |
 | 커서 요약 툴팁 | `UI/HoverTooltipUI.cs` | 경량 ShowPinned/HidePinned만 — 이름+HP(+몬스터 다음 행동) |
 | 키워드 링크 호버 | `UI/InfoPanel/KeywordLinkHover.cs` | 패널 텍스트 속 `<link="kw:...">` 호버 → 커서 옆 정의 툴팁 |
 | 상단 HUD | `UI/RunHudUI.cs` | 골드/유물/포션 (런 구조 문서 참고) |
