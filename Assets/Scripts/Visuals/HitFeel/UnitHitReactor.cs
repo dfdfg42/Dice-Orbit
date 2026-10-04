@@ -5,7 +5,8 @@ using DiceOrbit.Core;
 namespace DiceOrbit.Visuals
 {
     /// <summary>
-    /// 유닛 한 개의 타격 반응 — 흰 실루엣 플래시, 밀림·찌그러짐·기울기, 공격 반동, 움츠림, 처치 팝 (타격감 리워크 2026-10-03).
+    /// 유닛 한 개의 타격 반응 — 흰 실루엣 플래시, 밀림·찌그러짐·기울기, 공격 반동, 움츠림 (타격감 리워크 2026-10-03).
+    /// 몬스터 처치는 여기가 아니라 <see cref="DeathSliceEffect"/>가 따로 연출한다.
     ///
     /// 변형 대상은 유닛이 알려 주는 "보이는 스프라이트"(<see cref="Unit.SpriteRenderer"/>)의 트랜스폼이다 —
     /// 몬스터는 런타임에 만든 MonsterVisualRoot(자식), 캐릭터는 루트.
@@ -42,8 +43,6 @@ namespace DiceOrbit.Visuals
         private Vector3 _windupDir;
         private float _windupPullback;
         private Vector2 _windupSquash = Vector2.one;
-
-        private float _deathTime, _deathDuration, _deathScale = 1f;
 
         // ── 적용 중 캐시 ──
         private bool _applied;
@@ -130,16 +129,6 @@ namespace DiceOrbit.Visuals
             if (_windup > 0f) HitReactorRunners.Register(this);
         }
 
-        /// <summary>처치 — 커지면서 사라진다. 스프라이트 알파를 실제로 내린다 (곧 파괴되는 오브젝트).</summary>
-        public void PlayDeathPop(float duration, float scale)
-        {
-            if (duration <= 0f || !ResolveVisual()) return;
-            _deathDuration = duration;
-            _deathTime = 0f;
-            _deathScale = scale;
-            HitReactorRunners.Register(this);
-        }
-
         // ═══════════════════════════════════════════════════════
         // 러너가 부른다
         // ═══════════════════════════════════════════════════════
@@ -150,9 +139,8 @@ namespace DiceOrbit.Visuals
             if (_hitDuration > 0f)   { _hitTime += deltaTime;   if (_hitTime >= _hitDuration) _hitDuration = 0f; }
             if (_flashDuration > 0f) { _flashTime += deltaTime; if (_flashTime >= _flashDuration) _flashDuration = 0f; }
             if (_lungeDuration > 0f) { _lungeTime += deltaTime; if (_lungeTime >= _lungeDuration) _lungeDuration = 0f; }
-            if (_deathDuration > 0f) { _deathTime = Mathf.Min(_deathTime + deltaTime, _deathDuration); }
 
-            return _hitDuration > 0f || _flashDuration > 0f || _lungeDuration > 0f || _windup > 0f || _deathDuration > 0f;
+            return _hitDuration > 0f || _flashDuration > 0f || _lungeDuration > 0f || _windup > 0f;
         }
 
         /// <summary>프레임 맨 끝 — 변형을 덧입힌다.</summary>
@@ -163,7 +151,6 @@ namespace DiceOrbit.Visuals
             Vector3 offset = Vector3.zero;
             Vector2 scaleMul = Vector2.one;
             float tilt = 0f;
-            float uniform = 1f;
 
             if (_hitDuration > 0f)
             {
@@ -182,18 +169,9 @@ namespace DiceOrbit.Visuals
                 scaleMul = Vector2.Scale(scaleMul, Vector2.Lerp(Vector2.one, _windupSquash, _windup));
             }
 
-            if (_deathDuration > 0f)
-            {
-                float k = Mathf.Clamp01(_deathTime / _deathDuration);
-                uniform = Mathf.Lerp(1f, _deathScale, EaseOutCubic(k));
-                var c = _renderer.color;
-                c.a = 1f - Mathf.Clamp01((k - 0.35f) / 0.65f);   // 앞 35%는 그대로, 그 뒤로 사라진다
-                _renderer.color = c;
-            }
-
             UpdateFlash();
 
-            bool transformed = offset != Vector3.zero || scaleMul != Vector2.one || tilt != 0f || uniform != 1f;
+            bool transformed = offset != Vector3.zero || scaleMul != Vector2.one || tilt != 0f;
             if (!transformed) return;
 
             var t = _visual;
@@ -213,7 +191,7 @@ namespace DiceOrbit.Visuals
                 worldPos.Add(c.position); worldRot.Add(c.rotation);
             }
 
-            float sx = scaleMul.x * uniform, sy = scaleMul.y * uniform;
+            float sx = scaleMul.x, sy = scaleMul.y;
             t.position = _basePos + offset;
             t.localScale = new Vector3(_baseScale.x * sx, _baseScale.y * sy, _baseScale.z);
             if (tilt != 0f) t.rotation = _baseRot * Quaternion.Euler(0f, 0f, tilt);

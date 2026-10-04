@@ -383,7 +383,7 @@ namespace DiceOrbit.Core
 
             var combatManager = CombatManager.Instance;
             if (combatManager != null) combatManager.OnMonsterDefeated(this);
-            DiceOrbit.Visuals.HitDirector.MonsterDeathPop(this, destroyDelayAfterDeath);   // 커지며 사라진다 (타격감 리워크)
+            DiceOrbit.Visuals.HitDirector.MonsterDeathSlice(this);   // 참격과 함께 두 조각으로 갈라진다 (연출은 이 오브젝트와 따로 산다)
             StartCoroutine(CoDestroyAfterDeath());
         }
 

@@ -27,6 +27,7 @@ namespace DiceOrbit.EditorTools
             TestResetKeepsWiredSounds();
             TestGetThrowsWhenTierMissing();
             TestTraumaMath();
+            TestDeathSliceGeometry();
             TestProfileAssetIsComplete();
 
             if (_failures == 0) Debug.Log("[HitFeelSelfTests] 전부 통과");
@@ -117,6 +118,28 @@ namespace DiceOrbit.EditorTools
             UnityEngine.Object.DestroyImmediate(p);
         }
 
+        // ── 처치 연출 (베어 가르기) ───────────────────────────
+
+        private static void TestDeathSliceGeometry()
+        {
+            foreach (float angle in new[] { 25f, -25f, 38f, -18f, 155f, -160f })
+            {
+                DeathSliceEffect.CutFrame(angle, out var direction, out var normal);
+                Check(Mathf.Abs(Vector2.Dot(direction, normal)) < 1e-5f, $"법선은 베는 선에 수직 ({angle}도)");
+                Check(Mathf.Approximately(direction.magnitude, 1f) && Mathf.Approximately(normal.magnitude, 1f), $"방향·법선은 단위 벡터 ({angle}도)");
+                Check(normal.y > 0f, $"법선은 언제나 위 조각을 가리킨다 ({angle}도)");
+
+                Vector2 slide = DeathSliceEffect.SlideDirection(direction);
+                Check(slide.y <= 0f, $"위 조각은 베인 선을 따라 내려간다 ({angle}도)");
+                Check(Mathf.Approximately(Mathf.Abs(Vector2.Dot(slide, direction)), 1f), $"미끄러지는 방향은 베는 선 위 ({angle}도)");
+            }
+
+            var feel = new DeathSliceFeel();
+            Check(feel.angleRange.x > 0f && feel.angleRange.y < 60f, "베는 각도는 비스듬하다 (수평도 수직도 아니다)");
+            Check(feel.slashSweep + feel.slashFade <= 0.5f, "참격은 0.5초 안에 사라진다");
+            Check(feel.holdDuration + feel.splitDuration <= 0.8f, "갈라짐은 0.8초 안에 끝난다 (템포 보호)");
+        }
+
         // ── 카메라 트라우마 ───────────────────────────────────
 
         private static void TestTraumaMath()
@@ -147,6 +170,10 @@ namespace DiceOrbit.EditorTools
             Check(p.monsterStrike.sfx != null, "에셋 몬스터 내리찍기 소리가 배선됐다");
             Check(p.flashMaterial != null && p.flashMaterial.shader != null && p.flashMaterial.shader.name == "DiceOrbit/SpriteSolidFlash",
                 "에셋 플래시 재질이 SpriteSolidFlash 셰이더를 쓴다");
+            var slice = p.deathSlice.sliceMaterial;
+            Check(slice != null && slice.shader != null && slice.shader.name == "DiceOrbit/SpriteSlice",
+                "에셋 처치 조각 재질이 SpriteSlice 셰이더를 쓴다");
+            Check(p.deathSlice.slashSprite != null, "에셋 참격 스프라이트가 배선됐다");
         }
 
         // ── 도우미 ────────────────────────────────────────────

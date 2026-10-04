@@ -66,6 +66,53 @@ namespace DiceOrbit.Visuals
         [Range(0f, 1f)] public float sfxVolume = 0.8f;
     }
 
+    /// <summary>몬스터 처치 — 참격이 가로지르고 두 조각으로 갈라져 사라진다 (<see cref="DeathSliceEffect"/>). 거리는 스프라이트 대각선 대비 비율.</summary>
+    [Serializable]
+    public class DeathSliceFeel
+    {
+        [Header("에셋")]
+        [Tooltip("잘린 조각용 재질 (셰이더 DiceOrbit/SpriteSlice)")]
+        public Material sliceMaterial;
+        [Tooltip("참격 줄기 스프라이트 — 가로로 긴 흰 줄기 (Tools/make_slash_streak.py)")]
+        public Sprite slashSprite;
+
+        [Header("참격 (realtime — 처치 히트스톱 중에도 그어진다)")]
+        public Color slashColor = Color.white;
+        [Tooltip("몬스터를 가로지르는 시간(초)")]
+        public float slashSweep = 0.07f;
+        [Tooltip("그어진 뒤 가늘어지며 사라지는 시간(초)")]
+        public float slashFade = 0.26f;
+        [Tooltip("길이 (대각선 대비)")]
+        public float slashLength = 1.8f;
+        [Tooltip("굵기 (대각선 대비)")]
+        public float slashThickness = 0.30f;
+        [Tooltip("베는 각도 범위(도, 수평 기준) — 좌우 기울기는 무작위")]
+        public Vector2 angleRange = new Vector2(18f, 38f);
+
+        [Header("갈라짐 (scaled — 히트스톱이 풀린 뒤)")]
+        [Tooltip("갈라지기 전 흰 실루엣으로 붙어 있는 시간(초)")]
+        public float holdDuration = 0.05f;
+        [Tooltip("두 조각이 벌어지며 사라지는 시간(초)")]
+        public float splitDuration = 0.55f;
+        [Tooltip("위 조각이 베인 선을 따라 미끄러지는 거리 (대각선 대비)")]
+        public float slideDistance = 0.26f;
+        [Tooltip("베인 선에서 벌어지는 거리 (대각선 대비)")]
+        public float gapDistance = 0.05f;
+        [Tooltip("아래 조각이 반대로 움직이는 정도 (위 조각 대비)")]
+        [Range(0f, 1f)] public float lowerRatio = 0.3f;
+        [Tooltip("미끄러지며 기우는 각도(도)")]
+        public float tiltDegrees = 7f;
+        [Tooltip("갈라짐의 이 지점부터 사라지기 시작한다 (0~1)")]
+        [Range(0f, 1f)] public float fadeStart = 0.45f;
+
+        [Header("빛")]
+        public Color flashColor = Color.white;
+        [Tooltip("흰 실루엣이 제 색으로 돌아오는 구간 (갈라짐의 0~이 값)")]
+        [Range(0.01f, 1f)] public float flashRelease = 0.3f;
+        [Tooltip("잘린 단면이 빛나는 폭 (대각선 대비)")]
+        public float edgeWidth = 0.04f;
+    }
+
     /// <summary>
     /// 타격감 수치의 단일 권위 (타격감 리워크 2026-10-03, 스펙 Docs/superpowers/specs/2026-10-03-hit-feel-rework-design.md).
     /// 등급별 여섯 겹 + 공격자 연출 + 소리 + 플래시 재질. 에셋: Resources/Combat/HitFeelProfile.asset
@@ -118,8 +165,7 @@ namespace DiceOrbit.Visuals
         public Color blockedPopupColor = new Color(0.62f, 0.76f, 0.95f);
 
         [Header("몬스터 처치")]
-        [Tooltip("쓰러질 때 커지는 배율 — 커지며 사라진다")]
-        public float deathPopScale = 1.25f;
+        public DeathSliceFeel deathSlice = new DeathSliceFeel();
 
         public HitTierFeel Get(HitTier tier)
         {

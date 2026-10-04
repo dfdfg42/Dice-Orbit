@@ -17,7 +17,7 @@
 | [combat_reactor_dispatch.md](combat_reactor_dispatch.md) | ICombatReactor DIM 타입별 디스패치 (OnAttack/OnHeal/OnMove/OnTurnEvent) |
 | [modifireSystem.md](modifireSystem.md) | 스킬 런타임 갱신(Modifier) 시스템 — Signature/Generic, 휘발성 컨텍스트 |
 | [action_forecast_system.md](action_forecast_system.md) | **행동 예고** — 주사위를 고르는 순간 경로·공격 종류·대상별 예상 피해·콤보 변화·경로 타일 효과·도착지 위험을 예고. 실행과 같은 코드(PlanAttack·SimulateCalculation·ResolveDamage)를 "도착했다고 치고" 호출, 타일 예고 훅 (2026-10-04) |
-| [hit_feel_system.md](hit_feel_system.md) | **타격감** — 한 방의 여섯 겹(임팩트·플래시·히트스톱·밀림·카메라 트라우마·타격음), 타격 등급(HitTier), HitFeelProfile, 렌더 전용 변형, 확장 지점 (2026-10-03) |
+| [hit_feel_system.md](hit_feel_system.md) | **타격감** — 한 방의 여섯 겹(임팩트·플래시·히트스톱·밀림·카메라 트라우마·타격음), 타격 등급(HitTier), HitFeelProfile, 렌더 전용 변형, 몬스터 처치 '베어 가르기'(참격 + 두 조각, 2026-10-05), 확장 지점 (2026-10-03) |
 | [nodemap_ambience.md](nodemap_ambience.md) | **노드맵 배경** — 장식 애니메이션(통짜 배경에서 물체를 '깃털 조각'으로 떠내 제자리에서 살짝 움직인다: 촛불·나침반·깃펜·김·고양이·반짝이) + 지도 두루마리(배경에서 떼어 낸 스프라이트, 봉 밑으로 말려 들어가는 지도). 도구·배치표·스캐폴드·AmbientMotion/AmbientTwinkle (2026-10-04) |
 | [combat_floating_notification_system.md](combat_floating_notification_system.md) | 패시브/상태이상 발동 시 플로팅 알림 버블 |
 | [Pipeline.md](Pipeline.md) | 전투 파이프라인 플로차트 (mermaid) |

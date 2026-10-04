@@ -87,11 +87,14 @@ namespace DiceOrbit.Visuals
             PlaySfx(strike.sfx, strike.sfxVolume, monster.transform.position);
         }
 
-        /// <summary>몬스터 처치 — 커지며 사라진다 (파괴 지연 시간 안에서).</summary>
-        public static void MonsterDeathPop(Monster monster, float duration)
+        /// <summary>
+        /// 몬스터 처치 — 참격이 가로지르고 두 조각으로 갈라져 사라진다. 몬스터의 스프라이트는 이 순간 꺼지고,
+        /// 연출은 몬스터 오브젝트와 따로 살아 파괴 지연과 상관없이 끝까지 간다 (<see cref="DeathSliceEffect"/>).
+        /// </summary>
+        public static void MonsterDeathSlice(Monster monster)
         {
             if (monster == null) return;
-            UnitHitReactor.Get(monster).PlayDeathPop(duration, HitFeelProfile.Current.deathPopScale);
+            DeathSliceEffect.Play(monster.SpriteRenderer, HitFeelProfile.Current.deathSlice);
         }
 
         // ── 내부 ──────────────────────────────────────────────
