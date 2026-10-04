@@ -27,6 +27,7 @@ namespace DiceOrbit.UI.Skin
         NameChip = 111,         // 이름표 (정보 패널·모집 시트)
         SectionChip = 112,      // 섹션 탭 칩
         Divider = 113,          // 구분선
+        PlainPanel = 114,       // 머리띠 없는 평평한 패널 — 전투 중 떠 있는 정보 카드(행동 예고). TooltipFrame에서 위쪽 띠만 뺀 것 (Tools/make_plain_panel.py)
         // 모집
         RecruitSheet = 200,
         RecruitTitleSign = 201,
