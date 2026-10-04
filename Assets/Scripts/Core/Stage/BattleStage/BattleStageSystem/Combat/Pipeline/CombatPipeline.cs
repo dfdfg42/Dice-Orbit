@@ -50,13 +50,14 @@ namespace DiceOrbit.Core.Pipeline
         /// 예상 피해량 시뮬레이션. OnCalculateOutput 단계만 돌려서 최종 OutputValue를 계산하고
         /// 적용/OnHit/OnPostAction은 건너뛴다. 반응자는 context.IsSimulation 체크로 Notify·스택소비 같은
         /// 부수효과를 스킵해야 한다. OnPreAction은 회피 RNG가 있어 미리보기에 부적합하므로 제외.
+        /// extraReactors: 아직 유닛에 붙지 않은 가상 리액터 — 행동 예고가 "가는 길에 얻을 상태(촉매 등)"를 끼워 넣는다.
         /// </summary>
-        public int SimulateCalculation(EffectContext context)
+        public int SimulateCalculation(EffectContext context, IReadOnlyList<ICombatReactor> extraReactors = null)
         {
             if (context == null) return 0;
 
             context.IsSimulation = true;
-            NotifyReactors(context, CombatTrigger.OnCalculateOutput);
+            NotifyReactors(context, CombatTrigger.OnCalculateOutput, extraReactors);
 
             if (context is AttackContext && context.OutputValue < 0)
                 context.OutputValue = 0;
@@ -106,7 +107,7 @@ namespace DiceOrbit.Core.Pipeline
             NotifyReactors(context, CombatTrigger.OnPostAction);
         }
 
-        private void NotifyReactors(CombatContext context, CombatTrigger trigger)
+        private void NotifyReactors(CombatContext context, CombatTrigger trigger, IReadOnlyList<ICombatReactor> extraReactors = null)
         {
             // 반응할 수 있는 모든 후보 수집 (Source의 패시브, Target의 상태이상 등)
             // 기본적으로 모든 파티원들에서 수집하고, Source나 Target이 몬스터라면 몬스터에서도 수집하는 방식으로 구현.
@@ -153,6 +154,11 @@ namespace DiceOrbit.Core.Pipeline
                 foreach (var tile in _orbitManager.Tiles)
                     if (tile != null) reactors.Add(tile);
             }
+
+            // G. 시뮬레이션 전용 가상 리액터 (행동 예고)
+            if (extraReactors != null)
+                foreach (var extra in extraReactors)
+                    if (extra != null) reactors.Add(extra);
 
             // 우선순위 정렬 (높은 게 먼저 실행 -> 데미지 계산 시 중요)
             // 예: "데미지 2배" vs "데미지 +10" -> 순서에 따라 결과가 다름.

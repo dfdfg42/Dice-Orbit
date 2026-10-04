@@ -24,6 +24,8 @@ namespace DiceOrbit.UI
         [SerializeField] private RectTransform panelRoot;
         /// <summary>튜토리얼 하이라이트용 — 액션 패널 루트.</summary>
         public RectTransform PanelRoot => panelRoot;
+        /// <summary>[이동] 버튼 — 행동 예고 카드가 이 위에 붙는다.</summary>
+        public RectTransform MoveButtonRect => moveButton != null ? moveButton.transform as RectTransform : null;
 
         private Tutorial.TutorialActionLock _tutorialActionLock = Tutorial.TutorialActionLock.None;
         /// <summary>튜토리얼: 이동/스킬 중 하나만 허용(버튼 활성 제한).</summary>
@@ -56,6 +58,7 @@ namespace DiceOrbit.UI
         // 런타임 상태
         private Character    currentCharacter;
         private DiceData     currentDice;
+        private DiceData     previewDice;     // 마우스를 올린 주사위 — 선택한 주사위 대신 잠깐 예고에 쓴다
         private bool         waitingForDice = false;
         private bool         isPanelVisible = false;
         private OrbitManager orbitManager;
@@ -76,14 +79,10 @@ namespace DiceOrbit.UI
             moveButton?.onClick.AddListener(OnMoveClicked);
             cancelButton?.onClick.AddListener(OnCancelClicked);
 
-            // 이동 버튼 hover 프리뷰
+            // 이동 버튼 hover — 예고(경로·공격·피해)는 주사위를 고른 순간부터 떠 있다. 호버는 최신 상태로 다시 계산만 시킨다.
             AddPointerEvents(moveButton,
-                () => ShowMovePreview(),
-                () =>
-                {
-                    TileSkillPreviewManager.Instance?.HidePreview();
-                    MovePathPreview.Instance?.Hide();
-                });
+                () => RefreshForecast(),
+                () => TileSkillPreviewManager.Instance?.HidePreview());
 
             // 오버레이 취소 이벤트
             if (overlay != null)
@@ -152,6 +151,8 @@ namespace DiceOrbit.UI
             TryApplyPreselectedDice();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
+            previewDice = null;
+            RefreshForecast();
 
             // 이 캐릭터의 강화 공격 조건을 못 맞추는 주사위에 배지 표시 — 그 눈이면 기본공격만 나간다
             // (이동과 기본공격은 되므로 몸통 색은 유지)
@@ -166,7 +167,8 @@ namespace DiceOrbit.UI
         public void Hide()
         {
             TileSkillPreviewManager.Instance?.HidePreview();
-            MovePathPreview.Instance?.Hide();
+            previewDice = null;
+            ActionForecastView.Instance?.Hide();   // 경로·조준선·예상 피해·카드 전부
             DiceUI.Instance?.ClearSkillUsabilityHint();
             overlay?.Hide();
             HoverTooltipUI.Instance?.HidePinned();
@@ -213,6 +215,42 @@ namespace DiceOrbit.UI
             // 스킬 목록이 열려 있으면 호버 텍스트(조건/예상 피해)를 새 주사위 값으로 갱신
             if (skillSelectPanel != null && skillSelectPanel.activeSelf)
                 PopulateSkillList(currentCharacter);
+
+            RefreshForecast();
+        }
+
+        /// <summary>
+        /// 주사위에 마우스를 올렸다 — 패널이 열려 있으면 그 주사위로 움직였을 때의 예고를 잠깐 보여 준다 (DiceElement에서 호출).
+        /// 고르기 전에 주사위끼리 비교할 수 있게 하려는 것.
+        /// </summary>
+        public void PreviewDice(DiceData dice)
+        {
+            if (!isPanelVisible || currentCharacter == null) return;
+            if (dice == null || dice.State != DiceState.Available) return;
+
+            previewDice = dice;
+            RefreshForecast();
+        }
+
+        /// <summary>주사위에서 마우스가 떠났다 — 선택한 주사위의 예고로 돌아간다(없으면 숨긴다).</summary>
+        public void EndPreviewDice(DiceData dice)
+        {
+            if (previewDice != dice) return;
+            previewDice = null;
+            RefreshForecast();
+        }
+
+        /// <summary>
+        /// 행동 예고를 지금 상태에 맞춘다 — 마우스를 올린 주사위가 있으면 그것, 없으면 선택한 주사위.
+        /// 보여 줄 주사위가 없거나 패널이 닫혀 있으면 숨긴다.
+        /// </summary>
+        private void RefreshForecast()
+        {
+            var dice = previewDice ?? currentDice;
+            bool show = isPanelVisible && currentCharacter != null && dice != null && dice.State != DiceState.Used;
+
+            if (show) ActionForecastView.EnsureInstance().Show(currentCharacter, dice.Value);
+            else ActionForecastView.Instance?.Hide();
         }
 
         public void OnDiceDeselected(DiceData dice)
@@ -225,6 +263,7 @@ namespace DiceOrbit.UI
             RefreshActionButtonsState();
             if (skillSelectPanel != null) skillSelectPanel.SetActive(false);
             RefreshSkillButtonPreview();
+            RefreshForecast();
         }
 
         // ─────────────────────────────────────────────
@@ -366,40 +405,6 @@ namespace DiceOrbit.UI
             var exit = new EventTrigger.Entry { eventID = EventTriggerType.PointerExit };
             exit.callback.AddListener(_ => onExit());
             trigger.triggers.Add(exit);
-        }
-
-        private void ShowMovePreview()
-        {
-            var path = GetMovePath();
-            if (path.Count == 0) return;
-
-            // 경유: 방향 체브론 / 목적지: 소나 핑 + 리프트 (회전 트레일은 스킬 조준 전용으로 분리)
-            MovePathPreview.EnsureInstance();
-            MovePathPreview.Instance?.Show(path);
-        }
-
-        private TileData GetMoveDestination()
-        {
-            var path = GetMovePath();
-            return path.Count > 0 ? path[path.Count - 1] : null;
-        }
-
-        /// <summary>이동 시 통과할 타일 순서(목적지 포함). 이동 불가면 빈 리스트.</summary>
-        private List<TileData> GetMovePath()
-        {
-            var path = new List<TileData>();
-            if (currentCharacter?.CurrentTile == null || currentDice == null) return path;
-
-            int netModifier = currentCharacter.Stats.MoveBuff - currentCharacter.Stats.MoveDebuff;
-            int steps = Mathf.Max(currentDice.Value + netModifier, 0);
-            var tile = currentCharacter.CurrentTile;
-            for (int i = 0; i < steps; i++)
-            {
-                if (tile.NextTile == null) break;
-                tile = tile.NextTile;
-                path.Add(tile);
-            }
-            return path;
         }
 
         private void PopulateSkillList(Character character)

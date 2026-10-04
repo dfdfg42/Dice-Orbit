@@ -69,6 +69,40 @@ namespace DiceOrbit.Systems.Effects
             _consumed.Add((effect, owner));
         }
 
+        /// <summary>
+        /// 예고 전용 스코프 (행동 예고 2026-10-04) — using 블록 동안 Current*를 시뮬레이션 값으로 바꾸고,
+        /// 끝나면 이전 값(진행 중인 실제 행동 포함)을 그대로 되돌린다. 소비 목록은 건드리지 않는다 —
+        /// 시뮬레이션 컨텍스트(IsSimulation)에서는 1회성 상태가 MarkConsumed를 부르지 않는다.
+        /// </summary>
+        public static SimulationScope Simulate(Unit source, AttackActionInfo info) => new SimulationScope(source, info);
+
+        public readonly struct SimulationScope : System.IDisposable
+        {
+            private const int SimulationActionId = int.MinValue;   // 실제 행동 ID(1부터 증가)와 겹치지 않는다
+
+            private readonly int _previousId;
+            private readonly Unit _previousSource;
+            private readonly AttackActionInfo _previousInfo;
+
+            public SimulationScope(Unit source, AttackActionInfo info)
+            {
+                _previousId = CurrentActionId;
+                _previousSource = CurrentSource;
+                _previousInfo = CurrentInfo;
+
+                CurrentActionId = SimulationActionId;
+                CurrentSource = source;
+                CurrentInfo = info;
+            }
+
+            public void Dispose()
+            {
+                CurrentActionId = _previousId;
+                CurrentSource = _previousSource;
+                CurrentInfo = _previousInfo;
+            }
+        }
+
         public static void End()
         {
             if (!IsActive) return;

@@ -221,6 +221,10 @@ namespace DiceOrbit.UI
         public void OnPointerEnter(PointerEventData eventData)
         {
             if (diceData == null) return;
+
+            // 캐릭터 패널이 열려 있으면 이 주사위로 움직였을 때의 행동 예고를 미리 보여 준다
+            CharacterActionUI.Instance?.PreviewDice(diceData);
+
             // 특수 주사위(Source 있음)거나 스킬 불가 배지가 떠 있으면 툴팁 표시
             if (diceData.Source == null && !skillUnusableHint) return;
             DiceHoverTooltipUI.EnsureInstance()?.Show(this);
@@ -228,6 +232,7 @@ namespace DiceOrbit.UI
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            CharacterActionUI.Instance?.EndPreviewDice(diceData);
             DiceHoverTooltipUI.Instance?.Hide();
         }
 

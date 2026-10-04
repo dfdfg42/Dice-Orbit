@@ -21,6 +21,15 @@ namespace DiceOrbit.Data.Tile
             Explosion(character);
         }
 
+        public override void ForecastTraverse(Core.Character character, TileForecast forecast)
+        {
+            forecast.Note($"지뢰 피해 {ForecastDamage(character, Value)}", ForecastTone.Bad);
+            forecast.MarkConsumed();   // 터지면 사라진다
+        }
+
+        public override void ForecastEndTurn(Core.Character character, TileForecast forecast)
+            => forecast.Note($"지뢰 피해 {ForecastDamage(character, Value)}", ForecastTone.Bad);
+
         public void Explosion(Core.Character target)
         {
             if (target == null || !target.IsAlive) return;

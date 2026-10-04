@@ -15,6 +15,14 @@ namespace DiceOrbit.Data.Tile
         public override void OnTraverse(Character character) => Activate();
         public override void OnEndTurn(Character character) => Activate();
 
+        public override void ForecastTraverse(Character character, TileForecast forecast) => ForecastStack(forecast);
+        public override void ForecastEndTurn(Character character, TileForecast forecast) => ForecastStack(forecast);
+
+        private static void ForecastStack(TileForecast forecast)
+        {
+            if (CrystalSet.GetCore() != null) forecast.Note("수정 핵 수정 중첩 +1", ForecastTone.Bad);
+        }
+
         private void Activate()
         {
             var core = CrystalSet.GetCore();

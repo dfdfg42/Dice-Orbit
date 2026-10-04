@@ -24,6 +24,9 @@ namespace DiceOrbit.Data.Tile
             Activate(character);
         }
 
+        public override void ForecastEndTurn(Character character, TileForecast forecast)
+            => forecast.Note("속박: 다음 턴 이동 불가", ForecastTone.Bad);
+
         public void Activate(Character target)
         {
             if (target == null || !target.IsAlive) return;

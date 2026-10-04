@@ -48,6 +48,11 @@ namespace DiceOrbit.Data.Tile
         public override void OnTraverse(Core.Character character) => Grant(character);
         public override void OnEndTurn(Core.Character character) => Grant(character);
 
+        public override void ForecastTraverse(Core.Character character, TileForecast forecast)
+            => forecast.Note($"방어도 +{Value}", ForecastTone.Good);
+        public override void ForecastEndTurn(Core.Character character, TileForecast forecast)
+            => forecast.Note($"방어도 +{Value}", ForecastTone.Good);
+
         private void Grant(Core.Character character)
         {
             if (character == null || !character.IsAlive || character.Stats == null) return;
@@ -70,6 +75,12 @@ namespace DiceOrbit.Data.Tile
             CombatPipeline.Instance?.Process(heal);
         }
 
+        public override void ForecastEndTurn(Core.Character character, TileForecast forecast)
+        {
+            if (character == null || character.Stats == null) return;
+            forecast.Note($"체력 +{Mathf.Max(1, Mathf.RoundToInt(character.Stats.MaxHP * Value / 100f))}", ForecastTone.Good);
+        }
+
         public override string GetDescription() => $"이 타일에서 턴을 마치면 최대 체력의 {Value}%만큼 회복합니다.";
     }
 
@@ -83,6 +94,13 @@ namespace DiceOrbit.Data.Tile
             int amount = Mathf.Max(1, Mathf.RoundToInt(character.Stats.MaxHP * Value / 100f));
             var hit = new AttackContext(null, character, "부조화", amount);
             CombatPipeline.Instance?.Process(hit);
+        }
+
+        public override void ForecastEndTurn(Core.Character character, TileForecast forecast)
+        {
+            if (character == null || character.Stats == null) return;
+            int raw = Mathf.Max(1, Mathf.RoundToInt(character.Stats.MaxHP * Value / 100f));
+            forecast.Note($"부조화 피해 {ForecastDamage(character, raw)}", ForecastTone.Bad);
         }
 
         public override string GetDescription() => $"이 타일에서 턴을 마치면 최대 체력의 {Value}%만큼 피해를 받습니다.";

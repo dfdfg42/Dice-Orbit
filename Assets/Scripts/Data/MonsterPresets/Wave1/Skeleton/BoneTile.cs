@@ -29,6 +29,15 @@ namespace DiceOrbit.Data.Tile
 
         public override void OnEndTurn(Core.Character character) => Activate();
 
+        public override void ForecastTraverse(Core.Character character, TileForecast forecast) => ForecastArmor(forecast);
+        public override void ForecastEndTurn(Core.Character character, TileForecast forecast) => ForecastArmor(forecast);
+
+        private void ForecastArmor(TileForecast forecast)
+        {
+            if (beneficiary != null && beneficiary.IsAlive)
+                forecast.Note($"해골 병사 방어도 +{Value}", ForecastTone.Bad);
+        }
+
         private void Activate()
         {
             // 지정된 해골 병사에게만 방어도 부여 (살아있을 때) + 이번 라운드 발동 마커

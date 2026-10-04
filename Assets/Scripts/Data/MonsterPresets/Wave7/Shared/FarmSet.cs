@@ -132,6 +132,9 @@ namespace DiceOrbit.Data.Tile
         // 효과 없음. 그 위에서 턴 종료 시 이 타일만 삭제.
         public override void OnEndTurn(Core.Character character) => Owner?.RemoveAttribute(this);
 
+        public override void ForecastEndTurn(Core.Character character, TileForecast forecast)
+            => forecast.Note("활력 타일 제거", ForecastTone.Good);
+
         public override string GetDescription()
             => "캐릭터가 이 타일에서 턴을 마치면 활력 타일이 사라집니다.";
     }

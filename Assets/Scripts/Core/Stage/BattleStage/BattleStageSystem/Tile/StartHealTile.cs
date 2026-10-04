@@ -23,6 +23,9 @@ namespace DiceOrbit.Data.Tile
             CombatPipeline.Instance?.Process(context);
         }
 
+        public override void ForecastTraverse(Core.Character character, TileForecast forecast)
+            => forecast.Note($"체력 +{Value}", ForecastTone.Good);
+
         public override string GetDisplayName() => "치유 타일";
 
         public override string GetDescription() => $"지나가면 HP를 {Value} 회복합니다.";

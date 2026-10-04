@@ -31,6 +31,21 @@ namespace DiceOrbit.Data.Tile
             character.StatusEffects.AddEffect(new FireExtinguishMarkStatus());
         }
 
+        /// <summary>지나가면 꺼진다 — 단, 한 턴에 하나만. 이미 껐거나 이 경로의 앞선 타일에서 끄기로 됐으면 그대로 남는다.</summary>
+        public override void ForecastTraverse(Core.Character character, TileForecast forecast)
+        {
+            bool alreadyExtinguished = character != null && character.StatusEffects != null
+                && character.StatusEffects.HasEffect(EffectType.FireExtinguishMark);
+            if (alreadyExtinguished || forecast.HasPendingStatus(EffectType.FireExtinguishMark)) return;
+
+            forecast.GrantStatus(EffectType.FireExtinguishMark, 0);
+            forecast.Note("불꽃 끄기", ForecastTone.Good);
+            forecast.MarkConsumed();
+        }
+
+        public override void ForecastEndTurn(Core.Character character, TileForecast forecast)
+            => forecast.Note($"불꽃 피해 {ForecastDamage(character, Value)}", ForecastTone.Bad);
+
         public override string GetDescription() => $"이 타일에서 턴을 마치면 피해 {Value}를 받습니다. 지나가면 불꽃이 꺼지며, 한 턴에 하나만 끌 수 있습니다.";
     }
 }

@@ -51,6 +51,9 @@ namespace DiceOrbit.Data.Tile
 
         public override void OnEndTurn(Character character) => Activate(character);
 
+        public override void ForecastEndTurn(Character character, TileForecast forecast)
+            => forecast.Note($"빙결 {stacks}중첩", ForecastTone.Bad);
+
         private void Activate(Character target)
         {
             if (target == null || !target.IsAlive || target.StatusEffects == null) return;

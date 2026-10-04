@@ -89,7 +89,35 @@ namespace DiceOrbit.Data.Tile
 
         public virtual void OnEndTurn(Core.Character character)
         {
+        }
 
+        /// <summary>
+        /// 행동 예고 — 캐릭터가 이 타일을 '지나갈 때'(도착 걸음 포함) 벌어질 일을 forecast에 적는다. 실제 효과는 내지 않는다.
+        /// OnTraverse를 구현한 속성은 이것도 같이 구현할 것. 통과로 사라지는 속성은 forecast.MarkConsumed()를 부른다.
+        /// </summary>
+        public virtual void ForecastTraverse(Core.Character character, TileForecast forecast)
+        {
+        }
+
+        /// <summary>
+        /// 행동 예고 — 캐릭터가 이 타일에서 '턴을 마치면' 벌어질 일을 forecast에 적는다. 실제 효과는 내지 않는다.
+        /// OnEndTurn을 구현한 속성은 이것도 같이 구현할 것.
+        /// </summary>
+        public virtual void ForecastEndTurn(Core.Character character, TileForecast forecast)
+        {
+        }
+
+        /// <summary>
+        /// 행동 예고 — 이 타일이 캐릭터에게 주는 피해의 예상값. 캐릭터가 이 타일에 섰다고 치고 파이프라인 시뮬레이션을 돌려
+        /// 방진 같은 피해 보정을 반영한다 (방어도 흡수 전 값). 전투 밖이거나 대상이 없으면 원 수치 그대로.
+        /// </summary>
+        protected int ForecastDamage(Core.Character character, int rawDamage)
+        {
+            var pipeline = CombatPipeline.Instance;
+            if (character == null || pipeline == null || Owner == null) return rawDamage;
+
+            using (character.PretendAt(Owner))
+                return pipeline.SimulateCalculation(new AttackContext(null, character, GetDisplayName(), rawDamage));
         }
 
         // Owner를 주입받아야 함

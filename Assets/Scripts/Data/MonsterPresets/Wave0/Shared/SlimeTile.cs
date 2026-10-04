@@ -23,6 +23,14 @@ namespace DiceOrbit.Data.Tile
         public override void OnTraverse(Core.Character character) => Activate(character);
         public override void OnEndTurn(Core.Character character) => Activate(character);
 
+        public override void ForecastTraverse(Core.Character character, TileForecast forecast)
+        {
+            forecast.Note($"점액: {slowDuration}턴 동안 이동 -{slowAmount}", ForecastTone.Bad);
+            forecast.MarkConsumed();   // 발동 후 사라진다
+        }
+        public override void ForecastEndTurn(Core.Character character, TileForecast forecast)
+            => forecast.Note($"점액: {slowDuration}턴 동안 이동 -{slowAmount}", ForecastTone.Bad);
+
         private void Activate(Core.Character target)
         {
             if (target == null || !target.IsAlive || target.StatusEffects == null) return;

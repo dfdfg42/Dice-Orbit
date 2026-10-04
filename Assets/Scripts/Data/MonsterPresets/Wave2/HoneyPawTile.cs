@@ -52,6 +52,13 @@ namespace DiceOrbit.Data.Tile
 
         public override void OnTraverse(Character character) => Activate(character);
 
+        public override void ForecastTraverse(Character character, TileForecast forecast)
+        {
+            if (healAmount > 0) forecast.Note($"꿀: 체력 +{healAmount}", ForecastTone.Good);
+            if (bearArmor > 0) forecast.Note($"꿀: 곰 방어도 +{bearArmor}", ForecastTone.Bad);
+            forecast.MarkConsumed();   // 발동 후 사라진다
+        }
+
         private void Activate(Character target)
         {
             if (target == null || !target.IsAlive) return;

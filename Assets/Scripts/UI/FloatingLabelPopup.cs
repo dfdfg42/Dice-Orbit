@@ -62,23 +62,31 @@ namespace DiceOrbit.UI
             ActiveCount = Mathf.Max(0, ActiveCount - 1);
         }
 
-        public void Setup(string text, Color color, float fontSize = LabelFontSize)
+        /// <summary>
+        /// 팝업과 같은 글꼴(KOTRA HOPE)·검은 외곽선·볼드·가운데 정렬을 월드 텍스트에 입힌다.
+        /// 행동 예고의 예상 피해 숫자가 실제 피해 팝업과 같은 모양을 쓰도록 공유한다.
+        /// </summary>
+        public static void ApplyPopupStyle(TextMeshPro text)
         {
-            _text              = gameObject.AddComponent<TextMeshPro>();
-
             var font = PopupFont;
             if (font != null)
             {
-                _text.font = font;
+                text.font = font;
                 var mat = PopupMaterial;
-                if (mat != null) _text.fontSharedMaterial = mat;   // KOTRA HOPE + 검은 외곽선(두껍게)
+                if (mat != null) text.fontSharedMaterial = mat;   // KOTRA HOPE + 검은 외곽선(두껍게)
             }
+            text.fontStyle = FontStyles.Bold;
+            text.alignment = TextAlignmentOptions.Center;
+        }
+
+        public void Setup(string text, Color color, float fontSize = LabelFontSize)
+        {
+            _text              = gameObject.AddComponent<TextMeshPro>();
+            ApplyPopupStyle(_text);
 
             _text.text         = text;
             _text.color        = color;
             _text.fontSize     = fontSize;
-            _text.fontStyle    = FontStyles.Bold;                  // 볼드
-            _text.alignment    = TextAlignmentOptions.Center;
             _text.sortingOrder = 200;
             _baseColor         = color;
             StartCoroutine(Animate());

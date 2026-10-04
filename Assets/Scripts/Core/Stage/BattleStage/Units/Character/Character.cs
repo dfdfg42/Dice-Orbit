@@ -32,7 +32,31 @@ namespace DiceOrbit.Core
         // CharacterStats 타입으로 반환 (기존 코드 호환성 유지)
         public new CharacterStats Stats => stat;
 
-        public TileData CurrentTile => currentTile;
+        private TileData _pretendTile;   // 예고 전용 — PretendAt 참조
+        public TileData CurrentTile => _pretendTile != null ? _pretendTile : currentTile;
+
+        /// <summary>
+        /// 예고 전용 — using 블록 동안 이 캐릭터가 tile에 서 있는 것처럼 보이게 한다 (행동 예고 2026-10-04).
+        /// CurrentTile을 읽는 구역 판정·패시브·타일 속성·위치 모디파이어가 전부 "도착했다고 치고" 계산된다.
+        /// 트랜스폼과 실제 위치(currentTile)는 건드리지 않는다.
+        /// 동기 구간에서만 쓸 것 — 코루틴 양보를 걸치면 다른 로직이 가짜 위치를 본다.
+        /// </summary>
+        public PretendPosition PretendAt(TileData tile) => new PretendPosition(this, tile);
+
+        public readonly struct PretendPosition : System.IDisposable
+        {
+            private readonly Character _character;
+            private readonly TileData _previous;
+
+            public PretendPosition(Character character, TileData tile)
+            {
+                _character = character;
+                _previous = character._pretendTile;
+                character._pretendTile = tile;
+            }
+
+            public void Dispose() => _character._pretendTile = _previous;
+        }
         public Core.CharacterPreset SourcePreset => Stats?.SourcePreset;
 
         [Header("Hover")]

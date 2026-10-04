@@ -22,6 +22,14 @@ namespace DiceOrbit.Data.Tile
 
         public override void OnTraverse(Core.Character character) => TryCatalyze(character);
 
+        /// <summary>촉매는 이번 자동공격에 바로 적용된다 — 예고의 피해 수치에도 들어가도록 상태 획득을 알린다.</summary>
+        public override void ForecastTraverse(Core.Character character, TileForecast forecast)
+        {
+            int percent = ownerPassive != null ? ownerPassive.CatalystPercent : 25;
+            forecast.GrantStatus(EffectType.Catalyst, percent);
+            forecast.Note($"촉매 획득 (이번 공격 피해 +{percent}%)", ForecastTone.Good);
+        }
+
         private void TryCatalyze(Core.Character character)
         {
             if (character == null || !character.IsAlive || character.StatusEffects == null) return;
