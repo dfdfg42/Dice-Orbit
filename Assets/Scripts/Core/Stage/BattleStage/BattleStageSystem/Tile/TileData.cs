@@ -107,8 +107,9 @@ namespace DiceOrbit.Data
                 UI.TileAttributeBubbleManager.EnsureInstance();
                 UI.TileAttributeBubbleManager.Instance?.RefreshTile(this);
 
-                // 타일 설치 연출: 속성 타입별 큐(없으면 상위 "tile" 폴백). 플레이 중에만.
-                if (Application.isPlaying)
+                // 타일 설치 연출: 속성 타입별 큐(없으면 상위 "tile" 폴백). 플레이 중 + opt-in 속성만.
+                // (공격/방어처럼 기본 탑재라 매 타일 설치되는 건 PlaysInstallVfx=false로 제외)
+                if (Application.isPlaying && attribue.PlaysInstallVfx)
                     VfxService.Play("tile." + attribue.Type, Position);
             }
         }

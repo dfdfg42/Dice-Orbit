@@ -25,6 +25,9 @@ namespace DiceOrbit.Data.Tile
         Slime,          // 점액: 통과/턴 종료 시 쇠약 부여 (Wave0)
         Amethyst,       // 자수정: 통과/턴 종료 시 수정 핵에 수정 중첩 +1, 영구 (Wave3 수정)
         Vitality,       // 활력: 통과/턴 종료 시 모든 식물 몬스터 활력 -1, 영구 (Wave7 농장)
+        Attack,         // 공격 타일(홀수): 이 타일 위 캐릭터 공격 피해 +V% / 받는 피해 +V%
+        Defense,        // 방어 타일(짝수): 이 타일 위 캐릭터 공격 피해 -V% / 받는 피해 -V%
+        // ↑ 신규 타입은 반드시 이 END에 append (중간 삽입 시 .asset 정수 인덱스가 밀려 오작동)
     }
 
     /// <summary>
@@ -38,6 +41,9 @@ namespace DiceOrbit.Data.Tile
         public bool IsStackable;
 
         public int Priority => 5;
+
+        /// <summary>타일 설치 시 연출 VFX 재생 여부. 기본 탑재(공격/방어)처럼 매 타일마다 깔려 시끄러운 속성은 override로 false.</summary>
+        public virtual bool PlaysInstallVfx => true;
 
         public TileAttribute(TileAttributeType type, int value, int duration, bool isStackable = false)
         {
@@ -121,6 +127,8 @@ namespace DiceOrbit.Data.Tile
                 TileAttributeType.Vitality => "활력",
                 TileAttributeType.Bind => "속박",
                 TileAttributeType.Frost => "빙결",
+                TileAttributeType.Attack => "공격 타일",
+                TileAttributeType.Defense => "방어 타일",
                 _ => Type.ToString()
             };
         }

@@ -87,4 +87,76 @@ namespace DiceOrbit.Data.Tile
 
         public override string GetDescription() => $"이 타일에서 턴을 마치면 최대 체력의 {Value}%만큼 피해를 받습니다.";
     }
+
+    /// <summary>
+    /// 홀짝 극성 타일 (TilePolarityInstaller가 전투 시작마다 0번 제외 전 타일에 설치).
+    /// 공격 타일: 이 타일 위 캐릭터의 공격 피해 +V% 그리고 받는 피해 +V% (딜↑·받피↑ = 글래스 캐논).
+    /// Sharp/Dull과 동일하게 OnCalculateOutput에서 보정(IsSimulation 게이트 없음 → 예상 피해 프리뷰 반영).
+    /// 실제 적용(비-시뮬) 시 CombatNotifier로 플로팅 알림. 몬스터엔 CurrentTile이 없어 캐릭터 전용.
+    /// </summary>
+    public class AttackTile : TileAttribute
+    {
+        private static readonly Color Tint = new Color(1f, 0.42f, 0.38f);   // 붉은 계열
+
+        public AttackTile(int percent = 30) : base(TileAttributeType.Attack, percent, -1) { }
+
+        public override bool PlaysInstallVfx => false;   // 기본 탑재(모든 홀수 타일) — 설치 VFX 생략
+
+        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        {
+            if (trigger != CombatTrigger.OnCalculateOutput) return;
+            if (!(context is AttackContext atk)) return;
+            float mult = 1f + Value / 100f;
+
+            // 이 타일 위 캐릭터가 공격 → 주는 피해 +V%
+            if (context.SourceUnit is Core.Character sc && sc.CurrentTile == Owner)
+            {
+                atk.OutputValue *= mult;
+                if (!context.IsSimulation) DiceOrbit.UI.CombatNotifier.Notify(sc, $"공격 +{Value}%", Tint);
+            }
+            // 이 타일 위 캐릭터가 피격 → 받는 피해 +V%
+            if (context.Target is Core.Character tc && tc.CurrentTile == Owner)
+            {
+                atk.OutputValue *= mult;
+                if (!context.IsSimulation) DiceOrbit.UI.CombatNotifier.Notify(tc, $"받는 피해 +{Value}%", Tint);
+            }
+        }
+
+        public override string GetDescription() => $"이 타일에서 공격 피해 +{Value}%, 받는 피해 +{Value}%";
+    }
+
+    /// <summary>
+    /// 방어 타일: 이 타일 위 캐릭터의 공격 피해 -V% 그리고 받는 피해 -V% (딜↓·받피↓ = 탱킹).
+    /// 구조는 AttackTile과 대칭.
+    /// </summary>
+    public class DefenseTile : TileAttribute
+    {
+        private static readonly Color Tint = new Color(0.42f, 0.66f, 1f);   // 푸른 계열
+
+        public DefenseTile(int percent = 30) : base(TileAttributeType.Defense, percent, -1) { }
+
+        public override bool PlaysInstallVfx => false;   // 기본 탑재(모든 짝수 타일) — 설치 VFX 생략
+
+        public override void OnReact(CombatTrigger trigger, CombatContext context)
+        {
+            if (trigger != CombatTrigger.OnCalculateOutput) return;
+            if (!(context is AttackContext atk)) return;
+            float mult = 1f - Value / 100f;
+
+            // 이 타일 위 캐릭터가 공격 → 주는 피해 -V%
+            if (context.SourceUnit is Core.Character sc && sc.CurrentTile == Owner)
+            {
+                atk.OutputValue *= mult;
+                if (!context.IsSimulation) DiceOrbit.UI.CombatNotifier.Notify(sc, $"공격 -{Value}%", Tint);
+            }
+            // 이 타일 위 캐릭터가 피격 → 받는 피해 -V%
+            if (context.Target is Core.Character tc && tc.CurrentTile == Owner)
+            {
+                atk.OutputValue *= mult;
+                if (!context.IsSimulation) DiceOrbit.UI.CombatNotifier.Notify(tc, $"받는 피해 -{Value}%", Tint);
+            }
+        }
+
+        public override string GetDescription() => $"이 타일에서 공격 피해 -{Value}%, 받는 피해 -{Value}%";
+    }
 }

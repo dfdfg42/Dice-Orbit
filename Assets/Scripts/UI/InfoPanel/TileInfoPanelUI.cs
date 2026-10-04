@@ -111,6 +111,7 @@ namespace DiceOrbit.UI
                 InfoPanelRows.Clear(tileIconRow);
                 foreach (var a in t.Attributes)
                 {
+                    if (IsCentered(a.Type)) continue;   // 공격/방어는 그림 정중앙에 따로 배치
                     if (attributeVisuals == null || !attributeVisuals.TryGet(a.Type, out var e) || e.icon == null) continue;
 
                     var iconGo = new GameObject("AttrIcon", typeof(RectTransform));
@@ -130,7 +131,62 @@ namespace DiceOrbit.UI
                     le.preferredHeight = iconSize;
                 }
             }
+
+            RebuildCenterIcons(t);   // 공격/방어 아이콘은 상단 행 대신 타일 그림 정중앙에
         }
+
+        private RectTransform _centerIconRow;   // 타일 그림 정중앙 아이콘 컨테이너 (공격/방어)
+
+        /// <summary>공격/방어 속성 아이콘을 타일 그림의 정중앙에 배치한다 (인게임 보드와 동일 규칙).</summary>
+        private void RebuildCenterIcons(TileInfoData t)
+        {
+            if (tileImage == null) return;
+
+            // 중앙 컨테이너 확보 (타일 그림의 자식, 정중앙 앵커 + 내용 크기 맞춤)
+            if (_centerIconRow == null)
+            {
+                var go = new GameObject("CenterAttrIcons", typeof(RectTransform));
+                go.transform.SetParent(tileImage.rectTransform, false);
+                _centerIconRow = (RectTransform)go.transform;
+                _centerIconRow.anchorMin = _centerIconRow.anchorMax = _centerIconRow.pivot = new Vector2(0.5f, 0.5f);
+                _centerIconRow.anchoredPosition = Vector2.zero;
+
+                var hlg = go.AddComponent<HorizontalLayoutGroup>();
+                hlg.childAlignment = TextAnchor.MiddleCenter;
+                hlg.spacing = 4f;
+                hlg.childControlWidth = hlg.childControlHeight = true;
+                hlg.childForceExpandWidth = hlg.childForceExpandHeight = false;
+
+                var fit = go.AddComponent<ContentSizeFitter>();
+                fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            }
+
+            InfoPanelRows.Clear(_centerIconRow);
+
+            float centerSize = iconSize * 1.6f;   // 정중앙 아이콘은 살짝 크게(강조)
+            foreach (var a in t.Attributes)
+            {
+                if (!IsCentered(a.Type)) continue;
+                if (attributeVisuals == null || !attributeVisuals.TryGet(a.Type, out var e) || e.icon == null) continue;
+
+                var iconGo = new GameObject("CenterAttrIcon", typeof(RectTransform));
+                iconGo.transform.SetParent(_centerIconRow, false);
+                ((RectTransform)iconGo.transform).sizeDelta = new Vector2(centerSize, centerSize);
+
+                var img = iconGo.AddComponent<Image>();
+                img.sprite = e.icon;
+                img.color = e.iconTint;
+                img.preserveAspect = true;
+                img.raycastTarget = false;
+
+                var le = iconGo.AddComponent<LayoutElement>();
+                le.preferredWidth = le.preferredHeight = centerSize;
+            }
+        }
+
+        /// <summary>공격/방어 타일 아이콘은 상단 행이 아니라 타일 정중앙에 놓는다.</summary>
+        private static bool IsCentered(Data.Tile.TileAttributeType type)
+            => type == Data.Tile.TileAttributeType.Attack || type == Data.Tile.TileAttributeType.Defense;
 
         /// <summary>속성당 설명 카드 1장씩 세로로 쌓기 (구 툴팁 글로서리 카드 감각).</summary>
         private void RebuildAttributeCards(TileInfoData t)
