@@ -25,7 +25,7 @@
 |---|---|
 | 전투 상태 권위 | **CombatManager 단일** (장부·승패 판정·수명주기). WaveManager 폐지 |
 | WaveManager의 후신 | **`EncounterSpawner`** — 스폰만 하는 도구 컴포넌트 (B안) |
-| 배경 소속 | **막 기본 + 몹 세트 오버라이드** (`ActDefinition.DefaultBackground` + `EncounterDefinition.BackgroundSprite`) |
+| 배경 소속 | **막 기본 + 몹 세트 오버라이드** (`ActDefinition.DefaultBackground` + `EncounterDefinition.BackgroundSprite`). 2026-10-05: 사용자 요청으로 Act 1의 몹 세트 오버라이드 9개를 전부 비웠다 — 지금은 모든 전투가 막 기본 배경(마녀의 실험실)을 쓴다. 오버라이드 기능 자체는 그대로 있다 |
 | 구 DB 폴백 | **제거 + 데이터 이관** (구 DB 4웨이브를 Act 풀로 재배치 후 삭제. 풀 비면 시끄럽게 실패) |
 | 데이터 개명 | `WaveDefinition` → **`EncounterDefinition`** ([Serializable] 평클래스 — 에셋 데이터 안 깨짐) |
 | 오브젝트 풀링 | 안 함 (전투당 몬스터 한 자릿수 — YAGNI) |
