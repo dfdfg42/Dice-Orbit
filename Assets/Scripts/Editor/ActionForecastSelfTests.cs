@@ -34,6 +34,7 @@ namespace DiceOrbit.EditorTools
             TestTileForecastNotes();
             TestTileAttributeForecasts();
             TestSimulationScopeRestores();
+            TestHpBarForecastRange();
 
             if (_failures == 0) Debug.Log("[ActionForecastSelfTests] 전부 통과");
             else Debug.LogError($"[ActionForecastSelfTests] 실패 {_failures}건");
@@ -262,6 +263,29 @@ namespace DiceOrbit.EditorTools
             Check(Systems.Effects.AttackActionScope.CurrentActionId == realId && Systems.Effects.AttackActionScope.CurrentInfo.DiceValue == 6,
                 "바깥 실제 행동의 ID·정보가 복원된다");
             Systems.Effects.AttackActionScope.End();
+        }
+
+        // ── 체력바의 깎일 구간 ────────────────────────────────
+
+        private static void TestHpBarForecastRange()
+        {
+            UI.MonsterUI.ForecastRange(20, 20, 5, out float from, out float to);
+            Check(Mathf.Approximately(from, 0.75f) && Mathf.Approximately(to, 1f), "체력 20/20에서 5 → 오른쪽 끝 25%");
+
+            UI.MonsterUI.ForecastRange(10, 20, 4, out from, out to);
+            Check(Mathf.Approximately(from, 0.3f) && Mathf.Approximately(to, 0.5f), "체력 10/20에서 4 → 30%~50%");
+
+            UI.MonsterUI.ForecastRange(6, 20, 99, out from, out to);
+            Check(from == 0f && Mathf.Approximately(to, 0.3f), "처치(초과 피해)는 남은 체력 전부");
+
+            UI.MonsterUI.ForecastRange(10, 20, 0, out from, out to);
+            Check(from == 0f && to == 0f, "피해 0이면 구간 없음");
+
+            UI.MonsterUI.ForecastRange(0, 20, 5, out from, out to);
+            Check(from == 0f && to == 0f, "이미 쓰러진 대상은 구간 없음");
+
+            UI.MonsterUI.ForecastRange(5, 0, 3, out from, out to);
+            Check(from == 0f && to == 0f, "최대 체력 0이어도 예외 없이 구간 없음");
         }
 
         // ── 도우미 ────────────────────────────────────────────

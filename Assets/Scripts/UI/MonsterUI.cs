@@ -50,6 +50,16 @@ namespace DiceOrbit.UI
         [SerializeField] private bool tintBubbleByIntent = false;
         [SerializeField] private bool showIntentText = true;
         
+        [Header("행동 예고 — 깎일 체력 미리 보기")]
+        [Tooltip("깎일 구간이 깜빡이는 빠르기 (초당 왕복 수)")]
+        [SerializeField] private float forecastBlinkPerSecond = 1.6f;
+        [SerializeField] private Color forecastColor = new Color(1f, 0.96f, 0.72f, 1f);
+        [SerializeField, Range(0f, 1f)] private float forecastMinAlpha = 0.45f;
+        [SerializeField, Range(0f, 1f)] private float forecastMaxAlpha = 1f;
+
+        private Image forecastSegment;   // 체력바 채움 위에 겹치는 '깎일 구간'
+        private int forecastLoss;
+
         [Header("Animation")]
         [SerializeField] private bool animateOnIntentChange = true;
         [SerializeField] private float popScale = 1.12f;
@@ -87,9 +97,87 @@ namespace DiceOrbit.UI
         private void Update()
         {
             UpdateUI();
+            UpdateForecastSegment();
             // Canvas 회전은 부모 Monster의 Billboard가 처리함
         }
         
+        // ── 행동 예고: 깎일 체력 미리 보기 ─────────────────────
+
+        /// <summary>
+        /// 행동 예고 — 이번 행동으로 깎일 체력을 체력바에 깜빡이는 구간으로 미리 보여 준다 (ActionForecastView가 호출).
+        /// 0 이하면 지운다. 구간은 지금 체력의 오른쪽 끝에서 왼쪽으로 hpLoss만큼이다.
+        /// </summary>
+        public void SetForecastLoss(int hpLoss)
+        {
+            forecastLoss = Mathf.Max(0, hpLoss);
+            UpdateForecastSegment();
+        }
+
+        /// <summary>깎일 구간이 체력바에서 차지하는 범위 (0~1 비율). 순수 — 자가 테스트.</summary>
+        public static void ForecastRange(int currentHp, int maxHp, int hpLoss, out float from, out float to)
+        {
+            if (maxHp <= 0 || currentHp <= 0 || hpLoss <= 0)
+            {
+                from = to = 0f;
+                return;
+            }
+            to = Mathf.Clamp01((float)currentHp / maxHp);
+            from = Mathf.Clamp01((float)Mathf.Max(0, currentHp - hpLoss) / maxHp);
+        }
+
+        private void UpdateForecastSegment()
+        {
+            bool show = forecastLoss > 0 && monster != null && hpSlider != null && hpSlider.fillRect != null;
+            float from = 0f, to = 0f;
+            if (show)
+            {
+                ForecastRange(monster.Stats.CurrentHP, monster.Stats.MaxHP, forecastLoss, out from, out to);
+                show = to > from;
+            }
+
+            if (!show)
+            {
+                if (forecastSegment != null && forecastSegment.enabled) forecastSegment.enabled = false;
+                return;
+            }
+
+            if (forecastSegment == null) forecastSegment = CreateForecastSegment();
+            forecastSegment.enabled = true;
+
+            // 구간은 채움(Fill)의 자식 — 채움의 오른쪽 끝에 정확히 붙는다 (Fill Area 기준으로 놓으면 채움이 여백만큼 삐져나온다).
+            // 채움 사각형은 지금 체력만큼만 뻗어 있으므로, 그 안에서의 비율로 바꾼다. Filled 방식이면 채움 사각형이 막대 전체다.
+            var fillImage = hpSlider.fillRect.GetComponent<Image>();
+            bool fullWidthFill = fillImage != null && fillImage.type == Image.Type.Filled;
+            if (!fullWidthFill)
+            {
+                from = from / to;
+                to = 1f;
+            }
+
+            var rect = forecastSegment.rectTransform;
+            rect.anchorMin = new Vector2(from, 0f);
+            rect.anchorMax = new Vector2(to, 1f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            float wave = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * forecastBlinkPerSecond * 2f * Mathf.PI);
+            var color = forecastColor;
+            color.a = Mathf.Lerp(forecastMinAlpha, forecastMaxAlpha, wave);
+            forecastSegment.color = color;
+        }
+
+        private Image CreateForecastSegment()
+        {
+            var fill = hpSlider.fillRect;
+            var go = new GameObject("ForecastLoss", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.transform.SetParent(fill, false);   // 채움의 자식 — 채움 위에 그려지고 채움 끝에 맞는다
+
+            // 스프라이트 없이 단색 — 채움 스프라이트(붉은 막대)를 쓰면 색이 곱해져 붉은색에 묻힌다
+            var image = go.GetComponent<Image>();
+            image.raycastTarget = false;
+            return image;
+        }
+
         /// <summary>
         /// World Space Canvas 설정
         /// </summary>

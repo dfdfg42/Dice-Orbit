@@ -17,6 +17,7 @@ namespace DiceOrbit.Visuals
     ///   · 이동 경로 + 도착 타일 (MovePathPreview)
     ///   · 도착 타일 → 대상 몬스터 조준 포물선 (DashedArcLine)
     ///   · 대상 몬스터 몸 위에 예상 피해 숫자 (피해 팝업과 같은 글꼴)
+    ///   · 대상 몬스터 체력바에 깎일 구간 깜빡임 (MonsterUI.SetForecastLoss)
     ///   · [이동] 버튼 위 예고 카드 — 공격 종류·대상별 결과·콤보 변화·경로/턴 종료 타일 효과·도착지 위험
     ///
     /// 수치는 전부 ActionForecaster.Build에서 온다 — 여기에는 계산이 없다.
@@ -65,6 +66,8 @@ namespace DiceOrbit.Visuals
         private readonly List<LineRenderer> _arcs = new List<LineRenderer>();
         private readonly List<LineRenderer> _arrows = new List<LineRenderer>();
         private readonly List<TextMeshPro> _tags = new List<TextMeshPro>();
+        private readonly List<MonsterUI> _hpBars = new List<MonsterUI>();            // 지금 깎일 구간을 띄운 체력바
+        private readonly List<MonsterUI> _hpBarsScratch = new List<MonsterUI>();
 
         private RectTransform _card;
         private TextMeshProUGUI _cardText;
@@ -147,6 +150,7 @@ namespace DiceOrbit.Visuals
             SyncPath(_forecast);
             SyncAims(_forecast);
             SyncTags(_forecast);
+            SyncHpBars(_forecast);
             SyncCard(_forecast);
         }
 
@@ -160,6 +164,8 @@ namespace DiceOrbit.Visuals
             }
             for (int i = 0; i < _arcs.Count; i++) DashedArcLine.SetVisible(_arcs[i], _arrows[i], false);
             foreach (var tag in _tags) if (tag != null) tag.gameObject.SetActive(false);
+            foreach (var bar in _hpBars) if (bar != null) bar.SetForecastLoss(0);
+            _hpBars.Clear();
             if (_card != null) _card.gameObject.SetActive(false);
         }
 
@@ -222,6 +228,29 @@ namespace DiceOrbit.Visuals
                 tag.color = result.Lethal ? tagLethalColor : result.HpLoss > 0 ? tagDamageColor : tagBlockedColor;
                 tag.transform.position = BodyCenter(result.Target);
             }
+        }
+
+        // ── 체력바의 깎일 구간 ───────────────────────────────
+
+        /// <summary>대상 몬스터의 체력바에 깎일 체력을 알리고, 대상에서 빠진 체력바는 지운다.</summary>
+        private void SyncHpBars(ActionForecast forecast)
+        {
+            _hpBarsScratch.Clear();
+            foreach (var result in forecast.Targets)
+            {
+                if (result.Target == null) continue;
+                var bar = result.Target.GetComponentInChildren<MonsterUI>();
+                if (bar == null) continue;   // 체력바가 없는 대상 (몬스터가 아닌 유닛)
+
+                bar.SetForecastLoss(result.HpLoss);
+                _hpBarsScratch.Add(bar);
+            }
+
+            foreach (var bar in _hpBars)
+                if (bar != null && !_hpBarsScratch.Contains(bar)) bar.SetForecastLoss(0);
+
+            _hpBars.Clear();
+            _hpBars.AddRange(_hpBarsScratch);
         }
 
         private TextMeshPro CreateTag()
@@ -328,12 +357,12 @@ namespace DiceOrbit.Visuals
             bgRect.anchorMin = Vector2.zero; bgRect.anchorMax = Vector2.one;
             bgRect.offsetMin = Vector2.zero; bgRect.offsetMax = Vector2.zero;
             var bg = bgGo.AddComponent<Image>();
-            UiSkin.Current.Apply(bg, SkinPart.TooltipFrame);
+            UiSkin.Current.Apply(bg, SkinPart.PlainPanel);   // 머리띠 없는 평평한 패널 — 첫 줄(제목)이 띠에 걸리지 않는다
             bg.raycastTarget = false;
             bgGo.AddComponent<LayoutElement>().ignoreLayout = true;
 
             var layout = cardGo.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(22, 22, 16, 18);
+            layout.padding = new RectOffset(22, 22, 14, 20);
             layout.childAlignment = TextAnchor.UpperLeft;
             layout.childControlWidth = true; layout.childControlHeight = true;
             layout.childForceExpandWidth = false; layout.childForceExpandHeight = false;
