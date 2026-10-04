@@ -1,0 +1,238 @@
+{
+  "sourceWidth": 2688,
+  "sourceHeight": 1520,
+  "pieces": [
+    {
+      "name": "candle_glow",
+      "kind": "glow",
+      "alpha": {
+        "amplitude": 0.07,
+        "period": 0.9,
+        "jitter": 1.0
+      },
+      "scaleX": {
+        "amplitude": 0.05,
+        "period": 1.4,
+        "jitter": 1.0
+      },
+      "scaleY": {
+        "amplitude": 0.05,
+        "period": 1.4,
+        "jitter": 1.0
+      },
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_glow.png",
+      "x": 5,
+      "y": -35,
+      "width": 370,
+      "height": 370,
+      "pivotX": 190,
+      "pivotY": 150,
+      "color": [
+        1.0,
+        0.9,
+        0.62,
+        0.16
+      ]
+    },
+    {
+      "name": "candle_flame",
+      "kind": "patch",
+      "rotation": {
+        "amplitude": 3.0,
+        "period": 0.9,
+        "jitter": 1.0
+      },
+      "scaleX": {
+        "amplitude": 0.035,
+        "period": 0.7,
+        "jitter": 1.0
+      },
+      "scaleY": {
+        "amplitude": 0.05,
+        "period": 0.6,
+        "jitter": 1.0
+      },
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_candle_flame.png",
+      "x": 128,
+      "y": 60,
+      "width": 121,
+      "height": 166,
+      "pivotX": 188,
+      "pivotY": 199
+    },
+    {
+      "name": "compass_needle",
+      "kind": "patch",
+      "rotation": {
+        "amplitude": 5.0,
+        "period": 5.5,
+        "jitter": 0.6
+      },
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_compass_needle.png",
+      "x": 423,
+      "y": 272,
+      "width": 181,
+      "height": 181,
+      "pivotX": 513,
+      "pivotY": 362
+    },
+    {
+      "name": "quill",
+      "kind": "patch",
+      "rotation": {
+        "amplitude": 1.3,
+        "period": 4.2,
+        "jitter": 0.15
+      },
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_quill.png",
+      "x": 2338,
+      "y": -16,
+      "width": 325,
+      "height": 333,
+      "pivotX": 2372,
+      "pivotY": 287
+    },
+    {
+      "name": "tea_steam",
+      "kind": "patch",
+      "rotation": {
+        "amplitude": 2.2,
+        "period": 3.4,
+        "jitter": 0.3
+      },
+      "scaleY": {
+        "amplitude": 0.04,
+        "period": 2.6,
+        "jitter": 0.2
+      },
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_tea_steam.png",
+      "x": 2472,
+      "y": 350,
+      "width": 189,
+      "height": 175,
+      "pivotX": 2560,
+      "pivotY": 512
+    },
+    {
+      "name": "cat",
+      "kind": "patch",
+      "scaleY": {
+        "amplitude": 0.008,
+        "period": 3.8,
+        "jitter": 0.0
+      },
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_cat.png",
+      "x": 2152,
+      "y": 1051,
+      "width": 573,
+      "height": 474,
+      "pivotX": 2440,
+      "pivotY": 1476
+    },
+    {
+      "name": "sparkle_d6_left",
+      "kind": "sparkle",
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_sparkle.png",
+      "x": 272.0,
+      "y": 508.0,
+      "width": 56,
+      "height": 56,
+      "pivotX": 300,
+      "pivotY": 536,
+      "intervalMin": 5.0,
+      "intervalMax": 12.0,
+      "duration": 0.75,
+      "spin": 35.0
+    },
+    {
+      "name": "sparkle_d12",
+      "kind": "sparkle",
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_sparkle.png",
+      "x": 65.0,
+      "y": 615.0,
+      "width": 50,
+      "height": 50,
+      "pivotX": 90,
+      "pivotY": 640,
+      "intervalMin": 5.0,
+      "intervalMax": 12.0,
+      "duration": 0.75,
+      "spin": 35.0
+    },
+    {
+      "name": "sparkle_compass",
+      "kind": "sparkle",
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_sparkle.png",
+      "x": 405.0,
+      "y": 273.0,
+      "width": 54,
+      "height": 54,
+      "pivotX": 432,
+      "pivotY": 300,
+      "intervalMin": 5.0,
+      "intervalMax": 12.0,
+      "duration": 0.75,
+      "spin": 35.0
+    },
+    {
+      "name": "sparkle_ink",
+      "kind": "sparkle",
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_sparkle.png",
+      "x": 2251.0,
+      "y": 319.0,
+      "width": 50,
+      "height": 50,
+      "pivotX": 2276,
+      "pivotY": 344,
+      "intervalMin": 5.0,
+      "intervalMax": 12.0,
+      "duration": 0.75,
+      "spin": 35.0
+    },
+    {
+      "name": "sparkle_cup",
+      "kind": "sparkle",
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_sparkle.png",
+      "x": 2334.0,
+      "y": 530.0,
+      "width": 52,
+      "height": 52,
+      "pivotX": 2360,
+      "pivotY": 556,
+      "intervalMin": 5.0,
+      "intervalMax": 12.0,
+      "duration": 0.75,
+      "spin": 35.0
+    },
+    {
+      "name": "sparkle_d6_pink",
+      "kind": "sparkle",
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_sparkle.png",
+      "x": 2301.0,
+      "y": 875.0,
+      "width": 50,
+      "height": 50,
+      "pivotX": 2326,
+      "pivotY": 900,
+      "intervalMin": 5.0,
+      "intervalMax": 12.0,
+      "duration": 0.75,
+      "spin": 35.0
+    },
+    {
+      "name": "sparkle_d6_blue",
+      "kind": "sparkle",
+      "sprite": "Assets/Sprites/배경/NodeMapAmbience/nodemap_amb_sparkle.png",
+      "x": 2575.0,
+      "y": 901.0,
+      "width": 50,
+      "height": 50,
+      "pivotX": 2600,
+      "pivotY": 926,
+      "intervalMin": 5.0,
+      "intervalMax": 12.0,
+      "duration": 0.75,
+      "spin": 35.0
+    }
+  ]
+}
