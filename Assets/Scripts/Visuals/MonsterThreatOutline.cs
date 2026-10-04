@@ -8,8 +8,8 @@ namespace DiceOrbit.Visuals
     /// <summary>
     /// 몬스터 조회(호버/핀) 시, 그 몬스터가 공격할 타일들의 '둘레 전체'를 정체성 색 외곽선으로 감싼다.
     ///
-    /// 전사 패시브 범위(PassiveRangeIndicator, ㄱ자 브래킷)와는 별개의 몬스터 위협 전용 채널이다.
-    /// (브래킷 = 아군 패시브 / 이 둘레 외곽선 = 몬스터가 이번에 칠 타일)
+    /// 아군 패시브 구역(PassiveZoneIndicator, 구역을 통째로 감싸는 하늘색 테두리)과는 별개의 몬스터 위협 전용 채널이다.
+    /// (구역 테두리 = 아군 패시브 / 이 타일 둘레 외곽선 = 몬스터가 이번에 칠 타일)
     /// 범위 타일은 IntentTileLiftEffect.CollectIntentTiles(m)와 동일 소스(몬스터 인텐트)를 쓴다.
     /// </summary>
     public class MonsterThreatOutline : MonoBehaviour

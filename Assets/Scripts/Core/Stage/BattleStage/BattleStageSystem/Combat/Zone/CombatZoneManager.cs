@@ -158,7 +158,7 @@ namespace DiceOrbit.Core.Zones
             return null;
         }
 
-        /// <summary>이 구역에 속한 타일들 (패시브 범위 표시용).</summary>
+        /// <summary>이 구역에 속한 타일들 (구역 테두리의 바깥 반지름을 재는 데 쓴다).</summary>
         public IReadOnlyList<TileData> GetTilesInZone(int zone)
         {
             var result = new List<TileData>();

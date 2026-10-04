@@ -14,7 +14,7 @@ namespace DiceOrbit.Data.Passives
     /// (직접 체력 손실은 파이프라인이 리액터 통지를 건너뜀 + 이중 방어).
     /// </summary>
     [System.Serializable]
-    public class RogueFlankPassive : CharacterPassiveSkill, IPassiveRangeProvider
+    public class RogueFlankPassive : CharacterPassiveSkill, IPassiveZoneProvider
     {
         [Header("Designer Tuning")]
         [Tooltip("같은 구역의 '다른 아군' 1명당 피해 증가율(%). 예: 30이면 3명일 때 +90%")]
@@ -25,12 +25,23 @@ namespace DiceOrbit.Data.Passives
         public override string GetDynamicDescription()
             => $"같은 구역에 있는 다른 아군 1명마다 도적이 주는 공격 피해가 {perAllyBonusPercent:0.#}% 증가합니다.";
 
-        /// <summary>패시브 영향 범위 = 도적이 선 구역의 타일들.</summary>
-        public IReadOnlyList<TileData> GetRangeTiles()
+        /// <summary>패시브 구역 = 도적이 선 구역. 조회 시 구역 테두리에 쓰인다.</summary>
+        public void CollectPassiveZones(List<int> zones)
         {
-            var zones = CombatZoneManager.Instance;
-            if (zones == null || !(owner is Character rogue)) return new List<TileData>();
-            return zones.GetTilesInZone(zones.GetZoneOf(rogue));
+            var manager = CombatZoneManager.Instance;
+            if (manager == null || !(owner is Character rogue)) return;
+            int zone = manager.GetZoneOf(rogue);
+            if (zone >= 0) zones.Add(zone);
+        }
+
+        public PassiveZoneStatus GetPassiveZoneStatus()
+            => FormatZoneStatus(owner is Character rogue ? CountOtherAlliesInMyZone(rogue) : 0, perAllyBonusPercent);
+
+        /// <summary>지금 효과 한 줄 (순수 — PassiveZoneSelfTests).</summary>
+        public static PassiveZoneStatus FormatZoneStatus(int allyCount, float perAllyPercent)
+        {
+            if (allyCount <= 0) return new PassiveZoneStatus("같은 구역 아군 없음", false);
+            return new PassiveZoneStatus($"주는 피해 +{perAllyPercent * allyCount:0.#}%", true);
         }
 
         public override void OnAttack(CombatTrigger trigger, AttackContext context)

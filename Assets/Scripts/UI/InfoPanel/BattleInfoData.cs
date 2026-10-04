@@ -68,10 +68,13 @@ namespace DiceOrbit.UI
         public readonly string Name;
         public readonly string DynamicEffect;       // GetDynamicDescription() — 현재 유효 수치
         public readonly string FlavorText;          // Description 원문
+        public readonly string LiveEffect;          // 구역 패시브의 '지금 효과' 한 줄 (예: "받는 피해 -20%"). 구역 패시브가 아니면 빈 문자열
+        public readonly bool LiveActive;            // 지금 효과가 실제로 걸려 있는가 — false면 흐리게
 
-        public PassiveInfoData(string name, string dynamicEffect, string flavorText)
+        public PassiveInfoData(string name, string dynamicEffect, string flavorText, string liveEffect, bool liveActive)
         {
             Name = name; DynamicEffect = dynamicEffect; FlavorText = flavorText;
+            LiveEffect = liveEffect ?? ""; LiveActive = liveActive;
         }
     }
 

@@ -72,6 +72,16 @@ namespace DiceOrbit.Visuals
             return new GameObject("[ZonePlateRenderer]").AddComponent<ZonePlateRenderer>();
         }
 
+        /// <summary>
+        /// 구역의 플레이트 렌더러 — 지금 보이고 정렬까지 끝난 상태일 때만 true.
+        /// 구역 위에 겹쳐 그리는 표시(패시브 구역 테두리·밝힘)가 스프라이트·자세·정렬을 맞추는 기준이다.
+        /// </summary>
+        public bool TryGetPlate(int zone, out SpriteRenderer plate)
+        {
+            plate = zone >= 0 && zone < _plates.Length ? _plates[zone] : null;
+            return plate != null && plate.enabled && _sortingSynced;
+        }
+
         private void LateUpdate()
         {
             var zones = CombatZoneManager.Instance;

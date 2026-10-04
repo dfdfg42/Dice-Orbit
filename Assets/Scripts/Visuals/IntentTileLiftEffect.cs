@@ -12,7 +12,7 @@ namespace DiceOrbit.Visuals
     /// 색 오버레이/속성 아이콘 동승 포함).
     ///
     /// 시각 채널: 움직임(리프트) = 포커스 강조 전용.
-    /// 아군 패시브 범위(PassiveRangeIndicator 브래킷)와 언어가 겹치지 않는다.
+    /// 아군 패시브 범위(PassiveZoneIndicator 구역 테두리)와 언어가 겹치지 않는다.
     /// </summary>
     public class IntentTileLiftEffect : MonoBehaviour
     {

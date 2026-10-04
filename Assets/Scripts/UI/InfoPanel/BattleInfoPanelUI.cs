@@ -99,7 +99,7 @@ namespace DiceOrbit.UI
             if (!visible)
             {
                 // 패널 숨김 시 월드 인디케이터/타일 패널도 제거
-                Visuals.PassiveRangeIndicator.Instance?.Hide();
+                Visuals.PassiveZoneIndicator.Instance?.Hide();
                 Visuals.IntentTileLiftEffect.Instance?.Hide();
                 Visuals.MonsterThreatOutline.Instance?.Hide();
                 TileInfoPanelUI.Instance?.Hide();
@@ -109,20 +109,20 @@ namespace DiceOrbit.UI
 
         /// <summary>
         /// 조회 대상별 월드 인디케이터 동기화.
-        /// 캐릭터 → 패시브 범위 브래킷 / 몬스터 → 공격 예정 타일 리프트 / 그 외 → 모두 숨김.
+        /// 캐릭터 → 패시브 구역 테두리 / 몬스터 → 공격 예정 타일 외곽선 / 그 외 → 모두 숨김.
         /// </summary>
         private static void SyncWorldIndicators(IBattleInfoProvider unit)
         {
-            Visuals.PassiveRangeIndicator.EnsureInstance();
+            Visuals.PassiveZoneIndicator.EnsureInstance();
             Visuals.IntentTileLiftEffect.EnsureInstance();
             Visuals.MonsterThreatOutline.EnsureInstance();
-            var brackets = Visuals.PassiveRangeIndicator.Instance;
+            var passiveZones = Visuals.PassiveZoneIndicator.Instance;
             var lift = Visuals.IntentTileLiftEffect.Instance;
             var outline = Visuals.MonsterThreatOutline.Instance;
 
             if (unit is Core.Character ch)
             {
-                brackets?.Show(ch);
+                passiveZones?.Show(ch);
                 lift?.Hide();
                 outline?.Hide();
             }
@@ -135,11 +135,11 @@ namespace DiceOrbit.UI
                     : new Color(1f, 0.45f, 0.3f, 1f);
                 outline?.ShowTiles(tiles, col);
                 lift?.Hide();
-                brackets?.Hide();
+                passiveZones?.Hide();
             }
             else
             {
-                brackets?.Hide();
+                passiveZones?.Hide();
                 lift?.Hide();
                 outline?.Hide();
             }
@@ -199,7 +199,7 @@ namespace DiceOrbit.UI
             var unit = _selection.CurrentUnit;
             if (unit is Component c && c == null) unit = null;   // 파괴된 유닛 방어
 
-            // 월드 인디케이터 연동: 캐릭터 → 패시브 브래킷 / 몬스터 → 공격 타일 리프트
+            // 월드 인디케이터 연동: 캐릭터 → 패시브 구역 테두리 / 몬스터 → 공격 타일 외곽선
             SyncWorldIndicators(unit);
 
             if (unit != null)
@@ -329,7 +329,7 @@ namespace DiceOrbit.UI
                     // 동적 설명이 있으면 그것만 — 에셋의 정적 설명(FlavorText)은 같은 규칙 문구라
                     // 둘을 이어붙이면 내용이 두 번 반복된다 (2026-08-28). 정적은 동적이 없을 때의 폴백.
                     string desc = string.IsNullOrWhiteSpace(p.DynamicEffect) ? p.FlavorText : p.DynamicEffect;
-                    AddEntry(passivesContainer, p.Name, "", desc, UiSkin.Current.Passive);
+                    AddEntry(passivesContainer, p.Name, FormatLiveEffect(p), desc, UiSkin.Current.Passive);
                 }
             }
 
@@ -405,6 +405,14 @@ namespace DiceOrbit.UI
         /// 항목 1개(제목/메타/설명)를 컨테이너에 추가. cardPrefab이 있으면 카드로, 없으면 텍스트 행으로.
         /// icon이 있으면 제목 행 왼쪽에 아이콘 표시 (타일 속성 등).
         /// </summary>
+        /// <summary>패시브 제목 옆 '지금 효과' — 걸려 있으면 굵은 잉크, 꺼져 있으면 메타 기본색(흐린 회색).</summary>
+        private static string FormatLiveEffect(PassiveInfoData p)
+        {
+            if (string.IsNullOrWhiteSpace(p.LiveEffect)) return "";
+            if (!p.LiveActive) return p.LiveEffect;
+            return $"<b><color=#{ColorUtility.ToHtmlStringRGB(UiSkin.Current.Ink)}>{p.LiveEffect}</color></b>";
+        }
+
         private void AddEntry(RectTransform container, string title, string meta, string desc, Color titleColor,
             Sprite icon = null, Color? iconTint = null)
         {

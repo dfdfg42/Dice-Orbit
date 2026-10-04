@@ -393,10 +393,22 @@ namespace DiceOrbit.UI
             foreach (var p in passives.ActivePassives)
             {
                 if (p == null) continue;
+
+                // 구역 패시브는 '지금 효과'를 제목 옆에 — 월드의 구역 테두리(PassiveZoneIndicator)와 짝을 이룬다
+                string liveEffect = "";
+                bool liveActive = false;
+                if (p is Data.Passives.IPassiveZoneProvider zoneProvider)
+                {
+                    var status = zoneProvider.GetPassiveZoneStatus();
+                    liveEffect = status.Effect;
+                    liveActive = status.Active;
+                }
+
                 result.Add(new PassiveInfoData(
                     string.IsNullOrWhiteSpace(p.PassiveName) ? "이름 없는 패시브" : p.PassiveName,
                     p.GetDynamicDescription() ?? string.Empty,
-                    (p.Description ?? string.Empty).Trim()));
+                    (p.Description ?? string.Empty).Trim(),
+                    liveEffect, liveActive));
             }
             return result;
         }

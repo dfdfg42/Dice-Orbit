@@ -15,7 +15,7 @@ namespace DiceOrbit.Data.Passives
     /// 반격·추가 공격은 없다 — 순수 감쇄만.
     /// </summary>
     [System.Serializable]
-    public class WarriorGuardPassive : CharacterPassiveSkill, IPassiveRangeProvider
+    public class WarriorGuardPassive : CharacterPassiveSkill, IPassiveZoneProvider
     {
         [Header("Designer Tuning")]
         [Tooltip("같은 구역의 '다른 아군' 1명당 받는 공격 피해 감소율(%). 예: 10이면 3명일 때 -30%")]
@@ -26,12 +26,36 @@ namespace DiceOrbit.Data.Passives
         public override string GetDynamicDescription()
             => $"전사와 같은 구역에 있는 다른 아군 1명마다 해당 구역의 모든 아군(전사 포함)이 받는 공격 피해가 {perAllyReductionPercent:0.#}% 감소합니다.";
 
-        /// <summary>패시브 영향 범위 = 전사가 선 구역의 타일들. 조회 시 범위 표시에 쓰인다.</summary>
-        public IReadOnlyList<TileData> GetRangeTiles()
+        /// <summary>패시브 구역 = 전사가 선 구역. 조회 시 구역 테두리에 쓰인다.</summary>
+        public void CollectPassiveZones(List<int> zones)
         {
-            var zones = CombatZoneManager.Instance;
-            if (zones == null || !(owner is Character guard)) return new List<TileData>();
-            return zones.GetTilesInZone(zones.GetZoneOf(guard));
+            var manager = CombatZoneManager.Instance;
+            if (manager == null || !(owner is Character guard)) return;
+            int zone = manager.GetZoneOf(guard);
+            if (zone >= 0) zones.Add(zone);
+        }
+
+        public PassiveZoneStatus GetPassiveZoneStatus()
+        {
+            var manager = CombatZoneManager.Instance;
+            int allyCount = 0;
+            if (manager != null && owner is Character guard)
+            {
+                int zone = manager.GetZoneOf(guard);
+                if (zone >= 0) allyCount = CountOtherAlliesInZone(guard, zone, manager);
+            }
+            return FormatZoneStatus(allyCount, perAllyReductionPercent);
+        }
+
+        /// <summary>같은 구역 '다른 아군' 수에 따른 감쇄율(%). 피해 계산과 정보 패널 표시가 같은 식을 쓴다.</summary>
+        public static float ReductionPercent(int allyCount, float perAllyPercent)
+            => Mathf.Clamp(perAllyPercent * Mathf.Max(0, allyCount), 0f, 90f);
+
+        /// <summary>지금 효과 한 줄 (순수 — PassiveZoneSelfTests).</summary>
+        public static PassiveZoneStatus FormatZoneStatus(int allyCount, float perAllyPercent)
+        {
+            if (allyCount <= 0) return new PassiveZoneStatus("같은 구역 아군 없음", false);
+            return new PassiveZoneStatus($"받는 피해 -{ReductionPercent(allyCount, perAllyPercent):0.#}%", true);
         }
 
         public override void OnAttack(CombatTrigger trigger, AttackContext context)
@@ -52,7 +76,7 @@ namespace DiceOrbit.Data.Passives
             int allyCount = CountOtherAlliesInZone(guard, guardZone, zones);
             if (allyCount <= 0) return;
 
-            float reduction = Mathf.Clamp(perAllyReductionPercent * allyCount, 0f, 90f);
+            float reduction = ReductionPercent(allyCount, perAllyReductionPercent);
             context.OutputValue *= 1f - reduction / 100f;
             if (!context.IsSimulation) Notify($"{PassiveName} -{reduction:0.#}%");
         }

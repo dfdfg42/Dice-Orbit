@@ -14,7 +14,7 @@ namespace DiceOrbit.Data.Passives
     /// 클래스명은 .asset SerializeReference 호환을 위해 유지한다 (구 [원거리]).
     /// </summary>
     [System.Serializable]
-    public class MageRangedPassive : CharacterPassiveSkill, IAttackZoneProvider, IPassiveRangeProvider
+    public class MageRangedPassive : CharacterPassiveSkill, IAttackZoneProvider, IPassiveZoneProvider
     {
         public override int Priority => 50;
 
@@ -25,16 +25,21 @@ namespace DiceOrbit.Data.Passives
         public List<int> GetAttackableZones(Character source)
             => MageCircuit.GetCircuitZones(source != null ? source : owner as Character);
 
-        /// <summary>패시브 영향 범위 표시 = 회로로 연결된 모든 구역의 타일들.</summary>
-        public IReadOnlyList<TileData> GetRangeTiles()
+        /// <summary>패시브 구역 = 회로로 연결된 모든 구역 (첫 번째가 마법사 자신의 구역).</summary>
+        public void CollectPassiveZones(List<int> zones)
         {
-            var result = new List<TileData>();
-            var zones = CombatZoneManager.Instance;
-            if (zones == null || !(owner is Character mage)) return result;
+            if (!(owner is Character mage)) return;
+            zones.AddRange(MageCircuit.GetCircuitZones(mage));
+        }
 
-            foreach (var zone in MageCircuit.GetCircuitZones(mage))
-                result.AddRange(zones.GetTilesInZone(zone));
-            return result;
+        public PassiveZoneStatus GetPassiveZoneStatus()
+            => FormatZoneStatus(owner is Character mage ? MageCircuit.GetCircuitZones(mage).Count : 0);
+
+        /// <summary>지금 효과 한 줄 (순수 — PassiveZoneSelfTests). 자기 구역뿐이면 회로가 넓혀 준 것이 없다 → 꺼짐.</summary>
+        public static PassiveZoneStatus FormatZoneStatus(int circuitZoneCount)
+        {
+            if (circuitZoneCount <= 1) return new PassiveZoneStatus("자기 구역만", false);
+            return new PassiveZoneStatus($"{circuitZoneCount}구역 연결", true);
         }
     }
 }

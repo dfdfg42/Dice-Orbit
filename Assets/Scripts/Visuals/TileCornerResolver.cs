@@ -5,7 +5,7 @@ namespace DiceOrbit.Visuals
 {
     /// <summary>
     /// 타일 윗면 4코너 월드 좌표 계산 유틸 (단일 출처).
-    /// TileSkillPreviewManager / PassiveRangeIndicator 등이 공유한다.
+    /// TileSkillPreviewManager / PassiveZoneIndicator 등이 공유한다.
     /// </summary>
     public static class TileCornerResolver
     {
