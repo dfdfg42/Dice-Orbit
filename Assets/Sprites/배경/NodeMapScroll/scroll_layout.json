@@ -1,0 +1,37 @@
+{
+  "sourceWidth": 2688,
+  "sourceHeight": 1520,
+  "hasRolls": true,
+  "paper": {
+    "x": 768.5610010427529,
+    "y": 167.0286757038582,
+    "width": 1151.8779979144942,
+    "height": 1187.0615224191868
+  },
+  "pieces": [
+    {
+      "name": "MapScroll",
+      "sprite": "Assets/Sprites/배경/NodeMapScroll/nodemap_scroll.png",
+      "x": 599.5271115745568,
+      "y": 12.52711157455683,
+      "width": 1497.594369134515,
+      "height": 1506.7726798748697
+    },
+    {
+      "name": "RollTop",
+      "sprite": "Assets/Sprites/배경/NodeMapScroll/nodemap_scroll_roll_top.png",
+      "x": 611.0,
+      "y": 24.0,
+      "width": 1467.0,
+      "height": 150.67726798748697
+    },
+    {
+      "name": "RollBottom",
+      "sprite": "Assets/Sprites/배경/NodeMapScroll/nodemap_scroll_roll_bottom.png",
+      "x": 611.0,
+      "y": 1346.441605839416,
+      "width": 1467.0,
+      "height": 149.1475495307612
+    }
+  ]
+}
