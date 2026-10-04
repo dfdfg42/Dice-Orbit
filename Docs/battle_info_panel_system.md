@@ -73,7 +73,7 @@ Panel (UiSkinImage Panel, 433×931 우측 도킹)            ← highlightRect(�
 
 ## 월드 인디케이터 연동 (조회 시 자동)
 
-- 캐릭터 조회 → 패시브 범위 ㄱ자 브래킷 (`PassiveRangeIndicator`, `IPassiveRangeProvider`)
+- 캐릭터 조회 → 패시브 구역 테두리 (`PassiveZoneIndicator`, `IPassiveZoneProvider`). 구역 패시브는 패널의 패시브 제목 옆에 지금 효과 한 줄이 붙는다 (`PassiveInfoData.LiveEffect` — 걸려 있으면 굵은 잉크, 꺼져 있으면 흐린 회색)
 - 몬스터 조회 → 공격 타일 리프트 (`IntentTileLiftEffect`)
 - 해제 시 자동 제거. (형태 의미는 battle_visual_language.md)
 
