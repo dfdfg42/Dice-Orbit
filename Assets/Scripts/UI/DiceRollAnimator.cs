@@ -6,7 +6,7 @@ namespace DiceOrbit.UI
 {
     /// <summary>
     /// 턴 시작 시 주사위 획득 연출 애니메이터
-    /// 화면 중앙에서 일렬 팝인 → 순서대로 점프 → 슬롯으로 이동
+    /// 화면 중앙에서 일렬 팝인(전원 텀블) → 하나씩 확정(착지+펀치) → 전부 확정되면 슬롯으로 비행
     /// </summary>
     public class DiceRollAnimator : MonoBehaviour
     {
@@ -20,19 +20,19 @@ namespace DiceOrbit.UI
         [Tooltip("중앙에서 팝인 되는 시간")]
         [SerializeField] private float popInDuration = 0.18f;
 
-        [Header("Jump & Spin (Step 1)")]
-        [Tooltip("위로 점프하며 솟구치는 시간")]
-        [SerializeField] private float jumpUpDuration = 0.25f;
-        [Tooltip("점프 높이 (px)")]
-        [SerializeField] private float jumpHeight = 150f;
-        [Tooltip("이동 중 회전 횟수 (360도 * N)")]
-        [SerializeField] private float rotationCycles = 2f;
+        [Header("Center Confirm (Step 1)")]
+        [Tooltip("주사위 확정 간격 (하나씩 차례로)")]
+        [SerializeField] private float confirmInterval = 0.35f;
+        [Tooltip("3D 착지 전체 시간 (감속 60% + '탁' 스냅 40%)")]
+        [SerializeField] private float confirmSettleDuration = 0.65f;
+        [Tooltip("확정 순간 스케일 펀치 배율")]
+        [SerializeField] private float confirmPunchScale = 1.16f;
+        [Tooltip("스케일 펀치 시간")]
+        [SerializeField] private float confirmPunchDuration = 0.16f;
+        [Tooltip("전부 확정된 뒤 잠깐 보여주는 시간")]
+        [SerializeField] private float afterConfirmBeat = 0.3f;
 
-        [Header("Pause (Step 2)")]
-        [Tooltip("공중에서 멈추는 시간")]
-        [SerializeField] private float pauseDuration = 0.12f;
-
-        [Header("Zoom In (Step 3)")]
+        [Header("Fly To Panel (Step 2)")]
         [Tooltip("슬롯으로 빠르게 빨려 들어가는 시간")]
         [SerializeField] private float zoomInDuration = 0.22f;
         [Tooltip("주사위 간 출발 딜레이")]
@@ -155,12 +155,24 @@ namespace DiceOrbit.UI
             // 잠깐 간격
             yield return new WaitForSeconds(0.05f);
 
-            // ─── 4단계: 하나씩 순서대로 슬롯으로 이동 ───
-            // 각 Coroutine을 순서 딜레이를 두고 발사
+            // ─── 4단계: 가운데서 하나씩 확정 (텀블 정지 → 확정 면 착지 + 펀치) ───
+            for (int i = 0; i < count; i++)
+            {
+                if (i > 0) yield return new WaitForSeconds(confirmInterval);
+                if (rects[i] == null) continue;
+
+                StopContinuousShuffle(elements[i], true);   // 3D: 확정 면으로 착지 / 2D: 실제 값 복원
+                StartCoroutine(ConfirmPunch(rects[i]));
+            }
+
+            // 마지막 착지가 끝나고, 전부 확정된 모습을 잠깐 보여준다
+            yield return new WaitForSeconds(confirmSettleDuration + afterConfirmBeat);
+
+            // ─── 5단계: 전부 확정 후 슬롯으로 비행 ───
             for (int i = 0; i < count; i++)
             {
                 int idx = i; // 클로저용
-                StartCoroutine(MoveToSlot(
+                StartCoroutine(FlyToSlot(
                     rects[idx],
                     elements[idx],
                     diceContainer,
@@ -174,12 +186,38 @@ namespace DiceOrbit.UI
             }
 
             // 마지막 주사위가 도착할 때까지 대기
-            float totalWait = (count - 1) * delayBetweenDice + jumpUpDuration + pauseDuration + zoomInDuration + bounceDuration + 0.1f;
+            float totalWait = (count - 1) * delayBetweenDice + zoomInDuration + bounceDuration + 0.1f;
             yield return new WaitForSeconds(totalWait);
 
             StopAllContinuousShuffle(true);
 
             OnAnimationComplete?.Invoke();
+        }
+
+        // ─── 확정 순간 스케일 펀치 (회전이 멈추는 타이밍에 '탁') ───
+        private IEnumerator ConfirmPunch(RectTransform rect)
+        {
+            yield return new WaitForSeconds(confirmSettleDuration * 0.85f);
+            if (rect == null) yield break;
+
+            float half = confirmPunchDuration * 0.5f;
+            float elapsed = 0f;
+            while (elapsed < half)
+            {
+                elapsed += Time.deltaTime;
+                if (rect == null) yield break;
+                rect.localScale = Vector3.one * Mathf.Lerp(1f, confirmPunchScale, Mathf.Clamp01(elapsed / half));
+                yield return null;
+            }
+            elapsed = 0f;
+            while (elapsed < half)
+            {
+                elapsed += Time.deltaTime;
+                if (rect == null) yield break;
+                rect.localScale = Vector3.one * Mathf.Lerp(confirmPunchScale, 1f, Mathf.Clamp01(elapsed / half));
+                yield return null;
+            }
+            rect.localScale = Vector3.one;
         }
 
         // ─── 동시 팝인 ───
@@ -199,8 +237,8 @@ namespace DiceOrbit.UI
                 if (r != null) r.localScale = Vector3.one;
         }
 
-        // ─── 개별 주사위 슬롯 이동 (3단계 시퀀스) ───
-        private IEnumerator MoveToSlot(RectTransform rect, DiceElement element, Transform container, Vector2 localSlotPos, 
+        // ─── 개별 주사위: 확정된 상태로 슬롯까지 비행 ───
+        private IEnumerator FlyToSlot(RectTransform rect, DiceElement element, Transform container, Vector2 localSlotPos, 
             Vector2 origAnchorMin, Vector2 origAnchorMax, Vector2 origPivot, Vector2 origSize, float initialDelay)
         {
             if (initialDelay > 0f)
@@ -208,57 +246,24 @@ namespace DiceOrbit.UI
 
             if (rect == null) yield break;
 
-            // 1. 공중 점프 & 회전
-            Vector2 spawnPos = rect.anchoredPosition;
-            Vector2 midAirPos = spawnPos + Vector2.up * jumpHeight;
-
-            float elapsed = 0f;
-            while (elapsed < jumpUpDuration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / jumpUpDuration);
-                float smoothT = EaseOutQuad(t);
-
-                rect.anchoredPosition = Vector2.Lerp(spawnPos, midAirPos, smoothT);
-                rect.localRotation = Quaternion.Euler(0, 0, t * 360f * rotationCycles);
-                yield return null;
-            }
-
-            rect.anchoredPosition = midAirPos;
-            rect.localRotation = Quaternion.Euler(0, 0, 360f * rotationCycles);
-
-            // 2. 공중 일시정지
-            if (pauseDuration > 0)
-                yield return new WaitForSeconds(pauseDuration);
-
-            if (rect == null) yield break;
-
-            // 3. 슬롯으로 빠르게 Zoom In
-            // 슬롯의 Canvas 기준 절대 위치를 계산
+            // 확정된 채로 현재 위치에서 슬롯까지 가속 비행
+            Vector2 startPos = rect.anchoredPosition;
             RectTransform containerRect = container as RectTransform;
             Vector2 targetCanvasPos = GetCanvasLocalPosition(containerRect, localSlotPos);
 
-            elapsed = 0f;
-
+            float elapsed = 0f;
             while (elapsed < zoomInDuration)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / zoomInDuration);
                 float smoothT = EaseInQuad(t);
 
-                rect.anchoredPosition = Vector2.Lerp(midAirPos, targetCanvasPos, smoothT);
-                
-                // 슬롯에 도착할 때 회전도 정위치로 (0도)
-                rect.localRotation = Quaternion.Lerp(Quaternion.Euler(0, 0, 360f * rotationCycles), Quaternion.identity, smoothT);
-
+                rect.anchoredPosition = Vector2.Lerp(startPos, targetCanvasPos, smoothT);
                 yield return null;
             }
 
             rect.anchoredPosition = targetCanvasPos;
             rect.localRotation = Quaternion.identity;
-
-            // 연출 종료: 실제 데이터 값으로 즉시 복구
-            StopContinuousShuffle(element, true);
 
             // ─── 도착 후 컨테이너로 복귀 ───
             rect.SetParent(container, false);
@@ -281,7 +286,17 @@ namespace DiceOrbit.UI
 
         private void StartContinuousShuffle(DiceElement element)
         {
-            if (!useTravelShuffle || element == null)
+            if (element == null)
+                return;
+
+            // 3D 모드: 숫자 셔플 대신 큐브가 실제로 구른다
+            if (element.View3D != null)
+            {
+                element.View3D.SetTumbling(true);
+                return;
+            }
+
+            if (!useTravelShuffle)
                 return;
 
             StopContinuousShuffle(element, false);
@@ -292,6 +307,16 @@ namespace DiceOrbit.UI
         {
             if (element == null)
                 return;
+
+            // 3D 모드: 텀블을 멈추고 확정 면으로 착지
+            if (element.View3D != null)
+            {
+                element.View3D.SetTumbling(false);
+                if (restoreRealValue && element.Data != null)
+                    element.View3D.SettleToValue(element.Data.Value, 0.3f);
+                activeShuffleRoutines.Remove(element);
+                return;
+            }
 
             if (activeShuffleRoutines.TryGetValue(element, out Coroutine routine) && routine != null)
             {

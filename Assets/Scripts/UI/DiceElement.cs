@@ -27,8 +27,13 @@ namespace DiceOrbit.UI
         private bool isSelected;
         private DiceUI parentDiceUI;
 
+        // 3D 주사위 (Dice3DService에서 빌림 — 실패 시 null = 기존 2D 숫자 표시)
+        private Dice3DView view3d;
+        private RawImage visual3d;
+
         // Properties
         public DiceData Data => diceData;
+        public Dice3DView View3D => view3d;
 
         private void Awake()
         {
@@ -53,7 +58,41 @@ namespace DiceOrbit.UI
         public void SetDiceData(DiceData data)
         {
             diceData = data;
+            TryAttach3D();
             UpdateVisual();
+        }
+
+        // 3D 뷰를 빌려 RawImage로 표시. 서비스가 실패하면 조용히 2D(숫자 텍스트) 유지.
+        private void TryAttach3D()
+        {
+            if (view3d != null || diceData == null) return;
+            view3d = Dice3DService.Acquire(diceData);
+            if (view3d == null) return;
+
+            if (visual3d == null)
+            {
+                var go = new GameObject("Visual3D", typeof(RectTransform), typeof(RawImage));
+                var rt = (RectTransform)go.transform;
+                rt.SetParent(transform, false);
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.offsetMin = Vector2.zero;
+                rt.offsetMax = Vector2.zero;
+                visual3d = go.GetComponent<RawImage>();
+                visual3d.raycastTarget = true;   // 배경을 숨기므로 클릭/호버 레이캐스트는 RawImage가 담당
+            }
+            visual3d.texture = view3d.Texture;
+            visual3d.gameObject.SetActive(true);
+
+            // 3D 주사위만 보이게 — 기존 2D(흰 카드+숫자)는 숨김. 상태색은 RawImage 틴트로 전달.
+            if (valueText != null) valueText.gameObject.SetActive(false);
+            if (backgroundImage != null) backgroundImage.enabled = false;
+        }
+
+        private void OnDestroy()
+        {
+            Dice3DService.Release(view3d);
+            view3d = null;
         }
 
         /// <summary>
@@ -69,10 +108,15 @@ namespace DiceOrbit.UI
                 valueText.text = diceData.Value.ToString();
             }
 
-            // 배경 색상 및 상호작용
+            // 배경 색상 및 상호작용 (3D 렌더도 같은 상태색으로 틴트 — 선택/잠금/사용됨이 동일하게 보이게)
+            var stateColor = ResolveCurrentColor();
             if (backgroundImage != null)
             {
-                backgroundImage.color = ResolveCurrentColor();
+                backgroundImage.color = stateColor;
+            }
+            if (visual3d != null)
+            {
+                visual3d.color = stateColor;
             }
 
             var button = GetComponent<Button>();
@@ -242,6 +286,7 @@ namespace DiceOrbit.UI
         /// </summary>
         public void SetDisplayValue(int value)
         {
+            if (view3d != null) return;   // 3D 모드는 숫자 셔플 대신 큐브가 직접 구른다
             if (valueText != null)
             {
                 valueText.text = value.ToString();
@@ -253,7 +298,13 @@ namespace DiceOrbit.UI
         /// </summary>
         public void RefreshDisplayFromData()
         {
-            if (diceData == null || valueText == null) return;
+            if (diceData == null) return;
+            if (view3d != null)
+            {
+                view3d.SnapToValue(diceData.Value);
+                return;
+            }
+            if (valueText == null) return;
             valueText.text = diceData.Value.ToString();
         }
 
