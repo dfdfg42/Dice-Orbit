@@ -8,7 +8,7 @@ namespace DiceOrbit.UI
 {
     /// <summary>
     /// 타일 정보 패널 — 정보 패널 왼쪽 위에 도킹되는 **한 장짜리 평평한 패널** (2026-10-04 단순화).
-    /// 맨 위에 타일 미리보기(인게임 타일과 같은 그림 + 그 위에 속성 아이콘), 그 아래로 속성마다
+    /// 맨 위에 타일 미리보기(인게임 타일과 같은 그림 + 그림 아래쪽에 속성 아이콘), 그 아래로 속성마다
     /// [아이콘 + 이름 (값·지속)] 한 줄과 설명이 세로로 쌓인다. 속성 사이는 간격으로만 구분한다.
     ///
     /// 예전에는 타일 그림을 액자에 넣고 속성마다 카드를 따로 띄웠다 — 패널이 겹겹이 붙어 정작 읽을 내용이 묻혔다.
@@ -30,14 +30,14 @@ namespace DiceOrbit.UI
         [SerializeField] private RectTransform stack;
         [Tooltip("타일 미리보기 그림 (액자 없이 그림만)")]
         [SerializeField] private Image tileImage;
-        [Tooltip("미리보기 그림 위쪽의 속성 아이콘 행")]
+        [Tooltip("미리보기 그림 아래쪽의 속성 아이콘 행 (자리는 씬의 앵커가 정한다)")]
         [SerializeField] private RectTransform tileIconRow;
 
         [Header("스킨")]
         [SerializeField] private Sprite normalTileSprite;
         [SerializeField] private Sprite levelUpTileSprite;
         [SerializeField] private TileAttributeVisualDatabase attributeVisuals;
-        [SerializeField] private float previewIconSize = 28f;   // 미리보기 그림 위 속성 아이콘
+        [SerializeField] private float previewIconSize = 28f;   // 미리보기 그림 안 속성 아이콘
         [SerializeField] private float iconSize = 30f;          // 속성 줄 제목 옆 아이콘
         [SerializeField] private float titleSize = 21f;         // 오른쪽 정보 패널 항목(23/21)보다 한 단계 작게
         [SerializeField] private float bodySize = 18f;
@@ -89,7 +89,7 @@ namespace DiceOrbit.UI
 
         // ── 미리보기 ──────────────────────────────────────────────
 
-        /// <summary>인게임 타일과 같은 그림 + 그 위에 속성 아이콘 (인게임 타일 버블과 같은 감각).</summary>
+        /// <summary>인게임 타일과 같은 그림 + 그림 아래쪽에 속성 아이콘.</summary>
         private void SetTilePreview(TileInfoData t)
         {
             if (tileImage == null || tileIconRow == null)
