@@ -53,6 +53,9 @@ namespace DiceOrbit.UI
         public void SetDiceData(DiceData data)
         {
             diceData = data;
+            // 덱에서 굴린 주사위는 종류별 면을 입는다. 출처 없는 주사위는 프리팹의 기본 면 그대로.
+            var die = data?.Source?.BaseDie;
+            if (die != null) DieFaceStyle.Apply(die, backgroundImage, valueText);
             UpdateVisual();
         }
 

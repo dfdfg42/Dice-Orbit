@@ -1,0 +1,174 @@
+{
+  "faces": [
+    {
+      "asset": "Die",
+      "sprite": "Assets/Sprites/Dice/die_Die.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "AdvanceDie",
+      "sprite": "Assets/Sprites/Dice/die_AdvanceDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "AlchemyDie",
+      "sprite": "Assets/Sprites/Dice/die_AlchemyDie.png",
+      "numberColor": [
+        0.98,
+        0.953,
+        0.878,
+        1.0
+      ]
+    },
+    {
+      "asset": "ArcaneDie",
+      "sprite": "Assets/Sprites/Dice/die_ArcaneDie.png",
+      "numberColor": [
+        0.98,
+        0.953,
+        0.878,
+        1.0
+      ]
+    },
+    {
+      "asset": "ChaosDie",
+      "sprite": "Assets/Sprites/Dice/die_ChaosDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "FocusDie",
+      "sprite": "Assets/Sprites/Dice/die_FocusDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "GiantDie",
+      "sprite": "Assets/Sprites/Dice/die_GiantDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "LifeDie",
+      "sprite": "Assets/Sprites/Dice/die_LifeDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "PolarityDie",
+      "sprite": "Assets/Sprites/Dice/die_PolarityDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "PrecisionDie",
+      "sprite": "Assets/Sprites/Dice/die_PrecisionDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "RampartDie",
+      "sprite": "Assets/Sprites/Dice/die_RampartDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "RefineDie",
+      "sprite": "Assets/Sprites/Dice/die_RefineDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "ShadowDie",
+      "sprite": "Assets/Sprites/Dice/die_ShadowDie.png",
+      "numberColor": [
+        0.98,
+        0.953,
+        0.878,
+        1.0
+      ]
+    },
+    {
+      "asset": "SmallStepsDie",
+      "sprite": "Assets/Sprites/Dice/die_SmallStepsDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "StarlightDie",
+      "sprite": "Assets/Sprites/Dice/die_StarlightDie.png",
+      "numberColor": [
+        0.98,
+        0.953,
+        0.878,
+        1.0
+      ]
+    },
+    {
+      "asset": "SynthesisDie",
+      "sprite": "Assets/Sprites/Dice/die_SynthesisDie.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    },
+    {
+      "asset": "Die 1",
+      "sprite": "Assets/Sprites/Dice/die_Die.png",
+      "numberColor": [
+        0.294,
+        0.259,
+        0.361,
+        1.0
+      ]
+    }
+  ]
+}

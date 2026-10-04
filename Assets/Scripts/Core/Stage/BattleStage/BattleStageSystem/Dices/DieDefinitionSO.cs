@@ -21,7 +21,12 @@ namespace DiceOrbit.Data
         public string Name = "표준 주사위";
         public int[] Faces = { 1, 2, 3, 4, 5, 6 };       // 길이 6 권장
         [SerializeReference, SubclassPicker] public DieEffect Effect;  // null = 효과 없음
-        public Sprite Icon;                              // 보상/교체 목록 표시용
+
+        [Header("겉모습 — 종류마다 다른 면 (DieFaceStyle이 트레이·툴팁·보상 카드에 입힌다)")]
+        [Tooltip("주사위 면 그림 — 가운데가 비어 있고 그 위에 숫자가 얹힌다 (Tools/cut_die_faces.py → 메뉴 DiceOrbit/Assign Die Faces)")]
+        public Sprite Face;
+        [Tooltip("면 위에 얹히는 숫자 색 — 어두운 면은 밝게")]
+        public Color NumberColor = new Color(0.294f, 0.259f, 0.361f);
 
         [Tooltip("보상 드로우 가중치·툴팁 이름 색 (일반 6 : 고급 3 : 희귀 1)")]
         public DieRarity Rarity = DieRarity.Common;

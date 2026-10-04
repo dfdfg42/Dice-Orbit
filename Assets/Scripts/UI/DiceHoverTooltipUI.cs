@@ -21,7 +21,6 @@ namespace DiceOrbit.UI
         [SerializeField] private RectTransform panel;        // 툴팁 루트 패널
         [SerializeField] private RectTransform faceGrid;     // 3열 GridLayoutGroup (6면)
         [SerializeField] private RectTransform effectRow;    // 효과 카드 컨테이너 (세로 스택)
-        [SerializeField] private Sprite dieFaceSprite;       // Assets/Sprites/Dice.png
         [SerializeField] private TMP_FontAsset font;         // 숫자/라벨 폰트 (Pretendard SDF 권장)
         [SerializeField] private Vector2 aboveOffset = new Vector2(0f, 90f);
 
@@ -49,35 +48,22 @@ namespace DiceOrbit.UI
             return Instance;
         }
 
-        /// <summary>면 아트 스프라이트 공유 — 보상/교체 화면의 주사위 카드가 같은 아트를 쓴다.</summary>
-        public Sprite DieFaceSprite => dieFaceSprite;
-
         public void Show(DiceElement element)
         {
             var src = element != null ? element.Data?.Source : null;
             bool skillHint = element != null && element.SkillUnusableHint;
             if ((src == null && !skillHint) || panel == null) return;
 
-            ShowCore(src?.Faces, src?.Effect,
+            ShowCore(src?.BaseDie, src?.Faces, src?.Effect,
                 (Vector2)element.transform.position,
                 skillHint ? "강화 조건 불충족 · 기본 공격 발동" : null);
         }
 
-        /// <summary>
-        /// 위치 지정형 표시 — 보상 타일/교체 카드 등 다이스 패널 밖에서도 같은 GUI(6면 아트+효과)를 띄운다.
-        /// anchorPos는 오버레이 캔버스 기준 위치 (카드 상단 중앙 권장).
-        /// </summary>
-        public void ShowAt(int[] faces, DieEffect effect, Vector2 anchorPos)
-        {
-            if (panel == null || faces == null) return;
-            ShowCore(faces, effect, anchorPos, null);
-        }
-
-        private void ShowCore(int[] faces, DieEffect effect, Vector2 anchorPos, string skillHintText)
+        private void ShowCore(DieDefinitionSO die, int[] faces, DieEffect effect, Vector2 anchorPos, string skillHintText)
         {
             EnsureAutoLayout();
 
-            BuildFaces(faces);
+            BuildFaces(die, faces);
             if (faceGrid != null) faceGrid.gameObject.SetActive(faces != null);
             BuildEffects(effect, skillHintText);
 
@@ -163,21 +149,19 @@ namespace DiceOrbit.UI
             if (panel != null) panel.gameObject.SetActive(false);
         }
 
-        /// <summary>면 6칸 (각 칸 = 주사위 이미지 + 숫자). GridLayoutGroup가 3열×2줄로 정렬.</summary>
-        private void BuildFaces(int[] faces)
+        /// <summary>면 6칸 (각 칸 = 그 주사위의 면 그림 + 숫자). GridLayoutGroup가 3열×2줄로 정렬.</summary>
+        private void BuildFaces(DieDefinitionSO die, int[] faces)
         {
             if (faceGrid == null) return;
             foreach (var c in _faceCells) { if (c != null) c.SetActive(false); Destroy(c); }   // 비활성화 → 이번 프레임 레이아웃에서 제외
             _faceCells.Clear();
-            if (faces == null) return;
+            if (faces == null || die == null) return;
 
             foreach (int v in faces)
             {
                 var cell = new GameObject("FaceCell", typeof(RectTransform), typeof(Image));
                 cell.transform.SetParent(faceGrid, false);
                 var img = cell.GetComponent<Image>();
-                img.sprite = dieFaceSprite;
-                img.preserveAspect = true;
                 img.raycastTarget = false;
 
                 var txt = new GameObject("Val", typeof(RectTransform)).AddComponent<TextMeshProUGUI>();
@@ -193,6 +177,7 @@ namespace DiceOrbit.UI
                 rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
                 rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
 
+                DieFaceStyle.Apply(die, img, txt);
                 _faceCells.Add(cell);
             }
         }

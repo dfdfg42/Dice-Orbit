@@ -177,3 +177,13 @@
 | 41 | 최종: B를 더 넓게(거의 정사각), 외곽선을 주변 소품만큼 굵게 | high / 2k / transparent / 1:1 | 시안 B job + STYLE | `5ee2cf8f-4350-45f7-9a8b-d0a143da0cf5` | `배경/NodeMapScroll/nodemap_scroll.png` + `nodemap_scroll_roll_{top,bottom}.png` (`Tools/make_nodemap_scroll.py`가 자르고 그림자를 붙임). 배경 `nodemap_bg.png`에서는 옛 두루마리를 지움 (크레딧 0) | 2.75 |
 
 소계 3.5 → 누적 259.75. 잔액 89.0.
+
+## 주사위 종류별 면 그림 (2026-10-05)
+
+사용자 요청: "주사위마다 디자인 다르게".
+
+| # | 대상 | 설정 | 참조 | job_id | 결과 | 크레딧 |
+|---|------|------|------|--------|------|--------|
+| 42 | 주사위 면 16종 시트 (4×4: 표준 + 특수 15종, 가운데는 숫자 자리로 비움) | gpt_image_2_5 / low / 1k / transparent / 1:1 | STYLE | `92f18344-0ce4-4f63-8922-de3d9108c3e2` | **그대로 최종으로 사용** — `Sprites/Dice/die_<에셋>.png` 16장(219×219), `Tools/cut_die_faces.py`로 절단. 화면 표시 크기(트레이 약 75px)의 2.9배라 고해상도 재생성 불필요 | 0.25 |
+
+소계 0.25 → 누적 260.0. 잔액 88.75.

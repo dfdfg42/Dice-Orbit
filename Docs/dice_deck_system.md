@@ -15,7 +15,7 @@
 
 | 타입 | 파일 | 역할 |
 |---|---|---|
-| `DieDefinitionSO` | `DieDefinitionSO.cs` | 주사위 한 종류 = **에셋 1개** (`Create ▸ DiceOrbit ▸ Die Definition`). `Name`, `int[] Faces`(6), `[SerializeReference] DieEffect Effect`, `Sprite Icon`. `RollFace()` = 랜덤 면. saveId = 에셋 파일명(후속 저장용). |
+| `DieDefinitionSO` | `DieDefinitionSO.cs` | 주사위 한 종류 = **에셋 1개** (`Create ▸ DiceOrbit ▸ Die Definition`). `Name`, `int[] Faces`(6), `[SerializeReference] DieEffect Effect`, `Sprite Face` + `Color NumberColor`(종류별 겉모습 — 아래 「종류별 면 그림」). `RollFace()` = 랜덤 면. saveId = 에셋 파일명(후속 저장용). |
 | `DieInstance` | `DieDefinitionSO.cs` | **덱의 한 칸(런타임)** = `BaseDie`(SO) + `AttachedEffect`(선택). `Effect => AttachedEffect ?? BaseDie.Effect`. `Faces`/`RollFace()`는 BaseDie 위임. |
 | `DieEffect` | `DieEffect.cs` | 사용 시 효과 **추상 다형성** (`[SerializeReference, SubclassPicker]`, 이벤트 결과/유물과 동일). `Apply(DieUseContext)` + `Preview()` + `Sprite Icon`. 구체: `GainGoldOnUse`, `HealUserOnUse`. |
 | `DieUseContext` | `DieEffect.cs` | `{ Character User, int RolledValue }` (사용 확정 시 전달). |
@@ -38,9 +38,32 @@
 ## 호버 UI (`UI/DiceHoverTooltipUI.cs`)
 
 호버한 주사위 위에 표시. 씬에 패널 배치(`GameCanvas/DiceHoverTooltip`), 참조 배선 필요:
-- `panel`(루트), `faceGrid`(GridLayoutGroup **3열**, 셀 44), `effectRow`(VerticalLayoutGroup, `reverseArrangement`=아래→위), `dieFaceSprite`(=`Assets/Sprites/Dice.png`), `font`(Pretendard SDF).
-- **면 그리드**: 6칸 = 주사위 이미지 + 숫자(진한 잉크), 3×2.
+- `panel`(루트), `faceGrid`(GridLayoutGroup **3열**, 셀 44), `effectRow`(VerticalLayoutGroup, `reverseArrangement`=아래→위), `font`(Pretendard SDF).
+- **면 그리드**: 6칸 = 그 주사위의 면 그림 + 숫자, 3×2.
 - **효과 카드**: 효과별로 카드 셀 동적 생성(둥근 크림 카드 + 아이콘 + `Preview()`), 타일 정보 카드 감각.
+
+## 종류별 면 그림 (2026-10-05)
+
+주사위 종류마다 면이 다르게 생겼다 — 트레이에서 어떤 특수 주사위인지 한눈에 구분된다.
+
+- **데이터**: `DieDefinitionSO.Face`(가운데가 빈 면 그림, 그 위에 숫자가 얹힌다) + `NumberColor`(어두운 면은 크림색 숫자).
+- **그리는 곳은 한 군데**: `UI/DieFaceStyle.Apply(die, 몸통 Image, 숫자 TMP)`. 트레이(`DiceElement.SetDiceData`) · 호버 툴팁의 6면 · 보상 화면 주사위 카드(`RewardDieCard`)가 모두 이걸 부른다. 새 화면에서 주사위를 그릴 때도 이 한 줄.
+  `Face`가 비어 있으면 에러를 한 번 남기고 그대로 둔다 (다른 주사위 그림으로 대체하지 않는다). 덱 출처가 없는 주사위(`DiceData.Source == null`)는 프리팹의 기본 면 그대로.
+- **그림**: `Assets/Sprites/Dice/die_<에셋 이름>.png` 16장 (표준 + 특수 15종).
+
+| 주사위 | 면 | | 주사위 | 면 |
+|---|---|---|---|---|
+| 표준 | 크림색 민무늬 | | 양극 | 흑백 대각 분할 + 가운데 회색 판 |
+| 전진 | 주황 + 화살표 | | 정밀 | 강철색 + 눈금·십자선 |
+| 연금 | 초록 유리 + 플라스크 | | 성벽 | 성돌 + 성가퀴 |
+| 비전 | 짙은 보라 + 룬 | | 정제 | 얼음빛 수정 + 물방울 |
+| 혼돈 | 분홍·청록 소용돌이 | | 그림자 | 검은 남색 + 보라 연기 |
+| 집중 | 진홍 + 과녁 고리 | | 잔걸음 | 민트 + 발자국 |
+| 거인 | 갈색 바위 | | 별빛 | 밤하늘 + 별·초승달 |
+| 생명 | 연두 + 하트·새싹 | | 연성 | 살구색과 하늘색이 섞임 |
+
+- **만드는 법**: 4×4 시트 한 장을 `python Tools/cut_die_faces.py <시트.png>`로 자른다 (칸 순서 = 도구의 `ORDER`). 면 그림 + 배선표 `die_faces.json`(숫자 색은 면 가운데 밝기로 자동 결정)이 나오고, Unity 메뉴 **DiceOrbit → Assign Die Faces**(`DieFaceSetup`)가 표대로 에셋에 꽂는다. 주사위 폴더에 표에 없는 주사위가 있으면 예외.
+- **새 주사위를 더할 때**: 면 그림을 `Assets/Sprites/Dice/`에 넣고 `Face`·`NumberColor`를 직접 지정하거나, 시트를 다시 뽑아 `ORDER`에 이름을 더한다. 그림 없이 다른 면을 같이 쓰려면 도구의 `ALIASES`.
 
 ## 획득 · 교체 (`UI/Reward/RewardUI.cs`)
 
@@ -52,7 +75,7 @@
 
 ## 콘텐츠 저작 가이드
 
-- **새 주사위**: `Create ▸ DiceOrbit ▸ Die Definition` → Faces/Effect/Icon 지정. `DiceDeckManager.specialPool`(보상용) 또는 `standardDie`(시드용)에 배선.
+- **새 주사위**: `Create ▸ DiceOrbit ▸ Die Definition` → Faces/Effect/Face(면 그림)·NumberColor 지정. `DiceDeckManager.specialPool`(보상용) 또는 `standardDie`(시드용)에 배선.
 - **새 사용 효과**: `DieEffect` 상속 클래스 하나 추가(Apply+Preview). enum/switch 없음.
 - **이벤트로 효과 부여**: `EventDefinition` 에셋의 선택지 결과에 `AttachDieEffectOutcome` 추가 후 effect 지정.
 

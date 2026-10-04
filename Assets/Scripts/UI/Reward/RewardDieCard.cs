@@ -34,7 +34,7 @@ namespace DiceOrbit.UI
         public void BindDefinition(DieDefinitionSO die)
         {
             if (die == null) throw new ArgumentNullException(nameof(die));
-            Fill(die.Name, die.RarityLabel, die.RarityColor, die.Faces, die.Effect, die.Description);
+            Fill(die, die.Faces, die.Effect, die.Description);
             button.onClick.RemoveAllListeners();
         }
 
@@ -44,7 +44,7 @@ namespace DiceOrbit.UI
             if (instance == null) throw new ArgumentNullException(nameof(instance));
             var baseDie = instance.BaseDie;
             if (baseDie == null) throw new InvalidOperationException("[RewardDieCard] 덱 주사위에 BaseDie가 없다.");
-            Fill(baseDie.Name, baseDie.RarityLabel, baseDie.RarityColor, instance.Faces, instance.Effect, null);
+            Fill(baseDie, instance.Faces, instance.Effect, null);
 
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => onClick());
@@ -60,19 +60,21 @@ namespace DiceOrbit.UI
 
         public void SetDimmed(bool dimmed) => group.alpha = dimmed ? 0.6f : 1f;
 
-        private void Fill(string dieName, string rarityLabel, Color rarityColor, int[] faces, DieEffect effect, string description)
+        private void Fill(DieDefinitionSO die, int[] faces, DieEffect effect, string description)
         {
-            nameText.text = dieName;
-            nameText.color = rarityColor;
-            rarityText.text = rarityLabel;
-            rarityText.color = rarityColor;
+            nameText.text = die.Name;
+            nameText.color = die.RarityColor;
+            rarityText.text = die.RarityLabel;
+            rarityText.color = die.RarityColor;
 
             int faceCount = faces != null ? faces.Length : 0;
             for (int i = 0; i < faceLabels.Length; i++)
             {
                 bool has = i < faceCount;
                 faceLabels[i].transform.parent.gameObject.SetActive(has);
-                if (has) faceLabels[i].text = faces[i].ToString();
+                if (!has) continue;
+                faceLabels[i].text = faces[i].ToString();
+                DieFaceStyle.Apply(die, faceLabels[i].transform.parent.GetComponent<Image>(), faceLabels[i]);   // 그 주사위의 면 그림 + 숫자 색
             }
 
             string preview = effect != null ? effect.Preview() : null;
