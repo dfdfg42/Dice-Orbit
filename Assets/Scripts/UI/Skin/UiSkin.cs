@@ -22,12 +22,11 @@ namespace DiceOrbit.UI.Skin
         HudPotionChip = 106,    // 채워진 물약·유물 칩
         ActionLabel = 107,      // 몬스터 행동 라벨
         DiceTooltip = 108,      // 주사위 6면 툴팁 카드
-        TileCard = 109,         // 타일 정보 그림 액자
-        AttrCard = 110,         // 타일 속성 카드
+        // 109~110 (TileCard·AttrCard)은 타일 정보 패널 단순화(2026-10-04)로 삭제 — 번호 재사용 금지
         NameChip = 111,         // 이름표 (정보 패널·모집 시트)
         SectionChip = 112,      // 섹션 탭 칩
         Divider = 113,          // 구분선
-        PlainPanel = 114,       // 머리띠 없는 평평한 패널 — 전투 중 떠 있는 정보 카드(행동 예고). TooltipFrame에서 위쪽 띠만 뺀 것 (Tools/make_plain_panel.py)
+        PlainPanel = 114,       // 평평한 패널 — 전투 중 떠 있는 정보 카드 (행동 예고·타일 정보)
         // 모집
         RecruitSheet = 200,
         RecruitTitleSign = 201,

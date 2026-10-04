@@ -89,14 +89,14 @@ namespace DiceOrbit.EditorTools
         private static void TestApplySlicedSetsSpriteTypeAndWhite()
         {
             var skin = MakeCompleteSkin();
-            skin.GetEntry(SkinPart.AttrCard).PixelsPerUnitMultiplier = 2f;
+            skin.GetEntry(SkinPart.PlainPanel).PixelsPerUnitMultiplier = 2f;
             var go = new GameObject("skin-test", typeof(Image));
             var img = go.GetComponent<Image>();
             img.color = Color.red;
-            skin.Apply(img, SkinPart.AttrCard);
-            Check(img.sprite == skin.GetSprite(SkinPart.AttrCard), "Apply(AttrCard): 스프라이트 지정");
-            Check(img.type == Image.Type.Sliced, "Apply(AttrCard): Image.Type.Sliced");
-            Check(Mathf.Approximately(img.pixelsPerUnitMultiplier, 2f), "Apply(AttrCard): pixelsPerUnitMultiplier 항목값");
+            skin.Apply(img, SkinPart.PlainPanel);
+            Check(img.sprite == skin.GetSprite(SkinPart.PlainPanel), "Apply(PlainPanel): 스프라이트 지정");
+            Check(img.type == Image.Type.Sliced, "Apply(PlainPanel): Image.Type.Sliced");
+            Check(Mathf.Approximately(img.pixelsPerUnitMultiplier, 2f), "Apply(PlainPanel): pixelsPerUnitMultiplier 항목값");
             Check(img.color == Color.white, "Apply: 색 = white (틴트 금지)");
             UnityEngine.Object.DestroyImmediate(go);
             UnityEngine.Object.DestroyImmediate(skin);
@@ -119,7 +119,7 @@ namespace DiceOrbit.EditorTools
             var skin = ScriptableObject.CreateInstance<UiSkin>();
             var go = new GameObject("skin-test", typeof(Image));
             bool threw = false;
-            try { skin.Apply(go.GetComponent<Image>(), SkinPart.TileCard); }
+            try { skin.Apply(go.GetComponent<Image>(), SkinPart.PlainPanel); }
             catch (InvalidOperationException) { threw = true; }
             Check(threw, "항목 없는 파트 Apply는 InvalidOperationException (폴백 없음)");
             UnityEngine.Object.DestroyImmediate(go);
@@ -129,10 +129,10 @@ namespace DiceOrbit.EditorTools
         private static void TestApplyThrowsWhenSpriteEmpty()
         {
             var skin = ScriptableObject.CreateInstance<UiSkin>();
-            skin.SetEntry(SkinPart.TileCard, null, SkinMode.Sliced);
+            skin.SetEntry(SkinPart.PlainPanel, null, SkinMode.Sliced);
             var go = new GameObject("skin-test", typeof(Image));
             bool threw = false;
-            try { skin.Apply(go.GetComponent<Image>(), SkinPart.TileCard); }
+            try { skin.Apply(go.GetComponent<Image>(), SkinPart.PlainPanel); }
             catch (InvalidOperationException) { threw = true; }
             Check(threw, "스프라이트 빈 파트 Apply는 InvalidOperationException (폴백 없음)");
             UnityEngine.Object.DestroyImmediate(go);
@@ -259,9 +259,9 @@ namespace DiceOrbit.EditorTools
             // 실제 Resources/UI/UiSkin.asset을 쓴다 (씬 배치 컴포넌트의 통합 확인)
             var go = new GameObject("skin-image", typeof(Image), typeof(DiceOrbit.UI.UiSkinImage));
             var comp = go.GetComponent<DiceOrbit.UI.UiSkinImage>();
-            comp.SetPart(SkinPart.AttrCard);
+            comp.SetPart(SkinPart.PlainPanel);
             var img = go.GetComponent<Image>();
-            Check(img.sprite == UiSkin.Current.GetSprite(SkinPart.AttrCard), "UiSkinImage.SetPart(AttrCard): 카탈로그 스프라이트");
+            Check(img.sprite == UiSkin.Current.GetSprite(SkinPart.PlainPanel), "UiSkinImage.SetPart(PlainPanel): 카탈로그 스프라이트");
             UnityEngine.Object.DestroyImmediate(go);
         }
 
